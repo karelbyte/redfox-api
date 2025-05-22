@@ -26,7 +26,9 @@ export class UserController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<UserResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<UserResponseDto>> {
     return this.userService.findAll(paginationDto);
   }
 

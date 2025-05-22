@@ -13,4 +13,4 @@ export class PaginationDto {
   @IsOptional()
   @Min(1)
   limit?: number = 10;
-} 
+}

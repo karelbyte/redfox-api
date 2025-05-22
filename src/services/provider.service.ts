@@ -26,13 +26,17 @@ export class ProviderService {
     };
   }
 
-  async create(createProviderDto: CreateProviderDto): Promise<ProviderResponseDto> {
+  async create(
+    createProviderDto: CreateProviderDto,
+  ): Promise<ProviderResponseDto> {
     const provider = this.providerRepository.create(createProviderDto);
     const savedProvider = await this.providerRepository.save(provider);
     return this.mapToResponseDto(savedProvider);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<ProviderResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<ProviderResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -94,4 +98,4 @@ export class ProviderService {
     }
     await this.providerRepository.softRemove(provider);
   }
-} 
+}

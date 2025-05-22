@@ -5,21 +5,38 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
+import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 100 })
   name: string;
 
-  @Column({ length: 255, unique: true })
+  @Column({ length: 100, unique: true })
   email: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 100 })
   password: string;
+
+  @ManyToMany(() => Role)
+  @JoinTable({
+    name: 'user_roles',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
+  })
+  roles: Role[];
 
   @Column({ default: true })
   status: boolean;

@@ -16,10 +16,10 @@ export class RoleService {
   ) {}
 
   private mapToResponseDto(role: Role): RoleResponseDto {
-    const { id, name, description, status, created_at } = role;
+    const { id, code, description, status, created_at } = role;
     return {
       id,
-      name,
+      code,
       description,
       status,
       created_at,
@@ -32,7 +32,9 @@ export class RoleService {
     return this.mapToResponseDto(savedRole);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<RoleResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<RoleResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -66,6 +68,17 @@ export class RoleService {
     return this.mapToResponseDto(role);
   }
 
+  async findOneEntity(id: string): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id },
+      withDeleted: false,
+    });
+    if (!role) {
+      throw new NotFoundException(`Rol con ID ${id} no encontrado`);
+    }
+    return role;
+  }
+
   async update(
     id: string,
     updateRoleDto: UpdateRoleDto,
@@ -94,4 +107,4 @@ export class RoleService {
     }
     await this.roleRepository.softRemove(role);
   }
-} 
+}

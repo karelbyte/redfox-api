@@ -65,7 +65,9 @@ export class ProductService {
     return this.mapToResponseDto(savedProduct);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<ProductResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<ProductResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -77,7 +79,7 @@ export class ProductService {
     });
 
     const data = await Promise.all(
-      products.map((product) => this.mapToResponseDto(product))
+      products.map((product) => this.mapToResponseDto(product)),
     );
 
     return {

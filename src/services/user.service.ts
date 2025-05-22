@@ -7,21 +7,30 @@ import { UpdateUserDto } from '../dtos/user/update-user.dto';
 import { UserResponseDto } from '../dtos/user/user-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { RoleService } from './role.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private roleService: RoleService,
   ) {}
 
   private mapToResponseDto(user: User): UserResponseDto {
-    const { id, username, email, role, status, created_at } = user;
+    const { id, name, email, roles, status, created_at } = user;
     return {
       id,
-      username,
+      name,
       email,
-      role,
+      roles:
+        roles?.map((role) => ({
+          id: role.id,
+          code: role.code,
+          description: role.description,
+          status: role.status,
+          created_at: role.created_at,
+        })) || [],
       status,
       created_at,
     };
@@ -29,16 +38,26 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const user = this.userRepository.create(createUserDto);
+
+    if (createUserDto.role_ids) {
+      const roles = await Promise.all(
+        createUserDto.role_ids.map((id) => this.roleService.findOneEntity(id)),
+      );
+      user.roles = roles;
+    }
+
     const savedUser = await this.userRepository.save(user);
     return this.mapToResponseDto(savedUser);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<UserResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<UserResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
     const [users, total] = await this.userRepository.findAndCount({
-      relations: ['role'],
+      relations: ['roles'],
       withDeleted: false,
       skip,
       take: limit,
@@ -60,7 +79,7 @@ export class UserService {
   async findOne(id: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['role'],
+      relations: ['roles'],
       withDeleted: false,
     });
     if (!user) {
@@ -75,12 +94,20 @@ export class UserService {
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['role'],
+      relations: ['roles'],
       withDeleted: false,
     });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
+
+    if (updateUserDto.role_ids) {
+      const roles = await Promise.all(
+        updateUserDto.role_ids.map((id) => this.roleService.findOneEntity(id)),
+      );
+      user.roles = roles;
+    }
+
     const updatedUser = await this.userRepository.save({
       ...user,
       ...updateUserDto,
