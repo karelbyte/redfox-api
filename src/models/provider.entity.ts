@@ -1,4 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { Product } from './product.entity';
+import { Reception } from './reception.entity';
 
 @Entity('providers')
 export class Provider {
@@ -11,6 +21,21 @@ export class Provider {
   @Column({ length: 255 })
   description: string;
 
+  @Column({ length: 100, nullable: true })
+  name: string;
+
+  @Column({ length: 20, nullable: true })
+  document: string;
+
+  @Column({ length: 20, nullable: true })
+  phone: string;
+
+  @Column({ length: 100, nullable: true })
+  email: string;
+
+  @Column({ length: 200, nullable: true })
+  address: string;
+
   @Column({ default: true })
   status: boolean;
 
@@ -22,4 +47,10 @@ export class Provider {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+
+  @OneToMany(() => Product, (product) => product.provider)
+  products: Product[];
+
+  @OneToMany(() => Reception, (reception) => reception.provider)
+  receptions: Reception[];
+}

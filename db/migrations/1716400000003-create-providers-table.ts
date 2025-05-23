@@ -30,6 +30,36 @@ export class CreateProvidersTable1716400000003 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'name',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'document',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'phone',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'email',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'address',
+            type: 'varchar',
+            length: '200',
+            isNullable: true,
+          },
+          {
             name: 'status',
             type: 'boolean',
             default: true,

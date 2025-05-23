@@ -5,23 +5,34 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateUserRoles1716400000002 implements MigrationInterface {
+export class CreateReceptionDetails1716400000004 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'user_roles',
+        name: 'reception_details',
         columns: [
           {
-            name: 'user_id',
+            name: 'id',
             type: 'varchar',
             length: '36',
             isPrimary: true,
+            generationStrategy: 'uuid',
           },
           {
-            name: 'role_id',
+            name: 'reception_id',
             type: 'varchar',
             length: '36',
-            isPrimary: true,
+          },
+          {
+            name: 'product_id',
+            type: 'varchar',
+            length: '36',
+          },
+          {
+            name: 'quantity',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
           },
           {
             name: 'created_at',
@@ -33,44 +44,49 @@ export class CreateUserRoles1716400000002 implements MigrationInterface {
             type: 'timestamp',
             default: 'now()',
           },
+          {
+            name: 'deleted_at',
+            type: 'timestamp',
+            isNullable: true,
+          },
         ],
       }),
       true,
     );
 
     await queryRunner.createForeignKey(
-      'user_roles',
+      'reception_details',
       new TableForeignKey({
-        columnNames: ['user_id'],
+        columnNames: ['reception_id'],
         referencedColumnNames: ['id'],
-        referencedTableName: 'users',
+        referencedTableName: 'receptions',
         onDelete: 'CASCADE',
       }),
     );
 
     await queryRunner.createForeignKey(
-      'user_roles',
+      'reception_details',
       new TableForeignKey({
-        columnNames: ['role_id'],
+        columnNames: ['product_id'],
         referencedColumnNames: ['id'],
-        referencedTableName: 'roles',
-        onDelete: 'CASCADE',
+        referencedTableName: 'products',
+        onDelete: 'RESTRICT',
       }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('user_roles');
+    const table = await queryRunner.getTable('reception_details');
     const foreignKeys = table?.foreignKeys;
 
     if (foreignKeys) {
       await Promise.all(
         foreignKeys.map((foreignKey) =>
-          queryRunner.dropForeignKey('user_roles', foreignKey),
+          queryRunner.dropForeignKey('reception_details', foreignKey),
         ),
       );
     }
 
-    await queryRunner.dropTable('user_roles');
+    await queryRunner.dropTable('reception_details');
   }
-}
+} 

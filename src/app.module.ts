@@ -10,6 +10,7 @@ import { BrandModule } from './modules/brand.module';
 import { ProductModule } from './modules/product.module';
 import { InventoryModule } from './modules/inventory.module';
 import { getDatabaseConfig } from './config/database.config';
+import { ReceptionModule } from './modules/reception.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { getDatabaseConfig } from './config/database.config';
     BrandModule,
     ProductModule,
     InventoryModule,
+    ReceptionModule,
   ],
   controllers: [],
   providers: [],
