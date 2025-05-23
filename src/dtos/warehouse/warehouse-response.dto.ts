@@ -1,11 +1,9 @@
-export class ClientResponseDto {
+export class WarehouseResponseDto {
   id: string;
   code: string;
   name: string;
-  description: string;
   address: string;
   phone: string;
-  email: string;
   status: boolean;
   created_at: Date;
-}
+} 

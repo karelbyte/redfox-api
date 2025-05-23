@@ -1,12 +1,13 @@
-import { IsNotEmpty, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsUUID, IsNumber, Min } from 'class-validator';
 
 export class CreateInventoryDto {
   @IsUUID()
-  @IsNotEmpty()
   product_id: string;
 
+  @IsUUID()
+  warehouse_id: string;
+
   @IsNumber()
-  @IsNotEmpty()
   @Min(0)
-  stock: number;
+  quantity: number;
 } 

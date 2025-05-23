@@ -1,12 +1,17 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateClientsTable1716400000002 implements MigrationInterface {
+export class CreateStockOuts1716400000007 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'clients',
+        name: 'withdrawals',
         columns: [
           {
             name: 'id',
@@ -24,34 +29,16 @@ export class CreateClientsTable1716400000002 implements MigrationInterface {
             isUnique: true,
           },
           {
-            name: 'name',
-            type: 'varchar',
-            length: '100',
-            isNullable: false,
-          },
-          {
-            name: 'description',
-            type: 'varchar',
-            length: '255',
-            isNullable: false,
-          },
-          {
-            name: 'address',
+            name: 'destination',
             type: 'varchar',
             length: '200',
-            isNullable: true,
+            isNullable: false,
           },
           {
-            name: 'phone',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
-            name: 'email',
-            type: 'varchar',
-            length: '100',
-            isNullable: true,
+            name: 'client_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'status',
@@ -78,9 +65,29 @@ export class CreateClientsTable1716400000002 implements MigrationInterface {
       }),
       true,
     );
+
+    await queryRunner.createForeignKey(
+      'withdrawals',
+      new TableForeignKey({
+        columnNames: ['client_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'clients',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('clients');
+    const table = await queryRunner.getTable('withdrawals');
+    const foreignKeys = table?.foreignKeys || [];
+
+    await Promise.all(
+      foreignKeys.map((foreignKey) =>
+        queryRunner.dropForeignKey('withdrawals', foreignKey),
+      ),
+    );
+
+    await queryRunner.dropTable('withdrawals');
   }
-} 
+}

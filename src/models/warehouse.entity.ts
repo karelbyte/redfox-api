@@ -1,7 +1,16 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { Inventory } from './inventory.entity';
 
-@Entity('clients')
-export class Client {
+@Entity('warehouses')
+export class Warehouse {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -11,20 +20,17 @@ export class Client {
   @Column({ length: 100 })
   name: string;
 
-  @Column({ length: 255 })
-  description: string;
-
-  @Column({ length: 200, nullable: true })
+  @Column({ length: 200 })
   address: string;
 
   @Column({ length: 20, nullable: true })
   phone: string;
 
-  @Column({ length: 100, nullable: true })
-  email: string;
-
   @Column({ default: true })
   status: boolean;
+
+  @OneToMany(() => Inventory, (inventory) => inventory.warehouse)
+  inventory: Inventory[];
 
   @CreateDateColumn()
   created_at: Date;

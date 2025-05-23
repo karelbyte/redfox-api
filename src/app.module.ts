@@ -11,6 +11,8 @@ import { ProductModule } from './modules/product.module';
 import { InventoryModule } from './modules/inventory.module';
 import { getDatabaseConfig } from './config/database.config';
 import { ReceptionModule } from './modules/reception.module';
+import { WarehouseModule } from './modules/warehouse.module';
+import { WithdrawalModule } from './modules/withdrawal.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { ReceptionModule } from './modules/reception.module';
     ProductModule,
     InventoryModule,
     ReceptionModule,
+    WarehouseModule,
+    WithdrawalModule,
   ],
   controllers: [],
   providers: [],

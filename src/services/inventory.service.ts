@@ -20,12 +20,12 @@ export class InventoryService {
   private async mapToResponseDto(
     inventory: Inventory,
   ): Promise<InventoryResponseDto> {
-    const { id, product, stock, created_at } = inventory;
+    const { id, product, quantity, created_at } = inventory;
 
     return {
       id,
       product: await this.productService.findOne(product.id),
-      stock,
+      quantity,
       created_at,
     };
   }
