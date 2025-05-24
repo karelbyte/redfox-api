@@ -5,7 +5,7 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateStockOuts1716400000007 implements MigrationInterface {
+export class CreateStockOuts1716400000013 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

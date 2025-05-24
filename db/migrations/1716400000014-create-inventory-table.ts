@@ -5,13 +5,13 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateStockOutDetails1716400000008 implements MigrationInterface {
+export class CreateInventory1716400000014 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'withdrawals_details',
+        name: 'inventory',
         columns: [
           {
             name: 'id',
@@ -22,13 +22,13 @@ export class CreateStockOutDetails1716400000008 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
-            name: 'withdrawals_id',
+            name: 'product_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
             isNullable: false,
           },
           {
-            name: 'product_id',
+            name: 'warehouse_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
             isNullable: false,
@@ -64,18 +64,7 @@ export class CreateStockOutDetails1716400000008 implements MigrationInterface {
 
     // Añadir claves foráneas
     await queryRunner.createForeignKey(
-      'withdrawals_details',
-      new TableForeignKey({
-        columnNames: ['withdrawals_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'withdrawals',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'withdrawals_details',
+      'inventory',
       new TableForeignKey({
         columnNames: ['product_id'],
         referencedColumnNames: ['id'],
@@ -84,19 +73,29 @@ export class CreateStockOutDetails1716400000008 implements MigrationInterface {
         onUpdate: 'CASCADE',
       }),
     );
+
+    await queryRunner.createForeignKey(
+      'inventory',
+      new TableForeignKey({
+        columnNames: ['warehouse_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'warehouses',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('withdrawals_details');
-    if (!table) return;
-    const foreignKeys = table.foreignKeys;
+    const table = await queryRunner.getTable('inventory');
+    const foreignKeys = table?.foreignKeys || [];
 
     await Promise.all(
       foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('withdrawals_details', foreignKey),
+        queryRunner.dropForeignKey('inventory', foreignKey),
       ),
     );
 
-    await queryRunner.dropTable('withdrawals_details');
+    await queryRunner.dropTable('inventory');
   }
 }

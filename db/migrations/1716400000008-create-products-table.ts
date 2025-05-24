@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table, ForeignKey } from 'typeorm';
 
-export class CreateProductsTable1716400000006 implements MigrationInterface {
+export class CreateProductsTable1716400000008 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

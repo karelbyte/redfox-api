@@ -1,12 +1,14 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateWarehouses1716400000005 implements MigrationInterface {
+export class CreateMeasurementUnitsTable1716400000005
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'warehouses',
+        name: 'measurement_units',
         columns: [
           {
             name: 'id',
@@ -24,22 +26,10 @@ export class CreateWarehouses1716400000005 implements MigrationInterface {
             isUnique: true,
           },
           {
-            name: 'name',
+            name: 'description',
             type: 'varchar',
-            length: '100',
+            length: '255',
             isNullable: false,
-          },
-          {
-            name: 'address',
-            type: 'varchar',
-            length: '200',
-            isNullable: false,
-          },
-          {
-            name: 'phone',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
           },
           {
             name: 'status',
@@ -69,6 +59,6 @@ export class CreateWarehouses1716400000005 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('warehouses');
+    await queryRunner.dropTable('measurement_units');
   }
-} 
+}

@@ -1,12 +1,12 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateProvidersTable1716400000003 implements MigrationInterface {
+export class CreateWarehouses1716400000007 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'providers',
+        name: 'warehouses',
         columns: [
           {
             name: 'id',
@@ -24,39 +24,21 @@ export class CreateProvidersTable1716400000003 implements MigrationInterface {
             isUnique: true,
           },
           {
-            name: 'description',
-            type: 'varchar',
-            length: '255',
-            isNullable: false,
-          },
-          {
             name: 'name',
             type: 'varchar',
             length: '100',
-            isNullable: true,
-          },
-          {
-            name: 'document',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
-            name: 'phone',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
-            name: 'email',
-            type: 'varchar',
-            length: '100',
-            isNullable: true,
+            isNullable: false,
           },
           {
             name: 'address',
             type: 'varchar',
             length: '200',
+            isNullable: false,
+          },
+          {
+            name: 'phone',
+            type: 'varchar',
+            length: '20',
             isNullable: true,
           },
           {
@@ -87,6 +69,6 @@ export class CreateProvidersTable1716400000003 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('providers');
+    await queryRunner.dropTable('warehouses');
   }
 } 
