@@ -5,13 +5,13 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateStockOutDetails1716400000015 implements MigrationInterface {
+export class CreateCategoriesTable1716400000011 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'withdrawals_details',
+        name: 'categories',
         columns: [
           {
             name: 'id',
@@ -22,23 +22,43 @@ export class CreateStockOutDetails1716400000015 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
-            name: 'withdrawals_id',
-            type: isPostgres ? 'uuid' : 'varchar',
-            length: isPostgres ? undefined : '36',
+            name: 'name',
+            type: 'varchar',
+            length: '100',
             isNullable: false,
           },
           {
-            name: 'product_id',
-            type: isPostgres ? 'uuid' : 'varchar',
-            length: isPostgres ? undefined : '36',
+            name: 'slug',
+            type: 'varchar',
+            length: '150',
             isNullable: false,
+            isUnique: true,
           },
           {
-            name: 'quantity',
-            type: 'decimal',
-            precision: 10,
-            scale: 2,
-            isNullable: false,
+            name: 'description',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'image',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'parent_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
+            name: 'is_active',
+            type: 'boolean',
+            default: true,
+          },
+          {
+            name: 'position',
+            type: 'int',
             default: 0,
           },
           {
@@ -59,44 +79,30 @@ export class CreateStockOutDetails1716400000015 implements MigrationInterface {
           },
         ],
       }),
-      true,
     );
 
-    // Añadir claves foráneas
+    // Crear la llave foránea para parent_id
     await queryRunner.createForeignKey(
-      'withdrawals_details',
+      'categories',
       new TableForeignKey({
-        columnNames: ['withdrawals_id'],
+        columnNames: ['parent_id'],
         referencedColumnNames: ['id'],
-        referencedTableName: 'withdrawals',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'withdrawals_details',
-      new TableForeignKey({
-        columnNames: ['product_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'products',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
+        referencedTableName: 'categories',
+        onDelete: 'SET NULL',
       }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('withdrawals_details');
-    if (!table) return;
-    const foreignKeys = table.foreignKeys;
-
-    await Promise.all(
-      foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('withdrawals_details', foreignKey),
-      ),
-    );
-
-    await queryRunner.dropTable('withdrawals_details');
+    const table = await queryRunner.getTable('categories');
+    if (table) {
+      const foreignKey = table.foreignKeys.find(
+        (fk) => fk.columnNames.indexOf('parent_id') !== -1,
+      );
+      if (foreignKey) {
+        await queryRunner.dropForeignKey('categories', foreignKey);
+      }
+      await queryRunner.dropTable('categories');
+    }
   }
 }

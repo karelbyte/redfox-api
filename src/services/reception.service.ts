@@ -261,3 +261,13 @@ export class ReceptionService {
     await this.receptionRepository.softDelete(id);
   }
 }
+
+/*
+await this.productHistoryService.create({
+  product_id: detail.product.id,
+  warehouse_id: warehouseId,
+  operation_type: OperationType.ENTRY,
+  operation_id: reception.id,
+  quantity: detail.quantity,
+});
+}*/

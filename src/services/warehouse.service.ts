@@ -33,6 +33,8 @@ export class WarehouseService {
   ): Promise<WarehouseResponseDto> {
     const warehouse = this.warehouseRepository.create(createWarehouseDto);
     const savedWarehouse = await this.warehouseRepository.save(warehouse);
+
+
     return this.mapToResponseDto(savedWarehouse);
   }
 

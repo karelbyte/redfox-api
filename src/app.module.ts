@@ -13,11 +13,18 @@ import { getDatabaseConfig } from './config/database.config';
 import { ReceptionModule } from './modules/reception.module';
 import { WarehouseModule } from './modules/warehouse.module';
 import { WithdrawalModule } from './modules/withdrawal.module';
+import { ProductHistoryModule } from './modules/product-history.module';
+import { CategoryModule } from './modules/category.module';
+import { AuthModule } from './modules/auth.module';
+import { TaxModule } from './modules/tax.module';
+import { AppConfig } from './config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      cache: true,
+      load: [AppConfig],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -25,6 +32,7 @@ import { WithdrawalModule } from './modules/withdrawal.module';
         getDatabaseConfig(configService),
       inject: [ConfigService],
     }),
+    AuthModule,
     UserModule,
     RoleModule,
     ClientModule,
@@ -36,6 +44,9 @@ import { WithdrawalModule } from './modules/withdrawal.module';
     ReceptionModule,
     WarehouseModule,
     WithdrawalModule,
+    ProductHistoryModule,
+    CategoryModule,
+    TaxModule,
   ],
   controllers: [],
   providers: [],

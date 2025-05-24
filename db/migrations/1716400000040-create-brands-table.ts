@@ -1,12 +1,14 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateRolesTable1716400000001 implements MigrationInterface {
+export class CreateBrandsTable1716400000040 implements MigrationInterface {
+  name = 'CreateBrandsTable1716400000040';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'roles',
+        name: 'brands',
         columns: [
           {
             name: 'id',
@@ -28,6 +30,12 @@ export class CreateRolesTable1716400000001 implements MigrationInterface {
             type: 'varchar',
             length: '255',
             isNullable: false,
+          },
+          {
+            name: 'img',
+            type: 'varchar',
+            length: '500',
+            isNullable: true,
           },
           {
             name: 'status',
@@ -57,6 +65,6 @@ export class CreateRolesTable1716400000001 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('roles');
+    await queryRunner.dropTable('brands');
   }
-}
+} 

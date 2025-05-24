@@ -1,12 +1,19 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateProvidersTable1716400000006 implements MigrationInterface {
+export class CreateWithdrawalsTable1716400000120 implements MigrationInterface {
+  name = 'CreateWithdrawalsTable1716400000120';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'providers',
+        name: 'withdrawals',
         columns: [
           {
             name: 'id',
@@ -24,40 +31,16 @@ export class CreateProvidersTable1716400000006 implements MigrationInterface {
             isUnique: true,
           },
           {
-            name: 'description',
+            name: 'destination',
             type: 'varchar',
-            length: '255',
+            length: '200',
             isNullable: false,
           },
           {
-            name: 'name',
-            type: 'varchar',
-            length: '100',
-            isNullable: true,
-          },
-          {
-            name: 'document',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
-            name: 'phone',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
-            name: 'email',
-            type: 'varchar',
-            length: '100',
-            isNullable: true,
-          },
-          {
-            name: 'address',
-            type: 'varchar',
-            length: '200',
-            isNullable: true,
+            name: 'client_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'status',
@@ -84,9 +67,29 @@ export class CreateProvidersTable1716400000006 implements MigrationInterface {
       }),
       true,
     );
+
+    await queryRunner.createForeignKey(
+      'withdrawals',
+      new TableForeignKey({
+        columnNames: ['client_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'clients',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('providers');
+    const table = await queryRunner.getTable('withdrawals');
+    const foreignKeys = table?.foreignKeys || [];
+
+    await Promise.all(
+      foreignKeys.map((foreignKey) =>
+        queryRunner.dropForeignKey('withdrawals', foreignKey),
+      ),
+    );
+
+    await queryRunner.dropTable('withdrawals');
   }
-} 
+}

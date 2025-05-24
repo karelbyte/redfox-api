@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateWarehouses1716400000007 implements MigrationInterface {
+export class CreateWarehousesTable1716400000070 implements MigrationInterface {
+  name = 'CreateWarehousesTable1716400000070';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

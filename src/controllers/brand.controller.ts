@@ -26,7 +26,9 @@ export class BrandController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<BrandResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<BrandResponseDto>> {
     return this.brandService.findAll(paginationDto);
   }
 
@@ -47,4 +49,4 @@ export class BrandController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.brandService.remove(id);
   }
-} 
+}

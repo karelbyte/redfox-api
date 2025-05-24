@@ -5,7 +5,9 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateInventory1716400000014 implements MigrationInterface {
+export class CreateInventoryTable1716400000090 implements MigrationInterface {
+  name = 'CreateInventoryTable1716400000090';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

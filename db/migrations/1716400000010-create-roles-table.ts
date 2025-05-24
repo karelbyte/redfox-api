@@ -1,14 +1,14 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateMeasurementUnitsTable1716400000005
-  implements MigrationInterface
-{
+export class CreateRolesTable1716400000010 implements MigrationInterface {
+  name = 'CreateRolesTable1716400000010';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({
-        name: 'measurement_units',
+        name: 'roles',
         columns: [
           {
             name: 'id',
@@ -59,6 +59,6 @@ export class CreateMeasurementUnitsTable1716400000005
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('measurement_units');
+    await queryRunner.dropTable('roles');
   }
 }

@@ -5,7 +5,9 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateReceptions1716400000011 implements MigrationInterface {
+export class CreateReceptionsTable1716400000100 implements MigrationInterface {
+  name = 'CreateReceptionsTable1716400000100';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
