@@ -4,4 +4,4 @@ export class MeasurementUnitResponseDto {
   description: string;
   status: boolean;
   created_at: Date;
-} 
+}

@@ -3,14 +3,14 @@ import { IsOptional, IsString, Length } from 'class-validator';
 export class UpdateMeasurementUnitDto {
   @IsString()
   @IsOptional()
-  @Length(3, 50)
+  @Length(2, 50)
   code?: string;
 
   @IsString()
   @IsOptional()
-  @Length(3, 255)
+  @Length(2, 255)
   description?: string;
 
   @IsOptional()
   status?: boolean;
-} 
+}

@@ -7,6 +7,13 @@ async function bootstrap() {
   const host = process.env.HOST || 'localhost';
   const port = process.env.PORT || 3000;
 
+  // Habilitar CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   // Configurar el prefijo global 'api'
   app.setGlobalPrefix('api');
 

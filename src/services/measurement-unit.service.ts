@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MeasurementUnit } from '../models/measurement-unit.entity';
@@ -15,26 +19,48 @@ export class MeasurementUnitService {
     private measurementUnitRepository: Repository<MeasurementUnit>,
   ) {}
 
-  private mapToResponseDto(measurementUnit: MeasurementUnit): MeasurementUnitResponseDto {
+  private mapToResponseDto(
+    measurementUnit: MeasurementUnit,
+  ): MeasurementUnitResponseDto {
     const { id, code, description, status, created_at } = measurementUnit;
     return { id, code, description, status, created_at };
   }
 
-  async create(createMeasurementUnitDto: CreateMeasurementUnitDto): Promise<MeasurementUnitResponseDto> {
-    const measurementUnit = this.measurementUnitRepository.create(createMeasurementUnitDto);
-    const savedMeasurementUnit = await this.measurementUnitRepository.save(measurementUnit);
+  async create(
+    createMeasurementUnitDto: CreateMeasurementUnitDto,
+  ): Promise<MeasurementUnitResponseDto> {
+    // Verificar si ya existe una unidad de medida con el mismo código
+    const existingUnit = await this.measurementUnitRepository.findOne({
+      where: { code: createMeasurementUnitDto.code },
+      withDeleted: false,
+    });
+
+    if (existingUnit) {
+      throw new BadRequestException(
+        `Ya existe una unidad de medida con el código '${createMeasurementUnitDto.code}'`,
+      );
+    }
+
+    const measurementUnit = this.measurementUnitRepository.create(
+      createMeasurementUnitDto,
+    );
+    const savedMeasurementUnit =
+      await this.measurementUnitRepository.save(measurementUnit);
     return this.mapToResponseDto(savedMeasurementUnit);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const [measurementUnits, total] = await this.measurementUnitRepository.findAndCount({
-      withDeleted: false,
-      skip,
-      take: limit,
-    });
+    const [measurementUnits, total] =
+      await this.measurementUnitRepository.findAndCount({
+        withDeleted: false,
+        skip,
+        take: limit,
+      });
 
     const data = measurementUnits.map((unit) => this.mapToResponseDto(unit));
 
@@ -71,6 +97,24 @@ export class MeasurementUnitService {
     if (!measurementUnit) {
       throw new NotFoundException(`Measurement unit with ID ${id} not found`);
     }
+
+    // Si se está actualizando el código, verificar que no exista otro con el mismo código
+    if (
+      updateMeasurementUnitDto.code &&
+      updateMeasurementUnitDto.code !== measurementUnit.code
+    ) {
+      const existingUnit = await this.measurementUnitRepository.findOne({
+        where: { code: updateMeasurementUnitDto.code },
+        withDeleted: false,
+      });
+
+      if (existingUnit) {
+        throw new BadRequestException(
+          `Ya existe una unidad de medida con el código '${updateMeasurementUnitDto.code}'`,
+        );
+      }
+    }
+
     const updatedMeasurementUnit = await this.measurementUnitRepository.save({
       ...measurementUnit,
       ...updateMeasurementUnitDto,
@@ -88,4 +132,4 @@ export class MeasurementUnitService {
     }
     await this.measurementUnitRepository.softRemove(measurementUnit);
   }
-} 
+}

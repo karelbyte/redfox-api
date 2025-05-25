@@ -25,7 +25,6 @@ export class CreateMeasurementUnitsTable1716400000050
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
           },
           {
             name: 'description',

@@ -3,11 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   ParseUUIDPipe,
   Query,
+  Put,
 } from '@nestjs/common';
 import { MeasurementUnitService } from '../services/measurement-unit.service';
 import { CreateMeasurementUnitDto } from '../dtos/measurement-unit/create-measurement-unit.dto';
@@ -18,7 +18,9 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Controller('measurement-units')
 export class MeasurementUnitController {
-  constructor(private readonly measurementUnitService: MeasurementUnitService) {}
+  constructor(
+    private readonly measurementUnitService: MeasurementUnitService,
+  ) {}
 
   @Post()
   create(
@@ -28,16 +30,20 @@ export class MeasurementUnitController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
     return this.measurementUnitService.findAll(paginationDto);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<MeasurementUnitResponseDto> {
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<MeasurementUnitResponseDto> {
     return this.measurementUnitService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateMeasurementUnitDto: UpdateMeasurementUnitDto,
@@ -49,4 +55,4 @@ export class MeasurementUnitController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.measurementUnitService.remove(id);
   }
-} 
+}
