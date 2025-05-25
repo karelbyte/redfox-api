@@ -47,8 +47,8 @@ export class TaxService {
       throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
     }
 
-    Object.assign(tax, updateTaxDto);
-    const savedTax = await this.taxRepository.save(tax);
+    const dtax = { ...tax, ...updateTaxDto };
+    const savedTax = await this.taxRepository.save(dtax);
     return this.mapToResponseDto(savedTax);
   }
 

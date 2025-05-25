@@ -8,6 +8,7 @@ import {
   Delete,
   ParseUUIDPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientService } from '../services/client.service';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
@@ -15,8 +16,10 @@ import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('clients')
+@UseGuards(AuthGuard)
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 

@@ -8,6 +8,5 @@ export class CategoryResponseDto {
   isActive: boolean;
   position: number;
   createdAt: Date;
-  updatedAt: Date;
   children?: CategoryResponseDto[];
 }

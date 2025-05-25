@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { CreateWithdrawalDto } from '../dtos/withdrawal/create-withdrawal.dto';
@@ -15,8 +16,10 @@ import { UpdateWithdrawalDto } from '../dtos/withdrawal/update-withdrawal.dto';
 import { WithdrawalResponseDto } from '../dtos/withdrawal/withdrawal-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('withdrawals')
+@UseGuards(AuthGuard)
 export class WithdrawalController {
   constructor(private readonly withdrawalService: WithdrawalService) {}
 

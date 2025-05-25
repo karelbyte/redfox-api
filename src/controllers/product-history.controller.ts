@@ -1,11 +1,13 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
 import { ProductHistoryService } from '../services/product-history.service';
 import { CreateProductHistoryDto } from '../dtos/product-history/create-product-history.dto';
 import { ProductHistoryResponseDto } from '../dtos/product-history/product-history-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('product-history')
+@UseGuards(AuthGuard)
 export class ProductHistoryController {
   constructor(private readonly productHistoryService: ProductHistoryService) {}
 

@@ -8,6 +8,7 @@ import {
   Delete,
   ParseUUIDPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { RoleService } from '../services/role.service';
 import { CreateRoleDto } from '../dtos/role/create-role.dto';
@@ -15,8 +16,10 @@ import { UpdateRoleDto } from '../dtos/role/update-role.dto';
 import { RoleResponseDto } from '../dtos/role/role-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('roles')
+@UseGuards(AuthGuard)
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

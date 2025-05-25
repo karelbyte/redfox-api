@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { AppConfig } from 'src/config';
+import { AppConfig } from '../config';
 
 export class CustomUnauthorizedException extends HttpException {
   constructor(message: string) {

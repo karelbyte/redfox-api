@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ReceptionService } from '../services/reception.service';
 import { CreateReceptionDto } from '../dtos/reception/create-reception.dto';
@@ -15,8 +16,10 @@ import { UpdateReceptionDto } from '../dtos/reception/update-reception.dto';
 import { ReceptionResponseDto } from '../dtos/reception/reception-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('receptions')
+@UseGuards(AuthGuard)
 export class ReceptionController {
   constructor(private readonly receptionService: ReceptionService) {}
 

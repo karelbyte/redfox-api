@@ -8,6 +8,7 @@ import {
   Delete,
   ParseUUIDPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProviderService } from '../services/provider.service';
 import { CreateProviderDto } from '../dtos/provider/create-provider.dto';
@@ -15,8 +16,10 @@ import { UpdateProviderDto } from '../dtos/provider/update-provider.dto';
 import { ProviderResponseDto } from '../dtos/provider/provider-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('providers')
+@UseGuards(AuthGuard)
 export class ProviderController {
   constructor(private readonly providerService: ProviderService) {}
 
