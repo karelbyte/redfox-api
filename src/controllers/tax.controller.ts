@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { TaxService } from '../services/tax.service';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
@@ -36,7 +37,7 @@ export class TaxController {
     return this.taxService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UseGuards(AuthGuard)
   update(
     @Param('id') id: string,

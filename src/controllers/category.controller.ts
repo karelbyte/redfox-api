@@ -93,7 +93,30 @@ export class CategoryController {
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(
+    FilesInterceptor('image', 10, {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const dir = './uploads/categories';
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          const formattedName = formatFileName(file.originalname);
+          const uniqueName = `${Date.now()}-${formattedName}`;
+          cb(null, uniqueName);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
   async update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
