@@ -6,8 +6,8 @@ import {
   IsUUID,
   IsInt,
   Min,
-  IsUrl,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateCategoryDto {
   @IsString()
@@ -23,7 +23,6 @@ export class CreateCategoryDto {
   description?: string;
 
   @IsString()
-  @IsUrl()
   @IsOptional()
   image?: string;
 
@@ -33,10 +32,16 @@ export class CreateCategoryDto {
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   isActive?: boolean;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10))
   position?: number;
 }

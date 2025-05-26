@@ -7,7 +7,7 @@ import {
   Min,
   IsUrl,
 } from 'class-validator';
-
+import { Transform } from 'class-transformer';
 export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
@@ -32,10 +32,16 @@ export class UpdateCategoryDto {
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   isActive?: boolean;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10))
   position?: number;
 }
