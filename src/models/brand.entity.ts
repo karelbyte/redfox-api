@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 
 @Entity('brands')
 export class Brand {
@@ -14,8 +21,8 @@ export class Brand {
   @Column({ length: 500, nullable: true })
   img: string;
 
-  @Column({ default: true })
-  status: boolean;
+  @Column({ name: 'is_active', default: true })
+  isActive: boolean;
 
   @CreateDateColumn()
   created_at: Date;
@@ -25,4 +32,4 @@ export class Brand {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

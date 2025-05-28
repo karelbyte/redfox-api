@@ -16,13 +16,13 @@ export class BrandService {
   ) {}
 
   private mapToResponseDto(brand: Brand): BrandResponseDto {
-    const { id, code, description, img, status, created_at } = brand;
+    const { id, code, description, img, isActive, created_at } = brand;
     return {
       id,
       code,
       description,
       img,
-      status,
+      isActive,
       created_at,
     };
   }
@@ -33,7 +33,9 @@ export class BrandService {
     return this.mapToResponseDto(savedBrand);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<BrandResponseDto>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<BrandResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -95,4 +97,4 @@ export class BrandService {
     }
     await this.brandRepository.softRemove(brand);
   }
-} 
+}

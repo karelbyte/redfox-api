@@ -14,7 +14,7 @@ import {
   MaxFileSizeValidator,
   Put,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { CategoryService } from '../services/category.service';
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
@@ -130,9 +130,10 @@ export class CategoryController {
   ): Promise<CategoryResponseDto> {
     if (files && files.length > 0) {
       updateCategoryDto.image = `/uploads/categories/${files[0].filename}`;
-    } else {
+    } else if (updateCategoryDto.imageChanged) {
       updateCategoryDto.image = '';
     }
+    delete updateCategoryDto.imageChanged;
     return this.categoryService.update(id, updateCategoryDto);
   }
 

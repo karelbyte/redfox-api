@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsUrl, Length } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateBrandDto {
   @IsString()
@@ -17,6 +24,21 @@ export class UpdateBrandDto {
   @Length(3, 500)
   img?: string;
 
+  @IsBoolean()
   @IsOptional()
-  status?: boolean;
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isActive?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  imageChanged?: boolean;
 }

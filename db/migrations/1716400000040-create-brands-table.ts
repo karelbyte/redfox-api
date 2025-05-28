@@ -38,7 +38,7 @@ export class CreateBrandsTable1716400000040 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'status',
+            name: 'is_active',
             type: 'boolean',
             default: true,
           },

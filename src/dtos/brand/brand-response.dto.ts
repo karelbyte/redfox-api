@@ -3,6 +3,6 @@ export class BrandResponseDto {
   code: string;
   description: string;
   img: string;
-  status: boolean;
+  isActive: boolean;
   created_at: Date;
-} 
+}

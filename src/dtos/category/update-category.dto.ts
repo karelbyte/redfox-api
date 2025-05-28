@@ -44,4 +44,13 @@ export class UpdateCategoryDto {
   @Min(0)
   @Transform(({ value }) => parseInt(value, 10))
   position?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  imageChanged?: boolean;
 }
