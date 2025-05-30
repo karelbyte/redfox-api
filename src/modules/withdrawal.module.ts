@@ -6,10 +6,12 @@ import { Client } from '../models/client.entity';
 import { Product } from '../models/product.entity';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { WithdrawalController } from '../controllers/withdrawal.controller';
+import { ProductModule } from './product.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Withdrawal, WithdrawalDetail, Client, Product]),
+    ProductModule,
   ],
   controllers: [WithdrawalController],
   providers: [WithdrawalService],

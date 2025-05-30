@@ -48,9 +48,6 @@ export class Provider {
   @DeleteDateColumn()
   deleted_at: Date;
 
-  @OneToMany(() => Product, (product) => product.provider)
-  products: Product[];
-
   @OneToMany(() => Reception, (reception) => reception.provider)
   receptions: Reception[];
 }

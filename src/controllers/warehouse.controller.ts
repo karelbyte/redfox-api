@@ -9,6 +9,7 @@ import {
   Query,
   ParseUUIDPipe,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { WarehouseService } from '../services/warehouse.service';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
@@ -44,7 +45,7 @@ export class WarehouseController {
     return this.warehouseService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWarehouseDto: UpdateWarehouseDto,
@@ -56,4 +57,4 @@ export class WarehouseController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.warehouseService.remove(id);
   }
-} 
+}

@@ -35,4 +35,4 @@ export class WithdrawalDetail {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

@@ -45,4 +45,4 @@ export class ProductHistory {
 
   @CreateDateColumn()
   created_at: Date;
-} 
+}

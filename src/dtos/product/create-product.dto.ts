@@ -1,30 +1,52 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Length, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  IsUUID,
+  IsArray,
+  MinLength,
+  Min,
+  IsUrl,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
   @IsString()
-  @IsNotEmpty()
-  @Length(3, 50)
-  code: string;
+  @MinLength(3)
+  name: string;
 
   @IsString()
-  @IsNotEmpty()
-  @Length(3, 255)
+  @MinLength(3)
+  slug: string;
+
+  @IsString()
+  @MinLength(10)
   description: string;
 
-  @IsNumber()
-  @IsNotEmpty()
-  @Min(0)
-  price: number;
+  @IsString()
+  @MinLength(3)
+  sku: string;
 
   @IsNumber()
-  @IsOptional()
   @Min(0)
-  stock?: number;
+  @IsOptional()
+  weight?: number;
 
   @IsNumber()
-  @IsOptional()
   @Min(0)
-  min_stock?: number;
+  @IsOptional()
+  width?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  height?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  length?: number;
 
   @IsUUID()
   @IsOptional()
@@ -32,9 +54,30 @@ export class CreateProductDto {
 
   @IsUUID()
   @IsOptional()
-  provider_id?: string;
+  category_id?: string;
 
   @IsUUID()
-  @IsNotEmpty()
+  @IsOptional()
+  tax_id?: string;
+
+  @IsUUID()
   measurement_unit_id: string;
-} 
+
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_featured?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_digital?: boolean;
+
+  @IsArray()
+  @IsUrl({}, { each: true })
+  @IsOptional()
+  @Transform(({ value }) => JSON.stringify(value))
+  images?: string[];
+}

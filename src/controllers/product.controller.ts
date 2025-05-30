@@ -24,12 +24,16 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
+  create(
+    @Body() createProductDto: CreateProductDto,
+  ): Promise<ProductResponseDto> {
     return this.productService.create(createProductDto);
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<ProductResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<ProductResponseDto>> {
     return this.productService.findAll(paginationDto);
   }
 
@@ -50,4 +54,4 @@ export class ProductController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.productService.remove(id);
   }
-} 
+}

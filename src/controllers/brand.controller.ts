@@ -12,6 +12,7 @@ import {
   MaxFileSizeValidator,
   ParseFilePipe,
   UploadedFiles,
+  UseGuards,
 } from '@nestjs/common';
 import { BrandService } from '../services/brand.service';
 import { CreateBrandDto } from '../dtos/brand/create-brand.dto';
@@ -22,12 +23,14 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
+import { AuthGuard } from '../guards/auth.guard';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
 };
 
 @Controller('brands')
+@UseGuards(AuthGuard)
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 

@@ -8,12 +8,15 @@ import {
   Delete,
   UseGuards,
   Put,
+  Query,
 } from '@nestjs/common';
 import { TaxService } from '../services/tax.service';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
 import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
 import { AuthGuard } from 'src/guards/auth.guard';
+import { PaginationDto } from '../dtos/common/pagination.dto';
+import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Controller('taxes')
 export class TaxController {
@@ -27,8 +30,10 @@ export class TaxController {
 
   @Get()
   @UseGuards(AuthGuard)
-  findAll(): Promise<TaxResponseDto[]> {
-    return this.taxService.findAll();
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<TaxResponseDto>> {
+    return this.taxService.findAll(paginationDto);
   }
 
   @Get(':id')

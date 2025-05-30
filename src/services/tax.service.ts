@@ -5,6 +5,8 @@ import { Tax } from '../models/tax.entity';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
 import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
+import { PaginationDto } from '../dtos/common/pagination.dto';
+import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Injectable()
 export class TaxService {
@@ -19,11 +21,30 @@ export class TaxService {
     return this.mapToResponseDto(savedTax);
   }
 
-  async findAll(): Promise<TaxResponseDto[]> {
-    const taxes = await this.taxRepository.find({
+  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<TaxResponseDto>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [taxes, total] = await this.taxRepository.findAndCount({
       where: { isActive: true },
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
     });
-    return taxes.map((tax) => this.mapToResponseDto(tax));
+
+    const data = taxes.map((tax) => this.mapToResponseDto(tax));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string): Promise<TaxResponseDto> {

@@ -18,7 +18,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const isPasswordValid :boolean = await compare(password, user.password);
+    const isPasswordValid: boolean = await compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -32,12 +32,12 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      roles: user.roles.map(role => role.code),
+      roles: user.roles.map((role) => role.code),
     };
 
-    const expiresIn = '24h';
+    const expiresIn = '72h';
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
+    expiresAt.setHours(expiresAt.getHours() + 72);
 
     return {
       access_token: this.jwtService.sign(payload, { expiresIn }),

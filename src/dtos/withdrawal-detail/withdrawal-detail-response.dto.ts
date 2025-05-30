@@ -5,4 +5,4 @@ export class WithdrawalDetailResponseDto {
   product: ProductResponseDto;
   quantity: number;
   created_at: Date;
-} 
+}

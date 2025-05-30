@@ -29,7 +29,9 @@ export class ClientController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<ClientResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<ClientResponseDto>> {
     return this.clientService.findAll(paginationDto);
   }
 
@@ -50,4 +52,4 @@ export class ClientController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.clientService.remove(id);
   }
-} 
+}

@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Query,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { MeasurementUnitService } from '../services/measurement-unit.service';
 import { CreateMeasurementUnitDto } from '../dtos/measurement-unit/create-measurement-unit.dto';
@@ -15,8 +16,9 @@ import { UpdateMeasurementUnitDto } from '../dtos/measurement-unit/update-measur
 import { MeasurementUnitResponseDto } from '../dtos/measurement-unit/measurement-unit-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
-
+import { AuthGuard } from '../guards/auth.guard';
 @Controller('measurement-units')
+@UseGuards(AuthGuard)
 export class MeasurementUnitController {
   constructor(
     private readonly measurementUnitService: MeasurementUnitService,

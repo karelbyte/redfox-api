@@ -4,7 +4,7 @@ export class ProductHistoryResponseDto {
   id: string;
   product: {
     id: string;
-    code: string;
+    sku: string;
     description: string;
   };
   warehouse: {
@@ -17,4 +17,4 @@ export class ProductHistoryResponseDto {
   quantity: number;
   current_stock: number;
   created_at: Date;
-} 
+}

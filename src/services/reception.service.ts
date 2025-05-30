@@ -10,7 +10,8 @@ import { UpdateReceptionDto } from '../dtos/reception/update-reception.dto';
 import { ReceptionResponseDto } from '../dtos/reception/reception-response.dto';
 import { ReceptionDetailResponseDto } from '../dtos/reception-detail/reception-detail-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
-import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
+import { ProductService } from './product.service';
 
 @Injectable()
 export class ReceptionService {
@@ -23,6 +24,7 @@ export class ReceptionService {
     private readonly providerRepository: Repository<Provider>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly productService: ProductService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -30,20 +32,8 @@ export class ReceptionService {
   ): ReceptionDetailResponseDto {
     return {
       id: detail.id,
-      product: {
-        id: detail.product.id,
-        code: detail.product.code,
-        description: detail.product.description,
-        price: detail.product.price,
-        stock: detail.product.stock,
-        min_stock: detail.product.min_stock,
-        brand: detail.product.brand,
-        provider: detail.product.provider,
-        measurement_unit: detail.product.measurement_unit,
-        status: detail.product.status,
-        created_at: detail.product.created_at,
-      },
       quantity: detail.quantity,
+      product: this.productService.mapToResponseDto(detail.product),
       created_at: detail.created_at,
     };
   }
@@ -53,18 +43,7 @@ export class ReceptionService {
       id: reception.id,
       code: reception.code,
       date: reception.date,
-      provider: {
-        id: reception.provider.id,
-        code: reception.provider.code,
-        description: reception.provider.description,
-        name: reception.provider.name,
-        document: reception.provider.document,
-        phone: reception.provider.phone,
-        email: reception.provider.email,
-        address: reception.provider.address,
-        status: reception.provider.status,
-        created_at: reception.provider.created_at,
-      },
+      provider: reception.provider,
       document: reception.document,
       amount: reception.amount,
       status: reception.status,
@@ -78,55 +57,32 @@ export class ReceptionService {
   async create(
     createReceptionDto: CreateReceptionDto,
   ): Promise<ReceptionResponseDto> {
-    const provider = await this.providerRepository.findOne({
-      where: { id: createReceptionDto.provider_id },
-    });
-    if (!provider) {
-      throw new NotFoundException(
-        `Provider with ID ${createReceptionDto.provider_id} not found`,
-      );
-    }
-
     const reception = this.receptionRepository.create({
-      code: createReceptionDto.code,
       date: createReceptionDto.date,
-      provider,
-      document: createReceptionDto.document,
-      amount: createReceptionDto.amount,
-      status: true,
     });
 
     const savedReception = await this.receptionRepository.save(reception);
 
-    // Crear los detalles de la recepción
     const details = await Promise.all(
-      createReceptionDto.details.map(async (detailDto) => {
-        const product = await this.productRepository.findOne({
-          where: { id: detailDto.product_id },
-        });
-        if (!product) {
-          throw new NotFoundException(
-            `Product with ID ${detailDto.product_id} not found`,
-          );
-        }
-
-        const detail = this.receptionDetailRepository.create({
+      createReceptionDto.details.map(async (detail) => {
+        const product = await this.productService.findOneEntity(
+          detail.product_id,
+        );
+        return this.receptionDetailRepository.create({
           reception: savedReception,
           product,
-          quantity: detailDto.quantity,
+          quantity: detail.quantity,
         });
-
-        return this.receptionDetailRepository.save(detail);
       }),
     );
 
-    savedReception.details = details;
+    savedReception.details = await this.receptionDetailRepository.save(details);
     return this.mapToResponseDto(savedReception);
   }
 
   async findAll(
     paginationDto: PaginationDto,
-  ): Promise<PaginatedResponse<ReceptionResponseDto>> {
+  ): Promise<PaginatedResponseDto<ReceptionResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -241,7 +197,6 @@ export class ReceptionService {
     }
 
     Object.assign(reception, {
-      code: updateReceptionDto.code,
       date: updateReceptionDto.date,
       document: updateReceptionDto.document,
       amount: updateReceptionDto.amount,

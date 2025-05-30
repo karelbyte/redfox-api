@@ -1,6 +1,16 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Brand } from './brand.entity';
-import { Provider } from './provider.entity';
+import { Category } from './category.entity';
+import { Tax } from './tax.entity';
 import { MeasurementUnit } from './measurement-unit.entity';
 
 @Entity('products')
@@ -8,35 +18,57 @@ export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
-  code: string;
+  @Column({ length: 100 })
+  name: string;
+
+  @Column({ length: 100, unique: true })
+  slug: string;
 
   @Column({ length: 255 })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number;
+  @Column({ length: 50, unique: true })
+  sku: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  stock: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  weight: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  min_stock: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  width: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  height: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  length: number;
 
   @ManyToOne(() => Brand, { nullable: true })
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;
 
-  @ManyToOne(() => Provider, { nullable: true })
-  @JoinColumn({ name: 'provider_id' })
-  provider: Provider;
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'category_id' })
+  category: Category;
+
+  @ManyToOne(() => Tax, { nullable: true })
+  @JoinColumn({ name: 'tax_id' })
+  tax: Tax;
 
   @ManyToOne(() => MeasurementUnit, { nullable: false })
   @JoinColumn({ name: 'measurement_unit_id' })
   measurement_unit: MeasurementUnit;
 
   @Column({ default: true })
-  status: boolean;
+  is_active: boolean;
+
+  @Column({ default: false })
+  is_featured: boolean;
+
+  @Column({ default: false })
+  is_digital: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  images: string;
 
   @CreateDateColumn()
   created_at: Date;
@@ -46,4 +78,4 @@ export class Product {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

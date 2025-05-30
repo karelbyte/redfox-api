@@ -22,7 +22,7 @@ export class ProductHistoryService {
       id: history.id,
       product: {
         id: history.product.id,
-        code: history.product.code,
+        sku: history.product.sku,
         description: history.product.description,
       },
       warehouse: {

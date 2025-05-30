@@ -6,10 +6,12 @@ import { Provider } from '../models/provider.entity';
 import { Product } from '../models/product.entity';
 import { ReceptionService } from '../services/reception.service';
 import { ReceptionController } from '../controllers/reception.controller';
+import { ProductModule } from './product.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Reception, ReceptionDetail, Provider, Product]),
+    ProductModule,
   ],
   controllers: [ReceptionController],
   providers: [ReceptionService],
