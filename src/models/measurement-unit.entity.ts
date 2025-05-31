@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 
 @Entity('measurement_units')
 export class MeasurementUnit {
@@ -22,4 +29,4 @@ export class MeasurementUnit {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

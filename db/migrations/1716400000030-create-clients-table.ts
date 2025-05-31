@@ -32,6 +32,12 @@ export class CreateClientsTable1716400000030 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'tax_document',
+            type: 'varchar',
+            length: '100',
+            isNullable: false,
+          },
+          {
             name: 'description',
             type: 'varchar',
             length: '255',

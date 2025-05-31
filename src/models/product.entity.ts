@@ -13,6 +13,12 @@ import { Category } from './category.entity';
 import { Tax } from './tax.entity';
 import { MeasurementUnit } from './measurement-unit.entity';
 
+export enum ProductType {
+  DIGITAL = 'digital',
+  SERVICE = 'service',
+  TANGIBLE = 'tangible',
+}
+
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')
@@ -61,11 +67,12 @@ export class Product {
   @Column({ default: true })
   is_active: boolean;
 
-  @Column({ default: false })
-  is_featured: boolean;
-
-  @Column({ default: false })
-  is_digital: boolean;
+  @Column({
+    type: 'enum',
+    enum: ProductType,
+    default: ProductType.TANGIBLE,
+  })
+  type: ProductType;
 
   @Column({ type: 'text', nullable: true })
   images: string;

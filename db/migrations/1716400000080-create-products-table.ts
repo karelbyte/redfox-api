@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, ForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateProductsTable1716400000080 implements MigrationInterface {
   name = 'CreateProductsTable1716400000080';
@@ -102,14 +102,11 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             default: true,
           },
           {
-            name: 'is_featured',
-            type: 'boolean',
-            default: false,
-          },
-          {
-            name: 'is_digital',
-            type: 'boolean',
-            default: false,
+            name: 'type',
+            type: 'enum',
+            enum: ['digital', 'service', 'tangible'],
+            default: "'tangible'",
+            isNullable: false,
           },
           {
             name: 'images',
@@ -155,6 +152,13 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             referencedColumnNames: ['id'],
             onDelete: 'SET NULL',
           },
+          {
+            name: 'FK_Measurement_Unit',
+            columnNames: ['measurement_unit_id'],
+            referencedTableName: 'measurement_units',
+            referencedColumnNames: ['id'],
+            onDelete: 'SET NULL',
+          },
         ],
       }),
       true,
@@ -164,4 +168,4 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('products');
   }
-} 
+}

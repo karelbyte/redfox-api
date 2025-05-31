@@ -44,4 +44,4 @@ export class Tax {
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date;
-} 
+}

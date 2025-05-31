@@ -11,6 +11,9 @@ export class Client {
   @Column({ length: 100 })
   name: string;
 
+  @Column({ length: 100 })
+  tax_document: string;
+
   @Column({ length: 255 })
   description: string;
 

@@ -8,8 +8,41 @@ import {
   MinLength,
   Min,
   IsUrl,
+  IsEnum,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, TransformFnParams } from 'class-transformer';
+import { ProductType } from '../../models/product.entity';
+
+const transformToNumber = ({
+  value,
+}: TransformFnParams): number | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const num = Number(value);
+  return isNaN(num) ? undefined : num;
+};
+
+const transformToBoolean = ({
+  value,
+}: TransformFnParams): boolean | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'boolean') return value;
+  return value.toLowerCase() === 'true';
+};
+
+const transformToArray = ({
+  value,
+}: TransformFnParams): string[] | undefined => {
+  if (!value) return undefined;
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return [value];
+    }
+  }
+  return undefined;
+};
 
 export class CreateProductDto {
   @IsString()
@@ -31,21 +64,25 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Transform(transformToNumber)
   weight?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Transform(transformToNumber)
   width?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Transform(transformToNumber)
   height?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Transform(transformToNumber)
   length?: number;
 
   @IsUUID()
@@ -65,19 +102,16 @@ export class CreateProductDto {
 
   @IsBoolean()
   @IsOptional()
+  @Transform(transformToBoolean)
   is_active?: boolean;
 
-  @IsBoolean()
+  @IsEnum(ProductType)
   @IsOptional()
-  is_featured?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  is_digital?: boolean;
+  type?: ProductType;
 
   @IsArray()
   @IsUrl({}, { each: true })
   @IsOptional()
-  @Transform(({ value }) => JSON.stringify(value))
+  @Transform(transformToArray)
   images?: string[];
 }

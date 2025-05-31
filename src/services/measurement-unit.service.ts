@@ -11,25 +11,19 @@ import { UpdateMeasurementUnitDto } from '../dtos/measurement-unit/update-measur
 import { MeasurementUnitResponseDto } from '../dtos/measurement-unit/measurement-unit-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
 
 @Injectable()
 export class MeasurementUnitService {
   constructor(
     @InjectRepository(MeasurementUnit)
     private measurementUnitRepository: Repository<MeasurementUnit>,
+    private readonly measurementUnitMapper: MeasurementUnitMapper,
   ) {}
-
-  private mapToResponseDto(
-    measurementUnit: MeasurementUnit,
-  ): MeasurementUnitResponseDto {
-    const { id, code, description, status, created_at } = measurementUnit;
-    return { id, code, description, status, created_at };
-  }
 
   async create(
     createMeasurementUnitDto: CreateMeasurementUnitDto,
   ): Promise<MeasurementUnitResponseDto> {
-    // Verificar si ya existe una unidad de medida con el mismo código
     const existingUnit = await this.measurementUnitRepository.findOne({
       where: { code: createMeasurementUnitDto.code },
       withDeleted: false,
@@ -46,7 +40,7 @@ export class MeasurementUnitService {
     );
     const savedMeasurementUnit =
       await this.measurementUnitRepository.save(measurementUnit);
-    return this.mapToResponseDto(savedMeasurementUnit);
+    return this.measurementUnitMapper.mapToResponseDto(savedMeasurementUnit);
   }
 
   async findAll(
@@ -62,7 +56,9 @@ export class MeasurementUnitService {
         take: limit,
       });
 
-    const data = measurementUnits.map((unit) => this.mapToResponseDto(unit));
+    const data = measurementUnits.map((unit) =>
+      this.measurementUnitMapper.mapToResponseDto(unit),
+    );
 
     return {
       data,
@@ -83,7 +79,7 @@ export class MeasurementUnitService {
     if (!measurementUnit) {
       throw new NotFoundException(`Measurement unit with ID ${id} not found`);
     }
-    return this.mapToResponseDto(measurementUnit);
+    return this.measurementUnitMapper.mapToResponseDto(measurementUnit);
   }
 
   async update(
@@ -98,7 +94,6 @@ export class MeasurementUnitService {
       throw new NotFoundException(`Measurement unit with ID ${id} not found`);
     }
 
-    // Si se está actualizando el código, verificar que no exista otro con el mismo código
     if (
       updateMeasurementUnitDto.code &&
       updateMeasurementUnitDto.code !== measurementUnit.code
@@ -119,7 +114,7 @@ export class MeasurementUnitService {
       ...measurementUnit,
       ...updateMeasurementUnitDto,
     });
-    return this.mapToResponseDto(updatedMeasurementUnit);
+    return this.measurementUnitMapper.mapToResponseDto(updatedMeasurementUnit);
   }
 
   async remove(id: string): Promise<void> {

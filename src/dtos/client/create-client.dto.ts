@@ -13,6 +13,11 @@ export class CreateClientDto {
 
   @IsString()
   @IsNotEmpty()
+  @Length(3, 100)
+  tax_document: string;
+
+  @IsString()
+  @IsNotEmpty()
   @Length(3, 255)
   description: string;
 

@@ -16,8 +16,8 @@ export class ClientService {
   ) {}
 
   private mapToResponseDto(client: Client): ClientResponseDto {
-    const { id, code, name, description, address, phone, email, status, created_at } = client;
-    return { id, code, name, description, address, phone, email, status, created_at };
+    const { id, code, name, tax_document, description, address, phone, email, status, created_at } = client;
+    return { id, code, name, tax_document, description, address, phone, email, status, created_at };
   }
 
   async create(createClientDto: CreateClientDto): Promise<ClientResponseDto> {

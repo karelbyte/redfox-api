@@ -3,6 +3,7 @@ import { BrandResponseDto } from '../brand/brand-response.dto';
 import { CategoryResponseDto } from '../category/category-response.dto';
 import { TaxResponseDto } from '../tax/tax-response.dto';
 import { MeasurementUnitResponseDto } from '../measurement-unit/measurement-unit-response.dto';
+import { ProductType } from '../../models/product.entity';
 
 export class ProductResponseDto {
   @Expose()
@@ -48,10 +49,7 @@ export class ProductResponseDto {
   is_active: boolean;
 
   @Expose()
-  is_featured: boolean;
-
-  @Expose()
-  is_digital: boolean;
+  type: ProductType;
 
   @Expose()
   @Transform(({ value }) => {
@@ -65,7 +63,4 @@ export class ProductResponseDto {
 
   @Expose()
   created_at: Date;
-
-  @Expose()
-  updated_at: Date;
 }

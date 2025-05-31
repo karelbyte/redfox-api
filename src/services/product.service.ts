@@ -1,18 +1,30 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Product } from '../models/product.entity';
+import { Product, ProductType } from '../models/product.entity';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 import { ProductResponseDto } from '../dtos/product/product-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
+import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
+import { BrandMapper } from './mappers/brand.mapper';
+import { CategoryMapper } from './mappers/category.mapper';
+import { TaxMapper } from './mappers/tax.mapper';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly measurementUnitMapper: MeasurementUnitMapper,
+    private readonly brandMapper: BrandMapper,
+    private readonly categoryMapper: CategoryMapper,
+    private readonly taxMapper: TaxMapper,
   ) {}
 
   mapToResponseDto(product: Product): ProductResponseDto {
@@ -26,22 +38,43 @@ export class ProductService {
       width: product.width,
       height: product.height,
       length: product.length,
-      brand: product.brand,
-      category: product.category,
-      tax: product.tax,
-      measurement_unit: product.measurement_unit,
+      brand: this.brandMapper.mapToResponseDto(product.brand),
+      category: this.categoryMapper.mapToResponseDto(product.category),
+      tax: this.taxMapper.mapToResponseDto(product.tax),
+      measurement_unit: this.measurementUnitMapper.mapToResponseDto(
+        product.measurement_unit,
+      ),
       is_active: product.is_active,
-      is_featured: product.is_featured,
-      is_digital: product.is_digital,
+      type: product.type,
       images: product.images ? JSON.parse(product.images) : [],
       created_at: product.created_at,
-      updated_at: product.updated_at,
     };
   }
 
   async create(
     createProductDto: CreateProductDto,
   ): Promise<ProductResponseDto> {
+    const [existingSlug, existingSku] = await Promise.all([
+      this.productRepository.findOne({
+        where: { slug: createProductDto.slug },
+      }),
+      this.productRepository.findOne({
+        where: { sku: createProductDto.sku },
+      }),
+    ]);
+
+    if (existingSlug) {
+      throw new ConflictException(
+        `El slug '${createProductDto.slug}' ya está en uso`,
+      );
+    }
+
+    if (existingSku) {
+      throw new ConflictException(
+        `El SKU '${createProductDto.sku}' ya está en uso`,
+      );
+    }
+
     const product = this.productRepository.create({
       name: createProductDto.name,
       slug: createProductDto.slug,
@@ -62,8 +95,7 @@ export class ProductService {
         : undefined,
       measurement_unit: { id: createProductDto.measurement_unit_id },
       is_active: createProductDto.is_active ?? true,
-      is_featured: createProductDto.is_featured ?? false,
-      is_digital: createProductDto.is_digital ?? false,
+      type: createProductDto.type ?? ProductType.TANGIBLE,
       images: createProductDto.images
         ? JSON.stringify(createProductDto.images)
         : undefined,
@@ -150,8 +182,7 @@ export class ProductService {
         ? { id: updateProductDto.measurement_unit_id }
         : undefined,
       is_active: updateProductDto.is_active,
-      is_featured: updateProductDto.is_featured,
-      is_digital: updateProductDto.is_digital,
+      type: updateProductDto.type,
       images: updateProductDto.images
         ? JSON.stringify(updateProductDto.images)
         : undefined,
