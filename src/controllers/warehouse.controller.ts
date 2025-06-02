@@ -3,13 +3,13 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
   ParseUUIDPipe,
   UseGuards,
   Put,
+  Patch,
 } from '@nestjs/common';
 import { WarehouseService } from '../services/warehouse.service';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
@@ -18,6 +18,7 @@ import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
 
 @Controller('warehouses')
 @UseGuards(AuthGuard)
@@ -56,5 +57,13 @@ export class WarehouseController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.warehouseService.remove(id);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateStatusDto: UpdateWarehouseStatusDto,
+  ): Promise<WarehouseResponseDto> {
+    return this.warehouseService.updateStatus(id, updateStatusDto);
   }
 }

@@ -7,7 +7,7 @@ export class MeasurementUnitsSeed {
 
     const measurementUnits = [
       {
-        code: 'UN',
+        code: 'UNIT',
         description: 'Unidad',
         status: true,
       },
@@ -68,4 +68,4 @@ export class MeasurementUnitsSeed {
       }
     }
   }
-} 
+}

@@ -49,6 +49,11 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'is_open',
+            type: 'boolean',
+            default: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

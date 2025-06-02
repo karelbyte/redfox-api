@@ -24,4 +24,4 @@ export class UpdateWarehouseDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
-} 
+}

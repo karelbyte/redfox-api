@@ -76,9 +76,10 @@ export class CategoryController {
   }
 
   @Get()
-  findAll(
+  async findAll(
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
+    //await new Promise(resolve => setTimeout(resolve, 5000));
     return this.categoryService.findAll(paginationDto);
   }
 

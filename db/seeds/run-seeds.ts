@@ -5,6 +5,8 @@ import { BrandsSeed } from './brands.seed';
 import { TaxesSeed } from './taxes.seed';
 import { ClientsSeed } from './clients.seed';
 import { ProvidersSeed } from './providers.seed';
+import { ProductsSeed } from './products.seed';
+import { WarehousesSeed } from './warehouses.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -29,6 +31,12 @@ export class RunSeeds {
 
       await ProvidersSeed.run(dataSource);
       console.log('✅ Proveedores creados');
+
+      await ProductsSeed.run(dataSource);
+      console.log('✅ Productos creados');
+
+      await WarehousesSeed.run(dataSource);
+      console.log('✅ Almacenes creados');
 
       console.log('✅ Todos los seeders ejecutados correctamente');
     } catch (error) {

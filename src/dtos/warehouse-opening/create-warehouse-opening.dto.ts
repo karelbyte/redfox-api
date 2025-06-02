@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsPositive, IsUUID } from 'class-validator';
 
-export class CreateInventoryDto {
+export class CreateWarehouseOpeningDto {
   @IsNotEmpty()
   @IsUUID()
   warehouseId: string;
@@ -18,4 +18,4 @@ export class CreateInventoryDto {
   @IsNumber()
   @IsPositive()
   price: number;
-} 
+}

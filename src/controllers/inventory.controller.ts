@@ -24,17 +24,23 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Post()
-  create(@Body() createInventoryDto: CreateInventoryDto): Promise<InventoryResponseDto> {
+  create(
+    @Body() createInventoryDto: CreateInventoryDto,
+  ): Promise<InventoryResponseDto> {
     return this.inventoryService.create(createInventoryDto);
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponse<InventoryResponseDto>> {
+  findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<InventoryResponseDto>> {
     return this.inventoryService.findAll(paginationDto);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<InventoryResponseDto> {
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<InventoryResponseDto> {
     return this.inventoryService.findOne(id);
   }
 
@@ -50,4 +56,4 @@ export class InventoryController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.inventoryService.remove(id);
   }
-} 
+}

@@ -7,16 +7,18 @@ import { UpdateWarehouseDto } from '../dtos/warehouse/update-warehouse.dto';
 import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
 
 @Injectable()
 export class WarehouseService {
   constructor(
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
-  ) {}
+  ) { }
 
   private mapToResponseDto(warehouse: Warehouse): WarehouseResponseDto {
-    const { id, code, name, address, phone, status, created_at } = warehouse;
+    const { id, code, name, address, phone, status, isOpen, created_at } =
+      warehouse;
     return {
       id,
       code,
@@ -24,6 +26,7 @@ export class WarehouseService {
       address,
       phone,
       status,
+      is_open: isOpen,
       created_at,
     };
   }
@@ -33,8 +36,6 @@ export class WarehouseService {
   ): Promise<WarehouseResponseDto> {
     const warehouse = this.warehouseRepository.create(createWarehouseDto);
     const savedWarehouse = await this.warehouseRepository.save(warehouse);
-
-
     return this.mapToResponseDto(savedWarehouse);
   }
 
@@ -109,5 +110,21 @@ export class WarehouseService {
     }
 
     await this.warehouseRepository.softRemove(warehouse);
+  }
+
+  async updateStatus(
+    id: string,
+    updateStatusDto: UpdateWarehouseStatusDto,
+  ): Promise<WarehouseResponseDto> {
+    const warehouseOpening = await this.warehouseRepository.findOne({
+      where: { id },
+    });
+    if (!warehouseOpening) {
+      throw new NotFoundException('Warehouse opening not found');
+    }
+
+    warehouseOpening.isOpen = updateStatusDto.isOpen;
+    const updated = await this.warehouseRepository.save(warehouseOpening);
+    return this.mapToResponseDto(updated);
   }
 }

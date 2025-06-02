@@ -6,6 +6,7 @@ import { CreateInventoryDto } from '../dtos/inventory/create-inventory.dto';
 import { UpdateInventoryDto } from '../dtos/inventory/update-inventory.dto';
 import { InventoryResponseDto } from '../dtos/inventory/inventory-response.dto';
 import { ProductService } from './product.service';
+import { WarehouseService } from './warehouse.service';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 
@@ -13,20 +14,27 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 export class InventoryService {
   constructor(
     @InjectRepository(Inventory)
-    private inventoryRepository: Repository<Inventory>,
-    private productService: ProductService,
+    private readonly inventoryRepository: Repository<Inventory>,
+    private readonly productService: ProductService,
+    private readonly warehouseService: WarehouseService,
   ) {}
 
   private async mapToResponseDto(
     inventory: Inventory,
   ): Promise<InventoryResponseDto> {
-    const { id, product, quantity, created_at } = inventory;
+    const [product, warehouse] = await Promise.all([
+      this.productService.findOne(inventory.product.id),
+      this.warehouseService.findOne(inventory.warehouse.id),
+    ]);
 
     return {
-      id,
-      product: await this.productService.findOne(product.id),
-      quantity,
-      created_at,
+      id: inventory.id,
+      warehouse,
+      product,
+      quantity: inventory.quantity,
+      price: inventory.price,
+      createdAt: inventory.created_at,
+      updatedAt: inventory.updated_at,
     };
   }
 

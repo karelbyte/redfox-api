@@ -44,6 +44,12 @@ export class CreateInventoryTable1716400000090 implements MigrationInterface {
             default: 0,
           },
           {
+            name: 'price',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

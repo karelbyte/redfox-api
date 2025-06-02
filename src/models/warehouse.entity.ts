@@ -29,6 +29,9 @@ export class Warehouse {
   @Column({ default: true })
   status: boolean;
 
+  @Column({ name: 'is_open', default: true })
+  isOpen: boolean;
+
   @OneToMany(() => Inventory, (inventory) => inventory.warehouse)
   inventory: Inventory[];
 
@@ -40,4 +43,4 @@ export class Warehouse {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}
