@@ -5,54 +5,67 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateWarehouseOpeningsTable1716400000080
+export class CreateWarehouseOpeningsTable1716400000081
   implements MigrationInterface
 {
+
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const isPostgres = queryRunner.connection.options.type === 'postgres';
+
     await queryRunner.createTable(
       new Table({
         name: 'warehouse_openings',
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
             generationStrategy: 'uuid',
-            default: 'uuid_generate_v4()',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'warehouse_id',
-            type: 'uuid',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'product_id',
-            type: 'uuid',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'quantity',
             type: 'decimal',
             precision: 10,
             scale: 2,
+            isNullable: false,
+            default: 0,
           },
           {
             name: 'price',
             type: 'decimal',
             precision: 10,
             scale: 2,
+            isNullable: false,
+            default: 0,
           },
           {
             name: 'created_at',
-            type: 'timestamp',
-            default: 'now()',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
-            type: 'timestamp',
-            default: 'now()',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
+            onUpdate: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {
             name: 'deleted_at',
-            type: 'timestamp',
+            type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
           },
         ],
@@ -63,6 +76,7 @@ export class CreateWarehouseOpeningsTable1716400000080
     await queryRunner.createForeignKey(
       'warehouse_openings',
       new TableForeignKey({
+        name: 'FK_WarehouseOpenings_Warehouses',
         columnNames: ['warehouse_id'],
         referencedColumnNames: ['id'],
         referencedTableName: 'warehouses',
@@ -73,6 +87,7 @@ export class CreateWarehouseOpeningsTable1716400000080
     await queryRunner.createForeignKey(
       'warehouse_openings',
       new TableForeignKey({
+        name: 'FK_WarehouseOpenings_Products',
         columnNames: ['product_id'],
         referencedColumnNames: ['id'],
         referencedTableName: 'products',

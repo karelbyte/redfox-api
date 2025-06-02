@@ -67,4 +67,4 @@ export class CreateBrandsTable1716400000040 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('brands');
   }
-} 
+}

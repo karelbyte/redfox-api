@@ -1,13 +1,21 @@
-import { IsNotEmpty, IsNumber, IsPositive } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class UpdateWarehouseOpeningDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @IsPositive()
-  quantity: number;
+  @IsOptional()
+  @IsUUID()
+  warehouseId?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
+  @IsUUID()
+  productId?: string;
+
+  @IsOptional()
   @IsNumber()
   @IsPositive()
-  price: number;
+  quantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  price?: number;
 }

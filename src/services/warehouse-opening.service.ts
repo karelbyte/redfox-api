@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateWarehouseOpeningDto } from '../dtos/warehouse-opening/create-warehouse-opening.dto';
 import { WarehouseOpeningResponseDto } from '../dtos/warehouse-opening/warehouse-opening-response.dto';
+import { UpdateWarehouseOpeningDto } from '../dtos/warehouse-opening/update-warehouse-opening.dto';
 
 @Injectable()
 export class WarehouseOpeningService {
@@ -38,6 +39,25 @@ export class WarehouseOpeningService {
       throw new NotFoundException('Warehouse opening not found');
     }
     return this.mapToResponseDto(warehouseOpening);
+  }
+
+  async update(
+    id: string,
+    updateWarehouseOpeningDto: UpdateWarehouseOpeningDto,
+  ): Promise<WarehouseOpeningResponseDto> {
+    const warehouseOpening = await this.warehouseOpeningRepository.findOne({
+      where: { id },
+      relations: ['warehouse', 'product'],
+    });
+    if (!warehouseOpening) {
+      throw new NotFoundException('Warehouse opening not found');
+    }
+
+    const updated = await this.warehouseOpeningRepository.save({
+      ...warehouseOpening,
+      ...updateWarehouseOpeningDto,
+    });
+    return this.mapToResponseDto(updated);
   }
 
   private mapToResponseDto(
