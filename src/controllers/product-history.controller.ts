@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ProductHistoryService } from '../services/product-history.service';
 import { CreateProductHistoryDto } from '../dtos/product-history/create-product-history.dto';
 import { ProductHistoryResponseDto } from '../dtos/product-history/product-history-response.dto';

@@ -52,7 +52,7 @@ export class ProductHistoryService {
 
     const currentStock = lastRecord ? lastRecord.current_stock : 0;
     const newStock =
-      createProductHistoryDto.operation_type === OperationType.ENTRY
+      createProductHistoryDto.operation_type === OperationType.RECEPTION
         ? currentStock + createProductHistoryDto.quantity
         : currentStock - createProductHistoryDto.quantity;
 

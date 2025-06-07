@@ -19,6 +19,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
+import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
 
 @Controller('warehouses')
 @UseGuards(AuthGuard)
@@ -65,5 +66,12 @@ export class WarehouseController {
     @Body() updateStatusDto: UpdateWarehouseStatusDto,
   ): Promise<WarehouseResponseDto> {
     return this.warehouseService.updateStatus(id, updateStatusDto);
+  }
+
+  @Post(':id/close')
+  closeWarehouse(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CloseWarehouseResponseDto> {
+    return this.warehouseService.closeWarehouse(id);
   }
 }
