@@ -17,6 +17,8 @@ import { ProductHistoryModule } from './modules/product-history.module';
 import { CategoryModule } from './modules/category.module';
 import { AuthModule } from './modules/auth.module';
 import { TaxModule } from './modules/tax.module';
+import { WarehouseOpeningModule } from './modules/warehouse-opening.module';
+import { CurrencyModule } from './modules/currency.module';
 import { AppConfig } from './config';
 
 @Module({
@@ -47,6 +49,9 @@ import { AppConfig } from './config';
     ProductHistoryModule,
     CategoryModule,
     TaxModule,
+    WarehouseModule,
+    WarehouseOpeningModule,
+    CurrencyModule,
   ],
   controllers: [],
   providers: [],

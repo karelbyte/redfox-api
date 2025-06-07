@@ -8,7 +8,6 @@ import {
 export class CreateWarehouseOpeningsTable1716400000081
   implements MigrationInterface
 {
-
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

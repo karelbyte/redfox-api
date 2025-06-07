@@ -1,9 +1,10 @@
+import { ProductResponseDto } from '../product/product-response.dto';
+
 export class WarehouseOpeningResponseDto {
   id: string;
   warehouseId: string;
-  productId: string;
+  product: ProductResponseDto;
   quantity: number;
   price: number;
   createdAt: Date;
-  updatedAt: Date;
 }

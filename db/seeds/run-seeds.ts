@@ -7,6 +7,7 @@ import { ClientsSeed } from './clients.seed';
 import { ProvidersSeed } from './providers.seed';
 import { ProductsSeed } from './products.seed';
 import { WarehousesSeed } from './warehouses.seed';
+import { CurrenciesSeed } from './currencies.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -25,6 +26,9 @@ export class RunSeeds {
 
       await TaxesSeed.run(dataSource);
       console.log('✅ Impuestos creados');
+
+      await CurrenciesSeed.run(dataSource);
+      console.log('✅ Monedas creadas');
 
       await ClientsSeed.run(dataSource);
       console.log('✅ Clientes creados');

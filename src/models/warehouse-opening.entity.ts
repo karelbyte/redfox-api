@@ -29,6 +29,7 @@ export class WarehouseOpening {
   price: number;
 
   @ManyToOne(() => Warehouse)
+  @JoinColumn({ name: 'warehouse_id' })
   warehouse: Warehouse;
 
   @ManyToOne(() => Product)
