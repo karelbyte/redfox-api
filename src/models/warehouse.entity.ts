@@ -6,8 +6,11 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Inventory } from './inventory.entity';
+import { Currency } from './currency.entity';
 
 @Entity('warehouses')
 export class Warehouse {
@@ -31,6 +34,13 @@ export class Warehouse {
 
   @Column({ name: 'is_open', default: true })
   isOpen: boolean;
+
+  @Column({ name: 'currency_id' })
+  currencyId: string;
+
+  @ManyToOne(() => Currency)
+  @JoinColumn({ name: 'currency_id' })
+  currency: Currency;
 
   @OneToMany(() => Inventory, (inventory) => inventory.warehouse)
   inventory: Inventory[];

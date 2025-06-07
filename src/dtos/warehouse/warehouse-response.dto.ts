@@ -1,3 +1,5 @@
+import { CurrencyResponseDto } from '../currency/currency-response.dto';
+
 export class WarehouseResponseDto {
   id: string;
   code: string;
@@ -6,5 +8,6 @@ export class WarehouseResponseDto {
   phone: string;
   is_open: boolean;
   status: boolean;
+  currency: CurrencyResponseDto;
   created_at: Date;
 }

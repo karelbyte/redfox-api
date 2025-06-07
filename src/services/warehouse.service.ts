@@ -8,17 +8,18 @@ import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
+import { CurrencyMapper } from './mappers/currency.mapper';
 
 @Injectable()
 export class WarehouseService {
   constructor(
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
-  ) { }
+    private readonly currencyMapper: CurrencyMapper,
+  ) {}
 
   private mapToResponseDto(warehouse: Warehouse): WarehouseResponseDto {
-    const { id, code, name, address, phone, status, isOpen, created_at } =
-      warehouse;
+    const { id, code, name, address, phone, status, isOpen, created_at, currency } = warehouse;
     return {
       id,
       code,
@@ -27,6 +28,7 @@ export class WarehouseService {
       phone,
       status,
       is_open: isOpen,
+      currency: this.currencyMapper.mapToResponseDto(currency),
       created_at,
     };
   }
@@ -36,7 +38,18 @@ export class WarehouseService {
   ): Promise<WarehouseResponseDto> {
     const warehouse = this.warehouseRepository.create(createWarehouseDto);
     const savedWarehouse = await this.warehouseRepository.save(warehouse);
-    return this.mapToResponseDto(savedWarehouse);
+    
+    // Recargar con relaciones para la respuesta
+    const warehouseWithRelations = await this.warehouseRepository.findOne({
+      where: { id: savedWarehouse.id },
+      relations: ['currency'],
+    });
+
+    if (!warehouseWithRelations) {
+      throw new NotFoundException('Warehouse not found after creation');
+    }
+
+    return this.mapToResponseDto(warehouseWithRelations);
   }
 
   async findAll(
@@ -46,6 +59,7 @@ export class WarehouseService {
     const skip = (page - 1) * limit;
 
     const [warehouses, total] = await this.warehouseRepository.findAndCount({
+      relations: ['currency'],
       skip,
       take: limit,
       order: {
@@ -71,6 +85,7 @@ export class WarehouseService {
   async findOne(id: string): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
+      relations: ['currency'],
     });
 
     if (!warehouse) {
@@ -86,6 +101,7 @@ export class WarehouseService {
   ): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
+      relations: ['currency'],
     });
 
     if (!warehouse) {
@@ -97,7 +113,17 @@ export class WarehouseService {
       ...updateWarehouseDto,
     });
 
-    return this.mapToResponseDto(updatedWarehouse);
+    // Recargar con relaciones para la respuesta
+    const warehouseWithRelations = await this.warehouseRepository.findOne({
+      where: { id: updatedWarehouse.id },
+      relations: ['currency'],
+    });
+
+    if (!warehouseWithRelations) {
+      throw new NotFoundException('Warehouse not found after update');
+    }
+
+    return this.mapToResponseDto(warehouseWithRelations);
   }
 
   async remove(id: string): Promise<void> {
@@ -116,15 +142,26 @@ export class WarehouseService {
     id: string,
     updateStatusDto: UpdateWarehouseStatusDto,
   ): Promise<WarehouseResponseDto> {
-    const warehouseOpening = await this.warehouseRepository.findOne({
+    const warehouse = await this.warehouseRepository.findOne({
       where: { id },
+      relations: ['currency'],
     });
-    if (!warehouseOpening) {
-      throw new NotFoundException('Warehouse opening not found');
+    if (!warehouse) {
+      throw new NotFoundException('Warehouse not found');
     }
 
-    warehouseOpening.isOpen = updateStatusDto.isOpen;
-    const updated = await this.warehouseRepository.save(warehouseOpening);
-    return this.mapToResponseDto(updated);
+    warehouse.isOpen = updateStatusDto.isOpen;
+    const updated = await this.warehouseRepository.save(warehouse);
+    // Recargar con relaciones para la respuesta
+    const warehouseWithRelations = await this.warehouseRepository.findOne({
+      where: { id: updated.id },
+      relations: ['currency'],
+    });
+
+    if (!warehouseWithRelations) {
+      throw new NotFoundException('Warehouse not found after status update');
+    }
+
+    return this.mapToResponseDto(warehouseWithRelations);
   }
 }

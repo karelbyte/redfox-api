@@ -24,7 +24,9 @@ export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
   @Post()
-  create(@Body() createCurrencyDto: CreateCurrencyDto): Promise<CurrencyResponseDto> {
+  create(
+    @Body() createCurrencyDto: CreateCurrencyDto,
+  ): Promise<CurrencyResponseDto> {
     return this.currencyService.create(createCurrencyDto);
   }
 
@@ -36,7 +38,9 @@ export class CurrencyController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<CurrencyResponseDto> {
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CurrencyResponseDto> {
     return this.currencyService.findOne(id);
   }
 
@@ -57,4 +61,4 @@ export class CurrencyController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.currencyService.remove(id);
   }
-} 
+}

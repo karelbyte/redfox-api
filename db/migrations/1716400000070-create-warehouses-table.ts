@@ -1,4 +1,9 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
 export class CreateWarehousesTable1716400000070 implements MigrationInterface {
   name = 'CreateWarehousesTable1716400000070';
@@ -54,6 +59,12 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'currency_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
@@ -73,9 +84,21 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
       }),
       true,
     );
+
+    // Crear foreign key para currency_id
+    await queryRunner.createForeignKey(
+      'warehouses',
+      new TableForeignKey({
+        columnNames: ['currency_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'currencies',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('warehouses');
   }
-} 
+}

@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, Length } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  Length,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateWarehouseDto {
   @IsString()
@@ -21,4 +27,8 @@ export class CreateWarehouseDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
+
+  @IsString()
+  @IsUUID()
+  currencyId: string;
 }

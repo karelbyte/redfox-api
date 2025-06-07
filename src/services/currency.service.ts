@@ -7,12 +7,14 @@ import { UpdateCurrencyDto } from '../dtos/currency/update-currency.dto';
 import { CurrencyResponseDto } from '../dtos/currency/currency-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { CurrencyMapper } from './mappers/currency.mapper';
 
 @Injectable()
 export class CurrencyService {
   constructor(
     @InjectRepository(Currency)
     private readonly currencyRepository: Repository<Currency>,
+    private readonly currencyMapper: CurrencyMapper,
   ) {}
 
   async create(createCurrencyDto: CreateCurrencyDto): Promise<CurrencyResponseDto> {
@@ -31,7 +33,7 @@ export class CurrencyService {
     });
 
     const saved = await this.currencyRepository.save(currency);
-    return this.mapToResponseDto(saved);
+    return this.currencyMapper.mapToResponseDto(saved);
   }
 
   async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<CurrencyResponseDto>> {
@@ -44,7 +46,7 @@ export class CurrencyService {
       order: { name: 'ASC' },
     });
 
-    const data = currencies.map((currency) => this.mapToResponseDto(currency));
+    const data = currencies.map((currency) => this.currencyMapper.mapToResponseDto(currency));
 
     return {
       data,
@@ -66,7 +68,7 @@ export class CurrencyService {
       throw new NotFoundException('Currency not found');
     }
 
-    return this.mapToResponseDto(currency);
+    return this.currencyMapper.mapToResponseDto(currency);
   }
 
   async findByCode(code: string): Promise<CurrencyResponseDto> {
@@ -78,7 +80,7 @@ export class CurrencyService {
       throw new NotFoundException(`Currency with code ${code} not found`);
     }
 
-    return this.mapToResponseDto(currency);
+    return this.currencyMapper.mapToResponseDto(currency);
   }
 
   async update(id: string, updateCurrencyDto: UpdateCurrencyDto): Promise<CurrencyResponseDto> {
@@ -111,7 +113,7 @@ export class CurrencyService {
       ...updatedData,
     });
 
-    return this.mapToResponseDto(updated);
+    return this.currencyMapper.mapToResponseDto(updated);
   }
 
   async remove(id: string): Promise<void> {
@@ -126,13 +128,5 @@ export class CurrencyService {
     await this.currencyRepository.softDelete(id);
   }
 
-  private mapToResponseDto(currency: Currency): CurrencyResponseDto {
-    return {
-      id: currency.id,
-      code: currency.code,
-      name: currency.name,
-      createdAt: currency.createdAt,
-      updatedAt: currency.updatedAt,
-    };
-  }
+
 } 
