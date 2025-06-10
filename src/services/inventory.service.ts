@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Inventory } from '../models/inventory.entity';
 import { CreateInventoryDto } from '../dtos/inventory/create-inventory.dto';
 import { UpdateInventoryDto } from '../dtos/inventory/update-inventory.dto';
 import { InventoryResponseDto } from '../dtos/inventory/inventory-response.dto';
+import { InventoryListResponseDto } from '../dtos/inventory/inventory-list-response.dto';
+import { InventoryQueryDto } from '../dtos/inventory/inventory-query.dto';
 import { ProductService } from './product.service';
+import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseService } from './warehouse.service';
-import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class InventoryService {
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly productService: ProductService,
+    private readonly productMapper: ProductMapper,
     private readonly warehouseService: WarehouseService,
   ) {}
 
@@ -38,6 +41,18 @@ export class InventoryService {
     };
   }
 
+  private mapToListResponseDto(inventory: Inventory): InventoryListResponseDto {
+    const product = this.productMapper.mapToResponseDto(inventory.product);
+
+    return {
+      id: inventory.id,
+      product,
+      quantity: inventory.quantity,
+      price: inventory.price,
+      createdAt: inventory.created_at,
+    };
+  }
+
   async create(
     createInventoryDto: CreateInventoryDto,
   ): Promise<InventoryResponseDto> {
@@ -47,21 +62,31 @@ export class InventoryService {
   }
 
   async findAll(
-    paginationDto: PaginationDto,
-  ): Promise<PaginatedResponse<InventoryResponseDto>> {
-    const { page = 1, limit = 10 } = paginationDto;
+    queryDto: InventoryQueryDto,
+  ): Promise<PaginatedResponse<InventoryListResponseDto>> {
+    const { page = 1, limit = 10, warehouse_id } = queryDto;
     const skip = (page - 1) * limit;
 
+    const whereConditions: FindOptionsWhere<Inventory> = {};
+    if (warehouse_id) {
+      whereConditions.warehouse = { id: warehouse_id };
+    }
+
     const [inventory, total] = await this.inventoryRepository.findAndCount({
-      relations: ['product'],
+      where: whereConditions,
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
       withDeleted: false,
       skip,
       take: limit,
     });
 
-    const data = await Promise.all(
-      inventory.map((item) => this.mapToResponseDto(item)),
-    );
+    const data = inventory.map((item) => this.mapToListResponseDto(item));
 
     return {
       data,

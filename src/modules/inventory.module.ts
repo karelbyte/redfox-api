@@ -5,6 +5,11 @@ import { InventoryService } from '../services/inventory.service';
 import { InventoryController } from '../controllers/inventory.controller';
 import { ProductModule } from './product.module';
 import { WarehouseModule } from './warehouse.module';
+import { ProductMapper } from '../services/mappers/product.mapper';
+import { BrandMapper } from '../services/mappers/brand.mapper';
+import { CategoryMapper } from '../services/mappers/category.mapper';
+import { TaxMapper } from '../services/mappers/tax.mapper';
+import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 
 @Module({
   imports: [
@@ -13,7 +18,14 @@ import { WarehouseModule } from './warehouse.module';
     WarehouseModule,
   ],
   controllers: [InventoryController],
-  providers: [InventoryService],
+  providers: [
+    InventoryService,
+    ProductMapper,
+    BrandMapper,
+    CategoryMapper,
+    TaxMapper,
+    MeasurementUnitMapper,
+  ],
   exports: [InventoryService],
 })
 export class InventoryModule {}

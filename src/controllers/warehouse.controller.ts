@@ -15,6 +15,7 @@ import { WarehouseService } from '../services/warehouse.service';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
 import { UpdateWarehouseDto } from '../dtos/warehouse/update-warehouse.dto';
 import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
+import { WarehouseSimpleResponseDto } from '../dtos/warehouse/warehouse-simple-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -38,6 +39,11 @@ export class WarehouseController {
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
     return this.warehouseService.findAll(paginationDto);
+  }
+
+  @Get('closed')
+  findClosed(): Promise<WarehouseSimpleResponseDto[]> {
+    return this.warehouseService.findClosed();
   }
 
   @Get(':id')

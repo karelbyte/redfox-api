@@ -34,13 +34,13 @@ export class ProductResponseDto {
   length: number;
 
   @Expose()
-  brand: BrandResponseDto;
+  brand?: BrandResponseDto | null;
 
   @Expose()
-  category: CategoryResponseDto;
+  category?: CategoryResponseDto | null;
 
   @Expose()
-  tax: TaxResponseDto;
+  tax?: TaxResponseDto | null;
 
   @Expose()
   measurement_unit: MeasurementUnitResponseDto;

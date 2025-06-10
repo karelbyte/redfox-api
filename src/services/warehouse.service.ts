@@ -9,6 +9,7 @@ import { Warehouse } from '../models/warehouse.entity';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
 import { UpdateWarehouseDto } from '../dtos/warehouse/update-warehouse.dto';
 import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
+import { WarehouseSimpleResponseDto } from '../dtos/warehouse/warehouse-simple-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
@@ -107,6 +108,22 @@ export class WarehouseService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async findClosed(): Promise<WarehouseSimpleResponseDto[]> {
+    const warehouses = await this.warehouseRepository.find({
+      where: { isOpen: false },
+      select: ['id', 'code', 'name'],
+      order: {
+        created_at: 'DESC',
+      },
+    });
+
+    return warehouses.map((warehouse) => ({
+      id: warehouse.id,
+      code: warehouse.code,
+      name: warehouse.name,
+    }));
   }
 
   async findOne(id: string): Promise<WarehouseResponseDto> {

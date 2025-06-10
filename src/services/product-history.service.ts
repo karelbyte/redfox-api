@@ -41,7 +41,6 @@ export class ProductHistoryService {
   async create(
     createProductHistoryDto: CreateProductHistoryDto,
   ): Promise<ProductHistoryResponseDto> {
-    // Obtener el último registro para calcular el stock actual
     const lastRecord = await this.productHistoryRepository.findOne({
       where: {
         product: { id: createProductHistoryDto.product_id },

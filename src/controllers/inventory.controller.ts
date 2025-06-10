@@ -14,7 +14,8 @@ import { InventoryService } from '../services/inventory.service';
 import { CreateInventoryDto } from '../dtos/inventory/create-inventory.dto';
 import { UpdateInventoryDto } from '../dtos/inventory/update-inventory.dto';
 import { InventoryResponseDto } from '../dtos/inventory/inventory-response.dto';
-import { PaginationDto } from '../dtos/common/pagination.dto';
+import { InventoryListResponseDto } from '../dtos/inventory/inventory-list-response.dto';
+import { InventoryQueryDto } from '../dtos/inventory/inventory-query.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 
@@ -32,9 +33,9 @@ export class InventoryController {
 
   @Get()
   findAll(
-    @Query() paginationDto: PaginationDto,
-  ): Promise<PaginatedResponse<InventoryResponseDto>> {
-    return this.inventoryService.findAll(paginationDto);
+    @Query() queryDto: InventoryQueryDto,
+  ): Promise<PaginatedResponse<InventoryListResponseDto>> {
+    return this.inventoryService.findAll(queryDto);
   }
 
   @Get(':id')
