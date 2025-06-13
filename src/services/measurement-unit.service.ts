@@ -44,8 +44,30 @@ export class MeasurementUnitService {
   }
 
   async findAll(
-    paginationDto: PaginationDto,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
+    // Si no hay parámetros de paginación, traer todos los registros
+    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
+      const measurementUnits = await this.measurementUnitRepository.find({
+        withDeleted: false,
+      });
+
+      const data = measurementUnits.map((unit) =>
+        this.measurementUnitMapper.mapToResponseDto(unit),
+      );
+
+      return {
+        data,
+        meta: {
+          total: measurementUnits.length,
+          page: 1,
+          limit: measurementUnits.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si hay parámetros de paginación, paginar normalmente
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 

@@ -33,7 +33,7 @@ export class MeasurementUnitController {
 
   @Get()
   findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
     return this.measurementUnitService.findAll(paginationDto);
   }

@@ -77,7 +77,7 @@ export class BrandController {
 
   @Get()
   findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
     return this.brandService.findAll(paginationDto);
   }

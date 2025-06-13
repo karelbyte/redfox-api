@@ -77,7 +77,7 @@ export class CategoryController {
 
   @Get()
   async findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
     //await new Promise(resolve => setTimeout(resolve, 5000));
     return this.categoryService.findAll(paginationDto);

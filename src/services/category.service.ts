@@ -148,8 +148,36 @@ export class CategoryService {
   }
 
   async findAll(
-    paginationDto: PaginationDto,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
+    // Si no hay parámetros de paginación, traer todos los registros
+    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
+      const categories = await this.categoryRepository.find({
+        relations: ['children'],
+        where: { parentId: IsNull() },
+        withDeleted: false,
+        order: {
+          position: 'ASC',
+          createdAt: 'DESC',
+        },
+      });
+
+      const data = categories.map((category) =>
+        this.mapToResponseDto(category),
+      );
+
+      return {
+        data,
+        meta: {
+          total: categories.length,
+          page: 1,
+          limit: categories.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si hay parámetros de paginación, paginar normalmente
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -332,7 +360,9 @@ export class CategoryService {
     });
 
     if (!parent) {
-      throw new NotFoundException(`Categoría padre con ID ${parentId} no encontrada`);
+      throw new NotFoundException(
+        `Categoría padre con ID ${parentId} no encontrada`,
+      );
     }
 
     const [categories, total] = await this.categoryRepository.findAndCount({

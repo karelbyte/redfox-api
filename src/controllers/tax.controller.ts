@@ -31,7 +31,7 @@ export class TaxController {
   @Get()
   @UseGuards(AuthGuard)
   findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<TaxResponseDto>> {
     return this.taxService.findAll(paginationDto);
   }

@@ -21,7 +21,32 @@ export class TaxService {
     return this.mapToResponseDto(savedTax);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<TaxResponseDto>> {
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResponse<TaxResponseDto>> {
+    // Si no hay parámetros de paginación, traer todos los registros
+    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
+      const taxes = await this.taxRepository.find({
+        where: { isActive: true },
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+      const data = taxes.map((tax) => this.mapToResponseDto(tax));
+
+      return {
+        data,
+        meta: {
+          total: taxes.length,
+          page: 1,
+          limit: taxes.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si hay parámetros de paginación, paginar normalmente
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
