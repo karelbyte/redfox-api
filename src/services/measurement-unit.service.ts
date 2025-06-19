@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MeasurementUnit } from '../models/measurement-unit.entity';
+import { Product } from '../models/product.entity';
 import { CreateMeasurementUnitDto } from '../dtos/measurement-unit/create-measurement-unit.dto';
 import { UpdateMeasurementUnitDto } from '../dtos/measurement-unit/update-measurement-unit.dto';
 import { MeasurementUnitResponseDto } from '../dtos/measurement-unit/measurement-unit-response.dto';
@@ -18,6 +19,8 @@ export class MeasurementUnitService {
   constructor(
     @InjectRepository(MeasurementUnit)
     private measurementUnitRepository: Repository<MeasurementUnit>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
   ) {}
 
@@ -147,6 +150,46 @@ export class MeasurementUnitService {
     if (!measurementUnit) {
       throw new NotFoundException(`Measurement unit with ID ${id} not found`);
     }
+
+    // Verificar si la unidad de medida está siendo usada en productos
+    const productsUsingUnit = await this.productRepository.count({
+      where: { measurement_unit: { id } },
+      withDeleted: false,
+    });
+
+    if (productsUsingUnit > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la unidad de medida '${measurementUnit.description}' porque está siendo usada por ${productsUsingUnit} producto(s). Primero debe cambiar o eliminar los productos que usan esta unidad de medida.`,
+      );
+    }
+
     await this.measurementUnitRepository.softRemove(measurementUnit);
+  }
+
+  async getMeasurementUnitUsage(id: string): Promise<{
+    measurementUnit: MeasurementUnitResponseDto;
+    productsCount: number;
+    products: any[];
+  }> {
+    const measurementUnit = await this.measurementUnitRepository.findOne({
+      where: { id },
+      withDeleted: false,
+    });
+    if (!measurementUnit) {
+      throw new NotFoundException(`Measurement unit with ID ${id} not found`);
+    }
+
+    const products = await this.productRepository.find({
+      where: { measurement_unit: { id } },
+      select: ['id', 'name', 'sku'],
+      withDeleted: false,
+    });
+
+    return {
+      measurementUnit:
+        this.measurementUnitMapper.mapToResponseDto(measurementUnit),
+      productsCount: products.length,
+      products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
+    };
   }
 }

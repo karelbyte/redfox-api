@@ -10,6 +10,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Provider } from './provider.entity';
+import { Warehouse } from './warehouse.entity';
 import { ReceptionDetail } from './reception-detail.entity';
 
 @Entity('receptions')
@@ -26,6 +27,10 @@ export class Reception {
   @ManyToOne(() => Provider)
   @JoinColumn({ name: 'provider_id' })
   provider: Provider;
+
+  @ManyToOne(() => Warehouse)
+  @JoinColumn({ name: 'warehouse_id' })
+  warehouse: Warehouse;
 
   @Column({ length: 50 })
   document: string;
@@ -47,4 +52,4 @@ export class Reception {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

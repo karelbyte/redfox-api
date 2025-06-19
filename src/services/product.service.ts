@@ -2,10 +2,13 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product, ProductType } from '../models/product.entity';
+import { Inventory } from '../models/inventory.entity';
+import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 import { ProductResponseDto } from '../dtos/product/product-response.dto';
@@ -21,6 +24,10 @@ export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
+    @InjectRepository(WarehouseOpening)
+    private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
     private readonly brandMapper: BrandMapper,
     private readonly categoryMapper: CategoryMapper,
@@ -194,6 +201,81 @@ export class ProductService {
 
   async remove(id: string): Promise<void> {
     const product = await this.findOneEntity(id);
+
+    // Verificar si el producto está siendo usado en inventory
+    const inventoryCount = await this.inventoryRepository.count({
+      where: { product_id: id },
+      withDeleted: false,
+    });
+
+    // Verificar si el producto está siendo usado en warehouse openings
+    const warehouseOpeningCount = await this.warehouseOpeningRepository.count({
+      where: { productId: id },
+      withDeleted: false,
+    });
+
+    if (inventoryCount > 0 || warehouseOpeningCount > 0) {
+      const messages: string[] = [];
+      if (inventoryCount > 0) {
+        messages.push(`está en inventario (${inventoryCount} registro(s))`);
+      }
+      if (warehouseOpeningCount > 0) {
+        messages.push(
+          `está en apertura de almacén (${warehouseOpeningCount} registro(s))`,
+        );
+      }
+
+      throw new BadRequestException(
+        `No se puede eliminar el producto '${product.name}' porque ${messages.join(' y ')}. Primero debe eliminar estos registros.`,
+      );
+    }
+
     await this.productRepository.softRemove(product);
+  }
+
+  async getProductUsage(id: string): Promise<{
+    product: ProductResponseDto;
+    inventoryCount: number;
+    warehouseOpeningCount: number;
+    inventory: any[];
+    warehouseOpenings: any[];
+  }> {
+    const product = await this.findOneEntity(id);
+
+    const inventory = await this.inventoryRepository.find({
+      where: { product: { id } },
+      select: ['id', 'quantity', 'price'],
+      relations: ['warehouse'],
+      withDeleted: false,
+    });
+
+    const warehouseOpenings = await this.warehouseOpeningRepository.find({
+      where: { product: { id } },
+      select: ['id', 'quantity', 'price'],
+      relations: ['warehouse'],
+      withDeleted: false,
+    });
+
+    return {
+      product: this.mapToResponseDto(product),
+      inventoryCount: inventory.length,
+      warehouseOpeningCount: warehouseOpenings.length,
+      inventory: inventory.map((inv) => ({
+        id: inv.id,
+        quantity: inv.quantity,
+        price: inv.price,
+        warehouse: inv.warehouse
+          ? { id: inv.warehouse.id, name: inv.warehouse.name }
+          : null,
+      })),
+      warehouseOpenings: warehouseOpenings.map((wo) => ({
+        id: wo.id,
+        quantity: wo.quantity,
+        price: wo.price,
+        warehouse: wo.warehouse
+          ? { id: wo.warehouse.id, name: wo.warehouse.name }
+          : null,
+      })),
+    };
   }
 }

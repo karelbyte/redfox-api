@@ -51,6 +51,12 @@ export class TaxController {
     return this.taxService.update(id, updateTaxDto);
   }
 
+  @Get(':id/usage')
+  @UseGuards(AuthGuard)
+  getTaxUsage(@Param('id') id: string) {
+    return this.taxService.getTaxUsage(id);
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard)
   remove(@Param('id') id: string): Promise<void> {

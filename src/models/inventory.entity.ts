@@ -16,6 +16,9 @@ export class Inventory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'string' })
+  product_id: string;
+
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
   product: Product;

@@ -12,6 +12,7 @@ import { ReceptionDetailResponseDto } from '../dtos/reception-detail/reception-d
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
+import { WarehouseMapper } from './mappers/warehouse.mapper';
 
 @Injectable()
 export class ReceptionService {
@@ -25,6 +26,7 @@ export class ReceptionService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly productService: ProductService,
+    private readonly warehouseMapper: WarehouseMapper,
   ) {}
 
   private mapDetailToResponseDto(
@@ -44,12 +46,10 @@ export class ReceptionService {
       code: reception.code,
       date: reception.date,
       provider: reception.provider,
+      warehouse: this.warehouseMapper.mapToResponseDto(reception.warehouse),
       document: reception.document,
       amount: reception.amount,
       status: reception.status,
-      details: reception.details.map((detail) =>
-        this.mapDetailToResponseDto(detail),
-      ),
       created_at: reception.created_at,
     };
   }
@@ -87,14 +87,7 @@ export class ReceptionService {
     const skip = (page - 1) * limit;
 
     const [receptions, total] = await this.receptionRepository.findAndCount({
-      relations: [
-        'provider',
-        'details',
-        'details.product',
-        'details.product.brand',
-        'details.product.provider',
-        'details.product.measurement_unit',
-      ],
+      relations: ['provider', 'warehouse'],
       skip,
       take: limit,
       order: {
@@ -121,6 +114,7 @@ export class ReceptionService {
       relations: [
         'provider',
         'details',
+        'warehouse',
         'details.product',
         'details.product.brand',
         'details.product.provider',
@@ -144,6 +138,7 @@ export class ReceptionService {
       relations: [
         'provider',
         'details',
+        'warehouse',
         'details.product',
         'details.product.brand',
         'details.product.provider',

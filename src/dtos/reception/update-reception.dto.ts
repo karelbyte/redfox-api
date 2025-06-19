@@ -30,6 +30,10 @@ export class UpdateReceptionDto {
   @IsOptional()
   document?: string;
 
+  @IsString()
+  @IsUUID()
+  warehouse_id: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()

@@ -27,6 +27,9 @@ export class ReceptionDetail {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   quantity: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  price: number;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -97,6 +97,11 @@ export class ProductController {
     return this.productService.update(id, updateProductDto);
   }
 
+  @Get(':id/usage')
+  getProductUsage(@Param('id', ParseUUIDPipe) id: string) {
+    return this.productService.getProductUsage(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.productService.remove(id);

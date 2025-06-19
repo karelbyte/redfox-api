@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tax } from '../models/tax.entity';
+import { Product } from '../models/product.entity';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
 import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
@@ -13,6 +18,8 @@ export class TaxService {
   constructor(
     @InjectRepository(Tax)
     private readonly taxRepository: Repository<Tax>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
 
   async create(createTaxDto: CreateTaxDto): Promise<TaxResponseDto> {
@@ -105,6 +112,19 @@ export class TaxService {
     if (!tax) {
       throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
     }
+
+    // Verificar si el tax está siendo usado en productos
+    const productsUsingTax = await this.productRepository.count({
+      where: { tax: { id } },
+      withDeleted: false,
+    });
+
+    if (productsUsingTax > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar el impuesto '${tax.name}' porque está siendo usado por ${productsUsingTax} producto(s). Primero debe cambiar o eliminar los productos que usan este impuesto.`,
+      );
+    }
+
     await this.taxRepository.softDelete(id);
   }
 
@@ -134,6 +154,29 @@ export class TaxService {
     tax.isActive = false;
     const savedTax = await this.taxRepository.save(tax);
     return this.mapToResponseDto(savedTax);
+  }
+
+  async getTaxUsage(
+    id: string,
+  ): Promise<{ tax: TaxResponseDto; productsCount: number; products: any[] }> {
+    const tax = await this.taxRepository.findOne({
+      where: { id, isActive: true },
+    });
+    if (!tax) {
+      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+    }
+
+    const products = await this.productRepository.find({
+      where: { tax: { id } },
+      select: ['id', 'name', 'sku'],
+      withDeleted: false,
+    });
+
+    return {
+      tax: this.mapToResponseDto(tax),
+      productsCount: products.length,
+      products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
+    };
   }
 
   private mapToResponseDto(tax: Tax): TaxResponseDto {

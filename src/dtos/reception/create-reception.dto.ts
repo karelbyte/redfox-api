@@ -21,6 +21,9 @@ export class CreateReceptionDto {
   @IsUUID()
   provider_id: string;
 
+  @IsUUID()
+  warehouse_id: string;
+
   @IsString()
   document: string;
 

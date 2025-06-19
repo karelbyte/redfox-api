@@ -11,46 +11,62 @@ export class CreateReceptionDetailsTable1716400000110
   name = 'CreateReceptionDetailsTable1716400000110';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const isPostgres = queryRunner.connection.options.type === 'postgres';
+
     await queryRunner.createTable(
       new Table({
         name: 'reception_details',
         columns: [
           {
             name: 'id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
             generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'reception_id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'product_id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'quantity',
             type: 'decimal',
             precision: 10,
             scale: 2,
+            isNullable: false,
+            default: 0,
+          },
+          {
+            name: 'price',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            isNullable: false,
+            default: 0,
           },
           {
             name: 'created_at',
-            type: 'timestamp',
-            default: 'now()',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
-            type: 'timestamp',
-            default: 'now()',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
+            onUpdate: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {
             name: 'deleted_at',
-            type: 'timestamp',
+            type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
           },
         ],
@@ -65,6 +81,7 @@ export class CreateReceptionDetailsTable1716400000110
         referencedColumnNames: ['id'],
         referencedTableName: 'receptions',
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
       }),
     );
 
@@ -75,21 +92,20 @@ export class CreateReceptionDetailsTable1716400000110
         referencedColumnNames: ['id'],
         referencedTableName: 'products',
         onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
       }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('reception_details');
-    const foreignKeys = table?.foreignKeys;
+    const foreignKeys = table?.foreignKeys || [];
 
-    if (foreignKeys) {
-      await Promise.all(
-        foreignKeys.map((foreignKey) =>
-          queryRunner.dropForeignKey('reception_details', foreignKey),
-        ),
-      );
-    }
+    await Promise.all(
+      foreignKeys.map((foreignKey) =>
+        queryRunner.dropForeignKey('reception_details', foreignKey),
+      ),
+    );
 
     await queryRunner.dropTable('reception_details');
   }

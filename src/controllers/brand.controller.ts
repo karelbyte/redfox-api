@@ -131,6 +131,11 @@ export class BrandController {
     return this.brandService.update(id, updateBrandDto);
   }
 
+  @Get(':id/usage')
+  getBrandUsage(@Param('id', ParseUUIDPipe) id: string) {
+    return this.brandService.getBrandUsage(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.brandService.remove(id);

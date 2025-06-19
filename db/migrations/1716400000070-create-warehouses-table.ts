@@ -99,6 +99,15 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    const table = await queryRunner.getTable('warehouses');
+    const foreignKeys = table?.foreignKeys || [];
+
+    await Promise.all(
+      foreignKeys.map((foreignKey) =>
+        queryRunner.dropForeignKey('warehouses', foreignKey),
+      ),
+    );
+
     await queryRunner.dropTable('warehouses');
   }
 }

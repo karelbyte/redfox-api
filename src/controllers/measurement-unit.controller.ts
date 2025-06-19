@@ -53,6 +53,11 @@ export class MeasurementUnitController {
     return this.measurementUnitService.update(id, updateMeasurementUnitDto);
   }
 
+  @Get(':id/usage')
+  getMeasurementUnitUsage(@Param('id', ParseUUIDPipe) id: string) {
+    return this.measurementUnitService.getMeasurementUnitUsage(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.measurementUnitService.remove(id);

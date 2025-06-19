@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Brand } from '../models/brand.entity';
+import { Product } from '../models/product.entity';
 import { CreateBrandDto } from '../dtos/brand/create-brand.dto';
 import { UpdateBrandDto } from '../dtos/brand/update-brand.dto';
 import { BrandResponseDto } from '../dtos/brand/brand-response.dto';
@@ -13,6 +18,8 @@ export class BrandService {
   constructor(
     @InjectRepository(Brand)
     private brandRepository: Repository<Brand>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
 
   private mapToResponseDto(brand: Brand): BrandResponseDto {
@@ -111,11 +118,49 @@ export class BrandService {
   async remove(id: string): Promise<void> {
     const brand = await this.brandRepository.findOne({
       where: { id },
+    });
+
+    if (!brand) {
+      throw new NotFoundException(`Brand with ID ${id} not found`);
+    }
+
+    // Verificar si el brand está siendo usado en productos
+    const productsUsingBrand = await this.productRepository.count({
+      where: { brand: { id } },
       withDeleted: false,
+    });
+
+    if (productsUsingBrand > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la marca '${brand.description}' porque está siendo usada por ${productsUsingBrand} producto(s). Primero debe cambiar o eliminar los productos que usan esta marca.`,
+      );
+    }
+
+    await this.brandRepository.softRemove(brand);
+  }
+
+  async getBrandUsage(id: string): Promise<{
+    brand: BrandResponseDto;
+    productsCount: number;
+    products: any[];
+  }> {
+    const brand = await this.brandRepository.findOne({
+      where: { id },
     });
     if (!brand) {
       throw new NotFoundException(`Brand with ID ${id} not found`);
     }
-    await this.brandRepository.softRemove(brand);
+
+    const products = await this.productRepository.find({
+      where: { brand: { id } },
+      select: ['id', 'name', 'sku'],
+      withDeleted: false,
+    });
+
+    return {
+      brand: this.mapToResponseDto(brand),
+      productsCount: products.length,
+      products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
+    };
   }
 }

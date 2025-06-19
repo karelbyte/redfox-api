@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource } from 'typeorm';
 import { Category } from '../models/category.entity';
+import { Product } from '../models/product.entity';
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
 import { CategoryResponseDto } from '../dtos/category/category-response.dto';
@@ -20,6 +21,8 @@ export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
     private dataSource: DataSource,
   ) {}
 
@@ -331,6 +334,31 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
     }
+
+    // Verificar si la categoría está siendo usada en productos
+    const productsUsingCategory = await this.productRepository.count({
+      where: { category: { id } },
+      withDeleted: false,
+    });
+
+    if (productsUsingCategory > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la categoría '${category.name}' porque está siendo usada por ${productsUsingCategory} producto(s). Primero debe cambiar o eliminar los productos que usan esta categoría.`,
+      );
+    }
+
+    // Verificar si tiene hijos
+    const hasChildren = await this.categoryRepository.count({
+      where: { parentId: id },
+      withDeleted: false,
+    });
+
+    if (hasChildren > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la categoría '${category.name}' porque tiene ${hasChildren} subcategoría(s). Primero debe eliminar o mover las subcategorías.`,
+      );
+    }
+
     await this.categoryRepository.softRemove(category);
   }
 
@@ -387,6 +415,39 @@ export class CategoryService {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  async getCategoryUsage(id: string): Promise<{
+    category: CategoryResponseDto;
+    productsCount: number;
+    products: any[];
+    childrenCount: number;
+  }> {
+    const category = await this.categoryRepository.findOne({
+      where: { id },
+      withDeleted: false,
+    });
+    if (!category) {
+      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+    }
+
+    const products = await this.productRepository.find({
+      where: { category: { id } },
+      select: ['id', 'name', 'sku'],
+      withDeleted: false,
+    });
+
+    const childrenCount = await this.categoryRepository.count({
+      where: { parentId: id },
+      withDeleted: false,
+    });
+
+    return {
+      category: this.mapToResponseDto(category),
+      productsCount: products.length,
+      products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
+      childrenCount,
     };
   }
 }

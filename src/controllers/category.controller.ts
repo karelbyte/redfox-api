@@ -138,6 +138,11 @@ export class CategoryController {
     return this.categoryService.update(id, updateCategoryDto);
   }
 
+  @Get(':id/usage')
+  getCategoryUsage(@Param('id') id: string) {
+    return this.categoryService.getCategoryUsage(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {
     return this.categoryService.remove(id);
