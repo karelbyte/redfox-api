@@ -1,66 +1,101 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Provider } from '../models/provider.entity';
 import { CreateProviderDto } from '../dtos/provider/create-provider.dto';
 import { UpdateProviderDto } from '../dtos/provider/update-provider.dto';
 import { ProviderResponseDto } from '../dtos/provider/provider-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { ProviderMapper } from './mappers/provider.mapper';
 
 @Injectable()
 export class ProviderService {
   constructor(
     @InjectRepository(Provider)
     private readonly providerRepository: Repository<Provider>,
+    private providerMapper: ProviderMapper,
   ) {}
-
-  private mapToResponseDto(provider: Provider): ProviderResponseDto {
-    return {
-      id: provider.id,
-      code: provider.code,
-      description: provider.description,
-      name: provider.name,
-      document: provider.document,
-      phone: provider.phone,
-      email: provider.email,
-      address: provider.address,
-      status: provider.status,
-      created_at: provider.created_at,
-    };
-  }
 
   async create(
     createProviderDto: CreateProviderDto,
   ): Promise<ProviderResponseDto> {
     const provider = this.providerRepository.create(createProviderDto);
     const savedProvider = await this.providerRepository.save(provider);
-    return this.mapToResponseDto(savedProvider);
+    return this.providerMapper.mapToResponseDto(savedProvider);
   }
 
   async findAll(
-    paginationDto: PaginationDto,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<ProviderResponseDto>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+    const { page, limit, term } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions = { withDeleted: false };
+    const whereConditions = term
+      ? {
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+            { name: Like(`%${term}%`) },
+            { document: Like(`%${term}%`) },
+            { phone: Like(`%${term}%`) },
+            { email: Like(`%${term}%`) },
+            { address: Like(`%${term}%`) },
+          ],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const providers = await this.providerRepository.find({
+        ...whereConditions,
+        order: {
+          created_at: 'DESC',
+        },
+      });
+
+      const data = providers.map((provider) =>
+        this.providerMapper.mapToResponseDto(provider),
+      );
+
+      return {
+        data,
+        meta: {
+          total: data.length,
+          page: 1,
+          limit: data.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [providers, total] = await this.providerRepository.findAndCount({
+      ...whereConditions,
       skip,
-      take: limit,
+      take: currentLimit,
       order: {
         created_at: 'DESC',
       },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const data = providers.map((provider) =>
+      this.providerMapper.mapToResponseDto(provider),
+    );
 
     return {
-      data: providers.map((provider) => this.mapToResponseDto(provider)),
+      data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages,
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }
@@ -70,7 +105,7 @@ export class ProviderService {
     if (!provider) {
       throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
     }
-    return this.mapToResponseDto(provider);
+    return this.providerMapper.mapToResponseDto(provider);
   }
 
   async update(
@@ -84,7 +119,7 @@ export class ProviderService {
 
     Object.assign(provider, updateProviderDto);
     const updatedProvider = await this.providerRepository.save(provider);
-    return this.mapToResponseDto(updatedProvider);
+    return this.providerMapper.mapToResponseDto(updatedProvider);
   }
 
   async remove(id: string): Promise<void> {

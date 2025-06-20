@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { MeasurementUnit } from '../models/measurement-unit.entity';
 import { Product } from '../models/product.entity';
 import { CreateMeasurementUnitDto } from '../dtos/measurement-unit/create-measurement-unit.dto';
@@ -49,11 +49,24 @@ export class MeasurementUnitService {
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
-    // Si no hay parámetros de paginación, traer todos los registros
-    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
-      const measurementUnits = await this.measurementUnitRepository.find({
-        withDeleted: false,
-      });
+    const { page, limit, term } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions = { withDeleted: false };
+    const whereConditions = term
+      ? {
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+          ],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const measurementUnits =
+        await this.measurementUnitRepository.find(whereConditions);
 
       const data = measurementUnits.map((unit) =>
         this.measurementUnitMapper.mapToResponseDto(unit),
@@ -62,23 +75,24 @@ export class MeasurementUnitService {
       return {
         data,
         meta: {
-          total: measurementUnits.length,
+          total: data.length,
           page: 1,
-          limit: measurementUnits.length,
+          limit: data.length,
           totalPages: 1,
         },
       };
     }
 
-    // Si hay parámetros de paginación, paginar normalmente
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [measurementUnits, total] =
       await this.measurementUnitRepository.findAndCount({
-        withDeleted: false,
+        ...whereConditions,
         skip,
-        take: limit,
+        take: currentLimit,
       });
 
     const data = measurementUnits.map((unit) =>
@@ -89,9 +103,9 @@ export class MeasurementUnitService {
       data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }

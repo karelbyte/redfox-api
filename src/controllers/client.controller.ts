@@ -29,9 +29,10 @@ export class ClientController {
   }
 
   @Get()
-  findAll(
+  async findAll(
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<ClientResponseDto>> {
+    //await new Promise((resolve) => setTimeout(resolve, 5000));
     return this.clientService.findAll(paginationDto);
   }
 

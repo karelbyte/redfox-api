@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Product, ProductType } from '../models/product.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
@@ -14,10 +14,7 @@ import { UpdateProductDto } from '../dtos/product/update-product.dto';
 import { ProductResponseDto } from '../dtos/product/product-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
-import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
-import { BrandMapper } from './mappers/brand.mapper';
-import { CategoryMapper } from './mappers/category.mapper';
-import { TaxMapper } from './mappers/tax.mapper';
+import { ProductMapper } from './mappers/product.mapper';
 
 @Injectable()
 export class ProductService {
@@ -28,35 +25,8 @@ export class ProductService {
     private readonly inventoryRepository: Repository<Inventory>,
     @InjectRepository(WarehouseOpening)
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
-    private readonly measurementUnitMapper: MeasurementUnitMapper,
-    private readonly brandMapper: BrandMapper,
-    private readonly categoryMapper: CategoryMapper,
-    private readonly taxMapper: TaxMapper,
+    private readonly productMapper: ProductMapper,
   ) {}
-
-  mapToResponseDto(product: Product): ProductResponseDto {
-    return {
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      description: product.description,
-      sku: product.sku,
-      weight: product.weight,
-      width: product.width,
-      height: product.height,
-      length: product.length,
-      brand: this.brandMapper.mapToResponseDto(product.brand),
-      category: this.categoryMapper.mapToResponseDto(product.category),
-      tax: this.taxMapper.mapToResponseDto(product.tax),
-      measurement_unit: this.measurementUnitMapper.mapToResponseDto(
-        product.measurement_unit,
-      ),
-      is_active: product.is_active,
-      type: product.type,
-      images: product.images ? JSON.parse(product.images) : [],
-      created_at: product.created_at,
-    };
-  }
 
   async create(
     createProductDto: CreateProductDto,
@@ -109,28 +79,71 @@ export class ProductService {
     });
 
     const savedProduct = await this.productRepository.save(product);
-    return this.mapToResponseDto(savedProduct);
+    return this.productMapper.mapToResponseDto(savedProduct);
   }
 
   async findAll(
-    paginationDto: PaginationDto,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+    const { page, limit, term } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions = {
+      relations: ['brand', 'category', 'tax', 'measurement_unit'],
+    };
+    const whereConditions = term
+      ? {
+          ...baseConditions,
+          where: [
+            { name: Like(`%${term}%`) },
+            { slug: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+            { sku: Like(`%${term}%`) },
+          ],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const products = await this.productRepository.find(whereConditions);
+
+      const data = products.map((product) =>
+        this.productMapper.mapToResponseDto(product),
+      );
+
+      return {
+        data,
+        meta: {
+          total: data.length,
+          page: 1,
+          limit: data.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [products, total] = await this.productRepository.findAndCount({
-      relations: ['brand', 'category', 'tax', 'measurement_unit'],
+      ...whereConditions,
       skip,
-      take: limit,
+      take: currentLimit,
     });
 
+    const data = products.map((product) =>
+      this.productMapper.mapToResponseDto(product),
+    );
+
     return {
-      data: products.map((product) => this.mapToResponseDto(product)),
+      data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }
@@ -145,7 +158,7 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    return this.mapToResponseDto(product);
+    return this.productMapper.mapToResponseDto(product);
   }
 
   async findOneEntity(id: string): Promise<Product> {
@@ -196,7 +209,7 @@ export class ProductService {
     });
 
     const savedProduct = await this.productRepository.save(updatedProduct);
-    return this.mapToResponseDto(savedProduct);
+    return this.productMapper.mapToResponseDto(savedProduct);
   }
 
   async remove(id: string): Promise<void> {
@@ -257,7 +270,7 @@ export class ProductService {
     });
 
     return {
-      product: this.mapToResponseDto(product),
+      product: this.productMapper.mapToResponseDto(product),
       inventoryCount: inventory.length,
       warehouseOpeningCount: warehouseOpenings.length,
       inventory: inventory.map((inv) => ({

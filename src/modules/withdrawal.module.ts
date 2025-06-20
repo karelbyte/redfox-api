@@ -7,6 +7,11 @@ import { Product } from '../models/product.entity';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { WithdrawalController } from '../controllers/withdrawal.controller';
 import { ProductModule } from './product.module';
+import { ProductMapper } from '../services/mappers/product.mapper';
+import { BrandMapper } from '../services/mappers/brand.mapper';
+import { CategoryMapper } from '../services/mappers/category.mapper';
+import { TaxMapper } from '../services/mappers/tax.mapper';
+import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 
 @Module({
   imports: [
@@ -14,7 +19,14 @@ import { ProductModule } from './product.module';
     ProductModule,
   ],
   controllers: [WithdrawalController],
-  providers: [WithdrawalService],
+  providers: [
+    WithdrawalService, 
+    ProductMapper,
+    BrandMapper,
+    CategoryMapper,
+    TaxMapper,
+    MeasurementUnitMapper,
+  ],
   exports: [WithdrawalService],
 })
 export class WithdrawalModule {} 

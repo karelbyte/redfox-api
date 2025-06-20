@@ -9,6 +9,7 @@ import { MeasurementUnitModule } from './measurement-unit.module';
 import { BrandModule } from './brand.module';
 import { CategoryModule } from './category.module';
 import { TaxModule } from './tax.module';
+import { ProductMapper } from '../services/mappers/product.mapper';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { TaxModule } from './tax.module';
     TaxModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService],
+  providers: [ProductService, ProductMapper],
   exports: [ProductService],
 })
 export class ProductModule {} 

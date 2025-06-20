@@ -11,6 +11,7 @@ import { WithdrawalDetailResponseDto } from '../dtos/withdrawal-detail/withdrawa
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
+import { ProductMapper } from './mappers/product.mapper';
 
 @Injectable()
 export class WithdrawalService {
@@ -22,6 +23,7 @@ export class WithdrawalService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly productService: ProductService,
+    private readonly productMapper: ProductMapper,
   ) {}
 
   private mapDetailToResponseDto(
@@ -30,10 +32,11 @@ export class WithdrawalService {
     return {
       id: detail.id,
       quantity: detail.quantity,
-      product: this.productService.mapToResponseDto(detail.product),
+      product: this.productMapper.mapToResponseDto(detail.product),
       created_at: detail.created_at,
     };
   }
+
   private mapToResponseDto(withdrawal: Withdrawal): WithdrawalResponseDto {
     return {
       id: withdrawal.id,

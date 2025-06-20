@@ -181,7 +181,7 @@ export class CategoryService {
     }
 
     // Si hay parámetros de paginación, paginar normalmente
-    const { page = 1, limit = 10 } = paginationDto;
+    const { page = 1, limit = 8 } = paginationDto;
     const skip = (page - 1) * limit;
 
     const [categories, total] = await this.categoryRepository.findAndCount({

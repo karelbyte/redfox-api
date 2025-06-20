@@ -83,6 +83,25 @@ export class WarehouseService {
   async findAll(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
+    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
+      const warehouses = await this.warehouseRepository.find({
+        withDeleted: false,
+      });
+
+      const data = warehouses.map((warehouse) =>
+        this.mapToResponseDto(warehouse),
+      );
+
+      return {
+        data,
+        meta: {
+          total: warehouses.length,
+          page: 1,
+          limit: warehouses.length,
+          totalPages: 1,
+        },
+      };
+    }
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 

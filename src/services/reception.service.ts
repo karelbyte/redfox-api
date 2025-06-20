@@ -13,6 +13,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
+import { ProductMapper } from './mappers/product.mapper';
 
 @Injectable()
 export class ReceptionService {
@@ -27,6 +28,7 @@ export class ReceptionService {
     private readonly productRepository: Repository<Product>,
     private readonly productService: ProductService,
     private readonly warehouseMapper: WarehouseMapper,
+    private readonly productMapper: ProductMapper,
   ) {}
 
   private mapDetailToResponseDto(
@@ -35,7 +37,7 @@ export class ReceptionService {
     return {
       id: detail.id,
       quantity: detail.quantity,
-      product: this.productService.mapToResponseDto(detail.product),
+      product: this.productMapper.mapToResponseDto(detail.product),
       created_at: detail.created_at,
     };
   }

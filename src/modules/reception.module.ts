@@ -9,6 +9,11 @@ import { ReceptionController } from '../controllers/reception.controller';
 import { ProductModule } from './product.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
+import { ProductMapper } from '../services/mappers/product.mapper';
+import { BrandMapper } from '../services/mappers/brand.mapper';
+import { CategoryMapper } from '../services/mappers/category.mapper';
+import { TaxMapper } from '../services/mappers/tax.mapper';
+import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 
 @Module({
   imports: [
@@ -16,7 +21,16 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
     ProductModule,
   ],
   controllers: [ReceptionController],
-  providers: [ReceptionService, WarehouseMapper, CurrencyMapper],
+  providers: [
+    ReceptionService, 
+    WarehouseMapper, 
+    CurrencyMapper, 
+    ProductMapper,
+    BrandMapper,
+    CategoryMapper,
+    TaxMapper,
+    MeasurementUnitMapper,
+  ],
   exports: [ReceptionService],
 })
 export class ReceptionModule {} 
