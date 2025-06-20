@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like, FindManyOptions } from 'typeorm';
 import { Tax } from '../models/tax.entity';
 import { Product } from '../models/product.entity';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
@@ -12,6 +12,7 @@ import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { TaxMapper } from './mappers/tax.mapper';
 
 @Injectable()
 export class TaxService {
@@ -20,61 +21,71 @@ export class TaxService {
     private readonly taxRepository: Repository<Tax>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly taxMapper: TaxMapper,
   ) {}
 
   async create(createTaxDto: CreateTaxDto): Promise<TaxResponseDto> {
     const tax = this.taxRepository.create(createTaxDto);
     const savedTax = await this.taxRepository.save(tax);
-    return this.mapToResponseDto(savedTax);
+    return this.taxMapper.mapToResponseDto(savedTax);
   }
 
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<TaxResponseDto>> {
-    // Si no hay parámetros de paginación, traer todos los registros
-    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
-      const taxes = await this.taxRepository.find({
-        where: { isActive: true },
-        order: {
-          createdAt: 'DESC',
-        },
-      });
+    const { page, limit, term } = paginationDto || {};
 
-      const data = taxes.map((tax) => this.mapToResponseDto(tax));
+    // Construir las condiciones de búsqueda
+    const baseConditions = {
+      where: {},
+      order: {
+        createdAt: 'DESC' as const,
+      },
+    };
+    const whereConditions: FindManyOptions<Tax> = term
+      ? {
+          ...baseConditions,
+          where: [{ code: Like(`%${term}%`) }, { name: Like(`%${term}%`) }],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const taxes = await this.taxRepository.find(whereConditions);
+
+      const data = taxes.map((tax) => this.taxMapper.mapToResponseDto(tax));
 
       return {
         data,
         meta: {
-          total: taxes.length,
+          total: data.length,
           page: 1,
-          limit: taxes.length,
+          limit: data.length,
           totalPages: 1,
         },
       };
     }
 
-    // Si hay parámetros de paginación, paginar normalmente
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [taxes, total] = await this.taxRepository.findAndCount({
-      where: { isActive: true },
+      ...whereConditions,
       skip,
-      take: limit,
-      order: {
-        createdAt: 'DESC',
-      },
+      take: currentLimit,
     });
 
-    const data = taxes.map((tax) => this.mapToResponseDto(tax));
+    const data = taxes.map((tax) => this.taxMapper.mapToResponseDto(tax));
 
     return {
       data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }
@@ -86,7 +97,7 @@ export class TaxService {
     if (!tax) {
       throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
     }
-    return this.mapToResponseDto(tax);
+    return this.taxMapper.mapToResponseDto(tax);
   }
 
   async update(
@@ -102,7 +113,7 @@ export class TaxService {
 
     const dtax = { ...tax, ...updateTaxDto };
     const savedTax = await this.taxRepository.save(dtax);
-    return this.mapToResponseDto(savedTax);
+    return this.taxMapper.mapToResponseDto(savedTax);
   }
 
   async remove(id: string): Promise<void> {
@@ -139,7 +150,7 @@ export class TaxService {
 
     tax.isActive = true;
     const savedTax = await this.taxRepository.save(tax);
-    return this.mapToResponseDto(savedTax);
+    return this.taxMapper.mapToResponseDto(savedTax);
   }
 
   async deactivate(id: string): Promise<TaxResponseDto> {
@@ -153,7 +164,7 @@ export class TaxService {
 
     tax.isActive = false;
     const savedTax = await this.taxRepository.save(tax);
-    return this.mapToResponseDto(savedTax);
+    return this.taxMapper.mapToResponseDto(savedTax);
   }
 
   async getTaxUsage(
@@ -173,22 +184,9 @@ export class TaxService {
     });
 
     return {
-      tax: this.mapToResponseDto(tax),
+      tax: this.taxMapper.mapToResponseDto(tax),
       productsCount: products.length,
       products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
-    };
-  }
-
-  private mapToResponseDto(tax: Tax): TaxResponseDto {
-    const { id, code, name, value, type, isActive, createdAt } = tax;
-    return {
-      id,
-      code,
-      name,
-      value,
-      type,
-      isActive,
-      createdAt,
     };
   }
 }

@@ -43,7 +43,6 @@ export class BrandService {
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
-
     // Si no hay parámetros de paginación, traer todos los registros
     if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
       const brands = await this.brandRepository.find({

@@ -12,9 +12,10 @@ export class CategoryMapper {
       description,
       image,
       parentId,
-      position,
       isActive,
+      position,
       createdAt,
+      children,
     } = category;
     return {
       id,
@@ -23,9 +24,10 @@ export class CategoryMapper {
       description,
       image,
       parentId,
-      position,
       isActive,
+      position,
       createdAt,
+      children: children?.map((child) => this.mapToResponseDto(child)),
     };
   }
 }

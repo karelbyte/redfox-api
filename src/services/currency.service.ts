@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like, FindManyOptions } from 'typeorm';
 import { Currency } from '../models/currency.entity';
 import { CreateCurrencyDto } from '../dtos/currency/create-currency.dto';
 import { UpdateCurrencyDto } from '../dtos/currency/update-currency.dto';
@@ -45,15 +45,52 @@ export class CurrencyService {
   }
 
   async findAll(
-    paginationDto: PaginationDto,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<CurrencyResponseDto>> {
-    const { page = 1, limit = 8 } = paginationDto;
-    const skip = (page - 1) * limit;
+    const { page, limit, term } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions = {
+      where: {},
+      order: {
+        name: 'ASC' as const,
+      },
+    };
+    const whereConditions: FindManyOptions<Currency> = term
+      ? {
+          ...baseConditions,
+          where: [{ code: Like(`%${term}%`) }, { name: Like(`%${term}%`) }],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const currencies = await this.currencyRepository.find(whereConditions);
+
+      const data = currencies.map((currency) =>
+        this.currencyMapper.mapToResponseDto(currency),
+      );
+
+      return {
+        data,
+        meta: {
+          total: data.length,
+          page: 1,
+          limit: data.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [currencies, total] = await this.currencyRepository.findAndCount({
+      ...whereConditions,
       skip,
-      take: limit,
-      order: { name: 'ASC' },
+      take: currentLimit,
     });
 
     const data = currencies.map((currency) =>
@@ -64,9 +101,9 @@ export class CurrencyService {
       data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }

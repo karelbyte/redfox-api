@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource } from 'typeorm';
+import { Repository, IsNull, DataSource, Like, FindManyOptions } from 'typeorm';
 import { Category } from '../models/category.entity';
 import { Product } from '../models/product.entity';
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
@@ -13,6 +13,7 @@ import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
 import { CategoryResponseDto } from '../dtos/category/category-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { CategoryMapper } from './mappers/category.mapper';
 
 @Injectable()
 export class CategoryService {
@@ -24,34 +25,8 @@ export class CategoryService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private dataSource: DataSource,
+    private readonly categoryMapper: CategoryMapper,
   ) {}
-
-  private mapToResponseDto(category: Category): CategoryResponseDto {
-    const {
-      id,
-      name,
-      slug,
-      description,
-      image,
-      parentId,
-      isActive,
-      position,
-      createdAt,
-      children,
-    } = category;
-    return {
-      id,
-      name,
-      slug,
-      description,
-      image,
-      parentId,
-      isActive,
-      position,
-      createdAt,
-      children: children?.map((child) => this.mapToResponseDto(child)),
-    };
-  }
 
   private async validateHierarchyCycle(
     categoryId: string,
@@ -147,64 +122,77 @@ export class CategoryService {
 
     const category = this.categoryRepository.create(createCategoryDto);
     const savedCategory = await this.categoryRepository.save(category);
-    return this.mapToResponseDto(savedCategory);
+    return this.categoryMapper.mapToResponseDto(savedCategory);
   }
 
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
-    // Si no hay parámetros de paginación, traer todos los registros
-    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
-      const categories = await this.categoryRepository.find({
-        relations: ['children'],
-        where: { parentId: IsNull() },
-        withDeleted: false,
-        order: {
-          position: 'ASC',
-          createdAt: 'DESC',
-        },
-      });
+    const { page, limit, term } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions: FindManyOptions<Category> = {
+      relations: ['children'],
+      where: { parentId: IsNull() },
+      withDeleted: false,
+      order: {
+        position: 'ASC' as const,
+        createdAt: 'DESC' as const,
+      },
+    };
+
+    const whereConditions: FindManyOptions<Category> = term
+      ? {
+          ...baseConditions,
+          where: [
+            { name: Like(`%${term}%`) },
+            { slug: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+          ],
+        }
+      : baseConditions;
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const categories = await this.categoryRepository.find(whereConditions);
 
       const data = categories.map((category) =>
-        this.mapToResponseDto(category),
+        this.categoryMapper.mapToResponseDto(category),
       );
 
       return {
         data,
         meta: {
-          total: categories.length,
+          total: data.length,
           page: 1,
-          limit: categories.length,
+          limit: data.length,
           totalPages: 1,
         },
       };
     }
 
-    // Si hay parámetros de paginación, paginar normalmente
-    const { page = 1, limit = 8 } = paginationDto;
-    const skip = (page - 1) * limit;
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 8;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [categories, total] = await this.categoryRepository.findAndCount({
-      relations: ['children'],
-      where: { parentId: IsNull() },
-      withDeleted: false,
+      ...whereConditions,
       skip,
-      take: limit,
-      order: {
-        position: 'ASC',
-        createdAt: 'DESC',
-      },
+      take: currentLimit,
     });
 
-    const data = categories.map((category) => this.mapToResponseDto(category));
+    const data = categories.map((category) =>
+      this.categoryMapper.mapToResponseDto(category),
+    );
 
     return {
       data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }
@@ -218,7 +206,7 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
     }
-    return this.mapToResponseDto(category);
+    return this.categoryMapper.mapToResponseDto(category);
   }
 
   async update(
@@ -317,7 +305,7 @@ export class CategoryService {
       this.logCategoryChange(id, oldData, updateCategoryDto);
 
       await queryRunner.commitTransaction();
-      return this.mapToResponseDto(updatedCategory);
+      return this.categoryMapper.mapToResponseDto(updatedCategory);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -371,7 +359,7 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Categoría con slug ${slug} no encontrada`);
     }
-    return this.mapToResponseDto(category);
+    return this.categoryMapper.mapToResponseDto(category);
   }
 
   async findByParentId(
@@ -405,7 +393,9 @@ export class CategoryService {
       },
     });
 
-    const data = categories.map((category) => this.mapToResponseDto(category));
+    const data = categories.map((category) =>
+      this.categoryMapper.mapToResponseDto(category),
+    );
 
     return {
       data,
@@ -444,7 +434,7 @@ export class CategoryService {
     });
 
     return {
-      category: this.mapToResponseDto(category),
+      category: this.categoryMapper.mapToResponseDto(category),
       productsCount: products.length,
       products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
       childrenCount,
