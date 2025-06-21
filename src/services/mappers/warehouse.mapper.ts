@@ -28,7 +28,9 @@ export class WarehouseMapper {
       phone,
       status,
       is_open: isOpen,
-      currency: this.currencyMapper.mapToResponseDto(currency),
+      currency: currency
+        ? this.currencyMapper.mapToResponseDto(currency)
+        : null,
       created_at,
     };
   }

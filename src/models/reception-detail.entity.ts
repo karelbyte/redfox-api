@@ -38,4 +38,4 @@ export class ReceptionDetail {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

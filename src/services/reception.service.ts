@@ -5,6 +5,7 @@ import { Reception } from '../models/reception.entity';
 import { ReceptionDetail } from '../models/reception-detail.entity';
 import { Provider } from '../models/provider.entity';
 import { Product } from '../models/product.entity';
+import { Warehouse } from '../models/warehouse.entity';
 import { CreateReceptionDto } from '../dtos/reception/create-reception.dto';
 import { UpdateReceptionDto } from '../dtos/reception/update-reception.dto';
 import { ReceptionResponseDto } from '../dtos/reception/reception-response.dto';
@@ -26,6 +27,8 @@ export class ReceptionService {
     private readonly providerRepository: Repository<Provider>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
     private readonly productService: ProductService,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
@@ -59,27 +62,48 @@ export class ReceptionService {
   async create(
     createReceptionDto: CreateReceptionDto,
   ): Promise<ReceptionResponseDto> {
+    // Verificar que el provider existe
+    const provider = await this.providerRepository.findOne({
+      where: { id: createReceptionDto.provider_id },
+    });
+    if (!provider) {
+      throw new NotFoundException(
+        `Provider with ID ${createReceptionDto.provider_id} not found`,
+      );
+    }
+
+    // Verificar que el warehouse existe
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id: createReceptionDto.warehouse_id },
+    });
+    if (!warehouse) {
+      throw new NotFoundException(
+        `Warehouse with ID ${createReceptionDto.warehouse_id} not found`,
+      );
+    }
+
     const reception = this.receptionRepository.create({
+      code: createReceptionDto.code,
       date: createReceptionDto.date,
+      provider: provider,
+      warehouse: warehouse,
+      document: createReceptionDto.document,
+      amount: createReceptionDto.amount,
     });
 
     const savedReception = await this.receptionRepository.save(reception);
 
-    const details = await Promise.all(
-      createReceptionDto.details.map(async (detail) => {
-        const product = await this.productService.findOneEntity(
-          detail.product_id,
-        );
-        return this.receptionDetailRepository.create({
-          reception: savedReception,
-          product,
-          quantity: detail.quantity,
-        });
-      }),
-    );
+    // Recargar con relaciones para la respuesta
+    const receptionWithRelations = await this.receptionRepository.findOne({
+      where: { id: savedReception.id },
+      relations: ['provider', 'warehouse'],
+    });
 
-    savedReception.details = await this.receptionDetailRepository.save(details);
-    return this.mapToResponseDto(savedReception);
+    if (!receptionWithRelations) {
+      throw new NotFoundException('Reception not found after creation');
+    }
+
+    return this.mapToResponseDto(receptionWithRelations);
   }
 
   async findAll(
@@ -113,15 +137,7 @@ export class ReceptionService {
   async findOne(id: string): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
       where: { id },
-      relations: [
-        'provider',
-        'details',
-        'warehouse',
-        'details.product',
-        'details.product.brand',
-        'details.product.provider',
-        'details.product.measurement_unit',
-      ],
+      relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
     if (!reception) {

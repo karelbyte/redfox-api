@@ -7,14 +7,20 @@ import { ProductHistory } from '../models/product-history.entity';
 import { WarehouseService } from '../services/warehouse.service';
 import { WarehouseController } from '../controllers/warehouse.controller';
 import { CurrencyModule } from './currency.module';
+import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Warehouse, WarehouseOpening, Inventory, ProductHistory]),
+    TypeOrmModule.forFeature([
+      Warehouse,
+      WarehouseOpening,
+      Inventory,
+      ProductHistory,
+    ]),
     CurrencyModule,
   ],
   controllers: [WarehouseController],
-  providers: [WarehouseService],
+  providers: [WarehouseService, WarehouseMapper],
   exports: [WarehouseService],
 })
-export class WarehouseModule {} 
+export class WarehouseModule {}

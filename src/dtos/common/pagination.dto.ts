@@ -1,5 +1,11 @@
-import { IsNumber, IsOptional, Min, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsNumber,
+  IsOptional,
+  Min,
+  IsString,
+  IsBoolean,
+} from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class PaginationDto {
   @Type(() => Number)
@@ -17,4 +23,13 @@ export class PaginationDto {
   @IsString()
   @IsOptional()
   term?: string;
+
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  })
+  @IsBoolean()
+  @IsOptional()
+  isClosed?: boolean;
 }

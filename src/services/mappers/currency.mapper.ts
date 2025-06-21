@@ -8,4 +8,4 @@ export class CurrencyMapper {
     const { id, code, name } = currency;
     return { id, code, name };
   }
-} 
+}

@@ -21,6 +21,8 @@ import {
   ProductHistory,
   OperationType,
 } from '../models/product-history.entity';
+import { WarehouseMapper } from './mappers/warehouse.mapper';
+import { Like } from 'typeorm';
 
 @Injectable()
 export class WarehouseService {
@@ -34,32 +36,8 @@ export class WarehouseService {
     @InjectRepository(ProductHistory)
     private productHistoryRepository: Repository<ProductHistory>,
     private readonly currencyMapper: CurrencyMapper,
+    private readonly warehouseMapper: WarehouseMapper,
   ) {}
-
-  private mapToResponseDto(warehouse: Warehouse): WarehouseResponseDto {
-    const {
-      id,
-      code,
-      name,
-      address,
-      phone,
-      status,
-      isOpen,
-      created_at,
-      currency,
-    } = warehouse;
-    return {
-      id,
-      code,
-      name,
-      address,
-      phone,
-      status,
-      is_open: isOpen,
-      currency: this.currencyMapper.mapToResponseDto(currency),
-      created_at,
-    };
-  }
 
   async create(
     createWarehouseDto: CreateWarehouseDto,
@@ -77,54 +55,98 @@ export class WarehouseService {
       throw new NotFoundException('Warehouse not found after creation');
     }
 
-    return this.mapToResponseDto(warehouseWithRelations);
+    return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
   }
 
   async findAll(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
-    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
-      const warehouses = await this.warehouseRepository.find({
-        withDeleted: false,
-      });
+    const { page, limit, term, isClosed } = paginationDto || {};
+
+    // Construir las condiciones de búsqueda
+    const baseConditions = {
+      relations: ['currency'],
+      withDeleted: false,
+    };
+
+    // Construir condiciones de where
+    let whereConditions;
+
+    if (isClosed !== undefined && term) {
+      // Si hay filtro de estado y término de búsqueda
+      whereConditions = {
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`), isOpen: !isClosed },
+          { name: Like(`%${term}%`), isOpen: !isClosed },
+          { address: Like(`%${term}%`), isOpen: !isClosed },
+        ],
+      };
+    } else if (isClosed !== undefined) {
+      // Solo filtro de estado
+      whereConditions = {
+        ...baseConditions,
+        where: { isOpen: !isClosed },
+      };
+    } else if (term) {
+      // Solo término de búsqueda
+      whereConditions = {
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`) },
+          { name: Like(`%${term}%`) },
+          { address: Like(`%${term}%`) },
+        ],
+      };
+    } else {
+      // Sin filtros
+      whereConditions = baseConditions;
+    }
+
+    // Si no se proporciona paginación, devolver toda la data
+    if (!page && !limit) {
+      const warehouses = await this.warehouseRepository.find(whereConditions);
 
       const data = warehouses.map((warehouse) =>
-        this.mapToResponseDto(warehouse),
+        this.warehouseMapper.mapToResponseDto(warehouse),
       );
 
       return {
         data,
         meta: {
-          total: warehouses.length,
+          total: data.length,
           page: 1,
-          limit: warehouses.length,
+          limit: data.length,
           totalPages: 1,
         },
       };
     }
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+
+    // Si se proporciona paginación, aplicar la lógica de paginación
+    const currentPage = page || 1;
+    const currentLimit = limit || 10;
+    const skip = (currentPage - 1) * currentLimit;
 
     const [warehouses, total] = await this.warehouseRepository.findAndCount({
-      relations: ['currency'],
+      ...whereConditions,
       skip,
-      take: limit,
+      take: currentLimit,
       order: {
         created_at: 'DESC',
       },
     });
 
     const data = warehouses.map((warehouse) =>
-      this.mapToResponseDto(warehouse),
+      this.warehouseMapper.mapToResponseDto(warehouse),
     );
 
     return {
       data,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: currentPage,
+        limit: currentLimit,
+        totalPages: Math.ceil(total / currentLimit),
       },
     };
   }
@@ -155,7 +177,7 @@ export class WarehouseService {
       throw new NotFoundException(`Almacén con ID ${id} no encontrado`);
     }
 
-    return this.mapToResponseDto(warehouse);
+    return this.warehouseMapper.mapToResponseDto(warehouse);
   }
 
   async update(
@@ -186,7 +208,7 @@ export class WarehouseService {
       throw new NotFoundException('Warehouse not found after update');
     }
 
-    return this.mapToResponseDto(warehouseWithRelations);
+    return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
   }
 
   async remove(id: string): Promise<void> {
@@ -225,7 +247,7 @@ export class WarehouseService {
       throw new NotFoundException('Warehouse not found after status update');
     }
 
-    return this.mapToResponseDto(warehouseWithRelations);
+    return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
   }
 
   async closeWarehouse(

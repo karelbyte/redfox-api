@@ -27,6 +27,7 @@ export class ReceptionController {
   create(
     @Body() createReceptionDto: CreateReceptionDto,
   ): Promise<ReceptionResponseDto> {
+    console.log(createReceptionDto);
     return this.receptionService.create(createReceptionDto);
   }
 

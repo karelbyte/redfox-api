@@ -8,6 +8,6 @@ export class WarehouseResponseDto {
   phone: string;
   is_open: boolean;
   status: boolean;
-  currency: CurrencyResponseDto;
+  currency: CurrencyResponseDto | null;
   created_at: Date;
 }

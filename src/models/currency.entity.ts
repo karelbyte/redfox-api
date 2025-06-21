@@ -26,4 +26,4 @@ export class Currency {
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date;
-} 
+}
