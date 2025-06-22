@@ -1,8 +1,8 @@
 {
-  "name": "redfox-api",
+  "name": "nitro-api",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Nitro API",
+  "author": "Karel Puerto Diaz",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

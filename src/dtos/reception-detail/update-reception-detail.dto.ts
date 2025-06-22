@@ -9,4 +9,9 @@ export class UpdateReceptionDetailDto {
   @Min(0)
   @IsOptional()
   quantity?: number;
-} 
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  price?: number;
+}

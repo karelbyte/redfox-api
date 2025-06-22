@@ -15,6 +15,9 @@ import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
+import { CreateReceptionDetailDto } from '../dtos/reception-detail/create-reception-detail.dto';
+import { UpdateReceptionDetailDto } from '../dtos/reception-detail/update-reception-detail.dto';
+import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-detail-query.dto';
 
 @Injectable()
 export class ReceptionService {
@@ -40,6 +43,7 @@ export class ReceptionService {
     return {
       id: detail.id,
       quantity: detail.quantity,
+      price: detail.price,
       product: this.productMapper.mapToResponseDto(detail.product),
       created_at: detail.created_at,
     };
@@ -57,6 +61,25 @@ export class ReceptionService {
       status: reception.status,
       created_at: reception.created_at,
     };
+  }
+
+  // Función helper para calcular montos con precisión decimal
+  private calculateAmount(quantity: number, price: number): number {
+    return quantity * price;
+  }
+
+  // Función helper para actualizar el monto total de la recepción
+  private async updateReceptionAmount(
+    receptionId: string,
+    newAmount: number,
+  ): Promise<void> {
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (reception) {
+      reception.amount = newAmount;
+      await this.receptionRepository.save(reception);
+    }
   }
 
   async create(
@@ -153,15 +176,7 @@ export class ReceptionService {
   ): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
       where: { id },
-      relations: [
-        'provider',
-        'details',
-        'warehouse',
-        'details.product',
-        'details.product.brand',
-        'details.product.provider',
-        'details.product.measurement_unit',
-      ],
+      relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
     if (!reception) {
@@ -180,36 +195,8 @@ export class ReceptionService {
       reception.provider = provider;
     }
 
-    if (updateReceptionDto.details) {
-      // Eliminar detalles existentes
-      await this.receptionDetailRepository.delete({ reception: { id } });
-
-      // Crear nuevos detalles
-      const details = await Promise.all(
-        updateReceptionDto.details.map(async (detailDto) => {
-          const product = await this.productRepository.findOne({
-            where: { id: detailDto.product_id },
-          });
-          if (!product) {
-            throw new NotFoundException(
-              `Product with ID ${detailDto.product_id} not found`,
-            );
-          }
-
-          const detail = this.receptionDetailRepository.create({
-            reception,
-            product,
-            quantity: detailDto.quantity,
-          });
-
-          return this.receptionDetailRepository.save(detail);
-        }),
-      );
-
-      reception.details = details;
-    }
-
     Object.assign(reception, {
+      code: updateReceptionDto.code,
       date: updateReceptionDto.date,
       document: updateReceptionDto.document,
       amount: updateReceptionDto.amount,
@@ -227,6 +214,244 @@ export class ReceptionService {
     }
 
     await this.receptionRepository.softDelete(id);
+  }
+
+  // Métodos para detalles de recepción
+  async createDetail(
+    receptionId: string,
+    createDetailDto: CreateReceptionDetailDto,
+  ): Promise<ReceptionDetailResponseDto> {
+    // Verificar que la recepción existe
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (!reception) {
+      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+    }
+
+    // Verificar que el producto existe
+    const product = await this.productRepository.findOne({
+      where: { id: createDetailDto.product_id },
+    });
+    if (!product) {
+      throw new NotFoundException(
+        `Product with ID ${createDetailDto.product_id} not found`,
+      );
+    }
+
+    const detail = this.receptionDetailRepository.create({
+      reception: reception,
+      product: product,
+      quantity: createDetailDto.quantity,
+      price: createDetailDto.price,
+    });
+
+    const savedDetail = await this.receptionDetailRepository.save(detail);
+
+    // Calcular el monto del nuevo detalle con precisión decimal
+    const detailAmount = this.calculateAmount(
+      createDetailDto.quantity,
+      createDetailDto.price,
+    );
+
+    // Actualizar el monto total de la recepción
+    const currentAmount = reception.amount || 0;
+    const newTotalAmount = Number(currentAmount) + Number(detailAmount);
+
+    await this.updateReceptionAmount(receptionId, newTotalAmount);
+
+    // Recargar con relaciones para la respuesta
+    const detailWithRelations = await this.receptionDetailRepository.findOne({
+      where: { id: savedDetail.id },
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
+    });
+
+    if (!detailWithRelations) {
+      throw new NotFoundException('Reception detail not found after creation');
+    }
+
+    return this.mapDetailToResponseDto(detailWithRelations);
+  }
+
+  async findAllDetails(
+    receptionId: string,
+    queryDto: ReceptionDetailQueryDto,
+  ): Promise<PaginatedResponseDto<ReceptionDetailResponseDto>> {
+    // Verificar que la recepción existe
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (!reception) {
+      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+    }
+
+    const { page = 1, limit = 10 } = queryDto;
+    const skip = (page - 1) * limit;
+
+    const [details, total] = await this.receptionDetailRepository.findAndCount({
+      where: { reception: { id: receptionId } },
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
+      skip,
+      take: limit,
+      order: {
+        created_at: 'DESC',
+      },
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: details.map((detail) => this.mapDetailToResponseDto(detail)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
+  }
+
+  async findOneDetail(
+    receptionId: string,
+    detailId: string,
+  ): Promise<ReceptionDetailResponseDto> {
+    // Verificar que la recepción existe
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (!reception) {
+      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+    }
+
+    const detail = await this.receptionDetailRepository.findOne({
+      where: { id: detailId, reception: { id: receptionId } },
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
+    });
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      );
+    }
+
+    return this.mapDetailToResponseDto(detail);
+  }
+
+  async updateDetail(
+    receptionId: string,
+    detailId: string,
+    updateDetailDto: UpdateReceptionDetailDto,
+  ): Promise<ReceptionDetailResponseDto> {
+    // Verificar que la recepción existe
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (!reception) {
+      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+    }
+
+    const detail = await this.receptionDetailRepository.findOne({
+      where: { id: detailId, reception: { id: receptionId } },
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
+    });
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      );
+    }
+
+    // Guardar el monto anterior del detalle para restarlo del total
+    const oldAmount = this.calculateAmount(detail.quantity, detail.price);
+
+    if (updateDetailDto.product_id) {
+      const product = await this.productRepository.findOne({
+        where: { id: updateDetailDto.product_id },
+        relations: ['brand', 'category', 'tax', 'measurement_unit'],
+      });
+      if (!product) {
+        throw new NotFoundException(
+          `Product with ID ${updateDetailDto.product_id} not found`,
+        );
+      }
+      detail.product = product;
+    }
+
+    // Actualizar los campos del detalle
+    if (updateDetailDto.quantity !== undefined) {
+      detail.quantity = updateDetailDto.quantity;
+    }
+    if (updateDetailDto.price !== undefined) {
+      detail.price = updateDetailDto.price;
+    }
+
+    const updatedDetail = await this.receptionDetailRepository.save(detail);
+
+    // Calcular el nuevo monto del detalle
+    const newAmount = this.calculateAmount(detail.quantity, detail.price);
+
+    // Actualizar el monto total de la recepción: restar el monto anterior y sumar el nuevo
+    const currentAmount = reception.amount || 0;
+    const newTotalAmount =
+      Number(currentAmount) - Number(oldAmount) + Number(newAmount);
+    await this.updateReceptionAmount(receptionId, newTotalAmount);
+
+    return this.mapDetailToResponseDto(updatedDetail);
+  }
+
+  async removeDetail(receptionId: string, detailId: string): Promise<void> {
+    // Verificar que la recepción existe
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+    });
+    if (!reception) {
+      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+    }
+
+    const detail = await this.receptionDetailRepository.findOne({
+      where: { id: detailId, reception: { id: receptionId } },
+    });
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      );
+    }
+
+    // Calcular el monto del detalle a eliminar con precisión decimal
+    const detailAmount = this.calculateAmount(detail.quantity, detail.price);
+
+    // Restar el monto del detalle del total de la recepción
+    const currentAmount = reception.amount || 0;
+    const newTotalAmount = Number(currentAmount) - Number(detailAmount);
+    await this.updateReceptionAmount(receptionId, newTotalAmount);
+
+    // Eliminar el detalle
+    await this.receptionDetailRepository.softDelete(detailId);
   }
 }
 

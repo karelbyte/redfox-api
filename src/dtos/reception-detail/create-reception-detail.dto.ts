@@ -7,4 +7,8 @@ export class CreateReceptionDetailDto {
   @IsNumber()
   @Min(0)
   quantity: number;
-} 
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+}
