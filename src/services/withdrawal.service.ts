@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
-import { CreateWithdrawalDto } from '../dtos/withdrawal/create-withdrawal.dto';
+import { Warehouse } from '../models/warehouse.entity';
+import {
+  CreateWithdrawalDto,
+  CreateWithdrawalDetailDto,
+} from '../dtos/withdrawal/create-withdrawal.dto';
 import { UpdateWithdrawalDto } from '../dtos/withdrawal/update-withdrawal.dto';
 import { WithdrawalResponseDto } from '../dtos/withdrawal/withdrawal-response.dto';
 import { WithdrawalDetailResponseDto } from '../dtos/withdrawal-detail/withdrawal-detail-response.dto';
@@ -12,6 +16,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
 import { ProductMapper } from './mappers/product.mapper';
+import { WarehouseMapper } from './mappers/warehouse.mapper';
 
 @Injectable()
 export class WithdrawalService {
@@ -22,8 +27,11 @@ export class WithdrawalService {
     private readonly withdrawalDetailRepository: Repository<WithdrawalDetail>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
     private readonly productService: ProductService,
     private readonly productMapper: ProductMapper,
+    private readonly warehouseMapper: WarehouseMapper,
   ) {}
 
   private mapDetailToResponseDto(
@@ -32,7 +40,9 @@ export class WithdrawalService {
     return {
       id: detail.id,
       quantity: detail.quantity,
+      price: detail.price,
       product: this.productMapper.mapToResponseDto(detail.product),
+      warehouse: this.warehouseMapper.mapToResponseDto(detail.warehouse),
       created_at: detail.created_at,
     };
   }
@@ -43,12 +53,17 @@ export class WithdrawalService {
       client: withdrawal.client,
       code: withdrawal.code,
       destination: withdrawal.destination,
+      amount: withdrawal.amount,
       status: withdrawal.status,
-      details: withdrawal.details.map((detail) =>
-        this.mapDetailToResponseDto(detail),
-      ),
       created_at: withdrawal.created_at,
     };
+  }
+
+  // Función helper para calcular el monto total de la withdrawal
+  private calculateTotalAmount(details: CreateWithdrawalDetailDto[]): number {
+    return details.reduce((total, detail) => {
+      return total + detail.quantity * detail.price;
+    }, 0);
   }
 
   async create(
@@ -64,26 +79,15 @@ export class WithdrawalService {
     }
 
     const withdrawal = this.withdrawalRepository.create({
+      code: createWithdrawalDto.code,
+      destination: createWithdrawalDto.destination,
       client,
+      amount: createWithdrawalDto.amount,
+      status: false,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
 
-    const details = await Promise.all(
-      createWithdrawalDto.details.map(async (detail) => {
-        const product = await this.productService.findOneEntity(
-          detail.product_id,
-        );
-        return this.withdrawalDetailRepository.create({
-          withdrawal: savedWithdrawal,
-          product,
-          quantity: detail.quantity,
-        });
-      }),
-    );
-
-    savedWithdrawal.details =
-      await this.withdrawalDetailRepository.save(details);
     return this.mapToResponseDto(savedWithdrawal);
   }
 
@@ -100,6 +104,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.warehouse',
       ],
       skip,
       take: limit,
@@ -125,6 +130,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.warehouse',
       ],
     });
 
@@ -147,6 +153,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.warehouse',
       ],
     });
 
@@ -166,6 +173,20 @@ export class WithdrawalService {
       withdrawal.client = client;
     }
 
+    // Actualizar campos básicos del withdrawal
+    if (updateWithdrawalDto.code !== undefined) {
+      withdrawal.code = updateWithdrawalDto.code;
+    }
+    if (updateWithdrawalDto.destination !== undefined) {
+      withdrawal.destination = updateWithdrawalDto.destination;
+    }
+    if (updateWithdrawalDto.amount !== undefined) {
+      withdrawal.amount = updateWithdrawalDto.amount;
+    }
+    if (updateWithdrawalDto.status !== undefined) {
+      withdrawal.status = updateWithdrawalDto.status;
+    }
+
     if (updateWithdrawalDto.details) {
       await this.withdrawalDetailRepository.delete({ withdrawal: { id } });
 
@@ -174,15 +195,35 @@ export class WithdrawalService {
           const product = await this.productService.findOneEntity(
             detail.product_id,
           );
+
+          const warehouse = await this.warehouseRepository.findOne({
+            where: { id: detail.warehouse_id },
+          });
+          if (!warehouse) {
+            throw new NotFoundException(
+              `Almacén con ID ${detail.warehouse_id} no encontrado`,
+            );
+          }
+
           return this.withdrawalDetailRepository.create({
             withdrawal,
             product,
+            warehouse,
             quantity: detail.quantity,
+            price: detail.price,
           });
         }),
       );
 
       withdrawal.details = await this.withdrawalDetailRepository.save(details);
+
+      // Recalcular el monto total si no se proporcionó explícitamente
+      if (updateWithdrawalDto.amount === undefined) {
+        const totalAmount = this.calculateTotalAmount(
+          updateWithdrawalDto.details,
+        );
+        withdrawal.amount = totalAmount;
+      }
     }
 
     const updatedWithdrawal = await this.withdrawalRepository.save(withdrawal);

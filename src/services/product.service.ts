@@ -16,6 +16,25 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductMapper } from './mappers/product.mapper';
 
+interface SearchCondition {
+  name?: any;
+  slug?: any;
+  description?: any;
+  sku?: any;
+  is_active?: boolean;
+  type?: ProductType;
+}
+
+interface FilterCondition {
+  is_active?: boolean;
+  type?: ProductType;
+}
+
+interface WhereConditions {
+  relations: string[];
+  where?: SearchCondition[] | FilterCondition;
+}
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -85,23 +104,59 @@ export class ProductService {
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
-    const { page, limit, term } = paginationDto || {};
+    const { page, limit, term, type, is_active } = paginationDto || {};
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
       relations: ['brand', 'category', 'tax', 'measurement_unit'],
     };
-    const whereConditions = term
-      ? {
-          ...baseConditions,
-          where: [
-            { name: Like(`%${term}%`) },
-            { slug: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-            { sku: Like(`%${term}%`) },
-          ],
-        }
-      : baseConditions;
+
+    // Construir condiciones de búsqueda OR (para el término)
+    const searchConditions: SearchCondition[] = [];
+
+    if (term) {
+      searchConditions.push(
+        { name: Like(`%${term}%`) },
+        { slug: Like(`%${term}%`) },
+        { description: Like(`%${term}%`) },
+        { sku: Like(`%${term}%`) },
+      );
+    }
+
+    // Construir condiciones de filtro AND
+    const filterConditions: FilterCondition = {};
+
+    if (is_active !== undefined) {
+      if (typeof is_active === 'string') {
+        filterConditions.is_active = is_active === 'true';
+      } else {
+        filterConditions.is_active = is_active;
+      }
+    }
+
+    if (type) {
+      filterConditions.type = type as ProductType;
+    }
+
+    // Combinar condiciones
+    const whereConditions: WhereConditions = { ...baseConditions };
+
+    if (
+      searchConditions.length > 0 &&
+      Object.keys(filterConditions).length > 0
+    ) {
+      // Si hay tanto búsqueda como filtros, usar OR para búsqueda y AND para filtros
+      whereConditions.where = searchConditions.map((searchCondition) => ({
+        ...searchCondition,
+        ...filterConditions,
+      }));
+    } else if (searchConditions.length > 0) {
+      // Solo búsqueda OR
+      whereConditions.where = searchConditions;
+    } else if (Object.keys(filterConditions).length > 0) {
+      // Solo filtros AND
+      whereConditions.where = filterConditions;
+    }
 
     // Si no se proporciona paginación, devolver toda la data
     if (!page && !limit) {

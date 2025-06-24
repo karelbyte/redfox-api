@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reception } from '../models/reception.entity';
@@ -6,9 +10,15 @@ import { ReceptionDetail } from '../models/reception-detail.entity';
 import { Provider } from '../models/provider.entity';
 import { Product } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
+import { Inventory } from '../models/inventory.entity';
+import {
+  ProductHistory,
+  OperationType,
+} from '../models/product-history.entity';
 import { CreateReceptionDto } from '../dtos/reception/create-reception.dto';
 import { UpdateReceptionDto } from '../dtos/reception/update-reception.dto';
 import { ReceptionResponseDto } from '../dtos/reception/reception-response.dto';
+import { CloseReceptionResponseDto } from '../dtos/reception/close-reception-response.dto';
 import { ReceptionDetailResponseDto } from '../dtos/reception-detail/reception-detail-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
@@ -32,6 +42,10 @@ export class ReceptionService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
+    @InjectRepository(ProductHistory)
+    private readonly productHistoryRepository: Repository<ProductHistory>,
     private readonly productService: ProductService,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
@@ -77,7 +91,7 @@ export class ReceptionService {
       where: { id: receptionId },
     });
     if (reception) {
-      reception.amount = newAmount;
+      reception.amount = Math.round(newAmount * 100) / 100;
       await this.receptionRepository.save(reception);
     }
   }
@@ -239,26 +253,76 @@ export class ReceptionService {
       );
     }
 
-    const detail = this.receptionDetailRepository.create({
-      reception: reception,
-      product: product,
-      quantity: createDetailDto.quantity,
-      price: createDetailDto.price,
+    // Verificar si ya existe un detalle con este producto en la recepción
+    const existingDetail = await this.receptionDetailRepository.findOne({
+      where: {
+        reception: { id: receptionId },
+        product: { id: createDetailDto.product_id },
+      },
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+      ],
     });
 
-    const savedDetail = await this.receptionDetailRepository.save(detail);
+    let detailToSave: ReceptionDetail;
 
-    // Calcular el monto del nuevo detalle con precisión decimal
-    const detailAmount = this.calculateAmount(
-      createDetailDto.quantity,
-      createDetailDto.price,
-    );
+    if (existingDetail) {
+      // El producto ya existe, actualizar cantidad y promediar precio
+      const oldQuantity = Number(existingDetail.quantity);
+      const oldPrice = Number(existingDetail.price);
+      const newQuantity = Number(createDetailDto.quantity);
+      const newPrice = Number(createDetailDto.price);
 
-    // Actualizar el monto total de la recepción
-    const currentAmount = reception.amount || 0;
-    const newTotalAmount = Number(currentAmount) + Number(detailAmount);
+      // Calcular el monto anterior para restarlo del total
+      const oldAmount = this.calculateAmount(oldQuantity, oldPrice);
 
-    await this.updateReceptionAmount(receptionId, newTotalAmount);
+      // Sumar cantidades
+      const totalQuantity = oldQuantity + newQuantity;
+
+      // Calcular precio promedio ponderado
+      const totalAmount = oldQuantity * oldPrice + newQuantity * newPrice;
+      const averagePrice = totalAmount / totalQuantity;
+
+      // Actualizar el detalle existente
+      existingDetail.quantity = totalQuantity;
+      existingDetail.price = averagePrice;
+
+      detailToSave = existingDetail;
+
+      // Calcular el nuevo monto total para la recepción
+      const newAmount = this.calculateAmount(totalQuantity, averagePrice);
+      const currentAmount = reception.amount || 0;
+      const newTotalAmount = currentAmount - oldAmount + newAmount;
+
+      await this.updateReceptionAmount(receptionId, newTotalAmount);
+    } else {
+      const detail = this.receptionDetailRepository.create({
+        reception: reception,
+        product: product,
+        quantity: createDetailDto.quantity,
+        price: createDetailDto.price,
+      });
+
+      detailToSave = detail;
+
+      // Calcular el monto del nuevo detalle
+      const detailAmount = this.calculateAmount(
+        createDetailDto.quantity,
+        createDetailDto.price,
+      );
+
+      // Actualizar el monto total de la recepción
+      const currentAmount = reception.amount || 0;
+      const newTotalAmount = Number(currentAmount) + Number(detailAmount);
+
+      await this.updateReceptionAmount(receptionId, newTotalAmount);
+    }
+
+    const savedDetail = await this.receptionDetailRepository.save(detailToSave);
 
     // Recargar con relaciones para la respuesta
     const detailWithRelations = await this.receptionDetailRepository.findOne({
@@ -452,6 +516,114 @@ export class ReceptionService {
 
     // Eliminar el detalle
     await this.receptionDetailRepository.softDelete(detailId);
+  }
+
+  async closeReception(
+    receptionId: string,
+  ): Promise<CloseReceptionResponseDto> {
+    // Verificar que la recepción existe y está abierta
+    const reception = await this.receptionRepository.findOne({
+      where: { id: receptionId },
+      relations: ['warehouse', 'details', 'details.product'],
+    });
+
+    if (!reception) {
+      throw new NotFoundException(
+        `Recepción con ID ${receptionId} no encontrada`,
+      );
+    }
+
+    if (!reception.status) {
+      throw new BadRequestException('La recepción ya está cerrada');
+    }
+
+    // Obtener todos los detalles de la recepción
+    const receptionDetails = await this.receptionDetailRepository.find({
+      where: { reception: { id: receptionId } },
+      relations: ['product'],
+    });
+
+    if (receptionDetails.length === 0) {
+      throw new BadRequestException(
+        'La recepción no tiene productos para transferir',
+      );
+    }
+
+    let transferredProducts = 0;
+    let totalQuantity = 0;
+
+    // Procesar cada producto de la recepción
+    for (const detail of receptionDetails) {
+      // Buscar si el producto ya existe en inventory
+      const existingInventory = await this.inventoryRepository.findOne({
+        where: {
+          product: { id: detail.product.id },
+          warehouse: { id: reception.warehouse.id },
+        },
+        relations: ['product', 'warehouse'],
+      });
+
+      let finalInventory: Inventory;
+
+      if (existingInventory) {
+        // Si existe, sumar las cantidades
+        existingInventory.quantity =
+          Number(existingInventory.quantity) + Number(detail.quantity);
+        // Actualizar precio con el promedio ponderado
+        const totalValue =
+          Number(existingInventory.price) *
+            (Number(existingInventory.quantity) - Number(detail.quantity)) +
+          Number(detail.price) * Number(detail.quantity);
+        existingInventory.price =
+          totalValue / Number(existingInventory.quantity);
+
+        finalInventory = await this.inventoryRepository.save(existingInventory);
+      } else {
+        // Si no existe, crear nuevo registro en inventory
+        const newInventory = this.inventoryRepository.create({
+          product: detail.product,
+          warehouse: reception.warehouse,
+          quantity: detail.quantity,
+          price: detail.price,
+        });
+
+        finalInventory = await this.inventoryRepository.save(newInventory);
+      }
+
+      // Crear registro en ProductHistory
+      const productHistory = this.productHistoryRepository.create({
+        product: detail.product,
+        warehouse: reception.warehouse,
+        operation_type: OperationType.RECEPTION,
+        operation_id: reception.id,
+        quantity: Number(detail.quantity),
+        current_stock: Number(finalInventory.quantity),
+      });
+
+      await this.productHistoryRepository.save(productHistory);
+
+      transferredProducts++;
+      totalQuantity += Number(detail.quantity);
+    }
+
+    // Cerrar la recepción
+    reception.status = false;
+    await this.receptionRepository.save(reception);
+
+    // Retornar resumen de la operación
+    const message =
+      transferredProducts > 0
+        ? `Recepción cerrada exitosamente. ${transferredProducts} productos transferidos al inventario.`
+        : 'Recepción cerrada exitosamente. No había productos para transferir.';
+
+    return {
+      receptionId: reception.id,
+      receptionCode: reception.code,
+      transferredProducts,
+      totalQuantity,
+      message,
+      closedAt: new Date(),
+    };
   }
 }
 

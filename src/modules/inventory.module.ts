@@ -10,6 +10,8 @@ import { BrandMapper } from '../services/mappers/brand.mapper';
 import { CategoryMapper } from '../services/mappers/category.mapper';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
+import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
+import { CurrencyMapper } from '../services/mappers/currency.mapper';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
     CategoryMapper,
     TaxMapper,
     MeasurementUnitMapper,
+    WarehouseMapper,
+    CurrencyMapper,
   ],
   exports: [InventoryService],
 })

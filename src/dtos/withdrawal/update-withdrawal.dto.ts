@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsBoolean, IsOptional, Length, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsUUID, IsBoolean, IsOptional, Length, IsArray, ValidateNested, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
 
@@ -16,6 +16,11 @@ export class UpdateWithdrawalDto {
   @IsUUID()
   @IsOptional()
   client_id?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  amount?: number;
 
   @IsBoolean()
   @IsOptional()

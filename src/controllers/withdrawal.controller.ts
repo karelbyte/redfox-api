@@ -3,12 +3,12 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
   ParseUUIDPipe,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { CreateWithdrawalDto } from '../dtos/withdrawal/create-withdrawal.dto';
@@ -44,7 +44,7 @@ export class WithdrawalController {
     return this.withdrawalService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWithdrawalDto: UpdateWithdrawalDto,
@@ -56,4 +56,4 @@ export class WithdrawalController {
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.withdrawalService.remove(id);
   }
-} 
+}

@@ -5,7 +5,9 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInterface {
+export class CreateWithdrawalsDetailsTable1716400000130
+  implements MigrationInterface
+{
   name = 'CreateWithdrawalsDetailsTable1716400000130';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -13,7 +15,7 @@ export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInte
 
     await queryRunner.createTable(
       new Table({
-        name: 'withdrawals_details',
+        name: 'withdrawal_details',
         columns: [
           {
             name: 'id',
@@ -24,7 +26,13 @@ export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInte
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
-            name: 'withdrawals_id',
+            name: 'withdrawal_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
+            name: 'warehouse_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
             isNullable: false,
@@ -37,6 +45,14 @@ export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInte
           },
           {
             name: 'quantity',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            isNullable: false,
+            default: 0,
+          },
+          {
+            name: 'price',
             type: 'decimal',
             precision: 10,
             scale: 2,
@@ -68,10 +84,21 @@ export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInte
     await queryRunner.createForeignKey(
       'withdrawals_details',
       new TableForeignKey({
-        columnNames: ['withdrawals_id'],
+        columnNames: ['withdrawal_id'],
         referencedColumnNames: ['id'],
         referencedTableName: 'withdrawals',
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'withdrawals_details',
+      new TableForeignKey({
+        columnNames: ['warehouse_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'warehouses',
+        onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       }),
     );
@@ -89,16 +116,16 @@ export class CreateWithdrawalsDetailsTable1716400000130 implements MigrationInte
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('withdrawals_details');
+    const table = await queryRunner.getTable('withdrawal_details');
     if (!table) return;
     const foreignKeys = table.foreignKeys;
 
     await Promise.all(
       foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('withdrawals_details', foreignKey),
+        queryRunner.dropForeignKey('withdrawal_details', foreignKey),
       ),
     );
 
-    await queryRunner.dropTable('withdrawals_details');
+    await queryRunner.dropTable('withdrawal_details');
   }
 }

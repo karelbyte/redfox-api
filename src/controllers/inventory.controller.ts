@@ -38,6 +38,13 @@ export class InventoryController {
     return this.inventoryService.findAll(queryDto);
   }
 
+  @Get('products')
+  findAllProductsInInventory(
+    @Query() queryDto: InventoryQueryDto,
+  ): Promise<PaginatedResponse<InventoryListResponseDto>> {
+    return this.inventoryService.findAllProductsInInventory(queryDto);
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,

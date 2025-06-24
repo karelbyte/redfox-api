@@ -27,6 +27,9 @@ export class Withdrawal {
   @JoinColumn({ name: 'client_id' })
   client: Client;
 
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  amount: number;
+
   @Column({ default: true })
   status: boolean;
 

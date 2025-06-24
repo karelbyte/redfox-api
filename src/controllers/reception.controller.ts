@@ -18,6 +18,7 @@ import { CreateReceptionDetailDto } from '../dtos/reception-detail/create-recept
 import { UpdateReceptionDetailDto } from '../dtos/reception-detail/update-reception-detail.dto';
 import { ReceptionDetailResponseDto } from '../dtos/reception-detail/reception-detail-response.dto';
 import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-detail-query.dto';
+import { CloseReceptionResponseDto } from '../dtos/reception/close-reception-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -60,6 +61,13 @@ export class ReceptionController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.receptionService.remove(id);
+  }
+
+  @Post(':id/close')
+  closeReception(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CloseReceptionResponseDto> {
+    return this.receptionService.closeReception(id);
   }
 
   // Rutas para detalles de recepción

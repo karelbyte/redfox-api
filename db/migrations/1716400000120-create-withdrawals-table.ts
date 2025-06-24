@@ -43,6 +43,12 @@ export class CreateWithdrawalsTable1716400000120 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'amount',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+          },
+          {
             name: 'status',
             type: 'boolean',
             default: true,

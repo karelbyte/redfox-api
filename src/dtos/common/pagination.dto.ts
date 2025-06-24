@@ -24,6 +24,19 @@ export class PaginationDto {
   @IsOptional()
   term?: string;
 
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  })
+  @IsBoolean()
+  @IsOptional()
+  is_active?: string;
+
   @Transform(({ value }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;

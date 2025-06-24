@@ -10,6 +10,7 @@ import { InventoryQueryDto } from '../dtos/inventory/inventory-query.dto';
 import { ProductService } from './product.service';
 import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseService } from './warehouse.service';
+import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class InventoryService {
     private readonly productService: ProductService,
     private readonly productMapper: ProductMapper,
     private readonly warehouseService: WarehouseService,
+    private readonly warehouseMapper: WarehouseMapper,
   ) {}
 
   private async mapToResponseDto(
@@ -43,10 +45,14 @@ export class InventoryService {
 
   private mapToListResponseDto(inventory: Inventory): InventoryListResponseDto {
     const product = this.productMapper.mapToResponseDto(inventory.product);
+    const warehouse = this.warehouseMapper.mapToResponseDto(
+      inventory.warehouse,
+    );
 
     return {
       id: inventory.id,
       product,
+      warehouse,
       quantity: inventory.quantity,
       price: inventory.price,
       createdAt: inventory.created_at,
@@ -80,6 +86,7 @@ export class InventoryService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'warehouse',
       ],
       withDeleted: false,
       skip,
@@ -139,5 +146,72 @@ export class InventoryService {
       throw new NotFoundException(`Inventory with ID ${id} not found`);
     }
     await this.inventoryRepository.softRemove(inventory);
+  }
+
+  /**
+   * Obtiene todos los productos en inventario con su cantidad y precio total
+   * agrupados por producto, con paginación y búsqueda por nombre
+   */
+  async findAllProductsInInventory(
+    queryDto: InventoryQueryDto,
+  ): Promise<PaginatedResponse<InventoryListResponseDto>> {
+    const { page = 1, limit = 10, warehouse_id, term } = queryDto;
+    const skip = (page - 1) * limit;
+
+    // Construir condiciones de búsqueda
+    const whereConditions: any = {};
+
+    if (warehouse_id) {
+      whereConditions.warehouse = { id: warehouse_id };
+    }
+
+    const [inventory] = await this.inventoryRepository.findAndCount({
+      where: whereConditions,
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.tax',
+        'product.measurement_unit',
+        'warehouse',
+        'warehouse.currency',
+      ],
+      skip,
+      take: limit,
+      order: {
+        product: {
+          name: 'ASC',
+        },
+        quantity: 'DESC',
+      },
+    });
+
+    // Filtrar por cantidad > 0 y término de búsqueda en memoria
+    let filteredInventory = inventory.filter((item) => item.quantity > 0);
+
+    if (term) {
+      const searchTerm = term.toLowerCase();
+      filteredInventory = filteredInventory.filter(
+        (item) =>
+          item.product.name.toLowerCase().includes(searchTerm) ||
+          item.product.sku.toLowerCase().includes(searchTerm) ||
+          (item.product.description &&
+            item.product.description.toLowerCase().includes(searchTerm)),
+      );
+    }
+
+    const data = filteredInventory.map((item) =>
+      this.mapToListResponseDto(item),
+    );
+
+    return {
+      data,
+      meta: {
+        total: filteredInventory.length,
+        page,
+        limit,
+        totalPages: Math.ceil(filteredInventory.length / limit),
+      },
+    };
   }
 }
