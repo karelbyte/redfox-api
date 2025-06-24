@@ -5,6 +5,8 @@ import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
 import { Product } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
+import { Inventory } from '../models/inventory.entity';
+import { ProductHistory } from '../models/product-history.entity';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { WithdrawalController } from '../controllers/withdrawal.controller';
 import { ProductModule } from './product.module';
@@ -18,7 +20,15 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Withdrawal, WithdrawalDetail, Client, Product, Warehouse]),
+    TypeOrmModule.forFeature([
+      Withdrawal, 
+      WithdrawalDetail, 
+      Client, 
+      Product, 
+      Warehouse,
+      Inventory,
+      ProductHistory,
+    ]),
     ProductModule,
   ],
   controllers: [WithdrawalController],
