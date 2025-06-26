@@ -12,26 +12,30 @@ export class UserLanguagesSeed {
     console.log('🌍 Seeding user languages...');
 
     try {
-      // Buscar el usuario admin
+      // Search the user admin
       const adminUser = await userRepository.findOne({
         where: { email: 'admin@redfox.com' },
       });
 
       if (adminUser) {
-        // Buscar el idioma español
+        // Look for the Spanish language
         const spanishLanguage = await languageRepository.findOne({
           where: { code: 'es' },
         });
 
         if (spanishLanguage) {
-          // Crear una entrada específica para el usuario admin con español
-          const userLanguage = languageRepository.create({
-            code: spanishLanguage.code,
+          // Create a specific entry for the admin user with Spanish
+          const adminUserLanguage = languageRepository.create({
             userId: adminUser.id,
+            code: 'es',
           });
 
-          await languageRepository.save(userLanguage);
-          console.log(`✅ Idioma español asignado al usuario admin`);
+          await languageRepository.save(adminUserLanguage);
+          console.log('✅ Admin user language set to Spanish');
+        } else {
+          console.log(
+            '⚠️  Spanish language not found, skipping admin user language setup',
+          );
         }
       }
 

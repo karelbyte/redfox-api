@@ -6,571 +6,571 @@ export class PermissionsSeed {
     const permissionRepository = dataSource.getRepository(Permission);
 
     const permissions = [
-      // Permisos de Usuarios
+      // User Permissions
       {
         code: 'user_module_view',
         module: 'users',
-        description: 'Permite ver el módulo de usuarios',
+        description: 'Allows viewing the users module',
       },
       {
         code: 'user_create',
         module: 'users',
-        description: 'Permite crear usuarios',
+        description: 'Allows creating users',
       },
       {
         code: 'user_read',
         module: 'users',
-        description: 'Permite leer usuarios',
+        description: 'Allows reading users',
       },
       {
         code: 'user_update',
         module: 'users',
-        description: 'Permite actualizar usuarios',
+        description: 'Allows updating users',
       },
       {
         code: 'user_delete',
         module: 'users',
-        description: 'Permite eliminar usuarios',
+        description: 'Allows deleting users',
       },
 
-      // Permisos de Roles
+      // Role Permissions
       {
         code: 'role_module_view',
         module: 'roles',
-        description: 'Permite ver el módulo de roles',
+        description: 'Allows viewing the roles module',
       },
       {
         code: 'role_create',
         module: 'roles',
-        description: 'Permite crear roles',
+        description: 'Allows creating roles',
       },
       {
         code: 'role_read',
         module: 'roles',
-        description: 'Permite leer roles',
+        description: 'Allows reading roles',
       },
       {
         code: 'role_update',
         module: 'roles',
-        description: 'Permite actualizar roles',
+        description: 'Allows updating roles',
       },
       {
         code: 'role_delete',
         module: 'roles',
-        description: 'Permite eliminar roles',
+        description: 'Allows deleting roles',
       },
 
-      // Permisos de Permisos
+      // Permission Permissions
       {
         code: 'permission_module_view',
         module: 'permissions',
-        description: 'Permite ver el módulo de permisos',
+        description: 'Allows viewing the permissions module',
       },
       {
         code: 'permission_create',
         module: 'permissions',
-        description: 'Permite crear permisos',
+        description: 'Allows creating permissions',
       },
       {
         code: 'permission_read',
         module: 'permissions',
-        description: 'Permite leer permisos',
+        description: 'Allows reading permissions',
       },
       {
         code: 'permission_update',
         module: 'permissions',
-        description: 'Permite actualizar permisos',
+        description: 'Allows updating permissions',
       },
       {
         code: 'permission_delete',
         module: 'permissions',
-        description: 'Permite eliminar permisos',
+        description: 'Allows deleting permissions',
       },
 
-      // Permisos de Idiomas
+      // Language Permissions
       {
         code: 'language_module_view',
         module: 'languages',
-        description: 'Permite ver el módulo de idiomas',
+        description: 'Allows viewing the languages module',
       },
       {
         code: 'language_create',
         module: 'languages',
-        description: 'Permite crear idiomas',
+        description: 'Allows creating languages',
       },
       {
         code: 'language_read',
         module: 'languages',
-        description: 'Permite leer idiomas',
+        description: 'Allows reading languages',
       },
       {
         code: 'language_update',
         module: 'languages',
-        description: 'Permite actualizar idiomas',
+        description: 'Allows updating languages',
       },
       {
         code: 'language_delete',
         module: 'languages',
-        description: 'Permite eliminar idiomas',
+        description: 'Allows deleting languages',
       },
 
-      // Permisos de Clientes
+      // Client Permissions
       {
         code: 'client_module_view',
         module: 'clients',
-        description: 'Permite ver el módulo de clientes',
+        description: 'Allows viewing the clients module',
       },
       {
         code: 'client_create',
         module: 'clients',
-        description: 'Permite crear clientes',
+        description: 'Allows creating clients',
       },
       {
         code: 'client_read',
         module: 'clients',
-        description: 'Permite leer clientes',
+        description: 'Allows reading clients',
       },
       {
         code: 'client_update',
         module: 'clients',
-        description: 'Permite actualizar clientes',
+        description: 'Allows updating clients',
       },
       {
         code: 'client_delete',
         module: 'clients',
-        description: 'Permite eliminar clientes',
+        description: 'Allows deleting clients',
       },
 
-      // Permisos de Proveedores
+      // Provider Permissions
       {
         code: 'provider_module_view',
         module: 'providers',
-        description: 'Permite ver el módulo de proveedores',
+        description: 'Allows viewing the providers module',
       },
       {
         code: 'provider_create',
         module: 'providers',
-        description: 'Permite crear proveedores',
+        description: 'Allows creating providers',
       },
       {
         code: 'provider_read',
         module: 'providers',
-        description: 'Permite leer proveedores',
+        description: 'Allows reading providers',
       },
       {
         code: 'provider_update',
         module: 'providers',
-        description: 'Permite actualizar proveedores',
+        description: 'Allows updating providers',
       },
       {
         code: 'provider_delete',
         module: 'providers',
-        description: 'Permite eliminar proveedores',
+        description: 'Allows deleting providers',
       },
 
-      // Permisos de Unidades de Medida
+      // Measurement Unit Permissions
       {
         code: 'measurement_unit_module_view',
         module: 'measurement_units',
-        description: 'Permite ver el módulo de unidades de medida',
+        description: 'Allows viewing the measurement units module',
       },
       {
         code: 'measurement_unit_create',
         module: 'measurement_units',
-        description: 'Permite crear unidades de medida',
+        description: 'Allows creating measurement units',
       },
       {
         code: 'measurement_unit_read',
         module: 'measurement_units',
-        description: 'Permite leer unidades de medida',
+        description: 'Allows reading measurement units',
       },
       {
         code: 'measurement_unit_update',
         module: 'measurement_units',
-        description: 'Permite actualizar unidades de medida',
+        description: 'Allows updating measurement units',
       },
       {
         code: 'measurement_unit_delete',
         module: 'measurement_units',
-        description: 'Permite eliminar unidades de medida',
+        description: 'Allows deleting measurement units',
       },
 
-      // Permisos de Marcas
+      // Brand Permissions
       {
         code: 'brand_module_view',
         module: 'brands',
-        description: 'Permite ver el módulo de marcas',
+        description: 'Allows viewing the brands module',
       },
       {
         code: 'brand_create',
         module: 'brands',
-        description: 'Permite crear marcas',
+        description: 'Allows creating brands',
       },
       {
         code: 'brand_read',
         module: 'brands',
-        description: 'Permite leer marcas',
+        description: 'Allows reading brands',
       },
       {
         code: 'brand_update',
         module: 'brands',
-        description: 'Permite actualizar marcas',
+        description: 'Allows updating brands',
       },
       {
         code: 'brand_delete',
         module: 'brands',
-        description: 'Permite eliminar marcas',
+        description: 'Allows deleting brands',
       },
 
-      // Permisos de Categorías
+      // Category Permissions
       {
         code: 'category_module_view',
         module: 'categories',
-        description: 'Permite ver el módulo de categorías',
+        description: 'Allows viewing the categories module',
       },
       {
         code: 'category_create',
         module: 'categories',
-        description: 'Permite crear categorías',
+        description: 'Allows creating categories',
       },
       {
         code: 'category_read',
         module: 'categories',
-        description: 'Permite leer categorías',
+        description: 'Allows reading categories',
       },
       {
         code: 'category_update',
         module: 'categories',
-        description: 'Permite actualizar categorías',
+        description: 'Allows updating categories',
       },
       {
         code: 'category_delete',
         module: 'categories',
-        description: 'Permite eliminar categorías',
+        description: 'Allows deleting categories',
       },
 
-      // Permisos de Impuestos
+      // Tax Permissions
       {
         code: 'tax_module_view',
         module: 'taxes',
-        description: 'Permite ver el módulo de impuestos',
+        description: 'Allows viewing the taxes module',
       },
       {
         code: 'tax_create',
         module: 'taxes',
-        description: 'Permite crear impuestos',
+        description: 'Allows creating taxes',
       },
       {
         code: 'tax_read',
         module: 'taxes',
-        description: 'Permite leer impuestos',
+        description: 'Allows reading taxes',
       },
       {
         code: 'tax_update',
         module: 'taxes',
-        description: 'Permite actualizar impuestos',
+        description: 'Allows updating taxes',
       },
       {
         code: 'tax_delete',
         module: 'taxes',
-        description: 'Permite eliminar impuestos',
+        description: 'Allows deleting taxes',
       },
 
-      // Permisos de Monedas
+      // Currency Permissions
       {
         code: 'currency_module_view',
         module: 'currencies',
-        description: 'Permite ver el módulo de monedas',
+        description: 'Allows viewing the currencies module',
       },
       {
         code: 'currency_create',
         module: 'currencies',
-        description: 'Permite crear monedas',
+        description: 'Allows creating currencies',
       },
       {
         code: 'currency_read',
         module: 'currencies',
-        description: 'Permite leer monedas',
+        description: 'Allows reading currencies',
       },
       {
         code: 'currency_update',
         module: 'currencies',
-        description: 'Permite actualizar monedas',
+        description: 'Allows updating currencies',
       },
       {
         code: 'currency_delete',
         module: 'currencies',
-        description: 'Permite eliminar monedas',
+        description: 'Allows deleting currencies',
       },
 
-      // Permisos de Productos
+      // Product Permissions
       {
         code: 'product_module_view',
         module: 'products',
-        description: 'Permite ver el módulo de productos',
+        description: 'Allows viewing the products module',
       },
       {
         code: 'product_create',
         module: 'products',
-        description: 'Permite crear productos',
+        description: 'Allows creating products',
       },
       {
         code: 'product_read',
         module: 'products',
-        description: 'Permite leer productos',
+        description: 'Allows reading products',
       },
       {
         code: 'product_update',
         module: 'products',
-        description: 'Permite actualizar productos',
+        description: 'Allows updating products',
       },
       {
         code: 'product_delete',
         module: 'products',
-        description: 'Permite eliminar productos',
+        description: 'Allows deleting products',
       },
 
-      // Permisos de Inventario
+      // Inventory Permissions
       {
         code: 'inventory_module_view',
         module: 'inventory',
-        description: 'Permite ver el módulo de inventario',
+        description: 'Allows viewing the inventory module',
       },
       {
         code: 'inventory_create',
         module: 'inventory',
-        description: 'Permite crear registros de inventario',
+        description: 'Allows creating inventory records',
       },
       {
         code: 'inventory_read',
         module: 'inventory',
-        description: 'Permite leer registros de inventario',
+        description: 'Allows reading inventory records',
       },
       {
         code: 'inventory_update',
         module: 'inventory',
-        description: 'Permite actualizar registros de inventario',
+        description: 'Allows updating inventory records',
       },
       {
         code: 'inventory_delete',
         module: 'inventory',
-        description: 'Permite eliminar registros de inventario',
+        description: 'Allows deleting inventory records',
       },
 
-      // Permisos de Almacenes
+      // Warehouse Permissions
       {
         code: 'warehouse_module_view',
         module: 'warehouses',
-        description: 'Permite ver el módulo de almacenes',
+        description: 'Allows viewing the warehouses module',
       },
       {
         code: 'warehouse_create',
         module: 'warehouses',
-        description: 'Permite crear almacenes',
+        description: 'Allows creating warehouses',
       },
       {
         code: 'warehouse_read',
         module: 'warehouses',
-        description: 'Permite leer almacenes',
+        description: 'Allows reading warehouses',
       },
       {
         code: 'warehouse_update',
         module: 'warehouses',
-        description: 'Permite actualizar almacenes',
+        description: 'Allows updating warehouses',
       },
       {
         code: 'warehouse_delete',
         module: 'warehouses',
-        description: 'Permite eliminar almacenes',
+        description: 'Allows deleting warehouses',
       },
 
-      // Permisos de Aperturas de Almacén
+      // Warehouse Opening Permissions
       {
         code: 'warehouse_opening_module_view',
         module: 'warehouse_openings',
-        description: 'Permite ver el módulo de aperturas de almacén',
+        description: 'Allows viewing the warehouse openings module',
       },
       {
         code: 'warehouse_opening_create',
         module: 'warehouse_openings',
-        description: 'Permite crear aperturas de almacén',
+        description: 'Allows creating warehouse openings',
       },
       {
         code: 'warehouse_opening_read',
         module: 'warehouse_openings',
-        description: 'Permite leer aperturas de almacén',
+        description: 'Allows reading warehouse openings',
       },
       {
         code: 'warehouse_opening_update',
         module: 'warehouse_openings',
-        description: 'Permite actualizar aperturas de almacén',
+        description: 'Allows updating warehouse openings',
       },
       {
         code: 'warehouse_opening_delete',
         module: 'warehouse_openings',
-        description: 'Permite eliminar aperturas de almacén',
+        description: 'Allows deleting warehouse openings',
       },
 
-      // Permisos de Recepciones
+      // Reception Permissions
       {
         code: 'reception_module_view',
         module: 'receptions',
-        description: 'Permite ver el módulo de recepciones',
+        description: 'Allows viewing the receptions module',
       },
       {
         code: 'reception_create',
         module: 'receptions',
-        description: 'Permite crear recepciones',
+        description: 'Allows creating receptions',
       },
       {
         code: 'reception_read',
         module: 'receptions',
-        description: 'Permite leer recepciones',
+        description: 'Allows reading receptions',
       },
       {
         code: 'reception_update',
         module: 'receptions',
-        description: 'Permite actualizar recepciones',
+        description: 'Allows updating receptions',
       },
       {
         code: 'reception_delete',
         module: 'receptions',
-        description: 'Permite eliminar recepciones',
+        description: 'Allows deleting receptions',
       },
 
-      // Permisos de Detalles de Recepción
+      // Reception Detail Permissions
       {
         code: 'reception_detail_module_view',
         module: 'reception_details',
-        description: 'Permite ver el módulo de detalles de recepción',
+        description: 'Allows viewing the reception details module',
       },
       {
         code: 'reception_detail_create',
         module: 'reception_details',
-        description: 'Permite crear detalles de recepción',
+        description: 'Allows creating reception details',
       },
       {
         code: 'reception_detail_read',
         module: 'reception_details',
-        description: 'Permite leer detalles de recepción',
+        description: 'Allows reading reception details',
       },
       {
         code: 'reception_detail_update',
         module: 'reception_details',
-        description: 'Permite actualizar detalles de recepción',
+        description: 'Allows updating reception details',
       },
       {
         code: 'reception_detail_delete',
         module: 'reception_details',
-        description: 'Permite eliminar detalles de recepción',
+        description: 'Allows deleting reception details',
       },
 
-      // Permisos de Retiros
+      // Withdrawal Permissions
       {
         code: 'withdrawal_module_view',
         module: 'withdrawals',
-        description: 'Permite ver el módulo de retiros',
+        description: 'Allows viewing the withdrawals module',
       },
       {
         code: 'withdrawal_create',
         module: 'withdrawals',
-        description: 'Permite crear retiros',
+        description: 'Allows creating withdrawals',
       },
       {
         code: 'withdrawal_read',
         module: 'withdrawals',
-        description: 'Permite leer retiros',
+        description: 'Allows reading withdrawals',
       },
       {
         code: 'withdrawal_update',
         module: 'withdrawals',
-        description: 'Permite actualizar retiros',
+        description: 'Allows updating withdrawals',
       },
       {
         code: 'withdrawal_delete',
         module: 'withdrawals',
-        description: 'Permite eliminar retiros',
+        description: 'Allows deleting withdrawals',
       },
 
-      // Permisos de Detalles de Retiro
+      // Withdrawal Detail Permissions
       {
         code: 'withdrawal_detail_module_view',
         module: 'withdrawal_details',
-        description: 'Permite ver el módulo de detalles de retiro',
+        description: 'Allows viewing the withdrawal details module',
       },
       {
         code: 'withdrawal_detail_create',
         module: 'withdrawal_details',
-        description: 'Permite crear detalles de retiro',
+        description: 'Allows creating withdrawal details',
       },
       {
         code: 'withdrawal_detail_read',
         module: 'withdrawal_details',
-        description: 'Permite leer detalles de retiro',
+        description: 'Allows reading withdrawal details',
       },
       {
         code: 'withdrawal_detail_update',
         module: 'withdrawal_details',
-        description: 'Permite actualizar detalles de retiro',
+        description: 'Allows updating withdrawal details',
       },
       {
         code: 'withdrawal_detail_delete',
         module: 'withdrawal_details',
-        description: 'Permite eliminar detalles de retiro',
+        description: 'Allows deleting withdrawal details',
       },
 
-      // Permisos de Historial de Productos
+      // Product History Permissions
       {
         code: 'product_history_module_view',
         module: 'product_history',
-        description: 'Permite ver el módulo de historial de productos',
+        description: 'Allows viewing the product history module',
       },
       {
         code: 'product_history_create',
         module: 'product_history',
-        description: 'Permite crear registros de historial de productos',
+        description: 'Allows creating product history records',
       },
       {
         code: 'product_history_read',
         module: 'product_history',
-        description: 'Permite leer registros de historial de productos',
+        description: 'Allows reading product history records',
       },
       {
         code: 'product_history_update',
         module: 'product_history',
-        description: 'Permite actualizar registros de historial de productos',
+        description: 'Allows updating product history records',
       },
       {
         code: 'product_history_delete',
         module: 'product_history',
-        description: 'Permite eliminar registros de historial de productos',
+        description: 'Allows deleting product history records',
       },
 
-      // Permisos de Asignación de Roles y Permisos
+      // Role Permission Assignment Permissions
       {
         code: 'role_permission_module_view',
         module: 'role_permissions',
-        description: 'Permite ver el módulo de asignación de roles y permisos',
+        description: 'Allows viewing the role permission assignment module',
       },
       {
         code: 'role_permission_create',
         module: 'role_permissions',
-        description: 'Permite crear asignaciones de roles y permisos',
+        description: 'Allows creating role permission assignments',
       },
       {
         code: 'role_permission_read',
         module: 'role_permissions',
-        description: 'Permite leer asignaciones de roles y permisos',
+        description: 'Allows reading role permission assignments',
       },
       {
         code: 'role_permission_update',
         module: 'role_permissions',
-        description: 'Permite actualizar asignaciones de roles y permisos',
+        description: 'Allows updating role permission assignments',
       },
       {
         code: 'role_permission_delete',
         module: 'role_permissions',
-        description: 'Permite eliminar asignaciones de roles y permisos',
+        description: 'Allows deleting role permission assignments',
       },
     ];
 
@@ -584,7 +584,7 @@ export class PermissionsSeed {
       if (!existingPermission) {
         await permissionRepository.save(permission);
         console.log(
-          `✅ Permissio create: ${permission.code} (${permission.module})`,
+          `✅ Permission created: ${permission.code} (${permission.module})`,
         );
       } else {
         console.log(
@@ -593,6 +593,6 @@ export class PermissionsSeed {
       }
     }
 
-    console.log(`✅ They were created ${permissions.length} system permits`);
+    console.log(`✅ ${permissions.length} system permissions were created`);
   }
 }

@@ -46,7 +46,7 @@ export class BrandService {
       const savedBrand = await this.brandRepository.save(brand);
       return this.mapToResponseDto(savedBrand);
     } catch (error) {
-      // Manejar error de código duplicado
+      // Handle duplicate code error
       if (
         error.code === 'ER_DUP_ENTRY' &&
         error.message.includes('brands.UQ_')
@@ -56,10 +56,8 @@ export class BrandService {
           userId,
           { code: createBrandDto.code },
         );
-        throw new ConflictException(message);
+        throw new BadRequestException(message);
       }
-
-      // Re-lanzar otros errores
       throw error;
     }
   }
@@ -68,8 +66,8 @@ export class BrandService {
     paginationDto?: PaginationDto,
     userId?: string,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
-    // Si no hay parámetros de paginación, traer todos los registros
-    if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
+    // If no pagination parameters, bring all records
+    if (!paginationDto) {
       const brands = await this.brandRepository.find({
         withDeleted: false,
       });
@@ -87,7 +85,7 @@ export class BrandService {
       };
     }
 
-    // Si hay parámetros de paginación, paginar normalmente
+    // If there are pagination parameters, paginate normally
     const { page = 1, limit = 8 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -154,7 +152,7 @@ export class BrandService {
       });
       return this.mapToResponseDto(updatedBrand);
     } catch (error) {
-      // Manejar error de código duplicado en actualización
+      // Handle duplicate code error in update
       if (
         error.code === 'ER_DUP_ENTRY' &&
         error.message.includes('brands.UQ_')
@@ -164,10 +162,8 @@ export class BrandService {
           userId,
           { code: updateBrandDto.code },
         );
-        throw new ConflictException(message);
+        throw new BadRequestException(message);
       }
-
-      // Re-lanzar otros errores
       throw error;
     }
   }
@@ -186,7 +182,7 @@ export class BrandService {
       throw new NotFoundException(message);
     }
 
-    // Verificar si el brand está siendo usado en productos
+    // Check if the brand is being used in products
     const productsUsingBrand = await this.productRepository.count({
       where: { brand: { id } },
       withDeleted: false,

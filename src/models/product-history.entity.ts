@@ -11,8 +11,8 @@ import { Warehouse } from './warehouse.entity';
 
 export enum OperationType {
   // Entradas
-  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING',    // Apertura de almacén
-  RECEPTION = 'RECEPTION',                    // Recepción de productos
+  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING',    // Warehouse opening
+  RECEPTION = 'RECEPTION',                    // Product reception
   PURCHASE = 'PURCHASE',                      // Compra directa
   TRANSFER_IN = 'TRANSFER_IN',                // Transferencia entrante
   ADJUSTMENT_IN = 'ADJUSTMENT_IN',            // Ajuste positivo
@@ -20,7 +20,7 @@ export enum OperationType {
   
   // Salidas  
   SALE = 'SALE',                              // Venta
-  WITHDRAWAL = 'WITHDRAWAL',                  // Retiro/salida
+  WITHDRAWAL = 'WITHDRAWAL',                  // Product withdrawal
   TRANSFER_OUT = 'TRANSFER_OUT',              // Transferencia saliente
   ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',          // Ajuste negativo
   DETERIORATION = 'DETERIORATION',            // Deterioro/merma

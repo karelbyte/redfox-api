@@ -8,7 +8,7 @@ export class UsersSeed {
     const userRepository = dataSource.getRepository(User);
     const roleRepository = dataSource.getRepository(Role);
 
-    // Obtener roles
+    // Obtain roles
     const adminRole = await roleRepository.findOne({
       where: { code: 'ADMIN' },
     });
@@ -18,9 +18,7 @@ export class UsersSeed {
     });
 
     if (!adminRole || !sellerRole) {
-      console.log(
-        '⚠️ Roles no encontrados. Asegúrate de ejecutar RolesSeed primero.',
-      );
+      console.log('⚠️ Not found roles.Be sure to run rolesseed first.');
       return;
     }
 

@@ -4,11 +4,11 @@ import dataSource from '../../src/config/typeorm-cli.config';
 dataSource
   .initialize()
   .then(async () => {
-    console.log('Conexión a la base de datos establecida');
+    console.log('Database connection established');
     await RunSeeds.run(dataSource);
     process.exit(0);
   })
   .catch((error) => {
-    console.error('Error durante la inicialización:', error);
+    console.error('Error during initialization:', error);
     process.exit(1);
   });

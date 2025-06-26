@@ -17,57 +17,57 @@ import { UserLanguagesSeed } from './user-languages.seed';
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
     try {
-      console.log('Iniciando seeders...');
+      console.log('Starting seeders...');
 
-      // Ejecutar seeders en orden
+      // Execute seeders in order
       await MeasurementUnitsSeed.run(dataSource);
-      console.log('✅ Unidades de medida creadas');
+      console.log('✅ Measurement units created');
 
       await CategoriesSeed.run(dataSource);
-      console.log('✅ Categorías creadas');
+      console.log('✅ Categories created');
 
       await BrandsSeed.run(dataSource);
-      console.log('✅ Marcas creadas');
+      console.log('✅ Brands created');
 
       await TaxesSeed.run(dataSource);
-      console.log('✅ Impuestos creados');
+      console.log('✅ Taxes created');
 
       await CurrenciesSeed.run(dataSource);
-      console.log('✅ Monedas creadas');
+      console.log('✅ Currencies created');
 
       await ClientsSeed.run(dataSource);
-      console.log('✅ Clientes creados');
+      console.log('✅ Clients created');
 
       await ProvidersSeed.run(dataSource);
-      console.log('✅ Proveedores creados');
+      console.log('✅ Providers created');
 
       await ProductsSeed.run(dataSource);
-      console.log('✅ Productos creados');
+      console.log('✅ Products created');
 
       await WarehousesSeed.run(dataSource);
-      console.log('✅ Almacenes creados');
+      console.log('✅ Warehouses created');
 
-      // Seeders de autenticación y permisos
+      // Authentication and permissions seeders
       await PermissionsSeed.run(dataSource);
-      console.log('✅ Permisos creados');
+      console.log('✅ Permissions created');
 
       await RolesSeed.run(dataSource);
-      console.log('✅ Roles creados');
+      console.log('✅ Roles created');
 
       await RolePermissionsSeed.run(dataSource);
-      console.log('✅ Permisos asignados a roles');
+      console.log('✅ Permissions assigned to roles');
 
       await UsersSeed.run(dataSource);
-      console.log('✅ Usuarios por defecto creados');
+      console.log('✅ Default users created');
 
-      // Seeder de idiomas de usuario
+      // User languages seeder
       const userLanguagesSeed = new UserLanguagesSeed(dataSource);
       await userLanguagesSeed.run();
-      console.log('✅ Idiomas de usuario asignados');
+      console.log('✅ User languages assigned');
 
-      console.log('✅ Todos los seeders ejecutados correctamente');
+      console.log('✅ All seeders executed successfully');
     } catch (error) {
-      console.error('❌ Error ejecutando seeders:', error);
+      console.error('❌ Error executing seeders:', error);
       throw error;
     }
   }

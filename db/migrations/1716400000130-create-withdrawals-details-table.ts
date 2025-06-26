@@ -82,7 +82,7 @@ export class CreateWithdrawalsDetailsTable1716400000130
 
     // Añadir claves foráneas
     await queryRunner.createForeignKey(
-      'withdrawals_details',
+      'withdrawal_details',
       new TableForeignKey({
         columnNames: ['withdrawal_id'],
         referencedColumnNames: ['id'],
@@ -93,7 +93,7 @@ export class CreateWithdrawalsDetailsTable1716400000130
     );
 
     await queryRunner.createForeignKey(
-      'withdrawals_details',
+      'withdrawal_details',
       new TableForeignKey({
         columnNames: ['warehouse_id'],
         referencedColumnNames: ['id'],
@@ -104,7 +104,7 @@ export class CreateWithdrawalsDetailsTable1716400000130
     );
 
     await queryRunner.createForeignKey(
-      'withdrawals_details',
+      'withdrawal_details',
       new TableForeignKey({
         columnNames: ['product_id'],
         referencedColumnNames: ['id'],

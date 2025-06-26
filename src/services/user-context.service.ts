@@ -11,13 +11,13 @@ export class UserContextService {
   ) {}
 
   /**
-   * Obtiene el código de idioma del usuario desde la tabla languages
-   * @param userId - ID del usuario autenticado
-   * @returns Código del idioma o 'en' por defecto
+   * Gets the language code for a specific user
+   * @param userId - User ID
+   * @returns Language code (e.g., 'es', 'en')
    */
   async getUserLanguageCode(userId: string): Promise<string> {
     try {
-      // Buscar el idioma específico del usuario
+      // Look for the user's specific language
       const userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
@@ -26,31 +26,27 @@ export class UserContextService {
         return userLanguage.code;
       }
 
-      // Si el usuario no tiene idioma específico, buscar el idioma por defecto
+      // If the user doesn't have a specific language, look for the default language
       const defaultLanguage = await this.languageRepository.findOne({
         where: { userId: IsNull() },
       });
 
-      if (defaultLanguage) {
-        return defaultLanguage.code;
-      }
-
-      // Si no hay idioma por defecto, usar inglés
-      return 'en';
+      // If there's no default language, use English
+      return defaultLanguage ? defaultLanguage.code : 'en';
     } catch (error) {
-      console.error('Error obteniendo idioma del usuario:', error);
+      console.error('Error getting user language code:', error);
       return 'en';
     }
   }
 
   /**
-   * Obtiene el idioma completo del usuario
-   * @param userId - ID del usuario autenticado
-   * @returns Objeto Language o null
+   * Gets the language entity for a specific user
+   * @param userId - User ID
+   * @returns Language entity or null
    */
   async getUserLanguage(userId: string): Promise<Language | null> {
     try {
-      // Buscar el idioma específico del usuario
+      // Look for the user's specific language
       const userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
@@ -59,89 +55,80 @@ export class UserContextService {
         return userLanguage;
       }
 
-      // Si el usuario no tiene idioma específico, buscar el idioma por defecto
+      // If the user doesn't have a specific language, look for the default language
       const defaultLanguage = await this.languageRepository.findOne({
         where: { userId: IsNull() },
       });
 
       return defaultLanguage;
     } catch (error) {
-      console.error('Error obteniendo idioma del usuario:', error);
+      console.error('Error getting user language:', error);
       return null;
     }
   }
 
   /**
-   * Establece el idioma preferido para un usuario
-   * @param userId - ID del usuario
-   * @param languageCode - Código del idioma
-   * @returns true si se estableció correctamente
+   * Sets the language for a specific user
+   * @param userId - User ID
+   * @param languageCode - Language code (e.g., 'es', 'en')
+   * @returns Updated language entity
    */
-  async setUserLanguage(
-    userId: string,
-    languageCode: string,
-  ): Promise<boolean> {
+  async setUserLanguage(userId: string, languageCode: string): Promise<Language> {
     try {
-      // Buscar el idioma base por código
+      // Look for the base language by code
       const baseLanguage = await this.languageRepository.findOne({
-        where: { code: languageCode,  userId: IsNull() },
+        where: { code: languageCode, userId: IsNull() },
       });
 
       if (!baseLanguage) {
-        return false;
+        throw new Error(`Language with code ${languageCode} not found`);
       }
 
-      // Buscar si ya existe un idioma específico para este usuario
-      const existingUserLanguage = await this.languageRepository.findOne({
+      // Look for if there's already a specific language for this user
+      let userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
 
-      if (existingUserLanguage) {
-        // Actualizar el idioma existente del usuario
-        await this.languageRepository.update(
-          { id: existingUserLanguage.id },
-          {
-            code: baseLanguage.code,
-          },
-        );
+      if (userLanguage) {
+        // Update existing user language
+        userLanguage.code = languageCode;
+        return await this.languageRepository.save(userLanguage);
       } else {
-        // Crear una nueva entrada para el usuario con este idioma
-        const userLanguage = this.languageRepository.create({
-          code: baseLanguage.code,
-          userId: userId,
+        // Create new user language
+        const newUserLanguage = this.languageRepository.create({
+          userId,
+          code: languageCode,
         });
-
-        await this.languageRepository.save(userLanguage);
+        return await this.languageRepository.save(newUserLanguage);
       }
-
-      return true;
     } catch (error) {
-      console.error('Error estableciendo idioma del usuario:', error);
-      return false;
+      console.error('Error setting user language:', error);
+      throw error;
     }
   }
 
   /**
-   * Elimina el idioma específico del usuario (vuelve al idioma por defecto)
-   * @param userId - ID del usuario
-   * @returns true si se eliminó correctamente
+   * Removes the specific language for a user (they will use the default language)
+   * @param userId - User ID
+   * @returns Success message
    */
-  async removeUserLanguage(userId: string): Promise<boolean> {
+  async removeUserLanguage(userId: string): Promise<string> {
     try {
-      // Buscar el idioma específico del usuario
+      // Look for the user's specific language
       const userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
 
       if (userLanguage) {
-        // Eliminar el idioma específico del usuario
+        // Remove the user's specific language
         await this.languageRepository.remove(userLanguage);
+        return 'User language removed successfully';
       }
 
-      return true;
+      return 'User language not found';
     } catch (error) {
-      console.error('Error eliminando idioma del usuario:', error);
-      return false;
+      console.error('Error removing user language:', error);
+      throw error;
     }
   }
 }

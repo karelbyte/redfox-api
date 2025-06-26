@@ -8,7 +8,7 @@ export class WarehousesSeed {
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const currencyRepository = dataSource.getRepository(Currency);
 
-    // Obtener la moneda USD como default
+    // Get the USD currency as default
     const defaultCurrency = await currencyRepository.findOne({
       where: { code: 'USD' },
     });

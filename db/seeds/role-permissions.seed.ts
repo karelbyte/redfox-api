@@ -19,9 +19,7 @@ export class RolePermissionsSeed {
     });
 
     if (!adminRole || !sellerRole) {
-      console.log(
-        '⚠️ Roles no encontrados. Asegúrate de ejecutar RolesSeed primero.',
-      );
+      console.log('⚠️ Not found roles.Be sure to run rolesseed first.');
       return;
     }
 
@@ -45,11 +43,20 @@ export class RolePermissionsSeed {
       }
     }
 
-    // Asignar permisos específicos al rol SELLER
+    // Assign specific permissions to the SELLER role
     const sellerPermissions = [
-      'user_module_view',
-      'role_module_view',
-      'permission_module_view',
+      'client_module_view',
+      'client_create',
+      'client_read',
+      'client_update',
+      'product_module_view',
+      'product_read',
+      'inventory_module_view',
+      'inventory_read',
+      'withdrawal_module_view',
+      'withdrawal_create',
+      'withdrawal_read',
+      'withdrawal_update',
     ];
 
     for (const permissionCode of sellerPermissions) {

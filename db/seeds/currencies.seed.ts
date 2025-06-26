@@ -22,30 +22,6 @@ export class CurrenciesSeed {
         code: 'CAD',
         name: 'Dólar Canadiense',
       },
-      {
-        code: 'GBP',
-        name: 'Libra Esterlina',
-      },
-      {
-        code: 'JPY',
-        name: 'Yen Japonés',
-      },
-      {
-        code: 'AUD',
-        name: 'Dólar Australiano',
-      },
-      {
-        code: 'CHF',
-        name: 'Franco Suizo',
-      },
-      {
-        code: 'CNY',
-        name: 'Yuan Chino',
-      },
-      {
-        code: 'BRL',
-        name: 'Real Brasileño',
-      },
     ];
 
     for (const currency of currencies) {

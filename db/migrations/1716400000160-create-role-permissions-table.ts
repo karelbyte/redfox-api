@@ -72,4 +72,4 @@ export class CreateRolePermissionsTable1716400000160 implements MigrationInterfa
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('role_permissions');
   }
-} 
+}

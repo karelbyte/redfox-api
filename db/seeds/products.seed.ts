@@ -35,9 +35,7 @@ export class ProductsSeed {
       !ivaTax ||
       !unit
     ) {
-      throw new Error(
-        'No se encontraron todas las entidades relacionadas necesarias',
-      );
+      throw new Error('Not all the necessary related entities were found');
     }
 
     const products: DeepPartial<Product>[] = [

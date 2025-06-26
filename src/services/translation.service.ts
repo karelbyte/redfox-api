@@ -7,7 +7,7 @@ import { UserContextService } from './user-context.service';
 @Injectable()
 export class TranslationService {
   private readonly translations = {
-    // Mensajes de usuario
+    // User messages
     'user.not_found': {
       es: 'Usuario con ID {id} no encontrado',
       en: 'User with ID {id} not found',
@@ -33,7 +33,7 @@ export class TranslationService {
       en: 'User deleted successfully',
     },
 
-    // Mensajes de autenticación
+    // Authentication messages
     'auth.invalid_credentials': {
       es: 'Credenciales inválidas',
       en: 'Invalid credentials',
@@ -51,7 +51,7 @@ export class TranslationService {
       en: 'Login successful',
     },
 
-    // Mensajes de permisos
+    // Permission messages
     'permission.not_found': {
       es: 'Permiso con ID {id} no encontrado',
       en: 'Permission with ID {id} not found',
@@ -73,7 +73,7 @@ export class TranslationService {
       en: 'Permission deleted successfully',
     },
 
-    // Mensajes de roles
+    // Role messages
     'role.not_found': {
       es: 'Rol con ID {id} no encontrado',
       en: 'Role with ID {id} not found',
@@ -95,7 +95,7 @@ export class TranslationService {
       en: 'Role deleted successfully',
     },
 
-    // Mensajes de idiomas
+    // Language messages
     'language.not_found': {
       es: 'Idioma con ID {id} no encontrado',
       en: 'Language with ID {id} not found',
@@ -133,7 +133,7 @@ export class TranslationService {
       en: 'Language set as default successfully',
     },
 
-    // Mensajes de marcas
+    // Brand messages
     'brand.not_found': {
       es: 'Marca con ID {id} no encontrada',
       en: 'Brand with ID {id} not found',
@@ -159,7 +159,7 @@ export class TranslationService {
       en: 'Cannot delete brand "{description}" because it is being used by {count} product(s). First, you must change or delete the products that use this brand.',
     },
 
-    // Mensajes generales
+    // General messages
     'general.success': {
       es: 'Operación exitosa',
       en: 'Operation successful',
@@ -185,60 +185,60 @@ export class TranslationService {
   ) {}
 
   /**
-   * Traduce un mensaje al idioma del usuario especificado
-   * @param key - Clave del mensaje
-   * @param userId - ID del usuario autenticado
-   * @param params - Parámetros para reemplazar en el mensaje
-   * @returns Mensaje traducido
+   * Translates a message to the language of the specified user
+   * @param key - Message key
+   * @param userId - ID of the authenticated user
+   * @param params - Parameters to replace in the message
+   * @returns Translated message
    */
   async translate(
     key: string,
     userId?: string,
     params: Record<string, any> = {},
   ): Promise<string> {
-    // Obtener el código de idioma del usuario
+    // Get the user's language code
     const languageCode = userId
       ? await this.userContextService.getUserLanguageCode(userId)
       : 'en';
 
-    // Obtener el mensaje traducido
+    // Get the translated message
     const message = this.getTranslation(key, languageCode);
 
-    // Reemplazar parámetros en el mensaje
+    // Replace parameters in the message
     return this.replaceParams(message, params);
   }
 
   /**
-   * Traduce un mensaje al idioma especificado (método legacy para compatibilidad)
-   * @param key - Clave del mensaje
-   * @param languageCode - Código del idioma (ej: 'es', 'en')
-   * @param params - Parámetros para reemplazar en el mensaje
-   * @returns Mensaje traducido
+   * Translates a message to the specified language (legacy method for compatibility)
+   * @param key - Message key
+   * @param languageCode - Language code (e.g., 'es', 'en')
+   * @param params - Parameters to replace in the message
+   * @returns Translated message
    */
   async translateWithLanguage(
     key: string,
     languageCode?: string,
     params: Record<string, any> = {},
   ): Promise<string> {
-    // Si no se especifica idioma, usar inglés por defecto
+    // If no language is specified, use English by default
     if (!languageCode) {
       languageCode = 'en';
     }
 
-    // Verificar si el idioma existe en la base de datos
+    // Check if the language exists in the database
     const language = await this.languageRepository.findOne({
       where: { code: languageCode },
     });
 
-    // Si el idioma no existe o no está activo, usar inglés
+    // If the language doesn't exist or is not active, use English
     if (!language) {
       languageCode = 'en';
     }
 
-    // Obtener el mensaje traducido
+    // Get the translated message
     const message = this.getTranslation(key, languageCode);
 
-    // Reemplazar parámetros en el mensaje
+    // Replace parameters in the message
     return this.replaceParams(message, params);
   }
 
