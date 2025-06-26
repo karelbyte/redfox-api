@@ -31,6 +31,7 @@ export class PermissionService {
 
     const permission = this.permissionRepository.create({
       code: createPermissionDto.code,
+      module: createPermissionDto.module,
       description: createPermissionDto.description,
     });
 

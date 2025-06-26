@@ -8,6 +8,11 @@ export class UpdatePermissionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  module?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(255)
   description?: string;
-} 
+}

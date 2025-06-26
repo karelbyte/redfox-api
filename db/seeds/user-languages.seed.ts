@@ -35,29 +35,6 @@ export class UserLanguagesSeed {
         }
       }
 
-      // Buscar el usuario test
-      const testUser = await userRepository.findOne({
-        where: { email: 'test@redfox.com' },
-      });
-
-      if (testUser) {
-        // Buscar el idioma inglés
-        const englishLanguage = await languageRepository.findOne({
-          where: { code: 'en' },
-        });
-
-        if (englishLanguage) {
-          // Crear una entrada específica para el usuario test con inglés
-          const userLanguage = languageRepository.create({
-            code: englishLanguage.code,
-            userId: testUser.id,
-          });
-
-          await languageRepository.save(userLanguage);
-          console.log(`✅ Idioma inglés asignado al usuario test`);
-        }
-      }
-
       console.log('✅ User languages seeded successfully');
     } catch (error) {
       console.error('❌ Error seeding user languages:', error);

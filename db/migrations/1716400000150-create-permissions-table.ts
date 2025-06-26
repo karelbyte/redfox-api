@@ -19,6 +19,12 @@ export class CreatePermissionsTable1716400000150 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'module',
+            type: 'varchar',
+            length: '100',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '100',

@@ -6,6 +6,7 @@ export class PermissionMapper {
     return {
       id: permission.id,
       code: permission.code,
+      module: permission.module,
       description: permission.description,
       createdAt: permission.createdAt,
       deletedAt: permission.deletedAt,
@@ -15,4 +16,4 @@ export class PermissionMapper {
   static toResponseDtoList(permissions: Permission[]): PermissionResponseDto[] {
     return permissions.map((permission) => this.toResponseDto(permission));
   }
-} 
+}

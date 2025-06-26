@@ -19,7 +19,9 @@ export class RolePermissionsSeed {
     });
 
     if (!adminRole || !sellerRole) {
-      console.log('⚠️ Roles no encontrados. Asegúrate de ejecutar RolesSeed primero.');
+      console.log(
+        '⚠️ Roles no encontrados. Asegúrate de ejecutar RolesSeed primero.',
+      );
       return;
     }
 
@@ -72,4 +74,4 @@ export class RolePermissionsSeed {
       }
     }
   }
-} 
+}

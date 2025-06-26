@@ -16,6 +16,9 @@ export class Permission {
   @Column({ type: 'varchar', length: 100, unique: true })
   code: string;
 
+  @Column({ type: 'varchar', length: 100 })
+  module: string;
+
   @Column({ type: 'varchar', length: 255 })
   description: string;
 
