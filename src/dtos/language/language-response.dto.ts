@@ -1,11 +1,8 @@
 export class LanguageResponseDto {
   id: string;
   code: string;
-  name: string;
-  nativeName: string;
-  isDefault: boolean;
-  isActive: boolean;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
-} 
+}

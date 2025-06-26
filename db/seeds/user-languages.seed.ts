@@ -27,10 +27,6 @@ export class UserLanguagesSeed {
           // Crear una entrada específica para el usuario admin con español
           const userLanguage = languageRepository.create({
             code: spanishLanguage.code,
-            name: spanishLanguage.name,
-            nativeName: spanishLanguage.nativeName,
-            isDefault: false,
-            isActive: true,
             userId: adminUser.id,
           });
 
@@ -54,10 +50,6 @@ export class UserLanguagesSeed {
           // Crear una entrada específica para el usuario test con inglés
           const userLanguage = languageRepository.create({
             code: englishLanguage.code,
-            name: englishLanguage.name,
-            nativeName: englishLanguage.nativeName,
-            isDefault: false,
-            isActive: true,
             userId: testUser.id,
           });
 
@@ -72,4 +64,4 @@ export class UserLanguagesSeed {
       throw error;
     }
   }
-} 
+}

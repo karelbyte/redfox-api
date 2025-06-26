@@ -6,10 +6,7 @@ export class LanguageMapper {
     return {
       id: language.id,
       code: language.code,
-      name: language.name,
-      nativeName: language.nativeName,
-      isDefault: language.isDefault,
-      isActive: language.isActive,
+      userId: language.userId,
       createdAt: language.createdAt,
       updatedAt: language.updatedAt,
       deletedAt: language.deletedAt,

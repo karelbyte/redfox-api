@@ -227,7 +227,7 @@ export class TranslationService {
 
     // Verificar si el idioma existe en la base de datos
     const language = await this.languageRepository.findOne({
-      where: { code: languageCode, isActive: true },
+      where: { code: languageCode },
     });
 
     // Si el idioma no existe o no está activo, usar inglés
@@ -249,17 +249,15 @@ export class TranslationService {
    * @returns Mensaje traducido o la clave si no existe
    */
   private getTranslation(key: string, languageCode: string): string {
-    const translation = this.translations[key] as Record<string, string> | undefined;
+    const translation = this.translations[key] as
+      | Record<string, string>
+      | undefined;
 
     if (!translation) {
       return key;
     }
 
-    return (
-      translation[languageCode] ||
-      translation['en'] ||
-      key
-    );
+    return translation[languageCode] || translation['en'] || key;
   }
 
   /**
@@ -278,57 +276,4 @@ export class TranslationService {
 
     return result;
   }
-
-  /**
-   * Obtiene el código del idioma por defecto desde la base de datos
-   * @returns Código del idioma por defecto o 'en' si no hay uno configurado
-   */
-  async getDefaultLanguageCode(): Promise<string> {
-    try {
-      const defaultLanguage = await this.languageRepository.findOne({
-        where: { isDefault: true, isActive: true },
-      });
-
-      return defaultLanguage ? defaultLanguage.code : 'en';
-    } catch (error) {
-      console.error('Error obteniendo idioma por defecto:', error);
-      return 'en';
-    }
-  }
-
-  /**
-   * Verifica si un código de idioma es válido
-   * @param languageCode - Código del idioma a verificar
-   * @returns true si el idioma es válido y está activo
-   */
-  async isLanguageValid(languageCode: string): Promise<boolean> {
-    try {
-      const language = await this.languageRepository.findOne({
-        where: { code: languageCode, isActive: true },
-      });
-
-      return !!language;
-    } catch (error) {
-      console.error('Error verificando idioma:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Obtiene todos los códigos de idiomas activos
-   * @returns Array de códigos de idiomas activos
-   */
-  async getActiveLanguageCodes(): Promise<string[]> {
-    try {
-      const languages = await this.languageRepository.find({
-        where: { isActive: true },
-        select: ['code'],
-      });
-
-      return languages.map((lang) => lang.code);
-    } catch (error) {
-      console.error('Error obteniendo códigos de idiomas activos:', error);
-      return ['en'];
-    }
-  }
-} 
+}

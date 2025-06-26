@@ -18,18 +18,6 @@ export class Language {
   @Column({ type: 'varchar', length: 10, unique: true })
   code: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  name: string;
-
-  @Column({ name: 'native_name', type: 'varchar', length: 100 })
-  nativeName: string;
-
-  @Column({ name: 'is_default', type: 'boolean', default: false })
-  isDefault: boolean;
-
-  @Column({ name: 'is_active', type: 'boolean', default: true })
-  isActive: boolean;
-
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId: string;
 

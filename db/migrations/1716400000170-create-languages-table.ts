@@ -26,32 +26,10 @@ export class CreateLanguagesTable1716400000170 implements MigrationInterface {
             isUnique: true,
           },
           {
-            name: 'name',
-            type: 'varchar',
-            length: '100',
-            isNullable: false,
-          },
-          {
             name: 'user_id',
             type: 'varchar',
             length: '36',
             isPrimary: true,
-          },
-          {
-            name: 'native_name',
-            type: 'varchar',
-            length: '100',
-            isNullable: false,
-          },
-          {
-            name: 'is_default',
-            type: 'boolean',
-            default: false,
-          },
-          {
-            name: 'is_active',
-            type: 'boolean',
-            default: true,
           },
           {
             name: 'created_at',

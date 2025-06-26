@@ -12,7 +12,6 @@ import { PermissionsSeed } from './permissions.seed';
 import { RolesSeed } from './roles.seed';
 import { RolePermissionsSeed } from './role-permissions.seed';
 import { UsersSeed } from './users.seed';
-import { LanguagesSeed } from './languages.seed';
 import { UserLanguagesSeed } from './user-languages.seed';
 
 export class RunSeeds {
@@ -60,10 +59,6 @@ export class RunSeeds {
 
       await UsersSeed.run(dataSource);
       console.log('✅ Usuarios por defecto creados');
-
-      // Seeder de idiomas
-      await LanguagesSeed.run(dataSource);
-      console.log('✅ Idiomas creados');
 
       // Seeder de idiomas de usuario
       const userLanguagesSeed = new UserLanguagesSeed(dataSource);

@@ -19,7 +19,7 @@ export class UserContextService {
     try {
       // Buscar el idioma específico del usuario
       const userLanguage = await this.languageRepository.findOne({
-        where: { userId, isActive: true },
+        where: { userId },
       });
 
       if (userLanguage) {
@@ -28,7 +28,7 @@ export class UserContextService {
 
       // Si el usuario no tiene idioma específico, buscar el idioma por defecto
       const defaultLanguage = await this.languageRepository.findOne({
-        where: { isDefault: true, isActive: true, userId: IsNull() },
+        where: { userId: IsNull() },
       });
 
       if (defaultLanguage) {
@@ -52,7 +52,7 @@ export class UserContextService {
     try {
       // Buscar el idioma específico del usuario
       const userLanguage = await this.languageRepository.findOne({
-        where: { userId, isActive: true },
+        where: { userId },
       });
 
       if (userLanguage) {
@@ -61,7 +61,7 @@ export class UserContextService {
 
       // Si el usuario no tiene idioma específico, buscar el idioma por defecto
       const defaultLanguage = await this.languageRepository.findOne({
-        where: { isDefault: true, isActive: true, userId: IsNull() },
+        where: { userId: IsNull() },
       });
 
       return defaultLanguage;
@@ -84,7 +84,7 @@ export class UserContextService {
     try {
       // Buscar el idioma base por código
       const baseLanguage = await this.languageRepository.findOne({
-        where: { code: languageCode, isActive: true, userId: IsNull() },
+        where: { code: languageCode,  userId: IsNull() },
       });
 
       if (!baseLanguage) {
@@ -93,7 +93,7 @@ export class UserContextService {
 
       // Buscar si ya existe un idioma específico para este usuario
       const existingUserLanguage = await this.languageRepository.findOne({
-        where: { userId, isActive: true },
+        where: { userId },
       });
 
       if (existingUserLanguage) {
@@ -102,20 +102,12 @@ export class UserContextService {
           { id: existingUserLanguage.id },
           {
             code: baseLanguage.code,
-            name: baseLanguage.name,
-            nativeName: baseLanguage.nativeName,
-            isDefault: false,
-            isActive: true,
           },
         );
       } else {
         // Crear una nueva entrada para el usuario con este idioma
         const userLanguage = this.languageRepository.create({
           code: baseLanguage.code,
-          name: baseLanguage.name,
-          nativeName: baseLanguage.nativeName,
-          isDefault: false,
-          isActive: true,
           userId: userId,
         });
 
@@ -138,7 +130,7 @@ export class UserContextService {
     try {
       // Buscar el idioma específico del usuario
       const userLanguage = await this.languageRepository.findOne({
-        where: { userId, isActive: true },
+        where: { userId },
       });
 
       if (userLanguage) {
