@@ -15,6 +15,7 @@ export class CustomUnauthorizedException extends HttpException {
     super(message, HttpStatus.UNAUTHORIZED);
   }
 }
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private jwtService: JwtService) {}
@@ -22,18 +23,29 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
+
     if (token === undefined || token === null || token === '') {
       throw new UnauthorizedException();
     }
+
     try {
-      request['user'] = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync(token, {
         secret: AppConfig().appKey,
       });
+
+      // Establecer el usuario en el request
+      request['user'] = payload;
+
+      // Log para depuración
+      console.log('JWT payload decoded:', payload);
+      console.log('User ID from JWT:', payload.sub || payload.id);
     } catch (e) {
+      console.error('JWT verification failed:', e);
       throw new CustomUnauthorizedException(
-        'Lo sentimos, la sesión ha expirado o a ocurrindo un problema, inicia sesión nuevamente',
+        'Lo sentimos, la sesión ha expirado o ha ocurrido un problema, inicia sesión nuevamente',
       );
     }
+
     return true;
   }
 

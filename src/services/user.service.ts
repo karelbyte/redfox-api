@@ -8,6 +8,8 @@ import { UserResponseDto } from '../dtos/user/user-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { RoleService } from './role.service';
+import { TranslationService } from './translation.service';
+import { UserContextService } from './user-context.service';
 import { hash } from 'bcrypt';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private roleService: RoleService,
+    private translationService: TranslationService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -42,7 +45,10 @@ export class UserService {
     };
   }
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(
+    createUserDto: CreateUserDto,
+    userId?: string,
+  ): Promise<UserResponseDto> {
     const user = this.userRepository.create(createUserDto);
 
     if (createUserDto.password) {
@@ -62,6 +68,7 @@ export class UserService {
 
   async findAll(
     paginationDto: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<UserResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -86,29 +93,43 @@ export class UserService {
     };
   }
 
-  async findOne(id: string): Promise<UserResponseDto> {
+  async findOne(id: string, userId?: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
       withDeleted: false,
     });
+
     if (!user) {
-      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'user.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
+
     return this.mapToResponseDto(user);
   }
 
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
+    userId?: string,
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
       withDeleted: false,
     });
+
     if (!user) {
-      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'user.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     if (updateUserDto.password) {
@@ -129,26 +150,180 @@ export class UserService {
     return this.mapToResponseDto(updatedUser);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: false,
     });
+
     if (!user) {
-      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'user.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
+
     await this.userRepository.softRemove(user);
   }
 
-  async findByEmail(email: string): Promise<User> {
+  async findByEmail(email: string, userId?: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { email },
       relations: ['roles'],
       withDeleted: false,
     });
+
     if (!user) {
-      throw new NotFoundException(`Usuario con email ${email} no encontrado`);
+      const message = await this.translationService.translate(
+        'user.email_not_found',
+        userId,
+        { email },
+      );
+      throw new NotFoundException(message);
     }
+
     return user;
+  }
+
+  /**
+   * Obtiene un usuario con todos sus roles y permisos cargados
+   * @param id - ID del usuario
+   * @param userId - ID del usuario autenticado
+   * @returns Usuario con roles y permisos
+   */
+  async findOneWithPermissions(
+    id: string,
+    userId?: string,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
+      withDeleted: false,
+    });
+
+    if (!user) {
+      const message = await this.translationService.translate(
+        'user.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+
+    return user;
+  }
+
+  /**
+   * Obtiene un usuario por email con todos sus roles y permisos cargados
+   * @param email - Email del usuario
+   * @param userId - ID del usuario autenticado
+   * @returns Usuario con roles y permisos
+   */
+  async findByEmailWithPermissions(
+    email: string,
+    userId?: string,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
+      withDeleted: false,
+    });
+
+    if (!user) {
+      const message = await this.translationService.translate(
+        'user.email_not_found',
+        userId,
+        { email },
+      );
+      throw new NotFoundException(message);
+    }
+
+    return user;
+  }
+
+  /**
+   * Obtiene los permisos de un usuario desde la base de datos
+   * @param id - ID del usuario
+   * @param userId - ID del usuario autenticado
+   * @returns Array de permisos únicos
+   */
+  async getUserPermissions(
+    id: string,
+    userId?: string,
+  ): Promise<any[]> {
+    const user = await this.findOneWithPermissions(id, userId);
+    return user.getPermissions();
+  }
+
+  /**
+   * Obtiene los códigos de permisos de un usuario desde la base de datos
+   * @param id - ID del usuario
+   * @param userId - ID del usuario autenticado
+   * @returns Array de códigos de permisos únicos
+   */
+  async getUserPermissionCodes(
+    id: string,
+    userId?: string,
+  ): Promise<string[]> {
+    const user = await this.findOneWithPermissions(id, userId);
+    return user.getPermissionCodes();
+  }
+
+  /**
+   * Verifica si un usuario tiene un permiso específico
+   * @param id - ID del usuario
+   * @param permissionCode - Código del permiso a verificar
+   * @param userId - ID del usuario autenticado
+   * @returns true si el usuario tiene el permiso, false en caso contrario
+   */
+  async userHasPermission(
+    id: string,
+    permissionCode: string,
+    userId?: string,
+  ): Promise<boolean> {
+    const user = await this.findOneWithPermissions(id, userId);
+    return user.hasPermission(permissionCode);
+  }
+
+  /**
+   * Verifica si un usuario tiene al menos uno de los permisos especificados
+   * @param id - ID del usuario
+   * @param permissionCodes - Array de códigos de permisos a verificar
+   * @param userId - ID del usuario autenticado
+   * @returns true si el usuario tiene al menos uno de los permisos, false en caso contrario
+   */
+  async userHasAnyPermission(
+    id: string,
+    permissionCodes: string[],
+    userId?: string,
+  ): Promise<boolean> {
+    const user = await this.findOneWithPermissions(id, userId);
+    return user.hasAnyPermission(permissionCodes);
+  }
+
+  /**
+   * Verifica si un usuario tiene todos los permisos especificados
+   * @param id - ID del usuario
+   * @param permissionCodes - Array de códigos de permisos a verificar
+   * @param userId - ID del usuario autenticado
+   * @returns true si el usuario tiene todos los permisos, false en caso contrario
+   */
+  async userHasAllPermissions(
+    id: string,
+    permissionCodes: string[],
+    userId?: string,
+  ): Promise<boolean> {
+    const user = await this.findOneWithPermissions(id, userId);
+    return user.hasAllPermissions(permissionCodes);
   }
 }

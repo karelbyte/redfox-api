@@ -3,7 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   ParseUUIDPipe,
@@ -89,11 +89,47 @@ export class ProductController {
     return this.productService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const dir = './uploads/products';
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          const formattedName = formatFileName(file.originalname);
+          const uniqueName = `${Date.now()}-${formattedName}`;
+          cb(null, uniqueName);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        fileIsRequired: false,
+      }),
+    )
+    files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
+    if (files && files.length > 0) {
+      updateProductDto.images = files.map(
+        (file) => `/uploads/products/${file.filename}`,
+      );
+    }
     return this.productService.update(id, updateProductDto);
   }
 

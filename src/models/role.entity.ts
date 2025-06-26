@@ -6,8 +6,10 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToMany,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { RolePermission } from './role-permission.entity';
 
 @Entity('roles')
 export class Role {
@@ -25,6 +27,9 @@ export class Role {
 
   @ManyToMany(() => User, (user) => user.roles)
   users: User[];
+
+  @OneToMany(() => RolePermission, (rolePermission) => rolePermission.role)
+  rolePermissions: RolePermission[];
 
   @CreateDateColumn()
   created_at: Date;

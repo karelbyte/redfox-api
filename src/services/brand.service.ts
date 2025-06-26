@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { UpdateBrandDto } from '../dtos/brand/update-brand.dto';
 import { BrandResponseDto } from '../dtos/brand/brand-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class BrandService {
@@ -20,6 +22,7 @@ export class BrandService {
     private brandRepository: Repository<Brand>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private translationService: TranslationService,
   ) {}
 
   private mapToResponseDto(brand: Brand): BrandResponseDto {
@@ -34,14 +37,36 @@ export class BrandService {
     };
   }
 
-  async create(createBrandDto: CreateBrandDto): Promise<BrandResponseDto> {
-    const brand = this.brandRepository.create(createBrandDto);
-    const savedBrand = await this.brandRepository.save(brand);
-    return this.mapToResponseDto(savedBrand);
+  async create(
+    createBrandDto: CreateBrandDto,
+    userId?: string,
+  ): Promise<BrandResponseDto> {
+    try {
+      const brand = this.brandRepository.create(createBrandDto);
+      const savedBrand = await this.brandRepository.save(brand);
+      return this.mapToResponseDto(savedBrand);
+    } catch (error) {
+      // Manejar error de código duplicado
+      if (
+        error.code === 'ER_DUP_ENTRY' &&
+        error.message.includes('brands.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'brand.already_exists',
+          userId,
+          { code: createBrandDto.code },
+        );
+        throw new ConflictException(message);
+      }
+
+      // Re-lanzar otros errores
+      throw error;
+    }
   }
 
   async findAll(
     paginationDto?: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
     // Si no hay parámetros de paginación, traer todos los registros
     if (!paginationDto || (!paginationDto.page && !paginationDto.limit)) {
@@ -85,42 +110,80 @@ export class BrandService {
     };
   }
 
-  async findOne(id: string): Promise<BrandResponseDto> {
+  async findOne(id: string, userId?: string): Promise<BrandResponseDto> {
     const brand = await this.brandRepository.findOne({
       where: { id },
       withDeleted: false,
     });
+
     if (!brand) {
-      throw new NotFoundException(`Brand with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'brand.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
+
     return this.mapToResponseDto(brand);
   }
 
   async update(
     id: string,
     updateBrandDto: UpdateBrandDto,
+    userId?: string,
   ): Promise<BrandResponseDto> {
-    const brand = await this.brandRepository.findOne({
-      where: { id },
-      withDeleted: false,
-    });
-    if (!brand) {
-      throw new NotFoundException(`Brand with ID ${id} not found`);
+    try {
+      const brand = await this.brandRepository.findOne({
+        where: { id },
+        withDeleted: false,
+      });
+
+      if (!brand) {
+        const message = await this.translationService.translate(
+          'brand.not_found',
+          userId,
+          { id },
+        );
+        throw new NotFoundException(message);
+      }
+
+      const updatedBrand = await this.brandRepository.save({
+        ...brand,
+        ...updateBrandDto,
+      });
+      return this.mapToResponseDto(updatedBrand);
+    } catch (error) {
+      // Manejar error de código duplicado en actualización
+      if (
+        error.code === 'ER_DUP_ENTRY' &&
+        error.message.includes('brands.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'brand.already_exists',
+          userId,
+          { code: updateBrandDto.code },
+        );
+        throw new ConflictException(message);
+      }
+
+      // Re-lanzar otros errores
+      throw error;
     }
-    const updatedBrand = await this.brandRepository.save({
-      ...brand,
-      ...updateBrandDto,
-    });
-    return this.mapToResponseDto(updatedBrand);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const brand = await this.brandRepository.findOne({
       where: { id },
     });
 
     if (!brand) {
-      throw new NotFoundException(`Brand with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'brand.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     // Verificar si el brand está siendo usado en productos
@@ -130,15 +193,24 @@ export class BrandService {
     });
 
     if (productsUsingBrand > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar la marca '${brand.description}' porque está siendo usada por ${productsUsingBrand} producto(s). Primero debe cambiar o eliminar los productos que usan esta marca.`,
+      const message = await this.translationService.translate(
+        'brand.cannot_delete_in_use',
+        userId,
+        {
+          description: brand.description,
+          count: productsUsingBrand,
+        },
       );
+      throw new BadRequestException(message);
     }
 
     await this.brandRepository.softRemove(brand);
   }
 
-  async getBrandUsage(id: string): Promise<{
+  async getBrandUsage(
+    id: string,
+    userId?: string,
+  ): Promise<{
     brand: BrandResponseDto;
     productsCount: number;
     products: any[];
@@ -146,8 +218,14 @@ export class BrandService {
     const brand = await this.brandRepository.findOne({
       where: { id },
     });
+
     if (!brand) {
-      throw new NotFoundException(`Brand with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'brand.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     const products = await this.productRepository.find({

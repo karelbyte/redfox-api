@@ -19,6 +19,9 @@ import { AuthModule } from './modules/auth.module';
 import { TaxModule } from './modules/tax.module';
 import { WarehouseOpeningModule } from './modules/warehouse-opening.module';
 import { CurrencyModule } from './modules/currency.module';
+import { PermissionModule } from './modules/permission.module';
+import { RolePermissionModule } from './modules/role-permission.module';
+import { LanguageModule } from './modules/language.module';
 import { AppConfig } from './config';
 
 @Module({
@@ -52,6 +55,9 @@ import { AppConfig } from './config';
     WarehouseModule,
     WarehouseOpeningModule,
     CurrencyModule,
+    PermissionModule,
+    RolePermissionModule,
+    LanguageModule,
   ],
   controllers: [],
   providers: [],

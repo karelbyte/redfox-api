@@ -8,6 +8,12 @@ import { ProvidersSeed } from './providers.seed';
 import { ProductsSeed } from './products.seed';
 import { WarehousesSeed } from './warehouses.seed';
 import { CurrenciesSeed } from './currencies.seed';
+import { PermissionsSeed } from './permissions.seed';
+import { RolesSeed } from './roles.seed';
+import { RolePermissionsSeed } from './role-permissions.seed';
+import { UsersSeed } from './users.seed';
+import { LanguagesSeed } from './languages.seed';
+import { UserLanguagesSeed } from './user-languages.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -41,6 +47,28 @@ export class RunSeeds {
 
       await WarehousesSeed.run(dataSource);
       console.log('✅ Almacenes creados');
+
+      // Seeders de autenticación y permisos
+      await PermissionsSeed.run(dataSource);
+      console.log('✅ Permisos creados');
+
+      await RolesSeed.run(dataSource);
+      console.log('✅ Roles creados');
+
+      await RolePermissionsSeed.run(dataSource);
+      console.log('✅ Permisos asignados a roles');
+
+      await UsersSeed.run(dataSource);
+      console.log('✅ Usuarios por defecto creados');
+
+      // Seeder de idiomas
+      await LanguagesSeed.run(dataSource);
+      console.log('✅ Idiomas creados');
+
+      // Seeder de idiomas de usuario
+      const userLanguagesSeed = new UserLanguagesSeed(dataSource);
+      await userLanguagesSeed.run();
+      console.log('✅ Idiomas de usuario asignados');
 
       console.log('✅ Todos los seeders ejecutados correctamente');
     } catch (error) {

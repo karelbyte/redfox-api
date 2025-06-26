@@ -24,6 +24,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
@@ -61,6 +62,7 @@ export class BrandController {
   )
   create(
     @Body() createBrandDto: CreateBrandDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -72,19 +74,23 @@ export class BrandController {
     if (files && files.length > 0) {
       createBrandDto.img = `/uploads/brands/${files[0].filename}`;
     }
-    return this.brandService.create(createBrandDto);
+    return this.brandService.create(createBrandDto, userId);
   }
 
   @Get()
   findAll(
     @Query() paginationDto?: PaginationDto,
+    @UserId() userId?: string,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
-    return this.brandService.findAll(paginationDto);
+    return this.brandService.findAll(paginationDto, userId);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<BrandResponseDto> {
-    return this.brandService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<BrandResponseDto> {
+    return this.brandService.findOne(id, userId);
   }
 
   @Put(':id')
@@ -115,6 +121,7 @@ export class BrandController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBrandDto: UpdateBrandDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -128,16 +135,22 @@ export class BrandController {
     } else if (updateBrandDto.imageChanged) {
       updateBrandDto.img = '';
     }
-    return this.brandService.update(id, updateBrandDto);
+    return this.brandService.update(id, updateBrandDto, userId);
   }
 
   @Get(':id/usage')
-  getBrandUsage(@Param('id', ParseUUIDPipe) id: string) {
-    return this.brandService.getBrandUsage(id);
+  getBrandUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ) {
+    return this.brandService.getBrandUsage(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.brandService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.brandService.remove(id, userId);
   }
 }
