@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
@@ -13,6 +12,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CategoryService } from '../services/category.service';
@@ -22,6 +22,7 @@ import { CategoryResponseDto } from '../dtos/category/category-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 
@@ -53,7 +54,10 @@ export class CategoryController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -61,6 +65,7 @@ export class CategoryController {
   )
   async create(
     @Body() createCategoryDto: CreateCategoryDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -72,7 +77,7 @@ export class CategoryController {
     if (files && files.length > 0) {
       createCategoryDto.image = `/uploads/categories/${files[0].filename}`;
     }
-    return this.categoryService.create(createCategoryDto);
+    return this.categoryService.create(createCategoryDto, userId);
   }
 
   @Get()
@@ -84,13 +89,19 @@ export class CategoryController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<CategoryResponseDto> {
-    return this.categoryService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<CategoryResponseDto> {
+    return this.categoryService.findOne(id, userId);
   }
 
   @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string): Promise<CategoryResponseDto> {
-    return this.categoryService.findBySlug(slug);
+  findBySlug(
+    @Param('slug') slug: string,
+    @UserId() userId: string,
+  ): Promise<CategoryResponseDto> {
+    return this.categoryService.findBySlug(slug, userId);
   }
 
   @Put(':id')
@@ -112,7 +123,10 @@ export class CategoryController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -121,6 +135,7 @@ export class CategoryController {
   async update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -135,7 +150,7 @@ export class CategoryController {
       updateCategoryDto.image = '';
     }
     delete updateCategoryDto.imageChanged;
-    return this.categoryService.update(id, updateCategoryDto);
+    return this.categoryService.update(id, updateCategoryDto, userId);
   }
 
   @Get(':id/usage')
@@ -144,15 +159,16 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.categoryService.remove(id);
+  remove(@Param('id') id: string, @UserId() userId: string): Promise<void> {
+    return this.categoryService.remove(id, userId);
   }
 
   @Get('parent/:id')
   async findByParentId(
     @Param('id') id: string,
     @Query() paginationDto: PaginationDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
-    return this.categoryService.findByParentId(id, paginationDto);
+    return this.categoryService.findByParentId(id, paginationDto, userId);
   }
 }

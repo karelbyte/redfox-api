@@ -17,6 +17,7 @@ import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('clients')
 @UseGuards(AuthGuard)
@@ -37,20 +38,27 @@ export class ClientController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ClientResponseDto> {
-    return this.clientService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<ClientResponseDto> {
+    return this.clientService.findOne(id, userId);
   }
 
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClientDto: UpdateClientDto,
+    @UserId() userId: string,
   ): Promise<ClientResponseDto> {
-    return this.clientService.update(id, updateClientDto);
+    return this.clientService.update(id, updateClientDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.clientService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.clientService.remove(id, userId);
   }
 }

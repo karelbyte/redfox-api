@@ -23,4 +23,4 @@ import { ProductMapper } from '../services/mappers/product.mapper';
   providers: [ProductService, ProductMapper],
   exports: [ProductService],
 })
-export class ProductModule {} 
+export class ProductModule {}

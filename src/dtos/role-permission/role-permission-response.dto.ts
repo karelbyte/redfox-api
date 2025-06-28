@@ -14,4 +14,4 @@ export class RolePermissionResponseDto {
     code: string;
     description: string;
   };
-} 
+}

@@ -21,4 +21,4 @@ export class CreateProductHistoryDto {
   @IsNumber()
   @Min(0)
   quantity: number;
-} 
+}

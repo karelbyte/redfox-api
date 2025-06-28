@@ -6,4 +6,4 @@ export class ReceptionDetailResponseDto {
   quantity: number;
   price: number;
   created_at: Date;
-} 
+}

@@ -14,6 +14,7 @@ import { CategoryResponseDto } from '../dtos/category/category-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { CategoryMapper } from './mappers/category.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class CategoryService {
@@ -26,26 +27,32 @@ export class CategoryService {
     private readonly productRepository: Repository<Product>,
     private dataSource: DataSource,
     private readonly categoryMapper: CategoryMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
   private async validateHierarchyCycle(
     categoryId: string,
     newParentId: string,
+    userId?: string,
   ): Promise<void> {
     let currentParentId = newParentId;
     const visited = new Set<string>();
 
     while (currentParentId) {
       if (currentParentId === categoryId) {
-        throw new BadRequestException(
-          'No se puede crear un ciclo en la jerarquía de categorías',
+        const message = await this.translationService.translate(
+          'category.hierarchy_cycle',
+          userId,
         );
+        throw new BadRequestException(message);
       }
 
       if (visited.has(currentParentId)) {
-        throw new BadRequestException(
-          'Se ha detectado un ciclo en la jerarquía de categorías',
+        const message = await this.translationService.translate(
+          'category.hierarchy_cycle_detected',
+          userId,
         );
+        throw new BadRequestException(message);
       }
 
       visited.add(currentParentId);
@@ -66,6 +73,7 @@ export class CategoryService {
   private async validateChildrenStatus(
     categoryId: string,
     newStatus: boolean,
+    userId?: string,
   ): Promise<void> {
     if (!newStatus) {
       const hasActiveChildren = await this.categoryRepository
@@ -75,9 +83,11 @@ export class CategoryService {
         .getExists();
 
       if (hasActiveChildren) {
-        throw new BadRequestException(
-          'No se puede desactivar una categoría que tiene hijos activos',
+        const message = await this.translationService.translate(
+          'category.cannot_deactivate_with_active_children',
+          userId,
         );
+        throw new BadRequestException(message);
       }
     }
   }
@@ -88,7 +98,7 @@ export class CategoryService {
     newData: Partial<Category>,
   ): void {
     this.logger.log(
-      `Categoría ${categoryId} actualizada: ${JSON.stringify({
+      `Category ${categoryId} updated: ${JSON.stringify({
         old: oldData,
         new: newData,
       })}`,
@@ -97,6 +107,7 @@ export class CategoryService {
 
   async create(
     createCategoryDto: CreateCategoryDto,
+    userId?: string,
   ): Promise<CategoryResponseDto> {
     if (createCategoryDto.parentId) {
       const parentCategory = await this.categoryRepository.findOne({
@@ -104,9 +115,12 @@ export class CategoryService {
       });
 
       if (!parentCategory) {
-        throw new BadRequestException(
-          `La categoría padre con ID ${createCategoryDto.parentId} no existe`,
+        const message = await this.translationService.translate(
+          'category.parent_not_found',
+          userId,
+          { id: createCategoryDto.parentId },
         );
+        throw new BadRequestException(message);
       }
     }
 
@@ -115,9 +129,12 @@ export class CategoryService {
     });
 
     if (existingCategory) {
-      throw new BadRequestException(
-        `Ya existe una categoría con el slug '${createCategoryDto.slug}'`,
+      const message = await this.translationService.translate(
+        'category.already_exists',
+        userId,
+        { slug: createCategoryDto.slug },
       );
+      throw new BadRequestException(message);
     }
 
     const category = this.categoryRepository.create(createCategoryDto);
@@ -152,7 +169,6 @@ export class CategoryService {
         }
       : baseConditions;
 
-    // Si no se proporciona paginación, devolver toda la data
     if (!page && !limit) {
       const categories = await this.categoryRepository.find(whereConditions);
 
@@ -171,7 +187,6 @@ export class CategoryService {
       };
     }
 
-    // Si se proporciona paginación, aplicar la lógica de paginación
     const currentPage = page || 1;
     const currentLimit = limit || 8;
     const skip = (currentPage - 1) * currentLimit;
@@ -197,14 +212,19 @@ export class CategoryService {
     };
   }
 
-  async findOne(id: string): Promise<CategoryResponseDto> {
+  async findOne(id: string, userId?: string): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOne({
       where: { id },
       relations: ['children'],
       withDeleted: false,
     });
     if (!category) {
-      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+      const message = await this.translationService.translate(
+        'category.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.categoryMapper.mapToResponseDto(category);
   }
@@ -212,6 +232,7 @@ export class CategoryService {
   async update(
     id: string,
     updateCategoryDto: Partial<UpdateCategoryDto>,
+    userId?: string,
   ): Promise<CategoryResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -225,59 +246,74 @@ export class CategoryService {
       });
 
       if (!category) {
-        throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+        const message = await this.translationService.translate(
+          'category.not_found',
+          userId,
+          { id },
+        );
+        throw new NotFoundException(message);
       }
 
-      // 1. Validar parentId si se está actualizando
       if (updateCategoryDto.parentId) {
-        // No permitir que una categoría sea su propia padre
         if (updateCategoryDto.parentId === id) {
-          throw new BadRequestException(
-            'Una categoría no puede ser su propia categoría padre',
+          const message = await this.translationService.translate(
+            'category.cannot_be_own_parent',
+            userId,
           );
+          throw new BadRequestException(message);
         }
 
-        // Validar que la categoría padre exista
         const parentCategory = await queryRunner.manager.findOne(Category, {
           where: { id: updateCategoryDto.parentId },
         });
 
         if (!parentCategory) {
-          throw new BadRequestException(
-            `La categoría padre con ID ${updateCategoryDto.parentId} no existe`,
+          const message = await this.translationService.translate(
+            'category.parent_not_found',
+            userId,
+            { id: updateCategoryDto.parentId },
           );
+          throw new BadRequestException(message);
         }
 
-        // Validar ciclos en la jerarquía
-        await this.validateHierarchyCycle(id, updateCategoryDto.parentId);
+        await this.validateHierarchyCycle(
+          id,
+          updateCategoryDto.parentId,
+          userId,
+        );
 
-        // Validar que no se mueva una categoría con hijos
         if (category.children && category.children.length > 0) {
-          throw new BadRequestException(
-            'No se puede cambiar la categoría padre de una categoría que tiene hijos',
+          const message = await this.translationService.translate(
+            'category.cannot_change_parent_with_children',
+            userId,
           );
+          throw new BadRequestException(message);
         }
       }
 
-      // 2. Validar slug si se está actualizando
       if (updateCategoryDto.slug && updateCategoryDto.slug !== category.slug) {
         const existingCategory = await queryRunner.manager.findOne(Category, {
           where: { slug: updateCategoryDto.slug },
         });
 
         if (existingCategory) {
-          throw new BadRequestException(
-            `Ya existe una categoría con el slug '${updateCategoryDto.slug}'`,
+          const message = await this.translationService.translate(
+            'category.already_exists',
+            userId,
+            { slug: updateCategoryDto.slug },
           );
+          throw new BadRequestException(message);
         }
       }
 
-      // 3. Validar estado si se está actualizando
       if (updateCategoryDto.isActive !== undefined) {
-        await this.validateChildrenStatus(id, updateCategoryDto.isActive);
+        await this.validateChildrenStatus(
+          id,
+          updateCategoryDto.isActive,
+          userId,
+        );
       }
 
-      // 4. Guardar los datos antiguos para el log
       const oldData = {
         parentId: category.parentId,
         slug: category.slug,
@@ -287,10 +323,8 @@ export class CategoryService {
         position: category.position,
       };
 
-      // 5. Actualizar la categoría
       await queryRunner.manager.update(Category, id, updateCategoryDto);
 
-      // 6. Obtener la categoría actualizada
       const updatedCategory = await queryRunner.manager.findOne(Category, {
         where: { id },
         relations: ['children'],
@@ -298,10 +332,14 @@ export class CategoryService {
       });
 
       if (!updatedCategory) {
-        throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+        const message = await this.translationService.translate(
+          'category.not_found',
+          userId,
+          { id },
+        );
+        throw new NotFoundException(message);
       }
 
-      // 7. Registrar el cambio
       this.logCategoryChange(id, oldData, updateCategoryDto);
 
       await queryRunner.commitTransaction();
@@ -314,50 +352,67 @@ export class CategoryService {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const category = await this.categoryRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!category) {
-      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+      const message = await this.translationService.translate(
+        'category.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
-    // Verificar si la categoría está siendo usada en productos
     const productsUsingCategory = await this.productRepository.count({
       where: { category: { id } },
       withDeleted: false,
     });
 
     if (productsUsingCategory > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar la categoría '${category.name}' porque está siendo usada por ${productsUsingCategory} producto(s). Primero debe cambiar o eliminar los productos que usan esta categoría.`,
+      const message = await this.translationService.translate(
+        'category.cannot_delete_in_use',
+        userId,
+        { name: category.name, count: productsUsingCategory },
       );
+      throw new BadRequestException(message);
     }
 
-    // Verificar si tiene hijos
     const hasChildren = await this.categoryRepository.count({
       where: { parentId: id },
       withDeleted: false,
     });
 
     if (hasChildren > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar la categoría '${category.name}' porque tiene ${hasChildren} subcategoría(s). Primero debe eliminar o mover las subcategorías.`,
+      const message = await this.translationService.translate(
+        'category.cannot_delete_with_children',
+        userId,
+        { name: category.name, count: hasChildren },
       );
+      throw new BadRequestException(message);
     }
 
     await this.categoryRepository.softRemove(category);
   }
 
-  async findBySlug(slug: string): Promise<CategoryResponseDto> {
+  async findBySlug(
+    slug: string,
+    userId?: string,
+  ): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOne({
       where: { slug },
       relations: ['children'],
       withDeleted: false,
     });
     if (!category) {
-      throw new NotFoundException(`Categoría con slug ${slug} no encontrada`);
+      const message = await this.translationService.translate(
+        'category.slug_not_found',
+        userId,
+        { slug },
+      );
+      throw new NotFoundException(message);
     }
     return this.categoryMapper.mapToResponseDto(category);
   }
@@ -365,6 +420,7 @@ export class CategoryService {
   async findByParentId(
     parentId: string,
     paginationDto: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -376,9 +432,12 @@ export class CategoryService {
     });
 
     if (!parent) {
-      throw new NotFoundException(
-        `Categoría padre con ID ${parentId} no encontrada`,
+      const message = await this.translationService.translate(
+        'category.parent_not_found',
+        userId,
+        { id: parentId },
       );
+      throw new NotFoundException(message);
     }
 
     const [categories, total] = await this.categoryRepository.findAndCount({

@@ -40,6 +40,7 @@ export class UserService {
           status: role.status,
           created_at: role.created_at,
         })) || [],
+      permissions: user.getPermissionCodes(),
       status,
       created_at,
     };
@@ -74,7 +75,11 @@ export class UserService {
     const skip = (page - 1) * limit;
 
     const [users, total] = await this.userRepository.findAndCount({
-      relations: ['roles'],
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
       withDeleted: false,
       skip,
       take: limit,
@@ -96,7 +101,11 @@ export class UserService {
   async findOne(id: string, userId?: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['roles'],
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
       withDeleted: false,
     });
 
@@ -119,7 +128,11 @@ export class UserService {
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['roles'],
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
       withDeleted: false,
     });
 
@@ -171,7 +184,11 @@ export class UserService {
   async findByEmail(email: string, userId?: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { email },
-      relations: ['roles'],
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
       withDeleted: false,
     });
 
@@ -188,15 +205,29 @@ export class UserService {
   }
 
   /**
+   * Finds a user by email for authentication purposes (doesn't throw if not found)
+   * @param email - User email
+   * @returns User or null if not found
+   */
+  async findByEmailForAuth(email: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { email },
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
+      withDeleted: false,
+    });
+  }
+
+  /**
    * Obtiene un usuario con todos sus roles y permisos cargados
    * @param id - ID del usuario
    * @param userId - ID del usuario autenticado
    * @returns Usuario con roles y permisos
    */
-  async findOneWithPermissions(
-    id: string,
-    userId?: string,
-  ): Promise<User> {
+  async findOneWithPermissions(id: string, userId?: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: [
@@ -257,10 +288,7 @@ export class UserService {
    * @param userId - ID del usuario autenticado
    * @returns Array de permisos únicos
    */
-  async getUserPermissions(
-    id: string,
-    userId?: string,
-  ): Promise<any[]> {
+  async getUserPermissions(id: string, userId?: string): Promise<any[]> {
     const user = await this.findOneWithPermissions(id, userId);
     return user.getPermissions();
   }
@@ -271,10 +299,7 @@ export class UserService {
    * @param userId - ID del usuario autenticado
    * @returns Array de códigos de permisos únicos
    */
-  async getUserPermissionCodes(
-    id: string,
-    userId?: string,
-  ): Promise<string[]> {
+  async getUserPermissionCodes(id: string, userId?: string): Promise<string[]> {
     const user = await this.findOneWithPermissions(id, userId);
     return user.getPermissionCodes();
   }

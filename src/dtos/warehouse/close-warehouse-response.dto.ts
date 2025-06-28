@@ -5,4 +5,4 @@ export class CloseWarehouseResponseDto {
   totalQuantity: number;
   message: string;
   closedAt: Date;
-} 
+}

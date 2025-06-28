@@ -11,4 +11,4 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
   providers: [CurrencyService, CurrencyMapper],
   exports: [CurrencyService, CurrencyMapper],
 })
-export class CurrencyModule {} 
+export class CurrencyModule {}

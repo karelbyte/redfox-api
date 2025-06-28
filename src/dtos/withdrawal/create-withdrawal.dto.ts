@@ -47,5 +47,4 @@ export class CreateWithdrawalDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
-
 }

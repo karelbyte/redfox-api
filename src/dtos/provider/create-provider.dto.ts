@@ -1,4 +1,10 @@
-import { IsString, IsEmail, IsOptional, Length, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  Length,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateProviderDto {
   @IsString()
@@ -37,4 +43,4 @@ export class CreateProviderDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
-} 
+}

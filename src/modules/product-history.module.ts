@@ -10,4 +10,4 @@ import { ProductHistoryController } from '../controllers/product-history.control
   providers: [ProductHistoryService],
   exports: [ProductHistoryService],
 })
-export class ProductHistoryModule {} 
+export class ProductHistoryModule {}

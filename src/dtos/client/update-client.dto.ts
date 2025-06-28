@@ -34,4 +34,4 @@ export class UpdateClientDto {
 
   @IsOptional()
   status?: boolean;
-} 
+}

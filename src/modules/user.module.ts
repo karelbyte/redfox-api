@@ -9,10 +9,7 @@ import { UserContextService } from '../services/user-context.service';
 import { Language } from '../models/language.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, Language]),
-    RoleModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User, Language]), RoleModule],
   controllers: [UserController],
   providers: [UserService, TranslationService, UserContextService],
   exports: [UserService],

@@ -23,4 +23,4 @@ export class UpdateLanguageDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-} 
+}

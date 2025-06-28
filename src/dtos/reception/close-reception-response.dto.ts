@@ -5,4 +5,4 @@ export class CloseReceptionResponseDto {
   totalQuantity: number;
   message: string;
   closedAt: Date;
-} 
+}

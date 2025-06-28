@@ -11,21 +11,21 @@ import { Warehouse } from './warehouse.entity';
 
 export enum OperationType {
   // Entradas
-  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING',    // Warehouse opening
-  RECEPTION = 'RECEPTION',                    // Product reception
-  PURCHASE = 'PURCHASE',                      // Compra directa
-  TRANSFER_IN = 'TRANSFER_IN',                // Transferencia entrante
-  ADJUSTMENT_IN = 'ADJUSTMENT_IN',            // Ajuste positivo
-  RETURN_IN = 'RETURN_IN',                    // Devolución de cliente
-  
-  // Salidas  
-  SALE = 'SALE',                              // Venta
-  WITHDRAWAL = 'WITHDRAWAL',                  // Product withdrawal
-  TRANSFER_OUT = 'TRANSFER_OUT',              // Transferencia saliente
-  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',          // Ajuste negativo
-  DETERIORATION = 'DETERIORATION',            // Deterioro/merma
-  RETURN_OUT = 'RETURN_OUT',                  // Devolución a proveedor
-  DAMAGE = 'DAMAGE',                          // Daño/pérdida
+  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING', // Warehouse opening
+  RECEPTION = 'RECEPTION', // Product reception
+  PURCHASE = 'PURCHASE', // Compra directa
+  TRANSFER_IN = 'TRANSFER_IN', // Transferencia entrante
+  ADJUSTMENT_IN = 'ADJUSTMENT_IN', // Ajuste positivo
+  RETURN_IN = 'RETURN_IN', // Devolución de cliente
+
+  // Salidas
+  SALE = 'SALE', // Venta
+  WITHDRAWAL = 'WITHDRAWAL', // Product withdrawal
+  TRANSFER_OUT = 'TRANSFER_OUT', // Transferencia saliente
+  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT', // Ajuste negativo
+  DETERIORATION = 'DETERIORATION', // Deterioro/merma
+  RETURN_OUT = 'RETURN_OUT', // Devolución a proveedor
+  DAMAGE = 'DAMAGE', // Daño/pérdida
 }
 
 @Entity('product_history')

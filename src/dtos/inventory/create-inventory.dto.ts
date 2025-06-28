@@ -18,4 +18,4 @@ export class CreateInventoryDto {
   @IsNumber()
   @IsPositive()
   price: number;
-} 
+}

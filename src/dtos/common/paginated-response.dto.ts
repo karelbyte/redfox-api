@@ -6,4 +6,4 @@ export class PaginatedResponseDto<T> {
     limit: number;
     totalPages: number;
   };
-} 
+}

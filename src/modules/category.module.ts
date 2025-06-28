@@ -6,11 +6,12 @@ import { CategoryService } from '../services/category.service';
 import { CategoryController } from '../controllers/category.controller';
 import { FileUploadService } from '../services/file-upload.service';
 import { CategoryMapper } from '../services/mappers/category.mapper';
+import { LanguageModule } from './language.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Category, Product])],
+  imports: [TypeOrmModule.forFeature([Category, Product]), LanguageModule],
   controllers: [CategoryController],
   providers: [CategoryService, FileUploadService, CategoryMapper],
   exports: [CategoryService, CategoryMapper],
 })
-export class CategoryModule {} 
+export class CategoryModule {}

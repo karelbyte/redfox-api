@@ -8,6 +8,8 @@ export class CreateCurrencyDto {
 
   @IsString()
   @IsNotEmpty()
-  @Length(1, 100, { message: 'Currency name must be between 1 and 100 characters' })
+  @Length(1, 100, {
+    message: 'Currency name must be between 1 and 100 characters',
+  })
   name: string;
-} 
+}

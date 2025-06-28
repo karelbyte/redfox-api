@@ -18,4 +18,4 @@ export class UpdateWithdrawalDetailDto {
   @Min(0)
   @IsOptional()
   price?: number;
-} 
+}

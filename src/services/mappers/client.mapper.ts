@@ -30,4 +30,4 @@ export class ClientMapper {
       created_at,
     };
   }
-} 
+}

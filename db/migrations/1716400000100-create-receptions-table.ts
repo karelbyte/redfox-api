@@ -46,6 +46,12 @@ export class CreateReceptionsTable1716400000100 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'document',
+            type: 'varchar',
+            length: '100',
+            isNullable: false,
+          },
+          {
             name: 'amount',
             type: 'decimal',
             precision: 10,

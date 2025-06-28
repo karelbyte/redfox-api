@@ -4,4 +4,4 @@ export class RoleResponseDto {
   description: string;
   status: boolean;
   created_at: Date;
-} 
+}

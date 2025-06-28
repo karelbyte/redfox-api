@@ -5,10 +5,14 @@ import {
   Body,
   Param,
   Delete,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { RolePermissionService } from '../services/role-permission.service';
-import { CreateRolePermissionDto } from '../dtos/role-permission/create-role-permission.dto';
+import {
+  CreateRolePermissionDto,
+  AssignPermissionsToRoleDto,
+} from '../dtos/role-permission/create-role-permission.dto';
 import { RolePermissionResponseDto } from '../dtos/role-permission/role-permission-response.dto';
 import { AuthGuard } from '../guards/auth.guard';
 
@@ -22,6 +26,27 @@ export class RolePermissionController {
     @Body() createRolePermissionDto: CreateRolePermissionDto,
   ): Promise<RolePermissionResponseDto> {
     return this.rolePermissionService.create(createRolePermissionDto);
+  }
+
+  @Post('assign')
+  assignPermissionsToRole(
+    @Body()
+    assignPermissionsDto: AssignPermissionsToRoleDto,
+  ): Promise<RolePermissionResponseDto[]> {
+    return this.rolePermissionService.assignPermissionsToRole(
+      assignPermissionsDto,
+    );
+  }
+
+  @Put('role/:roleId')
+  updateRolePermissions(
+    @Param('roleId') roleId: string,
+    @Body() updateRolePermissionsDto: { permissionIds: string[] },
+  ): Promise<RolePermissionResponseDto[]> {
+    return this.rolePermissionService.updateRolePermissions(
+      roleId,
+      updateRolePermissionsDto.permissionIds,
+    );
   }
 
   @Get()
@@ -58,6 +83,9 @@ export class RolePermissionController {
     @Param('roleId') roleId: string,
     @Param('permissionId') permissionId: string,
   ): Promise<void> {
-    return this.rolePermissionService.removeByRoleAndPermission(roleId, permissionId);
+    return this.rolePermissionService.removeByRoleAndPermission(
+      roleId,
+      permissionId,
+    );
   }
-} 
+}

@@ -13,6 +13,7 @@ import {
   MaxFileSizeValidator,
   ParseFilePipe,
   UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
@@ -53,7 +54,10 @@ export class ProductController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -108,7 +112,10 @@ export class ProductController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },

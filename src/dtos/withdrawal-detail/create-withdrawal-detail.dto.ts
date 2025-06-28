@@ -14,4 +14,4 @@ export class CreateWithdrawalDetailDto {
   @IsNumber()
   @Min(0)
   price: number;
-} 
+}

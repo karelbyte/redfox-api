@@ -73,7 +73,10 @@ export class UserContextService {
    * @param languageCode - Language code (e.g., 'es', 'en')
    * @returns Updated language entity
    */
-  async setUserLanguage(userId: string, languageCode: string): Promise<Language> {
+  async setUserLanguage(
+    userId: string,
+    languageCode: string,
+  ): Promise<Language> {
     try {
       // Look for the base language by code
       const baseLanguage = await this.languageRepository.findOne({
@@ -85,7 +88,7 @@ export class UserContextService {
       }
 
       // Look for if there's already a specific language for this user
-      let userLanguage = await this.languageRepository.findOne({
+      const userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
 

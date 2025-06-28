@@ -1,12 +1,4 @@
-import {
-  IsString,
-  IsDate,
-  IsUUID,
-  IsNumber,
-  IsArray,
-  ValidateNested,
-  Min,
-} from 'class-validator';
+import { IsString, IsDate, IsUUID, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 //import { CreateReceptionDetailDto } from '../reception-detail/create-reception-detail.dto';
 

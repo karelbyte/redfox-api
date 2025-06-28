@@ -8,4 +8,4 @@ export class InventoryListResponseDto {
   quantity: number;
   price: number;
   createdAt: Date;
-} 
+}

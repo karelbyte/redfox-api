@@ -9,4 +9,4 @@ export class ProviderResponseDto {
   address: string;
   status: boolean;
   created_at: Date;
-} 
+}

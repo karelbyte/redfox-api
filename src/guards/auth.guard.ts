@@ -10,6 +10,19 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { AppConfig } from '../config';
 
+interface JwtPayload {
+  sub: string;
+  id: string;
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
+interface RequestWithUser extends Request {
+  user: JwtPayload;
+}
+
 export class CustomUnauthorizedException extends HttpException {
   constructor(message: string) {
     super(message, HttpStatus.UNAUTHORIZED);
@@ -21,28 +34,23 @@ export class AuthGuard implements CanActivate {
   constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const token = this.extractTokenFromHeader(request);
 
-    if (token === undefined || token === null || token === '') {
+    if (!token) {
       throw new UnauthorizedException();
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: AppConfig().appKey,
       });
 
-      // Establecer el usuario en el request
-      request['user'] = payload;
-
-      // Log para depuración
-      console.log('JWT payload decoded:', payload);
-      console.log('User ID from JWT:', payload.sub || payload.id);
-    } catch (e) {
-      console.error('JWT verification failed:', e);
+      request.user = payload;
+    } catch (error) {
+      console.error('JWT verification failed:', error);
       throw new CustomUnauthorizedException(
-        'Lo sentimos, la sesión ha expirado o ha ocurrido un problema, inicia sesión nuevamente',
+        'We feel it, the session has expired or a problem has occurred, log in again',
       );
     }
 

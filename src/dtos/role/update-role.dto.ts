@@ -13,4 +13,4 @@ export class UpdateRoleDto {
 
   @IsOptional()
   status?: boolean;
-} 
+}

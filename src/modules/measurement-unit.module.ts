@@ -12,4 +12,4 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
   providers: [MeasurementUnitService, MeasurementUnitMapper],
   exports: [MeasurementUnitService, MeasurementUnitMapper],
 })
-export class MeasurementUnitModule {} 
+export class MeasurementUnitModule {}

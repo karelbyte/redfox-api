@@ -1,4 +1,10 @@
-import { IsString, IsEmail, IsOptional, Length, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  Length,
+  IsBoolean,
+} from 'class-validator';
 
 export class UpdateProviderDto {
   @IsString()
@@ -39,4 +45,4 @@ export class UpdateProviderDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
-} 
+}

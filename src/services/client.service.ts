@@ -8,6 +8,7 @@ import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ClientMapper } from './mappers/client.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class ClientService {
@@ -15,6 +16,7 @@ export class ClientService {
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
     private clientMapper: ClientMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
   async create(createClientDto: CreateClientDto): Promise<ClientResponseDto> {
@@ -90,13 +92,18 @@ export class ClientService {
     };
   }
 
-  async findOne(id: string): Promise<ClientResponseDto> {
+  async findOne(id: string, userId?: string): Promise<ClientResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!client) {
-      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'client.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.clientMapper.mapToResponseDto(client);
   }
@@ -104,13 +111,19 @@ export class ClientService {
   async update(
     id: string,
     updateClientDto: UpdateClientDto,
+    userId?: string,
   ): Promise<ClientResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!client) {
-      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'client.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     const updatedClient = await this.clientRepository.save({
       ...client,
@@ -119,13 +132,18 @@ export class ClientService {
     return this.clientMapper.mapToResponseDto(updatedClient);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const client = await this.clientRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!client) {
-      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'client.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     await this.clientRepository.softRemove(client);
   }

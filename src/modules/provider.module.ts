@@ -11,4 +11,4 @@ import { ProviderMapper } from '../services/mappers/provider.mapper';
   providers: [ProviderService, ProviderMapper],
   exports: [ProviderService],
 })
-export class ProviderModule {} 
+export class ProviderModule {}

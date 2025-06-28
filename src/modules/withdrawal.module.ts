@@ -21,10 +21,10 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Withdrawal, 
-      WithdrawalDetail, 
-      Client, 
-      Product, 
+      Withdrawal,
+      WithdrawalDetail,
+      Client,
+      Product,
       Warehouse,
       Inventory,
       ProductHistory,
@@ -33,7 +33,7 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
   ],
   controllers: [WithdrawalController],
   providers: [
-    WithdrawalService, 
+    WithdrawalService,
     ProductMapper,
     BrandMapper,
     CategoryMapper,
@@ -44,4 +44,4 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
   ],
   exports: [WithdrawalService],
 })
-export class WithdrawalModule {} 
+export class WithdrawalModule {}

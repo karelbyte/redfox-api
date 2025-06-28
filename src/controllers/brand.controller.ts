@@ -13,6 +13,7 @@ import {
   ParseFilePipe,
   UploadedFiles,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { BrandService } from '../services/brand.service';
 import { CreateBrandDto } from '../dtos/brand/create-brand.dto';
@@ -54,7 +55,10 @@ export class BrandController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -112,7 +116,10 @@ export class BrandController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new Error('Only image files are allowed!'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },

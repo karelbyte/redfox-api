@@ -10,4 +10,4 @@ import { TaxController } from '../controllers/tax.controller';
   providers: [TaxService],
   exports: [TaxService],
 })
-export class TaxModule {} 
+export class TaxModule {}

@@ -79,11 +79,27 @@ export class User {
   }
 
   /**
-   * Obtiene los códigos de permisos únicos del usuario
+   * Obtiene los códigos de permisos únicos del usuario de todos sus roles
    * @returns Array de códigos de permisos únicos
    */
   getPermissionCodes(): string[] {
-    return this.getPermissions().map((permission) => permission.code);
+    if (!this.roles || this.roles.length === 0) {
+      return [];
+    }
+
+    const permissionCodesSet = new Set<string>();
+
+    this.roles.forEach((role) => {
+      if (role.rolePermissions && role.rolePermissions.length > 0) {
+        role.rolePermissions.forEach((rolePermission) => {
+          if (rolePermission.permission && rolePermission.permission.code) {
+            permissionCodesSet.add(rolePermission.permission.code);
+          }
+        });
+      }
+    });
+
+    return Array.from(permissionCodesSet);
   }
 
   /**

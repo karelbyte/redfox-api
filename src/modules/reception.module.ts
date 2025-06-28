@@ -21,10 +21,10 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Reception, 
-      ReceptionDetail, 
-      Provider, 
-      Product, 
+      Reception,
+      ReceptionDetail,
+      Provider,
+      Product,
       Warehouse,
       Inventory,
       ProductHistory,
@@ -33,9 +33,9 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
   ],
   controllers: [ReceptionController],
   providers: [
-    ReceptionService, 
-    WarehouseMapper, 
-    CurrencyMapper, 
+    ReceptionService,
+    WarehouseMapper,
+    CurrencyMapper,
     ProductMapper,
     BrandMapper,
     CategoryMapper,
@@ -44,4 +44,4 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
   ],
   exports: [ReceptionService],
 })
-export class ReceptionModule {} 
+export class ReceptionModule {}

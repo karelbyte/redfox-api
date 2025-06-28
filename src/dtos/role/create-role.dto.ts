@@ -10,4 +10,4 @@ export class CreateRoleDto {
   @IsNotEmpty()
   @Length(3, 255)
   description: string;
-} 
+}

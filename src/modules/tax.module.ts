@@ -12,4 +12,4 @@ import { TaxMapper } from '../services/mappers/tax.mapper';
   providers: [TaxService, TaxMapper],
   exports: [TaxService, TaxMapper],
 })
-export class TaxModule {} 
+export class TaxModule {}

@@ -2,7 +2,9 @@ import { RolePermission } from '../../models/role-permission.entity';
 import { RolePermissionResponseDto } from '../../dtos/role-permission/role-permission-response.dto';
 
 export class RolePermissionMapper {
-  static toResponseDto(rolePermission: RolePermission): RolePermissionResponseDto {
+  static toResponseDto(
+    rolePermission: RolePermission,
+  ): RolePermissionResponseDto {
     return {
       id: rolePermission.id,
       roleId: rolePermission.roleId,
@@ -26,7 +28,11 @@ export class RolePermissionMapper {
     };
   }
 
-  static toResponseDtoList(rolePermissions: RolePermission[]): RolePermissionResponseDto[] {
-    return rolePermissions.map((rolePermission) => this.toResponseDto(rolePermission));
+  static toResponseDtoList(
+    rolePermissions: RolePermission[],
+  ): RolePermissionResponseDto[] {
+    return rolePermissions.map((rolePermission) =>
+      this.toResponseDto(rolePermission),
+    );
   }
-} 
+}

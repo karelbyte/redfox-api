@@ -5,6 +5,7 @@ export class UserResponseDto {
   name: string;
   email: string;
   roles: RoleResponseDto[];
+  permissions: string[];
   status: boolean;
   created_at: Date;
 }

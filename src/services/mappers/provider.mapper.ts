@@ -18,4 +18,4 @@ export class ProviderMapper {
       created_at: provider.created_at,
     };
   }
-} 
+}

@@ -5,4 +5,4 @@ export class UpdateInventoryDto {
   @IsOptional()
   @Min(0)
   stock?: number;
-} 
+}

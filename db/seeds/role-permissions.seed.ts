@@ -19,14 +19,14 @@ export class RolePermissionsSeed {
     });
 
     if (!adminRole || !sellerRole) {
-      console.log('⚠️ Not found roles.Be sure to run rolesseed first.');
+      console.log('⚠️ Not found roles. Be sure to run rolesseed first.');
       return;
     }
 
-    // Obtener todos los permisos
+    // Obtain all permits
     const allPermissions = await permissionRepository.find();
 
-    // Asignar todos los permisos al rol ADMIN
+    // Assign all permissions to the admin role
     for (const permission of allPermissions) {
       const existingRolePermission = await rolePermissionRepository.findOne({
         where: {

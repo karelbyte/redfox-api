@@ -1,4 +1,14 @@
-import { IsString, IsUUID, IsBoolean, IsOptional, Length, IsArray, ValidateNested, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsBoolean,
+  IsOptional,
+  Length,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
 
@@ -31,4 +41,4 @@ export class UpdateWithdrawalDto {
   @ValidateNested({ each: true })
   @Type(() => CreateWithdrawalDetailDto)
   details?: CreateWithdrawalDetailDto[];
-} 
+}

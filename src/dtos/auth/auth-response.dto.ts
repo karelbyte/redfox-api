@@ -4,4 +4,4 @@ export class AuthResponseDto {
   access_token: string;
   expires_at: Date;
   user: UserResponseDto;
-} 
+}
