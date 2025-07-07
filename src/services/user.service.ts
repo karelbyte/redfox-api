@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../models/user.entity';
 import { CreateUserDto } from '../dtos/user/create-user.dto';
 import { UpdateUserDto } from '../dtos/user/update-user.dto';
-import { UserResponseDto } from '../dtos/user/user-response.dto';
+import { UserResponseDto, UserWithPermissionDescriptionsDto } from '../dtos/user/user-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { RoleService } from './role.service';
@@ -41,6 +41,28 @@ export class UserService {
           created_at: role.created_at,
         })) || [],
       permissions: user.getPermissionCodes(),
+      status,
+      created_at,
+    };
+  }
+
+  private mapToResponseWithPermissionDescriptionsDto(
+    user: User,
+  ): UserWithPermissionDescriptionsDto {
+    const { id, name, email, roles, status, created_at } = user;
+    return {
+      id,
+      name,
+      email,
+      roles:
+        roles?.map((role) => ({
+          id: role.id,
+          code: role.code,
+          description: role.description,
+          status: role.status,
+          created_at: role.created_at,
+        })) || [],
+      permission_descriptions: user.getPermissionDescriptions(),
       status,
       created_at,
     };
@@ -119,6 +141,32 @@ export class UserService {
     }
 
     return this.mapToResponseDto(user);
+  }
+
+  async findOneWithPermissionDescriptions(
+    id: string,
+    userId?: string,
+  ): Promise<UserWithPermissionDescriptionsDto> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: [
+        'roles',
+        'roles.rolePermissions',
+        'roles.rolePermissions.permission',
+      ],
+      withDeleted: false,
+    });
+
+    if (!user) {
+      const message = await this.translationService.translate(
+        'user.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+
+    return this.mapToResponseWithPermissionDescriptionsDto(user);
   }
 
   async update(

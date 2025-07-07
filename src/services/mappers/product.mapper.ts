@@ -51,8 +51,9 @@ export class ProductMapper {
         ? this.categoryMapper.mapToResponseDto(category)
         : null,
       tax: tax ? this.taxMapper.mapToResponseDto(tax) : null,
-      measurement_unit:
-        this.measurementUnitMapper.mapToResponseDto(measurement_unit),
+      measurement_unit: measurement_unit
+        ? this.measurementUnitMapper.mapToResponseDto(measurement_unit)
+        : null,
       is_active,
       type,
       images: images ? (JSON.parse(images) as string[]) : [],

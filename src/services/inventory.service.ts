@@ -70,7 +70,7 @@ export class InventoryService {
   async findAll(
     queryDto: InventoryQueryDto,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
-    const { page = 1, limit = 10, warehouse_id } = queryDto;
+    const { page = 1, limit = 10, warehouse_id, term } = queryDto;
     const skip = (page - 1) * limit;
 
     const whereConditions: FindOptionsWhere<Inventory> = {};
@@ -93,15 +93,32 @@ export class InventoryService {
       take: limit,
     });
 
-    const data = inventory.map((item) => this.mapToListResponseDto(item));
+    // Filtrar por término de búsqueda si se proporciona
+    let filteredInventory = inventory;
+    if (term) {
+      const searchTerm = term.toLowerCase();
+      filteredInventory = inventory.filter(
+        (item) =>
+          item.product.name.toLowerCase().includes(searchTerm) ||
+          item.product.sku.toLowerCase().includes(searchTerm) ||
+          (item.product.description &&
+            item.product.description.toLowerCase().includes(searchTerm)),
+      );
+    }
+
+    const data = filteredInventory.map((item) =>
+      this.mapToListResponseDto(item),
+    );
 
     return {
       data,
       meta: {
-        total,
+        total: term ? filteredInventory.length : total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(
+          (term ? filteredInventory.length : total) / limit,
+        ),
       },
     };
   }

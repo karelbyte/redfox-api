@@ -13,6 +13,7 @@ import { RolesSeed } from './roles.seed';
 import { RolePermissionsSeed } from './role-permissions.seed';
 import { UsersSeed } from './users.seed';
 import { UserLanguagesSeed } from './user-languages.seed';
+import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -64,6 +65,10 @@ export class RunSeeds {
       const userLanguagesSeed = new UserLanguagesSeed(dataSource);
       await userLanguagesSeed.run();
       console.log('✅ User languages assigned');
+
+      // Warehouse adjustments seeder
+      await WarehouseAdjustmentsSeed.run(dataSource);
+      console.log('✅ Warehouse adjustments created');
 
       console.log('✅ All seeders executed successfully');
     } catch (error) {

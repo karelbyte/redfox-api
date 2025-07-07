@@ -127,6 +127,8 @@ export class WarehouseService {
     const currentLimit = limit || 10;
     const skip = (currentPage - 1) * currentLimit;
 
+    console.log(whereConditions);
+
     const [warehouses, total] = await this.warehouseRepository.findAndCount({
       ...whereConditions,
       skip,

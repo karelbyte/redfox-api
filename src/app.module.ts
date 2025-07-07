@@ -22,6 +22,7 @@ import { CurrencyModule } from './modules/currency.module';
 import { PermissionModule } from './modules/permission.module';
 import { RolePermissionModule } from './modules/role-permission.module';
 import { LanguageModule } from './modules/language.module';
+import { WarehouseAdjustmentModule } from './modules/warehouse-adjustment.module';
 import { AppConfig } from './config';
 
 @Module({
@@ -58,6 +59,7 @@ import { AppConfig } from './config';
     PermissionModule,
     RolePermissionModule,
     LanguageModule,
+    WarehouseAdjustmentModule,
   ],
   controllers: [],
   providers: [],

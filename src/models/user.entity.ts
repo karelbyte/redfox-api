@@ -103,6 +103,35 @@ export class User {
   }
 
   /**
+   * Obtiene las descripciones de permisos únicos del usuario de todos sus roles
+   * @returns Array de descripciones de permisos únicos
+   */
+  getPermissionDescriptions(): string[] {
+    if (!this.roles || this.roles.length === 0) {
+      return [];
+    }
+
+    const permissionDescriptionsSet = new Set<string>();
+
+    this.roles.forEach((role) => {
+      if (role.rolePermissions && role.rolePermissions.length > 0) {
+        role.rolePermissions.forEach((rolePermission) => {
+          if (
+            rolePermission.permission &&
+            rolePermission.permission.description
+          ) {
+            permissionDescriptionsSet.add(
+              rolePermission.permission.description,
+            );
+          }
+        });
+      }
+    });
+
+    return Array.from(permissionDescriptionsSet);
+  }
+
+  /**
    * Verifica si el usuario tiene un permiso específico
    * @param permissionCode - Código del permiso a verificar
    * @returns true si el usuario tiene el permiso, false en caso contrario

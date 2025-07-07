@@ -36,6 +36,14 @@ export class UserController {
     return this.userService.findOne(id, userId);
   }
 
+  @Get(':id/with-permission-descriptions')
+  findOneWithPermissionDescriptions(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ) {
+    return this.userService.findOneWithPermissionDescriptions(id, userId);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

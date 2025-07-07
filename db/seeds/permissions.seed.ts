@@ -394,6 +394,11 @@ export class PermissionsSeed {
         description: 'Allows creating warehouses | Permite crear almacenes',
       },
       {
+        code: 'warehouse_close',
+        module: 'warehouses',
+        description: 'Allows close warehouses | Permite cerrar almacenes',
+      },
+      {
         code: 'warehouse_read',
         module: 'warehouses',
         description: 'Allows reading warehouses | Permite leer almacenes',
@@ -570,6 +575,68 @@ export class PermissionsSeed {
         module: 'product_history',
         description:
           'Allows viewing the product history module | Permite ver el módulo de historial de productos',
+      },
+
+      // Warehouse Adjustment Permissions
+      {
+        code: 'warehouse_adjustment_module_view',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows viewing the warehouse adjustments module | Permite ver el módulo de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_create',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows creating warehouse adjustments | Permite crear ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_read',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows reading warehouse adjustments | Permite leer ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_update',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows updating warehouse adjustments | Permite actualizar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_delete',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows deleting warehouse adjustments | Permite eliminar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_process',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows processing warehouse adjustments | Permite procesar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_create',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows creating warehouse adjustment details | Permite crear detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_read',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows reading warehouse adjustment details | Permite leer detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_update',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows updating warehouse adjustment details | Permite actualizar detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_delete',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows deleting warehouse adjustment details | Permite eliminar detalles de ajustes entre almacenes',
       },
       {
         code: 'product_history_create',

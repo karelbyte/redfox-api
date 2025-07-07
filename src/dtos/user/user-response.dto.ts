@@ -9,3 +9,13 @@ export class UserResponseDto {
   status: boolean;
   created_at: Date;
 }
+
+export class UserWithPermissionDescriptionsDto {
+  id: string;
+  name: string;
+  email: string;
+  roles: RoleResponseDto[];
+  permission_descriptions: string[];
+  status: boolean;
+  created_at: Date;
+}

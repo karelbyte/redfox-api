@@ -43,7 +43,7 @@ export class ProductResponseDto {
   tax?: TaxResponseDto | null;
 
   @Expose()
-  measurement_unit: MeasurementUnitResponseDto;
+  measurement_unit?: MeasurementUnitResponseDto | null;
 
   @Expose()
   is_active: boolean;
