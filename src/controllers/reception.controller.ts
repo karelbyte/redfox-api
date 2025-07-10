@@ -22,6 +22,7 @@ import { CloseReceptionResponseDto } from '../dtos/reception/close-reception-res
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('receptions')
 @UseGuards(AuthGuard)
@@ -31,43 +32,51 @@ export class ReceptionController {
   @Post()
   create(
     @Body() createReceptionDto: CreateReceptionDto,
+    @UserId() userId: string,
   ): Promise<ReceptionResponseDto> {
     console.log(createReceptionDto);
-    return this.receptionService.create(createReceptionDto);
+    return this.receptionService.create(createReceptionDto, userId);
   }
 
   @Get()
   findAll(
     @Query() paginationDto: PaginationDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<ReceptionResponseDto>> {
-    return this.receptionService.findAll(paginationDto);
+    return this.receptionService.findAll(paginationDto, userId);
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<ReceptionResponseDto> {
-    return this.receptionService.findOne(id);
+    return this.receptionService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateReceptionDto: UpdateReceptionDto,
+    @UserId() userId: string,
   ): Promise<ReceptionResponseDto> {
-    return this.receptionService.update(id, updateReceptionDto);
+    return this.receptionService.update(id, updateReceptionDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.receptionService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.receptionService.remove(id, userId);
   }
 
   @Post(':id/close')
   closeReception(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<CloseReceptionResponseDto> {
-    return this.receptionService.closeReception(id);
+    return this.receptionService.closeReception(id, userId);
   }
 
   // Rutas para detalles de recepción
@@ -75,24 +84,27 @@ export class ReceptionController {
   createDetail(
     @Param('id', ParseUUIDPipe) receptionId: string,
     @Body() createDetailDto: CreateReceptionDetailDto,
+    @UserId() userId: string,
   ): Promise<ReceptionDetailResponseDto> {
-    return this.receptionService.createDetail(receptionId, createDetailDto);
+    return this.receptionService.createDetail(receptionId, createDetailDto, userId);
   }
 
   @Get(':id/details')
   findAllDetails(
     @Param('id', ParseUUIDPipe) receptionId: string,
     @Query() queryDto: ReceptionDetailQueryDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<ReceptionDetailResponseDto>> {
-    return this.receptionService.findAllDetails(receptionId, queryDto);
+    return this.receptionService.findAllDetails(receptionId, queryDto, userId);
   }
 
   @Get(':id/details/:detailId')
   findOneDetail(
     @Param('id', ParseUUIDPipe) receptionId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
+    @UserId() userId: string,
   ): Promise<ReceptionDetailResponseDto> {
-    return this.receptionService.findOneDetail(receptionId, detailId);
+    return this.receptionService.findOneDetail(receptionId, detailId, userId);
   }
 
   @Put(':id/details/:detailId')
@@ -100,11 +112,13 @@ export class ReceptionController {
     @Param('id', ParseUUIDPipe) receptionId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
     @Body() updateDetailDto: UpdateReceptionDetailDto,
+    @UserId() userId: string,
   ): Promise<ReceptionDetailResponseDto> {
     return this.receptionService.updateDetail(
       receptionId,
       detailId,
       updateDetailDto,
+      userId,
     );
   }
 
@@ -112,7 +126,8 @@ export class ReceptionController {
   removeDetail(
     @Param('id', ParseUUIDPipe) receptionId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
+    @UserId() userId: string,
   ): Promise<void> {
-    return this.receptionService.removeDetail(receptionId, detailId);
+    return this.receptionService.removeDetail(receptionId, detailId, userId);
   }
 }

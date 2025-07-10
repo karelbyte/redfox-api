@@ -17,6 +17,7 @@ import { CurrencyResponseDto } from '../dtos/currency/currency-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('currencies')
 @UseGuards(AuthGuard)
@@ -26,8 +27,9 @@ export class CurrencyController {
   @Post()
   create(
     @Body() createCurrencyDto: CreateCurrencyDto,
+    @UserId() userId: string,
   ): Promise<CurrencyResponseDto> {
-    return this.currencyService.create(createCurrencyDto);
+    return this.currencyService.create(createCurrencyDto, userId);
   }
 
   @Get()
@@ -40,25 +42,33 @@ export class CurrencyController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<CurrencyResponseDto> {
-    return this.currencyService.findOne(id);
+    return this.currencyService.findOne(id, userId);
   }
 
   @Get('code/:code')
-  findByCode(@Param('code') code: string): Promise<CurrencyResponseDto> {
-    return this.currencyService.findByCode(code);
+  findByCode(
+    @Param('code') code: string,
+    @UserId() userId: string,
+  ): Promise<CurrencyResponseDto> {
+    return this.currencyService.findByCode(code, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCurrencyDto: UpdateCurrencyDto,
+    @UserId() userId: string,
   ): Promise<CurrencyResponseDto> {
-    return this.currencyService.update(id, updateCurrencyDto);
+    return this.currencyService.update(id, updateCurrencyDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.currencyService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.currencyService.remove(id, userId);
   }
 }

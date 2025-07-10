@@ -17,6 +17,7 @@ import { BrandMapper } from '../services/mappers/brand.mapper';
 import { CategoryMapper } from '../services/mappers/category.mapper';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
       ProductHistory,
     ]),
     ProductModule,
+    LanguageModule,
   ],
   controllers: [ReceptionController],
   providers: [

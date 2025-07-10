@@ -13,6 +13,7 @@ import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TaxMapper } from './mappers/tax.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class TaxService {
@@ -22,12 +23,32 @@ export class TaxService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly taxMapper: TaxMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
-  async create(createTaxDto: CreateTaxDto): Promise<TaxResponseDto> {
-    const tax = this.taxRepository.create(createTaxDto);
-    const savedTax = await this.taxRepository.save(tax);
-    return this.taxMapper.mapToResponseDto(savedTax);
+  async create(
+    createTaxDto: CreateTaxDto,
+    userId?: string,
+  ): Promise<TaxResponseDto> {
+    try {
+      const tax = this.taxRepository.create(createTaxDto);
+      const savedTax = await this.taxRepository.save(tax);
+      return this.taxMapper.mapToResponseDto(savedTax);
+    } catch (error: unknown) {
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('taxes.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'tax.already_exists',
+          userId,
+          { code: createTaxDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
+    }
   }
 
   async findAll(
@@ -90,12 +111,17 @@ export class TaxService {
     };
   }
 
-  async findOne(id: string): Promise<TaxResponseDto> {
+  async findOne(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
       where: { id, isActive: true },
     });
     if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'tax.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.taxMapper.mapToResponseDto(tax);
   }
@@ -103,25 +129,52 @@ export class TaxService {
   async update(
     id: string,
     updateTaxDto: UpdateTaxDto,
+    userId?: string,
   ): Promise<TaxResponseDto> {
-    const tax = await this.taxRepository.findOne({
-      where: { id, isActive: true },
-    });
-    if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
-    }
+    try {
+      const tax = await this.taxRepository.findOne({
+        where: { id, isActive: true },
+      });
+      if (!tax) {
+        const message = await this.translationService.translate(
+          'tax.not_found',
+          userId,
+          { id },
+        );
+        throw new NotFoundException(message);
+      }
 
-    const dtax = { ...tax, ...updateTaxDto };
-    const savedTax = await this.taxRepository.save(dtax);
-    return this.taxMapper.mapToResponseDto(savedTax);
+      const dtax = { ...tax, ...updateTaxDto };
+      const savedTax = await this.taxRepository.save(dtax);
+      return this.taxMapper.mapToResponseDto(savedTax);
+    } catch (error: unknown) {
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('taxes.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'tax.already_exists',
+          userId,
+          { code: updateTaxDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
+    }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const tax = await this.taxRepository.findOne({
       where: { id, isActive: true },
     });
     if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'tax.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     // Verificar si el tax está siendo usado en productos
@@ -131,21 +184,32 @@ export class TaxService {
     });
 
     if (productsUsingTax > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar el impuesto '${tax.name}' porque está siendo usado por ${productsUsingTax} producto(s). Primero debe cambiar o eliminar los productos que usan este impuesto.`,
+      const message = await this.translationService.translate(
+        'tax.cannot_delete_in_use',
+        userId,
+        {
+          name: tax.name,
+          count: productsUsingTax,
+        },
       );
+      throw new BadRequestException(message);
     }
 
     await this.taxRepository.softDelete(id);
   }
 
-  async activate(id: string): Promise<TaxResponseDto> {
+  async activate(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
       where: { id },
       withDeleted: true,
     });
     if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'tax.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     tax.isActive = true;
@@ -153,13 +217,18 @@ export class TaxService {
     return this.taxMapper.mapToResponseDto(savedTax);
   }
 
-  async deactivate(id: string): Promise<TaxResponseDto> {
+  async deactivate(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
       where: { id },
       withDeleted: true,
     });
     if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'tax.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     tax.isActive = false;
@@ -169,12 +238,18 @@ export class TaxService {
 
   async getTaxUsage(
     id: string,
+    userId?: string,
   ): Promise<{ tax: TaxResponseDto; productsCount: number; products: any[] }> {
     const tax = await this.taxRepository.findOne({
       where: { id, isActive: true },
     });
     if (!tax) {
-      throw new NotFoundException(`Impuesto con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'tax.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     const products = await this.productRepository.find({

@@ -15,6 +15,7 @@ import {
 } from '../dtos/role-permission/create-role-permission.dto';
 import { RolePermissionMapper } from './mappers/role-permission.mapper';
 import { RolePermissionResponseDto } from '../dtos/role-permission/role-permission-response.dto';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class RolePermissionService {
@@ -26,10 +27,12 @@ export class RolePermissionService {
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
     private dataSource: DataSource,
+    private readonly translationService: TranslationService,
   ) {}
 
   async create(
     createRolePermissionDto: CreateRolePermissionDto,
+    userId?: string,
   ): Promise<RolePermissionResponseDto> {
     const existingRolePermission = await this.rolePermissionRepository.findOne({
       where: {
@@ -39,9 +42,11 @@ export class RolePermissionService {
     });
 
     if (existingRolePermission) {
-      throw new ConflictException(
-        'Ya existe esta relación entre rol y permiso',
+      const message = await this.translationService.translate(
+        'role_permission.already_exists',
+        userId,
       );
+      throw new ConflictException(message);
     }
 
     const rolePermission = this.rolePermissionRepository.create({
@@ -56,15 +61,24 @@ export class RolePermissionService {
 
   async assignPermissionsToRole(
     assignPermissionsDto: AssignPermissionsToRoleDto,
+    userId?: string,
   ): Promise<RolePermissionResponseDto[]> {
     // Validate that permissionIds is an array
     if (!Array.isArray(assignPermissionsDto.permissionIds)) {
-      throw new BadRequestException('permissionIds debe ser un array');
+      const message = await this.translationService.translate(
+        'role_permission.permission_ids_array_required',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     // Validate that the array is not empty
     if (assignPermissionsDto.permissionIds.length === 0) {
-      throw new BadRequestException('permissionIds no puede estar vacío');
+      const message = await this.translationService.translate(
+        'role_permission.permission_ids_empty',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -78,9 +92,12 @@ export class RolePermissionService {
       });
 
       if (!role) {
-        throw new NotFoundException(
-          `Rol con ID ${assignPermissionsDto.roleId} no encontrado`,
+        const message = await this.translationService.translate(
+          'role_permission.role_not_found',
+          userId,
+          { roleId: assignPermissionsDto.roleId },
         );
+        throw new NotFoundException(message);
       }
 
       // Verify all permissions exist using a more direct approach
@@ -96,9 +113,12 @@ export class RolePermissionService {
         const missingIds = assignPermissionsDto.permissionIds.filter(
           (id) => !foundIds.includes(id),
         );
-        throw new BadRequestException(
-          `Permisos no encontrados: ${missingIds.join(', ')}`,
+        const message = await this.translationService.translate(
+          'role_permission.permissions_not_found',
+          userId,
+          { missingIds: missingIds.join(', ') },
         );
+        throw new BadRequestException(message);
       }
 
       // Remove existing permissions for this role
@@ -140,10 +160,15 @@ export class RolePermissionService {
   async updateRolePermissions(
     roleId: string,
     permissionIds: string[],
+    userId?: string,
   ): Promise<RolePermissionResponseDto[]> {
     // Validate that permissionIds is an array
     if (!Array.isArray(permissionIds)) {
-      throw new BadRequestException('permissionIds debe ser un array');
+      const message = await this.translationService.translate(
+        'role_permission.permission_ids_array_required',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     const assignPermissionsDto: AssignPermissionsToRoleDto = {
@@ -151,7 +176,7 @@ export class RolePermissionService {
       permissionIds,
     };
 
-    return this.assignPermissionsToRole(assignPermissionsDto);
+    return this.assignPermissionsToRole(assignPermissionsDto, userId);
   }
 
   async findAll(): Promise<RolePermissionResponseDto[]> {
@@ -161,16 +186,19 @@ export class RolePermissionService {
     return RolePermissionMapper.toResponseDtoList(rolePermissions);
   }
 
-  async findOne(id: string): Promise<RolePermissionResponseDto> {
+  async findOne(id: string, userId?: string): Promise<RolePermissionResponseDto> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { id },
       relations: ['role', 'permission'],
     });
 
     if (!rolePermission) {
-      throw new NotFoundException(
-        `Relación rol-permiso con ID ${id} no encontrada`,
+      const message = await this.translationService.translate(
+        'role_permission.not_found',
+        userId,
+        { id },
       );
+      throw new NotFoundException(message);
     }
 
     return RolePermissionMapper.toResponseDto(rolePermission);
@@ -194,15 +222,18 @@ export class RolePermissionService {
     return RolePermissionMapper.toResponseDtoList(rolePermissions);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { id },
     });
 
     if (!rolePermission) {
-      throw new NotFoundException(
-        `Relación rol-permiso con ID ${id} no encontrada`,
+      const message = await this.translationService.translate(
+        'role_permission.not_found',
+        userId,
+        { id },
       );
+      throw new NotFoundException(message);
     }
 
     await this.rolePermissionRepository.softDelete(id);
@@ -211,13 +242,18 @@ export class RolePermissionService {
   async removeByRoleAndPermission(
     roleId: string,
     permissionId: string,
+    userId?: string,
   ): Promise<void> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { roleId, permissionId },
     });
 
     if (!rolePermission) {
-      throw new NotFoundException('Relación rol-permiso no encontrada');
+      const message = await this.translationService.translate(
+        'role_permission.relationship_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
     }
 
     await this.rolePermissionRepository.softDelete(rolePermission.id);

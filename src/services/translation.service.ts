@@ -73,6 +73,218 @@ export class TranslationService {
       en: 'Permission deleted successfully',
     },
 
+    // Product messages
+    'product.not_found': {
+      es: 'Producto con ID {id} no encontrado',
+      en: 'Product with ID {id} not found',
+    },
+    'product.slug_already_exists': {
+      es: 'Ya existe un producto con el slug "{slug}"',
+      en: 'A product with slug "{slug}" already exists',
+    },
+    'product.sku_already_exists': {
+      es: 'Ya existe un producto con el SKU "{sku}"',
+      en: 'A product with SKU "{sku}" already exists',
+    },
+    'product.created_successfully': {
+      es: 'Producto creado exitosamente',
+      en: 'Product created successfully',
+    },
+    'product.updated_successfully': {
+      es: 'Producto actualizado exitosamente',
+      en: 'Product updated successfully',
+    },
+    'product.deleted_successfully': {
+      es: 'Producto eliminado exitosamente',
+      en: 'Product deleted successfully',
+    },
+    'product.cannot_delete_in_use': {
+      es: 'No se puede eliminar el producto "{name}" porque está siendo usado en {inventoryCount} inventario(s) y {warehouseOpeningCount} apertura(s) de almacén. Primero debe eliminar estos registros.',
+      en: 'Cannot delete product "{name}" because it is being used in {inventoryCount} inventory record(s) and {warehouseOpeningCount} warehouse opening(s). First, you must delete these records.',
+    },
+
+    // Provider messages
+    'provider.not_found': {
+      es: 'Proveedor con ID {id} no encontrado',
+      en: 'Provider with ID {id} not found',
+    },
+    'provider.created_successfully': {
+      es: 'Proveedor creado exitosamente',
+      en: 'Provider created successfully',
+    },
+    'provider.updated_successfully': {
+      es: 'Proveedor actualizado exitosamente',
+      en: 'Provider updated successfully',
+    },
+    'provider.deleted_successfully': {
+      es: 'Proveedor eliminado exitosamente',
+      en: 'Provider deleted successfully',
+    },
+
+    // Reception messages
+    'reception.not_found': {
+      es: 'Recepción con ID {id} no encontrada',
+      en: 'Reception with ID {id} not found',
+    },
+    'reception.detail_not_found': {
+      es: 'Detalle de recepción con ID {detailId} no encontrado en la recepción {receptionId}',
+      en: 'Reception detail with ID {detailId} not found in reception {receptionId}',
+    },
+    'reception.provider_not_found': {
+      es: 'Proveedor con ID {providerId} no encontrado',
+      en: 'Provider with ID {providerId} not found',
+    },
+    'reception.warehouse_not_found': {
+      es: 'Almacén con ID {warehouseId} no encontrado',
+      en: 'Warehouse with ID {warehouseId} not found',
+    },
+    'reception.product_not_found': {
+      es: 'Producto con ID {productId} no encontrado',
+      en: 'Product with ID {productId} not found',
+    },
+    'reception.already_closed': {
+      es: 'La recepción ya está cerrada',
+      en: 'The reception is already closed',
+    },
+    'reception.no_products_to_transfer': {
+      es: 'La recepción no tiene productos para transferir',
+      en: 'The reception has no products to transfer',
+    },
+    'reception.closed_successfully': {
+      es: 'Recepción cerrada exitosamente. {transferredProducts} productos transferidos al inventario.',
+      en: 'Reception closed successfully. {transferredProducts} products transferred to inventory.',
+    },
+    'reception.closed_no_products': {
+      es: 'Recepción cerrada exitosamente. No había productos para transferir.',
+      en: 'Reception closed successfully. No products to transfer.',
+    },
+    'reception.created_successfully': {
+      es: 'Recepción creada exitosamente',
+      en: 'Reception created successfully',
+    },
+    'reception.updated_successfully': {
+      es: 'Recepción actualizada exitosamente',
+      en: 'Reception updated successfully',
+    },
+    'reception.deleted_successfully': {
+      es: 'Recepción eliminada exitosamente',
+      en: 'Reception deleted successfully',
+    },
+
+    // RolePermission messages
+    'role_permission.already_exists': {
+      es: 'Ya existe esta relación entre rol y permiso',
+      en: 'This role-permission relationship already exists',
+    },
+    'role_permission.not_found': {
+      es: 'Relación rol-permiso con ID {id} no encontrada',
+      en: 'Role-permission relationship with ID {id} not found',
+    },
+    'role_permission.relationship_not_found': {
+      es: 'Relación rol-permiso no encontrada',
+      en: 'Role-permission relationship not found',
+    },
+    'role_permission.role_not_found': {
+      es: 'Rol con ID {roleId} no encontrado',
+      en: 'Role with ID {roleId} not found',
+    },
+    'role_permission.permissions_not_found': {
+      es: 'Permisos no encontrados: {missingIds}',
+      en: 'Permissions not found: {missingIds}',
+    },
+    'role_permission.permission_ids_array_required': {
+      es: 'permissionIds debe ser un array',
+      en: 'permissionIds must be an array',
+    },
+    'role_permission.permission_ids_empty': {
+      es: 'permissionIds no puede estar vacío',
+      en: 'permissionIds cannot be empty',
+    },
+    'role_permission.created_successfully': {
+      es: 'Relación rol-permiso creada exitosamente',
+      en: 'Role-permission relationship created successfully',
+    },
+    'role_permission.assigned_successfully': {
+      es: 'Permisos asignados al rol exitosamente',
+      en: 'Permissions assigned to role successfully',
+    },
+    'role_permission.updated_successfully': {
+      es: 'Permisos del rol actualizados exitosamente',
+      en: 'Role permissions updated successfully',
+    },
+    'role_permission.deleted_successfully': {
+      es: 'Relación rol-permiso eliminada exitosamente',
+      en: 'Role-permission relationship deleted successfully',
+    },
+
+    // CashRegister messages
+    'cash_register.not_found': {
+      es: 'Caja registradora con ID {id} no encontrada',
+      en: 'Cash register with ID {id} not found',
+    },
+    'cash_register.already_exists': {
+      es: 'Ya existe una caja registradora con el código {code}',
+      en: 'Cash register with code {code} already exists',
+    },
+    'cash_register.already_open': {
+      es: 'Ya hay una caja registradora abierta',
+      en: 'There is already an open cash register',
+    },
+    'cash_register.already_closed': {
+      es: 'La caja registradora ya está cerrada',
+      en: 'The cash register is already closed',
+    },
+    'cash_register.created_successfully': {
+      es: 'Caja registradora creada exitosamente',
+      en: 'Cash register created successfully',
+    },
+    'cash_register.opened_successfully': {
+      es: 'Caja registradora abierta exitosamente',
+      en: 'Cash register opened successfully',
+    },
+    'cash_register.closed_successfully': {
+      es: 'Caja registradora cerrada exitosamente',
+      en: 'Cash register closed successfully',
+    },
+    'cash_register.updated_successfully': {
+      es: 'Caja registradora actualizada exitosamente',
+      en: 'Cash register updated successfully',
+    },
+    'cash_register.deleted_successfully': {
+      es: 'Caja registradora eliminada exitosamente',
+      en: 'Cash register deleted successfully',
+    },
+    'cash_register.no_open_register': {
+      es: 'No hay una caja registradora abierta actualmente',
+      en: 'There is no open cash register currently',
+    },
+
+    // CashTransaction messages
+    'cash_transaction.not_found': {
+      es: 'Transacción de caja con ID {id} no encontrada',
+      en: 'Cash transaction with ID {id} not found',
+    },
+    'cash_transaction.cash_register_not_found': {
+      es: 'Caja registradora con ID {id} no encontrada',
+      en: 'Cash register with ID {id} not found',
+    },
+    'cash_transaction.cash_register_closed': {
+      es: 'No se pueden crear transacciones en una caja cerrada',
+      en: 'Cannot create transactions in a closed cash register',
+    },
+    'cash_transaction.created_successfully': {
+      es: 'Transacción de caja creada exitosamente',
+      en: 'Cash transaction created successfully',
+    },
+    'cash_transaction.invalid_amount': {
+      es: 'El monto de la transacción debe ser mayor a cero',
+      en: 'Transaction amount must be greater than zero',
+    },
+    'cash_transaction.invalid_type': {
+      es: 'Tipo de transacción no válido',
+      en: 'Invalid transaction type',
+    },
+
     // Role messages
     'role.not_found': {
       es: 'Rol con ID {id} no encontrado',
@@ -157,6 +369,110 @@ export class TranslationService {
     'brand.cannot_delete_in_use': {
       es: 'No se puede eliminar la marca "{description}" porque está siendo usada por {count} producto(s). Primero debe cambiar o eliminar los productos que usan esta marca.',
       en: 'Cannot delete brand "{description}" because it is being used by {count} product(s). First, you must change or delete the products that use this brand.',
+    },
+
+    // Currency messages
+    'currency.not_found': {
+      es: 'Moneda con ID {id} no encontrada',
+      en: 'Currency with ID {id} not found',
+    },
+    'currency.code_not_found': {
+      es: 'Moneda con código {code} no encontrada',
+      en: 'Currency with code {code} not found',
+    },
+    'currency.already_exists': {
+      es: 'Ya existe una moneda con el código "{code}"',
+      en: 'A currency with code "{code}" already exists',
+    },
+    'currency.created_successfully': {
+      es: 'Moneda creada exitosamente',
+      en: 'Currency created successfully',
+    },
+    'currency.updated_successfully': {
+      es: 'Moneda actualizada exitosamente',
+      en: 'Currency updated successfully',
+    },
+    'currency.deleted_successfully': {
+      es: 'Moneda eliminada exitosamente',
+      en: 'Currency deleted successfully',
+    },
+
+    // Inventory messages
+    'inventory.not_found': {
+      es: 'Inventario con ID {id} no encontrado',
+      en: 'Inventory with ID {id} not found',
+    },
+    'inventory.created_successfully': {
+      es: 'Inventario creado exitosamente',
+      en: 'Inventory created successfully',
+    },
+    'inventory.updated_successfully': {
+      es: 'Inventario actualizado exitosamente',
+      en: 'Inventory updated successfully',
+    },
+    'inventory.deleted_successfully': {
+      es: 'Inventario eliminado exitosamente',
+      en: 'Inventory deleted successfully',
+    },
+
+    // Measurement Unit messages
+    'measurement_unit.not_found': {
+      es: 'Unidad de medida con ID {id} no encontrada',
+      en: 'Measurement unit with ID {id} not found',
+    },
+    'measurement_unit.already_exists': {
+      es: 'Ya existe una unidad de medida con el código "{code}"',
+      en: 'A measurement unit with code "{code}" already exists',
+    },
+    'measurement_unit.created_successfully': {
+      es: 'Unidad de medida creada exitosamente',
+      en: 'Measurement unit created successfully',
+    },
+    'measurement_unit.updated_successfully': {
+      es: 'Unidad de medida actualizada exitosamente',
+      en: 'Measurement unit updated successfully',
+    },
+    'measurement_unit.deleted_successfully': {
+      es: 'Unidad de medida eliminada exitosamente',
+      en: 'Measurement unit deleted successfully',
+    },
+    'measurement_unit.cannot_delete_in_use': {
+      es: 'No se puede eliminar la unidad de medida "{description}" porque está siendo usada por {count} producto(s). Primero debe cambiar o eliminar los productos que usan esta unidad de medida.',
+      en: 'Cannot delete measurement unit "{description}" because it is being used by {count} product(s). First, you must change or delete the products that use this measurement unit.',
+    },
+
+    // Tax messages
+    'tax.not_found': {
+      es: 'Impuesto con ID {id} no encontrado',
+      en: 'Tax with ID {id} not found',
+    },
+    'tax.already_exists': {
+      es: 'Ya existe un impuesto con el código {code}',
+      en: 'Tax with code {code} already exists',
+    },
+    'tax.cannot_delete_in_use': {
+      es: 'No se puede eliminar el impuesto "{name}" porque está siendo usado por {count} producto(s). Primero debe cambiar o eliminar los productos que usan este impuesto.',
+      en: 'Cannot delete tax "{name}" because it is being used by {count} product(s). First change or delete the products that use this tax.',
+    },
+    'tax.created_successfully': {
+      es: 'Impuesto creado exitosamente',
+      en: 'Tax created successfully',
+    },
+    'tax.updated_successfully': {
+      es: 'Impuesto actualizado exitosamente',
+      en: 'Tax updated successfully',
+    },
+    'tax.deleted_successfully': {
+      es: 'Impuesto eliminado exitosamente',
+      en: 'Tax deleted successfully',
+    },
+    'tax.activated_successfully': {
+      es: 'Impuesto activado exitosamente',
+      en: 'Tax activated successfully',
+    },
+    'tax.deactivated_successfully': {
+      es: 'Impuesto desactivado exitosamente',
+      en: 'Tax deactivated successfully',
     },
 
     // Category messages

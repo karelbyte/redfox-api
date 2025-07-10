@@ -12,6 +12,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseService } from './warehouse.service';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class InventoryService {
@@ -22,6 +23,7 @@ export class InventoryService {
     private readonly productMapper: ProductMapper,
     private readonly warehouseService: WarehouseService,
     private readonly warehouseMapper: WarehouseMapper,
+    private translationService: TranslationService,
   ) {}
 
   private async mapToResponseDto(
@@ -61,6 +63,7 @@ export class InventoryService {
 
   async create(
     createInventoryDto: CreateInventoryDto,
+    userId?: string,
   ): Promise<InventoryResponseDto> {
     const inventory = this.inventoryRepository.create(createInventoryDto);
     const savedInventory = await this.inventoryRepository.save(inventory);
@@ -69,6 +72,7 @@ export class InventoryService {
 
   async findAll(
     queryDto: InventoryQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
     const { page = 1, limit = 10, warehouse_id, term } = queryDto;
     const skip = (page - 1) * limit;
@@ -123,14 +127,19 @@ export class InventoryService {
     };
   }
 
-  async findOne(id: string): Promise<InventoryResponseDto> {
+  async findOne(id: string, userId?: string): Promise<InventoryResponseDto> {
     const inventory = await this.inventoryRepository.findOne({
       where: { id },
       relations: ['product'],
       withDeleted: false,
     });
     if (!inventory) {
-      throw new NotFoundException(`Inventory with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'inventory.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.mapToResponseDto(inventory);
   }
@@ -138,6 +147,7 @@ export class InventoryService {
   async update(
     id: string,
     updateInventoryDto: UpdateInventoryDto,
+    userId?: string,
   ): Promise<InventoryResponseDto> {
     const inventory = await this.inventoryRepository.findOne({
       where: { id },
@@ -145,7 +155,12 @@ export class InventoryService {
       withDeleted: false,
     });
     if (!inventory) {
-      throw new NotFoundException(`Inventory with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'inventory.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     const updatedInventory = await this.inventoryRepository.save({
       ...inventory,
@@ -154,13 +169,18 @@ export class InventoryService {
     return this.mapToResponseDto(updatedInventory);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const inventory = await this.inventoryRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!inventory) {
-      throw new NotFoundException(`Inventory with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'inventory.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     await this.inventoryRepository.softRemove(inventory);
   }
@@ -171,6 +191,7 @@ export class InventoryService {
    */
   async findAllProductsInInventory(
     queryDto: InventoryQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
     const { page = 1, limit = 10, warehouse_id, term } = queryDto;
     const skip = (page - 1) * limit;

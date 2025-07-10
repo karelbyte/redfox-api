@@ -84,9 +84,8 @@ export class BrandController {
   @Get()
   findAll(
     @Query() paginationDto?: PaginationDto,
-    @UserId() userId?: string,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
-    return this.brandService.findAll(paginationDto, userId);
+    return this.brandService.findAll(paginationDto);
   }
 
   @Get(':id')

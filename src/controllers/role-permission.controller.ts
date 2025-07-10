@@ -15,6 +15,7 @@ import {
 } from '../dtos/role-permission/create-role-permission.dto';
 import { RolePermissionResponseDto } from '../dtos/role-permission/role-permission-response.dto';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('role-permissions')
 @UseGuards(AuthGuard)
@@ -24,17 +25,20 @@ export class RolePermissionController {
   @Post()
   create(
     @Body() createRolePermissionDto: CreateRolePermissionDto,
+    @UserId() userId: string,
   ): Promise<RolePermissionResponseDto> {
-    return this.rolePermissionService.create(createRolePermissionDto);
+    return this.rolePermissionService.create(createRolePermissionDto, userId);
   }
 
   @Post('assign')
   assignPermissionsToRole(
     @Body()
     assignPermissionsDto: AssignPermissionsToRoleDto,
+    @UserId() userId: string,
   ): Promise<RolePermissionResponseDto[]> {
     return this.rolePermissionService.assignPermissionsToRole(
       assignPermissionsDto,
+      userId,
     );
   }
 
@@ -42,10 +46,12 @@ export class RolePermissionController {
   updateRolePermissions(
     @Param('roleId') roleId: string,
     @Body() updateRolePermissionsDto: { permissionIds: string[] },
+    @UserId() userId: string,
   ): Promise<RolePermissionResponseDto[]> {
     return this.rolePermissionService.updateRolePermissions(
       roleId,
       updateRolePermissionsDto.permissionIds,
+      userId,
     );
   }
 
@@ -69,23 +75,31 @@ export class RolePermissionController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<RolePermissionResponseDto> {
-    return this.rolePermissionService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<RolePermissionResponseDto> {
+    return this.rolePermissionService.findOne(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.rolePermissionService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.rolePermissionService.remove(id, userId);
   }
 
   @Delete('role/:roleId/permission/:permissionId')
   removeByRoleAndPermission(
     @Param('roleId') roleId: string,
     @Param('permissionId') permissionId: string,
+    @UserId() userId: string,
   ): Promise<void> {
     return this.rolePermissionService.removeByRoleAndPermission(
       roleId,
       permissionId,
+      userId,
     );
   }
 }

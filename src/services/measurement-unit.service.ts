@@ -13,6 +13,7 @@ import { MeasurementUnitResponseDto } from '../dtos/measurement-unit/measurement
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class MeasurementUnitService {
@@ -22,32 +23,54 @@ export class MeasurementUnitService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
+    private translationService: TranslationService,
   ) {}
 
   async create(
     createMeasurementUnitDto: CreateMeasurementUnitDto,
+    userId?: string,
   ): Promise<MeasurementUnitResponseDto> {
-    const existingUnit = await this.measurementUnitRepository.findOne({
-      where: { code: createMeasurementUnitDto.code },
-      withDeleted: false,
-    });
+    try {
+      const existingUnit = await this.measurementUnitRepository.findOne({
+        where: { code: createMeasurementUnitDto.code },
+        withDeleted: false,
+      });
 
-    if (existingUnit) {
-      throw new BadRequestException(
-        `Ya existe una unidad de medida con el código '${createMeasurementUnitDto.code}'`,
+      if (existingUnit) {
+        const message = await this.translationService.translate(
+          'measurement_unit.already_exists',
+          userId,
+          { code: createMeasurementUnitDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+
+      const measurementUnit = this.measurementUnitRepository.create(
+        createMeasurementUnitDto,
       );
+      const savedMeasurementUnit =
+        await this.measurementUnitRepository.save(measurementUnit);
+      return this.measurementUnitMapper.mapToResponseDto(savedMeasurementUnit);
+    } catch (error: any) {
+      // Handle duplicate code error
+      if (
+        error?.code === 'ER_DUP_ENTRY' &&
+        error?.message?.includes('measurement_units.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'measurement_unit.already_exists',
+          userId,
+          { code: createMeasurementUnitDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
     }
-
-    const measurementUnit = this.measurementUnitRepository.create(
-      createMeasurementUnitDto,
-    );
-    const savedMeasurementUnit =
-      await this.measurementUnitRepository.save(measurementUnit);
-    return this.measurementUnitMapper.mapToResponseDto(savedMeasurementUnit);
   }
 
   async findAll(
     paginationDto?: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
     const { page, limit, term } = paginationDto || {};
 
@@ -110,13 +133,21 @@ export class MeasurementUnitService {
     };
   }
 
-  async findOne(id: string): Promise<MeasurementUnitResponseDto> {
+  async findOne(
+    id: string,
+    userId?: string,
+  ): Promise<MeasurementUnitResponseDto> {
     const measurementUnit = await this.measurementUnitRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!measurementUnit) {
-      throw new NotFoundException(`Measurement unit with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'measurement_unit.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.measurementUnitMapper.mapToResponseDto(measurementUnit);
   }
@@ -124,45 +155,75 @@ export class MeasurementUnitService {
   async update(
     id: string,
     updateMeasurementUnitDto: UpdateMeasurementUnitDto,
+    userId?: string,
   ): Promise<MeasurementUnitResponseDto> {
-    const measurementUnit = await this.measurementUnitRepository.findOne({
-      where: { id },
-      withDeleted: false,
-    });
-    if (!measurementUnit) {
-      throw new NotFoundException(`Measurement unit with ID ${id} not found`);
-    }
-
-    if (
-      updateMeasurementUnitDto.code &&
-      updateMeasurementUnitDto.code !== measurementUnit.code
-    ) {
-      const existingUnit = await this.measurementUnitRepository.findOne({
-        where: { code: updateMeasurementUnitDto.code },
+    try {
+      const measurementUnit = await this.measurementUnitRepository.findOne({
+        where: { id },
         withDeleted: false,
       });
-
-      if (existingUnit) {
-        throw new BadRequestException(
-          `Ya existe una unidad de medida con el código '${updateMeasurementUnitDto.code}'`,
+      if (!measurementUnit) {
+        const message = await this.translationService.translate(
+          'measurement_unit.not_found',
+          userId,
+          { id },
         );
+        throw new NotFoundException(message);
       }
-    }
 
-    const updatedMeasurementUnit = await this.measurementUnitRepository.save({
-      ...measurementUnit,
-      ...updateMeasurementUnitDto,
-    });
-    return this.measurementUnitMapper.mapToResponseDto(updatedMeasurementUnit);
+      if (
+        updateMeasurementUnitDto.code &&
+        updateMeasurementUnitDto.code !== measurementUnit.code
+      ) {
+        const existingUnit = await this.measurementUnitRepository.findOne({
+          where: { code: updateMeasurementUnitDto.code },
+          withDeleted: false,
+        });
+
+        if (existingUnit) {
+          const message = await this.translationService.translate(
+            'measurement_unit.already_exists',
+            userId,
+            { code: updateMeasurementUnitDto.code },
+          );
+          throw new BadRequestException(message);
+        }
+      }
+
+      const updatedMeasurementUnit = await this.measurementUnitRepository.save({
+        ...measurementUnit,
+        ...updateMeasurementUnitDto,
+      });
+      return this.measurementUnitMapper.mapToResponseDto(updatedMeasurementUnit);
+    } catch (error: any) {
+      // Handle duplicate code error in update
+      if (
+        error?.code === 'ER_DUP_ENTRY' &&
+        error?.message?.includes('measurement_units.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'measurement_unit.already_exists',
+          userId,
+          { code: updateMeasurementUnitDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
+    }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const measurementUnit = await this.measurementUnitRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!measurementUnit) {
-      throw new NotFoundException(`Measurement unit with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'measurement_unit.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     // Verificar si la unidad de medida está siendo usada en productos
@@ -172,15 +233,24 @@ export class MeasurementUnitService {
     });
 
     if (productsUsingUnit > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar la unidad de medida '${measurementUnit.description}' porque está siendo usada por ${productsUsingUnit} producto(s). Primero debe cambiar o eliminar los productos que usan esta unidad de medida.`,
+      const message = await this.translationService.translate(
+        'measurement_unit.cannot_delete_in_use',
+        userId,
+        {
+          description: measurementUnit.description,
+          count: productsUsingUnit,
+        },
       );
+      throw new BadRequestException(message);
     }
 
     await this.measurementUnitRepository.softRemove(measurementUnit);
   }
 
-  async getMeasurementUnitUsage(id: string): Promise<{
+  async getMeasurementUnitUsage(
+    id: string,
+    userId?: string,
+  ): Promise<{
     measurementUnit: MeasurementUnitResponseDto;
     productsCount: number;
     products: any[];
@@ -190,7 +260,12 @@ export class MeasurementUnitService {
       withDeleted: false,
     });
     if (!measurementUnit) {
-      throw new NotFoundException(`Measurement unit with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'measurement_unit.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     const products = await this.productRepository.find({

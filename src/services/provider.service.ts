@@ -8,6 +8,7 @@ import { ProviderResponseDto } from '../dtos/provider/provider-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ProviderMapper } from './mappers/provider.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class ProviderService {
@@ -15,10 +16,12 @@ export class ProviderService {
     @InjectRepository(Provider)
     private readonly providerRepository: Repository<Provider>,
     private providerMapper: ProviderMapper,
+    private translationService: TranslationService,
   ) {}
 
   async create(
     createProviderDto: CreateProviderDto,
+    userId?: string,
   ): Promise<ProviderResponseDto> {
     const provider = this.providerRepository.create(createProviderDto);
     const savedProvider = await this.providerRepository.save(provider);
@@ -27,6 +30,7 @@ export class ProviderService {
 
   async findAll(
     paginationDto?: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<ProviderResponseDto>> {
     const { page, limit, term } = paginationDto || {};
 
@@ -100,10 +104,15 @@ export class ProviderService {
     };
   }
 
-  async findOne(id: string): Promise<ProviderResponseDto> {
+  async findOne(id: string, userId?: string): Promise<ProviderResponseDto> {
     const provider = await this.providerRepository.findOne({ where: { id } });
     if (!provider) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'provider.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     return this.providerMapper.mapToResponseDto(provider);
   }
@@ -111,10 +120,16 @@ export class ProviderService {
   async update(
     id: string,
     updateProviderDto: UpdateProviderDto,
+    userId?: string,
   ): Promise<ProviderResponseDto> {
     const provider = await this.providerRepository.findOne({ where: { id } });
     if (!provider) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'provider.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     Object.assign(provider, updateProviderDto);
@@ -122,10 +137,15 @@ export class ProviderService {
     return this.providerMapper.mapToResponseDto(updatedProvider);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const provider = await this.providerRepository.findOne({ where: { id } });
     if (!provider) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'provider.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
     await this.providerRepository.softDelete(id);
   }

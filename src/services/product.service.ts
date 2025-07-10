@@ -15,6 +15,7 @@ import { ProductResponseDto } from '../dtos/product/product-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductMapper } from './mappers/product.mapper';
+import { TranslationService } from './translation.service';
 
 interface SearchCondition {
   name?: any;
@@ -45,60 +46,94 @@ export class ProductService {
     @InjectRepository(WarehouseOpening)
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly productMapper: ProductMapper,
+    private translationService: TranslationService,
   ) {}
 
   async create(
     createProductDto: CreateProductDto,
+    userId?: string,
   ): Promise<ProductResponseDto> {
-    const [existingSlug, existingSku] = await Promise.all([
-      this.productRepository.findOne({
-        where: { slug: createProductDto.slug },
-      }),
-      this.productRepository.findOne({
-        where: { sku: createProductDto.sku },
-      }),
-    ]);
+    try {
+      const [existingSlug, existingSku] = await Promise.all([
+        this.productRepository.findOne({
+          where: { slug: createProductDto.slug },
+        }),
+        this.productRepository.findOne({
+          where: { sku: createProductDto.sku },
+        }),
+      ]);
 
-    if (existingSlug) {
-      throw new ConflictException(
-        `El slug '${createProductDto.slug}' ya está en uso`,
-      );
+      if (existingSlug) {
+        const message = await this.translationService.translate(
+          'product.slug_already_exists',
+          userId,
+          { slug: createProductDto.slug },
+        );
+        throw new ConflictException(message);
+      }
+
+      if (existingSku) {
+        const message = await this.translationService.translate(
+          'product.sku_already_exists',
+          userId,
+          { sku: createProductDto.sku },
+        );
+        throw new ConflictException(message);
+      }
+
+      const product = this.productRepository.create({
+        name: createProductDto.name,
+        slug: createProductDto.slug,
+        description: createProductDto.description,
+        sku: createProductDto.sku,
+        weight: createProductDto.weight ?? 0,
+        width: createProductDto.width ?? 0,
+        height: createProductDto.height ?? 0,
+        length: createProductDto.length ?? 0,
+        brand: createProductDto.brand_id
+          ? { id: createProductDto.brand_id }
+          : undefined,
+        category: createProductDto.category_id
+          ? { id: createProductDto.category_id }
+          : undefined,
+        tax: createProductDto.tax_id
+          ? { id: createProductDto.tax_id }
+          : undefined,
+        measurement_unit: { id: createProductDto.measurement_unit_id },
+        is_active: createProductDto.is_active ?? true,
+        type: createProductDto.type ?? ProductType.TANGIBLE,
+        images: createProductDto.images
+          ? JSON.stringify(createProductDto.images)
+          : undefined,
+      });
+
+      const savedProduct = await this.productRepository.save(product);
+      return this.productMapper.mapToResponseDto(savedProduct);
+    } catch (error: unknown) {
+      // Handle duplicate slug/SKU error
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('products.UQ_')
+      ) {
+        if (dbError?.message?.includes('slug')) {
+          const message = await this.translationService.translate(
+            'product.slug_already_exists',
+            userId,
+            { slug: createProductDto.slug },
+          );
+          throw new BadRequestException(message);
+        } else if (dbError?.message?.includes('sku')) {
+          const message = await this.translationService.translate(
+            'product.sku_already_exists',
+            userId,
+            { sku: createProductDto.sku },
+          );
+          throw new BadRequestException(message);
+        }
+      }
+      throw error;
     }
-
-    if (existingSku) {
-      throw new ConflictException(
-        `El SKU '${createProductDto.sku}' ya está en uso`,
-      );
-    }
-
-    const product = this.productRepository.create({
-      name: createProductDto.name,
-      slug: createProductDto.slug,
-      description: createProductDto.description,
-      sku: createProductDto.sku,
-      weight: createProductDto.weight ?? 0,
-      width: createProductDto.width ?? 0,
-      height: createProductDto.height ?? 0,
-      length: createProductDto.length ?? 0,
-      brand: createProductDto.brand_id
-        ? { id: createProductDto.brand_id }
-        : undefined,
-      category: createProductDto.category_id
-        ? { id: createProductDto.category_id }
-        : undefined,
-      tax: createProductDto.tax_id
-        ? { id: createProductDto.tax_id }
-        : undefined,
-      measurement_unit: { id: createProductDto.measurement_unit_id },
-      is_active: createProductDto.is_active ?? true,
-      type: createProductDto.type ?? ProductType.TANGIBLE,
-      images: createProductDto.images
-        ? JSON.stringify(createProductDto.images)
-        : undefined,
-    });
-
-    const savedProduct = await this.productRepository.save(product);
-    return this.productMapper.mapToResponseDto(savedProduct);
   }
 
   async findAll(
@@ -203,27 +238,37 @@ export class ProductService {
     };
   }
 
-  async findOne(id: string): Promise<ProductResponseDto> {
+  async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ['brand', 'category', 'tax', 'measurement_unit'],
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'product.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.productMapper.mapToResponseDto(product);
   }
 
-  async findOneEntity(id: string): Promise<Product> {
+  async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ['brand', 'category', 'tax', 'measurement_unit'],
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'product.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return product;
@@ -232,43 +277,70 @@ export class ProductService {
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
+    userId?: string,
   ): Promise<ProductResponseDto> {
-    const product = await this.findOneEntity(id);
+    try {
+      const product = await this.findOneEntity(id, userId);
 
-    const updatedProduct = this.productRepository.merge(product, {
-      name: updateProductDto.name,
-      slug: updateProductDto.slug,
-      description: updateProductDto.description,
-      sku: updateProductDto.sku,
-      weight: updateProductDto.weight,
-      width: updateProductDto.width,
-      height: updateProductDto.height,
-      length: updateProductDto.length,
-      brand: updateProductDto.brand_id
-        ? { id: updateProductDto.brand_id }
-        : undefined,
-      category: updateProductDto.category_id
-        ? { id: updateProductDto.category_id }
-        : undefined,
-      tax: updateProductDto.tax_id
-        ? { id: updateProductDto.tax_id }
-        : undefined,
-      measurement_unit: updateProductDto.measurement_unit_id
-        ? { id: updateProductDto.measurement_unit_id }
-        : undefined,
-      is_active: updateProductDto.is_active,
-      type: updateProductDto.type,
-      images: updateProductDto.images
-        ? JSON.stringify(updateProductDto.images)
-        : undefined,
-    });
+      const updatedProduct = this.productRepository.merge(product, {
+        name: updateProductDto.name,
+        slug: updateProductDto.slug,
+        description: updateProductDto.description,
+        sku: updateProductDto.sku,
+        weight: updateProductDto.weight,
+        width: updateProductDto.width,
+        height: updateProductDto.height,
+        length: updateProductDto.length,
+        brand: updateProductDto.brand_id
+          ? { id: updateProductDto.brand_id }
+          : undefined,
+        category: updateProductDto.category_id
+          ? { id: updateProductDto.category_id }
+          : undefined,
+        tax: updateProductDto.tax_id
+          ? { id: updateProductDto.tax_id }
+          : undefined,
+        measurement_unit: updateProductDto.measurement_unit_id
+          ? { id: updateProductDto.measurement_unit_id }
+          : undefined,
+        is_active: updateProductDto.is_active,
+        type: updateProductDto.type,
+        images: updateProductDto.images
+          ? JSON.stringify(updateProductDto.images)
+          : undefined,
+      });
 
-    const savedProduct = await this.productRepository.save(updatedProduct);
-    return this.productMapper.mapToResponseDto(savedProduct);
+      const savedProduct = await this.productRepository.save(updatedProduct);
+      return this.productMapper.mapToResponseDto(savedProduct);
+    } catch (error: unknown) {
+      // Handle duplicate slug/SKU error in update
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('products.UQ_')
+      ) {
+        if (dbError?.message?.includes('slug')) {
+          const message = await this.translationService.translate(
+            'product.slug_already_exists',
+            userId,
+            { slug: updateProductDto.slug },
+          );
+          throw new BadRequestException(message);
+        } else if (dbError?.message?.includes('sku')) {
+          const message = await this.translationService.translate(
+            'product.sku_already_exists',
+            userId,
+            { sku: updateProductDto.sku },
+          );
+          throw new BadRequestException(message);
+        }
+      }
+      throw error;
+    }
   }
 
-  async remove(id: string): Promise<void> {
-    const product = await this.findOneEntity(id);
+  async remove(id: string, userId?: string): Promise<void> {
+    const product = await this.findOneEntity(id, userId);
 
     // Verificar si el producto está siendo usado en inventory
     const inventoryCount = await this.inventoryRepository.count({
@@ -283,32 +355,32 @@ export class ProductService {
     });
 
     if (inventoryCount > 0 || warehouseOpeningCount > 0) {
-      const messages: string[] = [];
-      if (inventoryCount > 0) {
-        messages.push(`está en inventario (${inventoryCount} registro(s))`);
-      }
-      if (warehouseOpeningCount > 0) {
-        messages.push(
-          `está en apertura de almacén (${warehouseOpeningCount} registro(s))`,
-        );
-      }
-
-      throw new BadRequestException(
-        `No se puede eliminar el producto '${product.name}' porque ${messages.join(' y ')}. Primero debe eliminar estos registros.`,
+      const message = await this.translationService.translate(
+        'product.cannot_delete_in_use',
+        userId,
+        {
+          name: product.name,
+          inventoryCount,
+          warehouseOpeningCount,
+        },
       );
+      throw new BadRequestException(message);
     }
 
     await this.productRepository.softRemove(product);
   }
 
-  async getProductUsage(id: string): Promise<{
+  async getProductUsage(
+    id: string,
+    userId?: string,
+  ): Promise<{
     product: ProductResponseDto;
     inventoryCount: number;
     warehouseOpeningCount: number;
     inventory: any[];
     warehouseOpenings: any[];
   }> {
-    const product = await this.findOneEntity(id);
+    const product = await this.findOneEntity(id, userId);
 
     const inventory = await this.inventoryRepository.find({
       where: { product: { id } },

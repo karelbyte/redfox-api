@@ -5,9 +5,13 @@ import { RolePermissionService } from '../services/role-permission.service';
 import { RolePermission } from '../models/role-permission.entity';
 import { Role } from '../models/role.entity';
 import { Permission } from '../models/permission.entity';
+import { LanguageModule } from './language.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RolePermission, Role, Permission])],
+  imports: [
+    TypeOrmModule.forFeature([RolePermission, Role, Permission]),
+    LanguageModule,
+  ],
   controllers: [RolePermissionController],
   providers: [RolePermissionService],
   exports: [RolePermissionService],

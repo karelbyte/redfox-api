@@ -18,6 +18,7 @@ import { InventoryListResponseDto } from '../dtos/inventory/inventory-list-respo
 import { InventoryQueryDto } from '../dtos/inventory/inventory-query.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('inventory')
 @UseGuards(AuthGuard)
@@ -27,41 +28,49 @@ export class InventoryController {
   @Post()
   create(
     @Body() createInventoryDto: CreateInventoryDto,
+    @UserId() userId: string,
   ): Promise<InventoryResponseDto> {
-    return this.inventoryService.create(createInventoryDto);
+    return this.inventoryService.create(createInventoryDto, userId);
   }
 
   @Get()
   findAll(
+    @UserId() userId: string,
     @Query() queryDto: InventoryQueryDto,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
-    return this.inventoryService.findAll(queryDto);
+    return this.inventoryService.findAll(queryDto, userId);
   }
 
   @Get('products')
   findAllProductsInInventory(
+    @UserId() userId: string,
     @Query() queryDto: InventoryQueryDto,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
-    return this.inventoryService.findAllProductsInInventory(queryDto);
+    return this.inventoryService.findAllProductsInInventory(queryDto, userId);
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<InventoryResponseDto> {
-    return this.inventoryService.findOne(id);
+    return this.inventoryService.findOne(id, userId);
   }
 
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInventoryDto: UpdateInventoryDto,
+    @UserId() userId: string,
   ): Promise<InventoryResponseDto> {
-    return this.inventoryService.update(id, updateInventoryDto);
+    return this.inventoryService.update(id, updateInventoryDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.inventoryService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.inventoryService.remove(id, userId);
   }
 }

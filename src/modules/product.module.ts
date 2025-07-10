@@ -10,6 +10,7 @@ import { BrandModule } from './brand.module';
 import { CategoryModule } from './category.module';
 import { TaxModule } from './tax.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ProductMapper } from '../services/mappers/product.mapper';
     BrandModule,
     CategoryModule,
     TaxModule,
+    LanguageModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductMapper],

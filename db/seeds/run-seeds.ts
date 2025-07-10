@@ -14,6 +14,7 @@ import { RolePermissionsSeed } from './role-permissions.seed';
 import { UsersSeed } from './users.seed';
 import { UserLanguagesSeed } from './user-languages.seed';
 import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
+import { ReturnsSeed } from './returns.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -69,6 +70,10 @@ export class RunSeeds {
       // Warehouse adjustments seeder
       await WarehouseAdjustmentsSeed.run(dataSource);
       console.log('✅ Warehouse adjustments created');
+
+      // Returns seeder
+      await ReturnsSeed.run(dataSource);
+      console.log('✅ Returns created');
 
       console.log('✅ All seeders executed successfully');
     } catch (error) {

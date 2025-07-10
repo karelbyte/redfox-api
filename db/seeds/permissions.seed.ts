@@ -638,6 +638,65 @@ export class PermissionsSeed {
         description:
           'Allows deleting warehouse adjustment details | Permite eliminar detalles de ajustes entre almacenes',
       },
+
+      // Return Permissions
+      {
+        code: 'return_module_view',
+        module: 'returns',
+        description:
+          'Allows viewing the returns module | Permite ver el módulo de devoluciones',
+      },
+      {
+        code: 'return_create',
+        module: 'returns',
+        description: 'Allows creating returns | Permite crear devoluciones',
+      },
+      {
+        code: 'return_read',
+        module: 'returns',
+        description: 'Allows reading returns | Permite leer devoluciones',
+      },
+      {
+        code: 'return_update',
+        module: 'returns',
+        description:
+          'Allows updating returns | Permite actualizar devoluciones',
+      },
+      {
+        code: 'return_delete',
+        module: 'returns',
+        description: 'Allows deleting returns | Permite eliminar devoluciones',
+      },
+      {
+        code: 'return_process',
+        module: 'returns',
+        description:
+          'Allows processing returns | Permite procesar devoluciones',
+      },
+      {
+        code: 'return_detail_create',
+        module: 'returns',
+        description:
+          'Allows creating return details | Permite crear detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_read',
+        module: 'returns',
+        description:
+          'Allows reading return details | Permite leer detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_update',
+        module: 'returns',
+        description:
+          'Allows updating return details | Permite actualizar detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_delete',
+        module: 'returns',
+        description:
+          'Allows deleting return details | Permite eliminar detalles de devoluciones',
+      },
       {
         code: 'product_history_create',
         module: 'product_history',

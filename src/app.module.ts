@@ -23,6 +23,9 @@ import { PermissionModule } from './modules/permission.module';
 import { RolePermissionModule } from './modules/role-permission.module';
 import { LanguageModule } from './modules/language.module';
 import { WarehouseAdjustmentModule } from './modules/warehouse-adjustment.module';
+import { ReturnModule } from './modules/return.module';
+import { CashRegisterModule } from './modules/cash-register.module';
+import { CashTransactionModule } from './modules/cash-transaction.module';
 import { AppConfig } from './config';
 
 @Module({
@@ -60,6 +63,9 @@ import { AppConfig } from './config';
     RolePermissionModule,
     LanguageModule,
     WarehouseAdjustmentModule,
+    ReturnModule,
+    CashRegisterModule,
+    CashTransactionModule,
   ],
   controllers: [],
   providers: [],

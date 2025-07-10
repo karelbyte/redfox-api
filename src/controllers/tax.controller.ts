@@ -15,6 +15,7 @@ import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
 import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
 import { AuthGuard } from 'src/guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 
@@ -24,8 +25,11 @@ export class TaxController {
 
   @Post()
   @UseGuards(AuthGuard)
-  create(@Body() createTaxDto: CreateTaxDto): Promise<TaxResponseDto> {
-    return this.taxService.create(createTaxDto);
+  create(
+    @Body() createTaxDto: CreateTaxDto,
+    @UserId() userId: string,
+  ): Promise<TaxResponseDto> {
+    return this.taxService.create(createTaxDto, userId);
   }
 
   @Get()
@@ -38,8 +42,11 @@ export class TaxController {
 
   @Get(':id')
   @UseGuards(AuthGuard)
-  findOne(@Param('id') id: string): Promise<TaxResponseDto> {
-    return this.taxService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<TaxResponseDto> {
+    return this.taxService.findOne(id, userId);
   }
 
   @Put(':id')
@@ -47,31 +54,44 @@ export class TaxController {
   update(
     @Param('id') id: string,
     @Body() updateTaxDto: UpdateTaxDto,
+    @UserId() userId: string,
   ): Promise<TaxResponseDto> {
-    return this.taxService.update(id, updateTaxDto);
+    return this.taxService.update(id, updateTaxDto, userId);
   }
 
   @Get(':id/usage')
   @UseGuards(AuthGuard)
-  getTaxUsage(@Param('id') id: string) {
-    return this.taxService.getTaxUsage(id);
+  getTaxUsage(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ) {
+    return this.taxService.getTaxUsage(id, userId);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.taxService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.taxService.remove(id, userId);
   }
 
   @Patch(':id/activate')
   @UseGuards(AuthGuard)
-  activate(@Param('id') id: string): Promise<TaxResponseDto> {
-    return this.taxService.activate(id);
+  activate(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<TaxResponseDto> {
+    return this.taxService.activate(id, userId);
   }
 
   @Patch(':id/deactivate')
   @UseGuards(AuthGuard)
-  deactivate(@Param('id') id: string): Promise<TaxResponseDto> {
-    return this.taxService.deactivate(id);
+  deactivate(
+    @Param('id') id: string,
+    @UserId() userId: string,
+  ): Promise<TaxResponseDto> {
+    return this.taxService.deactivate(id, userId);
   }
 }

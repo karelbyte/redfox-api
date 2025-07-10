@@ -17,6 +17,8 @@ import { MeasurementUnitResponseDto } from '../dtos/measurement-unit/measurement
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
+
 @Controller('measurement-units')
 @UseGuards(AuthGuard)
 export class MeasurementUnitController {
@@ -27,39 +29,49 @@ export class MeasurementUnitController {
   @Post()
   create(
     @Body() createMeasurementUnitDto: CreateMeasurementUnitDto,
+    @UserId() userId: string,
   ): Promise<MeasurementUnitResponseDto> {
-    return this.measurementUnitService.create(createMeasurementUnitDto);
+    return this.measurementUnitService.create(createMeasurementUnitDto, userId);
   }
 
   @Get()
   findAll(
+    @UserId() userId: string,
     @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<MeasurementUnitResponseDto>> {
-    return this.measurementUnitService.findAll(paginationDto);
+    return this.measurementUnitService.findAll(paginationDto, userId);
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<MeasurementUnitResponseDto> {
-    return this.measurementUnitService.findOne(id);
+    return this.measurementUnitService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateMeasurementUnitDto: UpdateMeasurementUnitDto,
+    @UserId() userId: string,
   ): Promise<MeasurementUnitResponseDto> {
-    return this.measurementUnitService.update(id, updateMeasurementUnitDto);
+    return this.measurementUnitService.update(id, updateMeasurementUnitDto, userId);
   }
 
   @Get(':id/usage')
-  getMeasurementUnitUsage(@Param('id', ParseUUIDPipe) id: string) {
-    return this.measurementUnitService.getMeasurementUnitUsage(id);
+  getMeasurementUnitUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ) {
+    return this.measurementUnitService.getMeasurementUnitUsage(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.measurementUnitService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.measurementUnitService.remove(id, userId);
   }
 }

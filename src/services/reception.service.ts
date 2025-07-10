@@ -28,6 +28,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { CreateReceptionDetailDto } from '../dtos/reception-detail/create-reception-detail.dto';
 import { UpdateReceptionDetailDto } from '../dtos/reception-detail/update-reception-detail.dto';
 import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-detail-query.dto';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class ReceptionService {
@@ -49,6 +50,7 @@ export class ReceptionService {
     private readonly productService: ProductService,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -98,15 +100,19 @@ export class ReceptionService {
 
   async create(
     createReceptionDto: CreateReceptionDto,
+    userId?: string,
   ): Promise<ReceptionResponseDto> {
     // Verificar que el provider existe
     const provider = await this.providerRepository.findOne({
       where: { id: createReceptionDto.provider_id },
     });
     if (!provider) {
-      throw new NotFoundException(
-        `Provider with ID ${createReceptionDto.provider_id} not found`,
+      const message = await this.translationService.translate(
+        'reception.provider_not_found',
+        userId,
+        { providerId: createReceptionDto.provider_id },
       );
+      throw new NotFoundException(message);
     }
 
     // Verificar que el warehouse existe
@@ -114,9 +120,12 @@ export class ReceptionService {
       where: { id: createReceptionDto.warehouse_id },
     });
     if (!warehouse) {
-      throw new NotFoundException(
-        `Warehouse with ID ${createReceptionDto.warehouse_id} not found`,
+      const message = await this.translationService.translate(
+        'reception.warehouse_not_found',
+        userId,
+        { warehouseId: createReceptionDto.warehouse_id },
       );
+      throw new NotFoundException(message);
     }
 
     const reception = this.receptionRepository.create({
@@ -137,7 +146,12 @@ export class ReceptionService {
     });
 
     if (!receptionWithRelations) {
-      throw new NotFoundException('Reception not found after creation');
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: savedReception.id },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.mapToResponseDto(receptionWithRelations);
@@ -145,6 +159,7 @@ export class ReceptionService {
 
   async findAll(
     paginationDto: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponseDto<ReceptionResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -171,14 +186,19 @@ export class ReceptionService {
     };
   }
 
-  async findOne(id: string): Promise<ReceptionResponseDto> {
+  async findOne(id: string, userId?: string): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
       where: { id },
       relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.mapToResponseDto(reception);
@@ -187,6 +207,7 @@ export class ReceptionService {
   async update(
     id: string,
     updateReceptionDto: UpdateReceptionDto,
+    userId?: string,
   ): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
       where: { id },
@@ -194,7 +215,12 @@ export class ReceptionService {
     });
 
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     if (updateReceptionDto.provider_id) {
@@ -202,9 +228,12 @@ export class ReceptionService {
         where: { id: updateReceptionDto.provider_id },
       });
       if (!provider) {
-        throw new NotFoundException(
-          `Provider with ID ${updateReceptionDto.provider_id} not found`,
+        const message = await this.translationService.translate(
+          'reception.provider_not_found',
+          userId,
+          { providerId: updateReceptionDto.provider_id },
         );
+        throw new NotFoundException(message);
       }
       reception.provider = provider;
     }
@@ -221,10 +250,15 @@ export class ReceptionService {
     return this.mapToResponseDto(updatedReception);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const reception = await this.receptionRepository.findOne({ where: { id } });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     await this.receptionRepository.softDelete(id);
@@ -234,13 +268,19 @@ export class ReceptionService {
   async createDetail(
     receptionId: string,
     createDetailDto: CreateReceptionDetailDto,
+    userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     // Verificar que el producto existe
@@ -248,9 +288,12 @@ export class ReceptionService {
       where: { id: createDetailDto.product_id },
     });
     if (!product) {
-      throw new NotFoundException(
-        `Product with ID ${createDetailDto.product_id} not found`,
+      const message = await this.translationService.translate(
+        'reception.product_not_found',
+        userId,
+        { productId: createDetailDto.product_id },
       );
+      throw new NotFoundException(message);
     }
 
     // Verificar si ya existe un detalle con este producto en la recepción
@@ -337,7 +380,12 @@ export class ReceptionService {
     });
 
     if (!detailWithRelations) {
-      throw new NotFoundException('Reception detail not found after creation');
+      const message = await this.translationService.translate(
+        'reception.detail_not_found',
+        userId,
+        { detailId: savedDetail.id, receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.mapDetailToResponseDto(detailWithRelations);
@@ -346,13 +394,19 @@ export class ReceptionService {
   async findAllDetails(
     receptionId: string,
     queryDto: ReceptionDetailQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponseDto<ReceptionDetailResponseDto>> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     const { page = 1, limit = 10 } = queryDto;
@@ -390,13 +444,19 @@ export class ReceptionService {
   async findOneDetail(
     receptionId: string,
     detailId: string,
+    userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     const detail = await this.receptionDetailRepository.findOne({
@@ -411,9 +471,12 @@ export class ReceptionService {
     });
 
     if (!detail) {
-      throw new NotFoundException(
-        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      const message = await this.translationService.translate(
+        'reception.detail_not_found',
+        userId,
+        { detailId, receptionId },
       );
+      throw new NotFoundException(message);
     }
 
     return this.mapDetailToResponseDto(detail);
@@ -423,13 +486,19 @@ export class ReceptionService {
     receptionId: string,
     detailId: string,
     updateDetailDto: UpdateReceptionDetailDto,
+    userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     const detail = await this.receptionDetailRepository.findOne({
@@ -444,9 +513,12 @@ export class ReceptionService {
     });
 
     if (!detail) {
-      throw new NotFoundException(
-        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      const message = await this.translationService.translate(
+        'reception.detail_not_found',
+        userId,
+        { detailId, receptionId },
       );
+      throw new NotFoundException(message);
     }
 
     // Guardar el monto anterior del detalle para restarlo del total
@@ -458,9 +530,12 @@ export class ReceptionService {
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
       if (!product) {
-        throw new NotFoundException(
-          `Product with ID ${updateDetailDto.product_id} not found`,
+        const message = await this.translationService.translate(
+          'reception.product_not_found',
+          userId,
+          { productId: updateDetailDto.product_id },
         );
+        throw new NotFoundException(message);
       }
       detail.product = product;
     }
@@ -487,13 +562,22 @@ export class ReceptionService {
     return this.mapDetailToResponseDto(updatedDetail);
   }
 
-  async removeDetail(receptionId: string, detailId: string): Promise<void> {
+  async removeDetail(
+    receptionId: string,
+    detailId: string,
+    userId?: string,
+  ): Promise<void> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
     if (!reception) {
-      throw new NotFoundException(`Reception with ID ${receptionId} not found`);
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
+      );
+      throw new NotFoundException(message);
     }
 
     const detail = await this.receptionDetailRepository.findOne({
@@ -501,9 +585,12 @@ export class ReceptionService {
     });
 
     if (!detail) {
-      throw new NotFoundException(
-        `Reception detail with ID ${detailId} not found in reception ${receptionId}`,
+      const message = await this.translationService.translate(
+        'reception.detail_not_found',
+        userId,
+        { detailId, receptionId },
       );
+      throw new NotFoundException(message);
     }
 
     // Calcular el monto del detalle a eliminar con precisión decimal
@@ -520,6 +607,7 @@ export class ReceptionService {
 
   async closeReception(
     receptionId: string,
+    userId?: string,
   ): Promise<CloseReceptionResponseDto> {
     // Verificar que la recepción existe y está abierta
     const reception = await this.receptionRepository.findOne({
@@ -528,13 +616,20 @@ export class ReceptionService {
     });
 
     if (!reception) {
-      throw new NotFoundException(
-        `Recepción con ID ${receptionId} no encontrada`,
+      const message = await this.translationService.translate(
+        'reception.not_found',
+        userId,
+        { id: receptionId },
       );
+      throw new NotFoundException(message);
     }
 
     if (!reception.status) {
-      throw new BadRequestException('La recepción ya está cerrada');
+      const message = await this.translationService.translate(
+        'reception.already_closed',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     // Obtener todos los detalles de la recepción
@@ -544,9 +639,11 @@ export class ReceptionService {
     });
 
     if (receptionDetails.length === 0) {
-      throw new BadRequestException(
-        'La recepción no tiene productos para transferir',
+      const message = await this.translationService.translate(
+        'reception.no_products_to_transfer',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     let transferredProducts = 0;
@@ -611,10 +708,16 @@ export class ReceptionService {
     await this.receptionRepository.save(reception);
 
     // Retornar resumen de la operación
-    const message =
-      transferredProducts > 0
-        ? `Recepción cerrada exitosamente. ${transferredProducts} productos transferidos al inventario.`
-        : 'Recepción cerrada exitosamente. No había productos para transferir.';
+    const message = transferredProducts > 0
+      ? await this.translationService.translate(
+          'reception.closed_successfully',
+          userId,
+          { transferredProducts },
+        )
+      : await this.translationService.translate(
+          'reception.closed_no_products',
+          userId,
+        );
 
     return {
       receptionId: reception.id,

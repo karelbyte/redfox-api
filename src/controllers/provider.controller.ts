@@ -17,6 +17,7 @@ import { ProviderResponseDto } from '../dtos/provider/provider-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('providers')
 @UseGuards(AuthGuard)
@@ -26,34 +27,41 @@ export class ProviderController {
   @Post()
   create(
     @Body() createProviderDto: CreateProviderDto,
+    @UserId() userId: string,
   ): Promise<ProviderResponseDto> {
-    return this.providerService.create(createProviderDto);
+    return this.providerService.create(createProviderDto, userId);
   }
 
   @Get()
   findAll(
+    @UserId() userId: string,
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<ProviderResponseDto>> {
-    return this.providerService.findAll(paginationDto);
+    return this.providerService.findAll(paginationDto, userId);
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<ProviderResponseDto> {
-    return this.providerService.findOne(id);
+    return this.providerService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProviderDto: UpdateProviderDto,
+    @UserId() userId: string,
   ): Promise<ProviderResponseDto> {
-    return this.providerService.update(id, updateProviderDto);
+    return this.providerService.update(id, updateProviderDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.providerService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.providerService.remove(id, userId);
   }
 }

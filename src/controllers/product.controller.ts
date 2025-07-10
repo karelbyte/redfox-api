@@ -22,6 +22,7 @@ import { ProductResponseDto } from '../dtos/product/product-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -65,6 +66,7 @@ export class ProductController {
   )
   create(
     @Body() createProductDto: CreateProductDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -78,7 +80,7 @@ export class ProductController {
         (file) => `/uploads/products/${file.filename}`,
       );
     }
-    return this.productService.create(createProductDto);
+    return this.productService.create(createProductDto, userId);
   }
 
   @Get()
@@ -89,8 +91,11 @@ export class ProductController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ProductResponseDto> {
-    return this.productService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<ProductResponseDto> {
+    return this.productService.findOne(id, userId);
   }
 
   @Put(':id')
@@ -124,6 +129,7 @@ export class ProductController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
@@ -137,16 +143,22 @@ export class ProductController {
         (file) => `/uploads/products/${file.filename}`,
       );
     }
-    return this.productService.update(id, updateProductDto);
+    return this.productService.update(id, updateProductDto, userId);
   }
 
   @Get(':id/usage')
-  getProductUsage(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productService.getProductUsage(id);
+  getProductUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ) {
+    return this.productService.getProductUsage(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.productService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.productService.remove(id, userId);
   }
 }

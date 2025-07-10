@@ -64,7 +64,6 @@ export class BrandService {
 
   async findAll(
     paginationDto?: PaginationDto,
-    userId?: string,
   ): Promise<PaginatedResponse<BrandResponseDto>> {
     // If no pagination parameters, bring all records
     if (!paginationDto) {
