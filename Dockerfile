@@ -45,7 +45,12 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/db ./db
 COPY --from=builder /app/src/config ./src/config
 
-# Cambiar propietario de archivos
+# Copiar script de entrada y configurar permisos
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    chown nestjs:nodejs /usr/local/bin/docker-entrypoint.sh
+
+# Cambiar propietario de archivos de la aplicación
 RUN chown -R nestjs:nodejs /app
 
 # Cambiar al usuario no-root
@@ -54,13 +59,9 @@ USER nestjs
 # Exponer puerto
 EXPOSE 3000
 
-# Script de inicio que ejecuta migraciones y seeders
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Variables de entorno por defecto
 ENV NODE_ENV=production
 ENV PORT=3000
 
 # Comando de inicio
-ENTRYPOINT ["docker-entrypoint.sh"] 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"] 

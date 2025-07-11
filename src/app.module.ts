@@ -27,6 +27,7 @@ import { ReturnModule } from './modules/return.module';
 import { CashRegisterModule } from './modules/cash-register.module';
 import { CashTransactionModule } from './modules/cash-transaction.module';
 import { AppConfig } from './config';
+import { HealthController } from './controllers/health.controller';
 
 @Module({
   imports: [
@@ -67,7 +68,7 @@ import { AppConfig } from './config';
     CashRegisterModule,
     CashTransactionModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
 export class AppModule {}
