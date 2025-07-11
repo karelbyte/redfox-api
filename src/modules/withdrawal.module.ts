@@ -17,6 +17,7 @@ import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
       ProductHistory,
     ]),
     ProductModule,
+    LanguageModule,
   ],
   controllers: [WithdrawalController],
   providers: [

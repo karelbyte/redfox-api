@@ -17,6 +17,7 @@ import { BrandModule } from './brand.module';
 import { CategoryModule } from './category.module';
 import { TaxModule } from './tax.module';
 import { MeasurementUnitModule } from './measurement-unit.module';
+import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { ProviderMapper } from '../services/mappers/provider.mapper';
@@ -40,6 +41,7 @@ import { ProviderMapper } from '../services/mappers/provider.mapper';
     CategoryModule,
     TaxModule,
     MeasurementUnitModule,
+    LanguageModule,
   ],
   controllers: [ReturnController],
   providers: [ReturnService, WarehouseMapper, ProductMapper, ProviderMapper],

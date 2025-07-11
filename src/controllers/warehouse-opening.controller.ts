@@ -17,6 +17,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { UpdateWarehouseOpeningDto } from '../dtos/warehouse-opening/update-warehouse-opening.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('warehouse-openings')
 @UseGuards(AuthGuard)
@@ -28,8 +29,9 @@ export class WarehouseOpeningController {
   @Post()
   create(
     @Body() createWarehouseOpeningDto: CreateWarehouseOpeningDto,
+    @UserId() userId: string,
   ): Promise<WarehouseOpeningResponseDto> {
-    return this.warehouseOpeningService.create(createWarehouseOpeningDto);
+    return this.warehouseOpeningService.create(createWarehouseOpeningDto, userId);
   }
 
   @Get()
@@ -43,20 +45,25 @@ export class WarehouseOpeningController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<WarehouseOpeningResponseDto> {
-    return this.warehouseOpeningService.findOne(id);
+    return this.warehouseOpeningService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWarehouseOpeningDto: UpdateWarehouseOpeningDto,
+    @UserId() userId: string,
   ): Promise<WarehouseOpeningResponseDto> {
-    return this.warehouseOpeningService.update(id, updateWarehouseOpeningDto);
+    return this.warehouseOpeningService.update(id, updateWarehouseOpeningDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.warehouseOpeningService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.warehouseOpeningService.remove(id, userId);
   }
 }

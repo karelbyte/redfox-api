@@ -27,6 +27,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { ProviderMapper } from './mappers/provider.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class ReturnService {
@@ -49,15 +50,24 @@ export class ReturnService {
     private warehouseMapper: WarehouseMapper,
     private productMapper: ProductMapper,
     private providerMapper: ProviderMapper,
+    private translationService: TranslationService,
   ) {}
 
-  async create(createDto: CreateReturnDto): Promise<ReturnResponseDto> {
+  async create(
+    createDto: CreateReturnDto,
+    userId: string,
+  ): Promise<ReturnResponseDto> {
     // Validar que el almacén exista y esté abierto
     const sourceWarehouse = await this.warehouseRepository.findOne({
       where: { id: createDto.sourceWarehouseId, isOpen: false },
     });
     if (!sourceWarehouse) {
-      throw new NotFoundException('Almacén origen no encontrado o cerrado');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'warehouse.source_not_found_or_closed',
+          userId,
+        ),
+      );
     }
 
     // Validar que el proveedor exista
@@ -65,7 +75,11 @@ export class ReturnService {
       where: { id: createDto.targetProviderId },
     });
     if (!targetProvider) {
-      throw new NotFoundException('Proveedor destino no encontrado');
+      throw new NotFoundException(
+        this.translationService.translate('provider.not_found', userId, {
+          id: createDto.targetProviderId,
+        }),
+      );
     }
 
     // Generar código único
@@ -84,19 +98,24 @@ export class ReturnService {
     const savedReturn = await this.returnRepository.save(return_);
 
     // Retornar la devolución creada con sus relaciones
-    return this.findOne(savedReturn.id);
+    return this.findOne(savedReturn.id, userId);
   }
 
   async createDetail(
     returnId: string,
     createDetailDto: CreateReturnDetailDto,
+    userId: string,
   ): Promise<ReturnDetailResponseDto> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
-      throw new NotFoundException(`Devolución con ID ${returnId} no encontrada`);
+      throw new NotFoundException(
+        this.translationService.translate('return.not_found', userId, {
+          id: returnId,
+        }),
+      );
     }
 
     // Verificar que el producto existe
@@ -105,7 +124,9 @@ export class ReturnService {
     });
     if (!product) {
       throw new NotFoundException(
-        `Producto con ID ${createDetailDto.productId} no encontrado`,
+        this.translationService.translate('product.not_found', userId, {
+          id: createDetailDto.productId,
+        }),
       );
     }
 
@@ -172,7 +193,10 @@ export class ReturnService {
 
     if (!detailWithRelations) {
       throw new NotFoundException(
-        'Detalle de devolución no encontrado después de la creación',
+        this.translationService.translate(
+          'return.detail_not_found_after_creation',
+          userId,
+        ),
       );
     }
 
@@ -182,13 +206,18 @@ export class ReturnService {
   async findAllDetails(
     returnId: string,
     queryDto: ReturnDetailQueryDto,
+    userId: string,
   ): Promise<PaginatedResponse<ReturnDetailResponseDto>> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
-      throw new NotFoundException(`Devolución con ID ${returnId} no encontrada`);
+      throw new NotFoundException(
+        this.translationService.translate('return.not_found', userId, {
+          id: returnId,
+        }),
+      );
     }
 
     const { page = 1, limit = 10 } = queryDto;
@@ -231,13 +260,20 @@ export class ReturnService {
   async findOneDetail(
     returnId: string,
     detailId: string,
+    userId: string,
   ): Promise<ReturnDetailResponseDto> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
-      throw new NotFoundException(`Devolución con ID ${returnId} no encontrada`);
+      throw new NotFoundException(
+        this.translationService.translate(
+          'return.not_found',
+          userId,
+          { id: returnId },
+        ),
+      );
     }
 
     const detail = await this.returnDetailRepository.findOne({
@@ -253,7 +289,11 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en la devolución ${returnId}`,
+        this.translationService.translate(
+          'return.detail_not_found',
+          userId,
+          { detailId, returnId },
+        ),
       );
     }
 
@@ -264,13 +304,20 @@ export class ReturnService {
     returnId: string,
     detailId: string,
     updateDetailDto: UpdateReturnDetailDto,
+    userId: string,
   ): Promise<ReturnDetailResponseDto> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
-      throw new NotFoundException(`Devolución con ID ${returnId} no encontrada`);
+      throw new NotFoundException(
+        this.translationService.translate(
+          'return.not_found',
+          userId,
+          { id: returnId },
+        ),
+      );
     }
 
     const detail = await this.returnDetailRepository.findOne({
@@ -286,7 +333,11 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en la devolución ${returnId}`,
+        this.translationService.translate(
+          'return.detail_not_found',
+          userId,
+          { detailId, returnId },
+        ),
       );
     }
 
@@ -303,13 +354,19 @@ export class ReturnService {
     return this.mapDetailToResponseDto(updatedDetail);
   }
 
-  async removeDetail(returnId: string, detailId: string): Promise<void> {
+  async removeDetail(returnId: string, detailId: string, userId: string): Promise<void> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
-      throw new NotFoundException(`Devolución con ID ${returnId} no encontrada`);
+      throw new NotFoundException(
+        this.translationService.translate(
+          'return.not_found',
+          userId,
+          { id: returnId },
+        ),
+      );
     }
 
     const detail = await this.returnDetailRepository.findOne({
@@ -318,14 +375,18 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en la devolución ${returnId}`,
+        this.translationService.translate(
+          'return.detail_not_found',
+          userId,
+          { detailId, returnId },
+        ),
       );
     }
 
     await this.returnDetailRepository.remove(detail);
   }
 
-  async processReturn(returnId: string): Promise<ReturnResponseDto> {
+  async processReturn(returnId: string, userId: string): Promise<ReturnResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -339,17 +400,29 @@ export class ReturnService {
 
       if (!return_) {
         throw new NotFoundException(
-          `Devolución con ID ${returnId} no encontrada`,
+          this.translationService.translate(
+            'return.not_found',
+            userId,
+            { id: returnId },
+          ),
         );
       }
 
       if (return_.status) {
-        throw new BadRequestException('La devolución ya ha sido procesada');
+        throw new BadRequestException(
+          this.translationService.translate(
+            'return.already_processed',
+            userId,
+          ),
+        );
       }
 
       if (!return_.details || return_.details.length === 0) {
         throw new BadRequestException(
-          'La devolución no tiene detalles para procesar',
+          this.translationService.translate(
+            'return.no_details_to_process',
+            userId,
+          ),
         );
       }
 
@@ -368,7 +441,11 @@ export class ReturnService {
           Number(sourceInventory.quantity) < Number(detail.quantity)
         ) {
           throw new BadRequestException(
-            `Stock insuficiente para el producto ${detail.productId} en el almacén origen`,
+            this.translationService.translate(
+              'return.insufficient_stock',
+              userId,
+              { productId: detail.productId },
+            ),
           );
         }
 
@@ -406,7 +483,7 @@ export class ReturnService {
       await queryRunner.commitTransaction();
 
       // Retornar la devolución procesada
-      return this.findOne(returnId);
+      return this.findOne(returnId, userId);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -418,6 +495,7 @@ export class ReturnService {
   async findAll(
     paginationDto: PaginationDto,
     queryDto?: ReturnQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponse<ReturnResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -474,7 +552,7 @@ export class ReturnService {
     };
   }
 
-  async findOne(id: string): Promise<ReturnResponseDto> {
+  async findOne(id: string, userId: string): Promise<ReturnResponseDto> {
     const return_ = await this.returnRepository.findOne({
       where: { id },
       relations: [
@@ -486,26 +564,41 @@ export class ReturnService {
     });
 
     if (!return_) {
-      throw new NotFoundException('Devolución no encontrada');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'return.not_found',
+          userId,
+          { id },
+        ),
+      );
     }
 
     return this.mapToResponseDto(return_);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId: string): Promise<void> {
     const return_ = await this.returnRepository.findOne({
       where: { id },
       relations: ['details'],
     });
 
     if (!return_) {
-      throw new NotFoundException('Devolución no encontrada');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'return.not_found',
+          userId,
+          { id },
+        ),
+      );
     }
 
     // No permitir eliminar devoluciones que ya han sido procesadas
     if (return_.status) {
       throw new BadRequestException(
-        'No se puede eliminar una devolución ya procesada',
+        this.translationService.translate(
+          'return.cannot_delete_processed',
+          userId,
+        ),
       );
     }
 

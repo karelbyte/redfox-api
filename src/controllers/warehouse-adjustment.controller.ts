@@ -21,6 +21,7 @@ import { WarehouseAdjustmentDetailQueryDto } from '../dtos/warehouse-adjustment/
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('warehouse-adjustments')
 @UseGuards(AuthGuard)
@@ -32,35 +33,49 @@ export class WarehouseAdjustmentController {
   @Post()
   create(
     @Body() createWarehouseAdjustmentDto: CreateWarehouseAdjustmentDto,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
-    return this.warehouseAdjustmentService.create(createWarehouseAdjustmentDto);
+    return this.warehouseAdjustmentService.create(
+      createWarehouseAdjustmentDto,
+      userId,
+    );
   }
 
   @Get()
   findAll(
     @Query() paginationDto: PaginationDto,
     @Query() queryDto: WarehouseAdjustmentQueryDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<WarehouseAdjustmentResponseDto>> {
-    return this.warehouseAdjustmentService.findAll(paginationDto, queryDto);
+    return this.warehouseAdjustmentService.findAll(
+      paginationDto,
+      queryDto,
+      userId,
+    );
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
-    return this.warehouseAdjustmentService.findOne(id);
+    return this.warehouseAdjustmentService.findOne(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.warehouseAdjustmentService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.warehouseAdjustmentService.remove(id, userId);
   }
 
   @Post(':id/process')
   processAdjustment(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
-    return this.warehouseAdjustmentService.processAdjustment(id);
+    return this.warehouseAdjustmentService.processAdjustment(id, userId);
   }
 
   // Rutas para detalles de ajuste
@@ -68,10 +83,12 @@ export class WarehouseAdjustmentController {
   createDetail(
     @Param('id', ParseUUIDPipe) adjustmentId: string,
     @Body() createDetailDto: CreateWarehouseAdjustmentDetailDto,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     return this.warehouseAdjustmentService.createDetail(
       adjustmentId,
       createDetailDto,
+      userId,
     );
   }
 
@@ -79,10 +96,12 @@ export class WarehouseAdjustmentController {
   findAllDetails(
     @Param('id', ParseUUIDPipe) adjustmentId: string,
     @Query() queryDto: WarehouseAdjustmentDetailQueryDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<WarehouseAdjustmentDetailResponseDto>> {
     return this.warehouseAdjustmentService.findAllDetails(
       adjustmentId,
       queryDto,
+      userId,
     );
   }
 
@@ -90,10 +109,12 @@ export class WarehouseAdjustmentController {
   findOneDetail(
     @Param('id', ParseUUIDPipe) adjustmentId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     return this.warehouseAdjustmentService.findOneDetail(
       adjustmentId,
       detailId,
+      userId,
     );
   }
 
@@ -102,11 +123,13 @@ export class WarehouseAdjustmentController {
     @Param('id', ParseUUIDPipe) adjustmentId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
     @Body() updateDetailDto: UpdateWarehouseAdjustmentDetailDto,
+    @UserId() userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     return this.warehouseAdjustmentService.updateDetail(
       adjustmentId,
       detailId,
       updateDetailDto,
+      userId,
     );
   }
 
@@ -114,7 +137,12 @@ export class WarehouseAdjustmentController {
   removeDetail(
     @Param('id', ParseUUIDPipe) adjustmentId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
+    @UserId() userId: string,
   ): Promise<void> {
-    return this.warehouseAdjustmentService.removeDetail(adjustmentId, detailId);
+    return this.warehouseAdjustmentService.removeDetail(
+      adjustmentId,
+      detailId,
+      userId,
+    );
   }
 }

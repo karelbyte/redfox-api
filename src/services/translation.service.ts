@@ -475,6 +475,144 @@ export class TranslationService {
       en: 'Tax deactivated successfully',
     },
 
+    // Withdrawal messages
+    'withdrawal.not_found': {
+      es: 'Salida con ID {id} no encontrada',
+      en: 'Withdrawal with ID {id} not found',
+    },
+    'withdrawal.client_not_found': {
+      es: 'Cliente con ID {id} no encontrado',
+      en: 'Client with ID {id} not found',
+    },
+    'withdrawal.warehouse_not_found': {
+      es: 'Almacén con ID {id} no encontrado',
+      en: 'Warehouse with ID {id} not found',
+    },
+    'withdrawal.product_not_found': {
+      es: 'Producto con ID {id} no encontrado',
+      en: 'Product with ID {id} not found',
+    },
+    'withdrawal.detail_not_found': {
+      es: 'Detalle de salida con ID {id} no encontrado',
+      en: 'Withdrawal detail with ID {id} not found',
+    },
+    'withdrawal.insufficient_stock': {
+      es: 'Stock insuficiente para el producto {product} en el almacén {warehouse}. Stock disponible: {available}, solicitado: {requested}',
+      en: 'Insufficient stock for product {product} in warehouse {warehouse}. Available stock: {available}, requested: {requested}',
+    },
+    'withdrawal.already_closed': {
+      es: 'La salida ya está cerrada',
+      en: 'The withdrawal is already closed',
+    },
+    'withdrawal.cannot_modify_closed': {
+      es: 'No se puede modificar una salida cerrada',
+      en: 'Cannot modify a closed withdrawal',
+    },
+    'withdrawal.created_successfully': {
+      es: 'Salida creada exitosamente',
+      en: 'Withdrawal created successfully',
+    },
+    'withdrawal.updated_successfully': {
+      es: 'Salida actualizada exitosamente',
+      en: 'Withdrawal updated successfully',
+    },
+    'withdrawal.deleted_successfully': {
+      es: 'Salida eliminada exitosamente',
+      en: 'Withdrawal deleted successfully',
+    },
+    'withdrawal.closed_successfully': {
+      es: 'Salida cerrada exitosamente',
+      en: 'Withdrawal closed successfully',
+    },
+    'withdrawal.detail_created_successfully': {
+      es: 'Detalle de salida creado exitosamente',
+      en: 'Withdrawal detail created successfully',
+    },
+    'withdrawal.detail_updated_successfully': {
+      es: 'Detalle de salida actualizado exitosamente',
+      en: 'Withdrawal detail updated successfully',
+    },
+    'withdrawal.detail_deleted_successfully': {
+      es: 'Detalle de salida eliminado exitosamente',
+      en: 'Withdrawal detail deleted successfully',
+    },
+
+    // Warehouse messages
+    'warehouse.not_found': {
+      es: 'Almacén con ID {id} no encontrado',
+      en: 'Warehouse with ID {id} not found',
+    },
+    'warehouse.already_exists': {
+      es: 'Ya existe un almacén con el código {code}',
+      en: 'Warehouse with code {code} already exists',
+    },
+    'warehouse.already_closed': {
+      es: 'El almacén ya está cerrado',
+      en: 'The warehouse is already closed',
+    },
+    'warehouse.already_open': {
+      es: 'El almacén ya está abierto',
+      en: 'The warehouse is already open',
+    },
+    'warehouse.cannot_delete_in_use': {
+      es: 'No se puede eliminar el almacén "{name}" porque está siendo usado por {count} producto(s).',
+      en: 'Cannot delete warehouse "{name}" because it is being used by {count} product(s).',
+    },
+    'warehouse.created_successfully': {
+      es: 'Almacén creado exitosamente',
+      en: 'Warehouse created successfully',
+    },
+    'warehouse.updated_successfully': {
+      es: 'Almacén actualizado exitosamente',
+      en: 'Warehouse updated successfully',
+    },
+    'warehouse.deleted_successfully': {
+      es: 'Almacén eliminado exitosamente',
+      en: 'Warehouse deleted successfully',
+    },
+    'warehouse.closed_successfully': {
+      es: 'Almacén cerrado exitosamente',
+      en: 'Warehouse closed successfully',
+    },
+    'warehouse.opened_successfully': {
+      es: 'Almacén abierto exitosamente',
+      en: 'Warehouse opened successfully',
+    },
+    'warehouse.status_updated_successfully': {
+      es: 'Estado del almacén actualizado exitosamente',
+      en: 'Warehouse status updated successfully',
+    },
+
+    // Warehouse Opening messages
+    'warehouse_opening.not_found': {
+      es: 'Apertura de almacén con ID {id} no encontrada',
+      en: 'Warehouse opening with ID {id} not found',
+    },
+    'warehouse_opening.already_exists': {
+      es: 'Ya existe una apertura para el producto {product} en el almacén {warehouse}',
+      en: 'Opening already exists for product {product} in warehouse {warehouse}',
+    },
+    'warehouse_opening.created_successfully': {
+      es: 'Apertura de almacén creada exitosamente',
+      en: 'Warehouse opening created successfully',
+    },
+    'warehouse_opening.updated_successfully': {
+      es: 'Apertura de almacén actualizada exitosamente',
+      en: 'Warehouse opening updated successfully',
+    },
+    'warehouse_opening.deleted_successfully': {
+      es: 'Apertura de almacén eliminada exitosamente',
+      en: 'Warehouse opening deleted successfully',
+    },
+    'warehouse_opening.warehouse_not_found': {
+      es: 'Almacén con ID {id} no encontrado',
+      en: 'Warehouse with ID {id} not found',
+    },
+    'warehouse_opening.product_not_found': {
+      es: 'Producto con ID {id} no encontrado',
+      en: 'Product with ID {id} not found',
+    },
+
     // Category messages
     'category.not_found': {
       es: 'Categoría con ID {id} no encontrada',

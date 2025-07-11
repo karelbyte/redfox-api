@@ -22,6 +22,7 @@ import {
   OperationType,
 } from '../models/product-history.entity';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
+import { TranslationService } from './translation.service';
 import { Like } from 'typeorm';
 
 @Injectable()
@@ -37,25 +38,47 @@ export class WarehouseService {
     private productHistoryRepository: Repository<ProductHistory>,
     private readonly currencyMapper: CurrencyMapper,
     private readonly warehouseMapper: WarehouseMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
   async create(
     createWarehouseDto: CreateWarehouseDto,
+    userId?: string,
   ): Promise<WarehouseResponseDto> {
-    const warehouse = this.warehouseRepository.create(createWarehouseDto);
-    const savedWarehouse = await this.warehouseRepository.save(warehouse);
+    try {
+      const warehouse = this.warehouseRepository.create(createWarehouseDto);
+      const savedWarehouse = await this.warehouseRepository.save(warehouse);
 
-    // Recargar con relaciones para la respuesta
-    const warehouseWithRelations = await this.warehouseRepository.findOne({
-      where: { id: savedWarehouse.id },
-      relations: ['currency'],
-    });
+      // Recargar con relaciones para la respuesta
+      const warehouseWithRelations = await this.warehouseRepository.findOne({
+        where: { id: savedWarehouse.id },
+        relations: ['currency'],
+      });
 
-    if (!warehouseWithRelations) {
-      throw new NotFoundException('Warehouse not found after creation');
+      if (!warehouseWithRelations) {
+        const message = await this.translationService.translate(
+          'warehouse.not_found',
+          userId,
+        );
+        throw new NotFoundException(message);
+      }
+
+      return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
+    } catch (error: unknown) {
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('warehouses.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'warehouse.already_exists',
+          userId,
+          { code: createWarehouseDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
     }
-
-    return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
   }
 
   async findAll(
@@ -169,14 +192,19 @@ export class WarehouseService {
     }));
   }
 
-  async findOne(id: string): Promise<WarehouseResponseDto> {
+  async findOne(id: string, userId?: string): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
       relations: ['currency'],
     });
 
     if (!warehouse) {
-      throw new NotFoundException(`Almacén con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.warehouseMapper.mapToResponseDto(warehouse);
@@ -185,6 +213,7 @@ export class WarehouseService {
   async update(
     id: string,
     updateWarehouseDto: UpdateWarehouseDto,
+    userId?: string,
   ): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
@@ -192,34 +221,64 @@ export class WarehouseService {
     });
 
     if (!warehouse) {
-      throw new NotFoundException(`Almacén con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
-    const updatedWarehouse = await this.warehouseRepository.save({
-      ...warehouse,
-      ...updateWarehouseDto,
-    });
+    try {
+      const updatedWarehouse = await this.warehouseRepository.save({
+        ...warehouse,
+        ...updateWarehouseDto,
+      });
 
-    // Recargar con relaciones para la respuesta
-    const warehouseWithRelations = await this.warehouseRepository.findOne({
-      where: { id: updatedWarehouse.id },
-      relations: ['currency'],
-    });
+      // Recargar con relaciones para la respuesta
+      const warehouseWithRelations = await this.warehouseRepository.findOne({
+        where: { id: updatedWarehouse.id },
+        relations: ['currency'],
+      });
 
-    if (!warehouseWithRelations) {
-      throw new NotFoundException('Warehouse not found after update');
+      if (!warehouseWithRelations) {
+        const message = await this.translationService.translate(
+          'warehouse.not_found',
+          userId,
+        );
+        throw new NotFoundException(message);
+      }
+
+      return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
+    } catch (error: unknown) {
+      const dbError = error as { code?: string; message?: string };
+      if (
+        dbError?.code === 'ER_DUP_ENTRY' &&
+        dbError?.message?.includes('warehouses.UQ_')
+      ) {
+        const message = await this.translationService.translate(
+          'warehouse.already_exists',
+          userId,
+          { code: updateWarehouseDto.code },
+        );
+        throw new BadRequestException(message);
+      }
+      throw error;
     }
-
-    return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
     });
 
     if (!warehouse) {
-      throw new NotFoundException(`Almacén con ID ${id} no encontrado`);
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     await this.warehouseRepository.softRemove(warehouse);
@@ -228,13 +287,19 @@ export class WarehouseService {
   async updateStatus(
     id: string,
     updateStatusDto: UpdateWarehouseStatusDto,
+    userId?: string,
   ): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
       relations: ['currency'],
     });
     if (!warehouse) {
-      throw new NotFoundException('Warehouse not found');
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     warehouse.isOpen = updateStatusDto.isOpen;
@@ -246,7 +311,11 @@ export class WarehouseService {
     });
 
     if (!warehouseWithRelations) {
-      throw new NotFoundException('Warehouse not found after status update');
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
     }
 
     return this.warehouseMapper.mapToResponseDto(warehouseWithRelations);
@@ -254,6 +323,7 @@ export class WarehouseService {
 
   async closeWarehouse(
     warehouseId: string,
+    userId?: string,
   ): Promise<CloseWarehouseResponseDto> {
     // Verificar que el warehouse existe y está abierto
     const warehouse = await this.warehouseRepository.findOne({
@@ -262,13 +332,20 @@ export class WarehouseService {
     });
 
     if (!warehouse) {
-      throw new NotFoundException(
-        `Almacén con ID ${warehouseId} no encontrado`,
+      const message = await this.translationService.translate(
+        'warehouse.not_found',
+        userId,
+        { id: warehouseId },
       );
+      throw new NotFoundException(message);
     }
 
     if (!warehouse.isOpen) {
-      throw new BadRequestException('El almacén ya está cerrado');
+      const message = await this.translationService.translate(
+        'warehouse.already_closed',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     // Obtener todos los warehouse openings de este almacén

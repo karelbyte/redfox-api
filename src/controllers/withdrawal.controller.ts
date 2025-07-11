@@ -22,6 +22,7 @@ import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('withdrawals')
 @UseGuards(AuthGuard)
@@ -31,8 +32,9 @@ export class WithdrawalController {
   @Post()
   create(
     @Body() createWithdrawalDto: CreateWithdrawalDto,
+    @UserId() userId: string,
   ): Promise<WithdrawalResponseDto> {
-    return this.withdrawalService.create(createWithdrawalDto);
+    return this.withdrawalService.create(createWithdrawalDto, userId);
   }
 
   @Get()
@@ -45,21 +47,26 @@ export class WithdrawalController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<WithdrawalResponseDto> {
-    return this.withdrawalService.findOne(id);
+    return this.withdrawalService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWithdrawalDto: UpdateWithdrawalDto,
+    @UserId() userId: string,
   ): Promise<WithdrawalResponseDto> {
-    return this.withdrawalService.update(id, updateWithdrawalDto);
+    return this.withdrawalService.update(id, updateWithdrawalDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.withdrawalService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.withdrawalService.remove(id, userId);
   }
 
   // Rutas para detalles de withdrawal
@@ -67,24 +74,27 @@ export class WithdrawalController {
   createDetail(
     @Param('id', ParseUUIDPipe) withdrawalId: string,
     @Body() createDetailDto: CreateWithdrawalDetailDto,
+    @UserId() userId: string,
   ): Promise<WithdrawalDetailResponseDto> {
-    return this.withdrawalService.createDetail(withdrawalId, createDetailDto);
+    return this.withdrawalService.createDetail(withdrawalId, createDetailDto, userId);
   }
 
   @Get(':id/details')
   findAllDetails(
     @Param('id', ParseUUIDPipe) withdrawalId: string,
     @Query() queryDto: WithdrawalDetailQueryDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<WithdrawalDetailResponseDto>> {
-    return this.withdrawalService.findAllDetails(withdrawalId, queryDto);
+    return this.withdrawalService.findAllDetails(withdrawalId, queryDto, userId);
   }
 
   @Get(':id/details/:detailId')
   findOneDetail(
     @Param('id', ParseUUIDPipe) withdrawalId: string,
     @Param('detailId', ParseUUIDPipe) detailId: string,
+    @UserId() userId: string,
   ): Promise<WithdrawalDetailResponseDto> {
-    return this.withdrawalService.findOneDetail(withdrawalId, detailId);
+    return this.withdrawalService.findOneDetail(withdrawalId, detailId, userId);
   }
 
   @Put(':id/details/:detailId')
@@ -111,7 +121,8 @@ export class WithdrawalController {
   @Post(':id/close')
   closeWithdrawal(
     @Param('id', ParseUUIDPipe) withdrawalId: string,
+    @UserId() userId: string,
   ): Promise<CloseWithdrawalResponseDto> {
-    return this.withdrawalService.closeWithdrawal(withdrawalId);
+    return this.withdrawalService.closeWithdrawal(withdrawalId, userId);
   }
 }

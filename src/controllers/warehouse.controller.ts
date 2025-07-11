@@ -21,6 +21,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
 import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('warehouses')
 @UseGuards(AuthGuard)
@@ -30,8 +31,9 @@ export class WarehouseController {
   @Post()
   create(
     @Body() createWarehouseDto: CreateWarehouseDto,
+    @UserId() userId: string,
   ): Promise<WarehouseResponseDto> {
-    return this.warehouseService.create(createWarehouseDto);
+    return this.warehouseService.create(createWarehouseDto, userId);
   }
 
   @Get()
@@ -49,35 +51,42 @@ export class WarehouseController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<WarehouseResponseDto> {
-    return this.warehouseService.findOne(id);
+    return this.warehouseService.findOne(id, userId);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWarehouseDto: UpdateWarehouseDto,
+    @UserId() userId: string,
   ): Promise<WarehouseResponseDto> {
-    return this.warehouseService.update(id, updateWarehouseDto);
+    return this.warehouseService.update(id, updateWarehouseDto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.warehouseService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.warehouseService.remove(id, userId);
   }
 
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateWarehouseStatusDto,
+    @UserId() userId: string,
   ): Promise<WarehouseResponseDto> {
-    return this.warehouseService.updateStatus(id, updateStatusDto);
+    return this.warehouseService.updateStatus(id, updateStatusDto, userId);
   }
 
   @Post(':id/close')
   closeWarehouse(
     @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
   ): Promise<CloseWarehouseResponseDto> {
-    return this.warehouseService.closeWarehouse(id);
+    return this.warehouseService.closeWarehouse(id, userId);
   }
 }

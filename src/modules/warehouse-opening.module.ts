@@ -5,12 +5,14 @@ import { WarehouseOpeningService } from '../services/warehouse-opening.service';
 import { WarehouseOpeningController } from '../controllers/warehouse-opening.controller';
 import { ProductModule } from './product.module';
 import { WarehouseModule } from './warehouse.module';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([WarehouseOpening]),
     ProductModule,
     WarehouseModule,
+    LanguageModule,
   ],
   controllers: [WarehouseOpeningController],
   providers: [WarehouseOpeningService],

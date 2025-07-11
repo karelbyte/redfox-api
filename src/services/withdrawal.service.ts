@@ -30,6 +30,7 @@ import { ProductService } from './product.service';
 import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-response.dto';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class WithdrawalService {
@@ -49,6 +50,7 @@ export class WithdrawalService {
     private readonly productService: ProductService,
     private readonly productMapper: ProductMapper,
     private readonly warehouseMapper: WarehouseMapper,
+    private readonly translationService: TranslationService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -104,14 +106,18 @@ export class WithdrawalService {
 
   async create(
     createWithdrawalDto: CreateWithdrawalDto,
+    userId?: string,
   ): Promise<WithdrawalResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id: createWithdrawalDto.client_id },
     });
     if (!client) {
-      throw new NotFoundException(
-        `Cliente con ID ${createWithdrawalDto.client_id} no encontrado`,
+      const message = await this.translationService.translate(
+        'withdrawal.client_not_found',
+        userId,
+        { id: createWithdrawalDto.client_id },
       );
+      throw new NotFoundException(message);
     }
 
     const withdrawal = this.withdrawalRepository.create({
@@ -157,7 +163,7 @@ export class WithdrawalService {
     };
   }
 
-  async findOne(id: string): Promise<WithdrawalResponseDto> {
+  async findOne(id: string, userId?: string): Promise<WithdrawalResponseDto> {
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id },
       relations: [
@@ -171,7 +177,12 @@ export class WithdrawalService {
     });
 
     if (!withdrawal) {
-      throw new NotFoundException(`Salida con ID ${id} no encontrada`);
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return this.mapToResponseDto(withdrawal);
@@ -180,6 +191,7 @@ export class WithdrawalService {
   async update(
     id: string,
     updateWithdrawalDto: UpdateWithdrawalDto,
+    userId?: string,
   ): Promise<WithdrawalResponseDto> {
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id },
@@ -194,7 +206,12 @@ export class WithdrawalService {
     });
 
     if (!withdrawal) {
-      throw new NotFoundException(`Salida con ID ${id} no encontrada`);
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     if (updateWithdrawalDto.client_id) {
@@ -202,9 +219,12 @@ export class WithdrawalService {
         where: { id: updateWithdrawalDto.client_id },
       });
       if (!client) {
-        throw new NotFoundException(
-          `Cliente con ID ${updateWithdrawalDto.client_id} no encontrado`,
+        const message = await this.translationService.translate(
+          'withdrawal.client_not_found',
+          userId,
+          { id: updateWithdrawalDto.client_id },
         );
+        throw new NotFoundException(message);
       }
       withdrawal.client = client;
     }
@@ -227,13 +247,18 @@ export class WithdrawalService {
     return this.mapToResponseDto(updatedWithdrawal);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id },
     });
 
     if (!withdrawal) {
-      throw new NotFoundException(`Salida con ID ${id} no encontrada`);
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     await this.withdrawalRepository.softRemove(withdrawal);
@@ -243,15 +268,19 @@ export class WithdrawalService {
   async createDetail(
     withdrawalId: string,
     createDetailDto: CreateDetailDto,
+    userId?: string,
   ): Promise<WithdrawalDetailResponseDto> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
     });
     if (!withdrawal) {
-      throw new NotFoundException(
-        `Withdrawal with ID ${withdrawalId} not found`,
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id: withdrawalId },
       );
+      throw new NotFoundException(message);
     }
 
     // Verificar que el producto existe
@@ -264,9 +293,12 @@ export class WithdrawalService {
       where: { id: createDetailDto.warehouse_id },
     });
     if (!warehouse) {
-      throw new NotFoundException(
-        `Warehouse with ID ${createDetailDto.warehouse_id} not found`,
+      const message = await this.translationService.translate(
+        'withdrawal.warehouse_not_found',
+        userId,
+        { id: createDetailDto.warehouse_id },
       );
+      throw new NotFoundException(message);
     }
 
     // Verificar si ya existe un detalle con este producto en la withdrawal
@@ -366,15 +398,19 @@ export class WithdrawalService {
   async findAllDetails(
     withdrawalId: string,
     queryDto: WithdrawalDetailQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponseDto<WithdrawalDetailResponseDto>> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
     });
     if (!withdrawal) {
-      throw new NotFoundException(
-        `Withdrawal with ID ${withdrawalId} not found`,
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id: withdrawalId },
       );
+      throw new NotFoundException(message);
     }
 
     const { page = 1, limit = 10 } = queryDto;
@@ -415,15 +451,19 @@ export class WithdrawalService {
   async findOneDetail(
     withdrawalId: string,
     detailId: string,
+    userId?: string,
   ): Promise<WithdrawalDetailResponseDto> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
     });
     if (!withdrawal) {
-      throw new NotFoundException(
-        `Withdrawal with ID ${withdrawalId} not found`,
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id: withdrawalId },
       );
+      throw new NotFoundException(message);
     }
 
     const detail = await this.withdrawalDetailRepository.findOne({
@@ -559,6 +599,7 @@ export class WithdrawalService {
 
   async closeWithdrawal(
     withdrawalId: string,
+    userId?: string,
   ): Promise<CloseWithdrawalResponseDto> {
     // Verificar que la withdrawal existe y está abierta
     const withdrawal = await this.withdrawalRepository.findOne({
@@ -567,13 +608,20 @@ export class WithdrawalService {
     });
 
     if (!withdrawal) {
-      throw new NotFoundException(
-        `Withdrawal con ID ${withdrawalId} no encontrada`,
+      const message = await this.translationService.translate(
+        'withdrawal.not_found',
+        userId,
+        { id: withdrawalId },
       );
+      throw new NotFoundException(message);
     }
 
     if (withdrawal.status) {
-      throw new BadRequestException('La withdrawal ya está cerrada');
+      const message = await this.translationService.translate(
+        'withdrawal.already_closed',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     // Obtener todos los detalles de la withdrawal

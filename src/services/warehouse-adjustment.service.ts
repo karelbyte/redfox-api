@@ -25,6 +25,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class WarehouseAdjustmentService {
@@ -44,29 +45,44 @@ export class WarehouseAdjustmentService {
     private dataSource: DataSource,
     private warehouseMapper: WarehouseMapper,
     private productMapper: ProductMapper,
+    private translationService: TranslationService,
   ) {}
 
   async create(
     createDto: CreateWarehouseAdjustmentDto,
+    userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
     // Validar que los almacenes existan y estén abiertos
     const sourceWarehouse = await this.warehouseRepository.findOne({
       where: { id: createDto.sourceWarehouseId, isOpen: false },
     });
     if (!sourceWarehouse) {
-      throw new NotFoundException('Almacén origen no encontrado o cerrado');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'warehouse.source_not_found_or_closed',
+          userId,
+        ),
+      );
     }
 
     const targetWarehouse = await this.warehouseRepository.findOne({
       where: { id: createDto.targetWarehouseId, isOpen: false },
     });
     if (!targetWarehouse) {
-      throw new NotFoundException('Almacén destino no encontrado o cerrado');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'warehouse.target_not_found_or_closed',
+          userId,
+        ),
+      );
     }
 
     if (createDto.sourceWarehouseId === createDto.targetWarehouseId) {
       throw new BadRequestException(
-        'El almacén origen y destino no pueden ser el mismo',
+        this.translationService.translate(
+          'warehouse_adjustment.same_warehouse_error',
+          userId,
+        ),
       );
     }
 
@@ -87,12 +103,13 @@ export class WarehouseAdjustmentService {
       await this.warehouseAdjustmentRepository.save(adjustment);
 
     // Retornar el ajuste creado con sus relaciones
-    return this.findOne(savedAdjustment.id);
+    return this.findOne(savedAdjustment.id, userId);
   }
 
   async createDetail(
     adjustmentId: string,
     createDetailDto: CreateWarehouseAdjustmentDetailDto,
+    userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
@@ -100,7 +117,11 @@ export class WarehouseAdjustmentService {
     });
     if (!adjustment) {
       throw new NotFoundException(
-        `Ajuste con ID ${adjustmentId} no encontrado`,
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id: adjustmentId },
+        ),
       );
     }
 
@@ -110,7 +131,9 @@ export class WarehouseAdjustmentService {
     });
     if (!product) {
       throw new NotFoundException(
-        `Producto con ID ${createDetailDto.productId} no encontrado`,
+        this.translationService.translate('product.not_found', userId, {
+          id: createDetailDto.productId,
+        }),
       );
     }
 
@@ -180,7 +203,10 @@ export class WarehouseAdjustmentService {
 
     if (!detailWithRelations) {
       throw new NotFoundException(
-        'Detalle de ajuste no encontrado después de la creación',
+        this.translationService.translate(
+          'warehouse_adjustment.detail_not_found_after_creation',
+          userId,
+        ),
       );
     }
 
@@ -190,6 +216,7 @@ export class WarehouseAdjustmentService {
   async findAllDetails(
     adjustmentId: string,
     queryDto: WarehouseAdjustmentDetailQueryDto,
+    userId: string,
   ): Promise<PaginatedResponse<WarehouseAdjustmentDetailResponseDto>> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
@@ -197,7 +224,11 @@ export class WarehouseAdjustmentService {
     });
     if (!adjustment) {
       throw new NotFoundException(
-        `Ajuste con ID ${adjustmentId} no encontrado`,
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id: adjustmentId },
+        ),
       );
     }
 
@@ -241,6 +272,7 @@ export class WarehouseAdjustmentService {
   async findOneDetail(
     adjustmentId: string,
     detailId: string,
+    userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
@@ -248,7 +280,11 @@ export class WarehouseAdjustmentService {
     });
     if (!adjustment) {
       throw new NotFoundException(
-        `Ajuste con ID ${adjustmentId} no encontrado`,
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id: adjustmentId },
+        ),
       );
     }
 
@@ -265,7 +301,11 @@ export class WarehouseAdjustmentService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en el ajuste ${adjustmentId}`,
+        this.translationService.translate(
+          'warehouse_adjustment.detail_not_found',
+          userId,
+          { detailId, adjustmentId },
+        ),
       );
     }
 
@@ -276,6 +316,7 @@ export class WarehouseAdjustmentService {
     adjustmentId: string,
     detailId: string,
     updateDetailDto: UpdateWarehouseAdjustmentDetailDto,
+    userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
@@ -283,7 +324,11 @@ export class WarehouseAdjustmentService {
     });
     if (!adjustment) {
       throw new NotFoundException(
-        `Ajuste con ID ${adjustmentId} no encontrado`,
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id: adjustmentId },
+        ),
       );
     }
 
@@ -300,7 +345,11 @@ export class WarehouseAdjustmentService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en el ajuste ${adjustmentId}`,
+        this.translationService.translate(
+          'warehouse_adjustment.detail_not_found',
+          userId,
+          { detailId, adjustmentId },
+        ),
       );
     }
 
@@ -318,14 +367,22 @@ export class WarehouseAdjustmentService {
     return this.mapDetailToResponseDto(updatedDetail);
   }
 
-  async removeDetail(adjustmentId: string, detailId: string): Promise<void> {
+  async removeDetail(
+    adjustmentId: string,
+    detailId: string,
+    userId: string,
+  ): Promise<void> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId },
     });
     if (!adjustment) {
       throw new NotFoundException(
-        `Ajuste con ID ${adjustmentId} no encontrado`,
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id: adjustmentId },
+        ),
       );
     }
 
@@ -335,7 +392,11 @@ export class WarehouseAdjustmentService {
 
     if (!detail) {
       throw new NotFoundException(
-        `Detalle con ID ${detailId} no encontrado en el ajuste ${adjustmentId}`,
+        this.translationService.translate(
+          'warehouse_adjustment.detail_not_found',
+          userId,
+          { detailId, adjustmentId },
+        ),
       );
     }
 
@@ -344,6 +405,7 @@ export class WarehouseAdjustmentService {
 
   async processAdjustment(
     adjustmentId: string,
+    userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -358,17 +420,29 @@ export class WarehouseAdjustmentService {
 
       if (!adjustment) {
         throw new NotFoundException(
-          `Ajuste con ID ${adjustmentId} no encontrado`,
+          this.translationService.translate(
+            'warehouse_adjustment.not_found',
+            userId,
+            { id: adjustmentId },
+          ),
         );
       }
 
       if (adjustment.status) {
-        throw new BadRequestException('El ajuste ya ha sido procesado');
+        throw new BadRequestException(
+          this.translationService.translate(
+            'warehouse_adjustment.already_processed',
+            userId,
+          ),
+        );
       }
 
       if (!adjustment.details || adjustment.details.length === 0) {
         throw new BadRequestException(
-          'El ajuste no tiene detalles para procesar',
+          this.translationService.translate(
+            'warehouse_adjustment.no_details_to_process',
+            userId,
+          ),
         );
       }
 
@@ -387,7 +461,11 @@ export class WarehouseAdjustmentService {
           Number(sourceInventory.quantity) < Number(detail.quantity)
         ) {
           throw new BadRequestException(
-            `Stock insuficiente para el producto ${detail.productId} en el almacén origen`,
+            this.translationService.translate(
+              'warehouse_adjustment.insufficient_stock',
+              userId,
+              { productId: detail.productId },
+            ),
           );
         }
 
@@ -461,7 +539,7 @@ export class WarehouseAdjustmentService {
       await queryRunner.commitTransaction();
 
       // Retornar el ajuste procesado
-      return this.findOne(adjustmentId);
+      return this.findOne(adjustmentId, userId);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -473,6 +551,7 @@ export class WarehouseAdjustmentService {
   async findAll(
     paginationDto: PaginationDto,
     queryDto?: WarehouseAdjustmentQueryDto,
+    userId?: string,
   ): Promise<PaginatedResponse<WarehouseAdjustmentResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -535,7 +614,10 @@ export class WarehouseAdjustmentService {
     };
   }
 
-  async findOne(id: string): Promise<WarehouseAdjustmentResponseDto> {
+  async findOne(
+    id: string,
+    userId: string,
+  ): Promise<WarehouseAdjustmentResponseDto> {
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id },
       relations: [
@@ -547,26 +629,41 @@ export class WarehouseAdjustmentService {
     });
 
     if (!adjustment) {
-      throw new NotFoundException('Ajuste entre almacenes no encontrado');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id },
+        ),
+      );
     }
 
     return this.mapToResponseDto(adjustment);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId: string): Promise<void> {
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id },
       relations: ['details'],
     });
 
     if (!adjustment) {
-      throw new NotFoundException('Ajuste entre almacenes no encontrado');
+      throw new NotFoundException(
+        this.translationService.translate(
+          'warehouse_adjustment.not_found',
+          userId,
+          { id },
+        ),
+      );
     }
 
     // No permitir eliminar ajustes que ya han sido procesados
     if (adjustment.status) {
       throw new BadRequestException(
-        'No se puede eliminar un ajuste ya procesado',
+        this.translationService.translate(
+          'warehouse_adjustment.cannot_delete_processed',
+          userId,
+        ),
       );
     }
 
