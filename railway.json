@@ -10,5 +10,14 @@
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "PORT": "3000",
+        "APP_DB_PROVIDER": "postgres"
+      }
+    }
   }
 } 

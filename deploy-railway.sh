@@ -32,22 +32,37 @@ echo "🔧 Configurando variables de entorno..."
 # Variables de entorno para la aplicación
 railway variables set NODE_ENV=production
 railway variables set PORT=3000
+railway variables set APP_DB_PROVIDER=postgres
 
-# Variables de entorno para la base de datos (ajusta según tu configuración)
-echo "📝 Configura las siguientes variables de entorno en Railway:"
-echo "  - APP_DB_PROVIDER (mysql o postgres)"
-echo "  - MYSQL_DB_HOST (si usas MySQL)"
-echo "  - MYSQL_DB_PORT (si usas MySQL)"
-echo "  - MYSQL_DB_USER (si usas MySQL)"
-echo "  - MYSQL_DB_PASSWORD (si usas MySQL)"
-echo "  - MYSQL_DB_NAME (si usas MySQL)"
-echo "  - PG_DB_HOST (si usas PostgreSQL)"
-echo "  - PG_DB_PORT (si usas PostgreSQL)"
-echo "  - PG_DB_USER (si usas PostgreSQL)"
-echo "  - PG_DB_PASSWORD (si usas PostgreSQL)"
-echo "  - PG_DB_NAME (si usas PostgreSQL)"
-echo "  - JWT_SECRET"
-echo "  - JWT_EXPIRES_IN"
+# Verificar si ya existe un servicio de base de datos
+echo "🔍 Verificando servicios de base de datos..."
+SERVICES=$(railway service list --json)
+
+if echo "$SERVICES" | grep -q "postgresql\|mysql"; then
+    echo "✅ Base de datos encontrada"
+else
+    echo "🗄️  Creando servicio de PostgreSQL..."
+    railway service create postgresql redfox-db
+    
+    echo "⏳ Esperando a que la base de datos esté lista..."
+    sleep 10
+    
+    echo "✅ Base de datos PostgreSQL creada automáticamente"
+    echo "📝 Railway configurará automáticamente las variables de entorno de la base de datos"
+fi
+
+# Variables de entorno adicionales
+echo "🔧 Configurando variables adicionales..."
+railway variables set JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
+railway variables set JWT_EXPIRES_IN="24h"
+
+echo "📝 Variables de entorno configuradas:"
+echo "  ✅ NODE_ENV=production"
+echo "  ✅ PORT=3000"
+echo "  ✅ APP_DB_PROVIDER=postgres"
+echo "  ✅ JWT_SECRET (configurado)"
+echo "  ✅ JWT_EXPIRES_IN=24h"
+echo "  🔄 Variables de base de datos (configuradas automáticamente por Railway)"
 
 # Desplegar la aplicación
 echo "🚀 Desplegando aplicación..."

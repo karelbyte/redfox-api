@@ -42,22 +42,44 @@ Write-Host "🔧 Configurando variables de entorno..." -ForegroundColor Yellow
 # Variables de entorno para la aplicación
 railway variables set NODE_ENV=production
 railway variables set PORT=3000
+railway variables set APP_DB_PROVIDER=postgres
 
-# Variables de entorno para la base de datos (ajusta según tu configuración)
-Write-Host "📝 Configura las siguientes variables de entorno en Railway:" -ForegroundColor Cyan
-Write-Host "  - APP_DB_PROVIDER (mysql o postgres)" -ForegroundColor White
-Write-Host "  - MYSQL_DB_HOST (si usas MySQL)" -ForegroundColor White
-Write-Host "  - MYSQL_DB_PORT (si usas MySQL)" -ForegroundColor White
-Write-Host "  - MYSQL_DB_USER (si usas MySQL)" -ForegroundColor White
-Write-Host "  - MYSQL_DB_PASSWORD (si usas MySQL)" -ForegroundColor White
-Write-Host "  - MYSQL_DB_NAME (si usas MySQL)" -ForegroundColor White
-Write-Host "  - PG_DB_HOST (si usas PostgreSQL)" -ForegroundColor White
-Write-Host "  - PG_DB_PORT (si usas PostgreSQL)" -ForegroundColor White
-Write-Host "  - PG_DB_USER (si usas PostgreSQL)" -ForegroundColor White
-Write-Host "  - PG_DB_PASSWORD (si usas PostgreSQL)" -ForegroundColor White
-Write-Host "  - PG_DB_NAME (si usas PostgreSQL)" -ForegroundColor White
-Write-Host "  - JWT_SECRET" -ForegroundColor White
-Write-Host "  - JWT_EXPIRES_IN" -ForegroundColor White
+# Verificar si ya existe un servicio de base de datos
+Write-Host "🔍 Verificando servicios de base de datos..." -ForegroundColor Yellow
+$services = railway service list --json | ConvertFrom-Json
+
+$hasDatabase = $false
+foreach ($service in $services) {
+    if ($service.type -eq "postgresql" -or $service.type -eq "mysql") {
+        $hasDatabase = $true
+        Write-Host "✅ Base de datos encontrada: $($service.name)" -ForegroundColor Green
+        break
+    }
+}
+
+if (-not $hasDatabase) {
+    Write-Host "🗄️  Creando servicio de PostgreSQL..." -ForegroundColor Yellow
+    railway service create postgresql redfox-db
+    
+    Write-Host "⏳ Esperando a que la base de datos esté lista..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
+    
+    Write-Host "✅ Base de datos PostgreSQL creada automáticamente" -ForegroundColor Green
+    Write-Host "📝 Railway configurará automáticamente las variables de entorno de la base de datos" -ForegroundColor Cyan
+}
+
+# Variables de entorno adicionales
+Write-Host "🔧 Configurando variables adicionales..." -ForegroundColor Yellow
+railway variables set JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
+railway variables set JWT_EXPIRES_IN="24h"
+
+Write-Host "📝 Variables de entorno configuradas:" -ForegroundColor Cyan
+Write-Host "  ✅ NODE_ENV=production" -ForegroundColor Green
+Write-Host "  ✅ PORT=3000" -ForegroundColor Green
+Write-Host "  ✅ APP_DB_PROVIDER=postgres" -ForegroundColor Green
+Write-Host "  ✅ JWT_SECRET (configurado)" -ForegroundColor Green
+Write-Host "  ✅ JWT_EXPIRES_IN=24h" -ForegroundColor Green
+Write-Host "  🔄 Variables de base de datos (configuradas automáticamente por Railway)" -ForegroundColor Yellow
 
 # Desplegar la aplicación
 Write-Host "🚀 Desplegando aplicación..." -ForegroundColor Green

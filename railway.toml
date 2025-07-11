@@ -11,4 +11,11 @@ restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
-PORT = "3000" 
+PORT = "3000"
+APP_DB_PROVIDER = "postgres"
+
+# Configuración para detección automática de PostgreSQL
+[services]
+[[services.database]]
+type = "postgresql"
+name = "redfox-db" 
