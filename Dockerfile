@@ -14,9 +14,8 @@ COPY nest-cli.json ./
 # Instalar dependencias
 RUN npm ci
 
-# Copiar código fuente
-COPY src/ ./src/
-COPY db/ ./db/
+# Copiar todo el código fuente
+COPY . .
 
 # Construir la aplicación
 RUN npm run build
@@ -43,7 +42,6 @@ RUN npm ci --only=production && npm cache clean --force
 # Copiar archivos construidos y necesarios
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/db ./db
-COPY --from=builder /app/src/config ./src/config
 COPY --from=builder /app/scripts ./scripts
 
 # Copiar script de entrada y configurar permisos
