@@ -44,9 +44,9 @@ temp
 # Archivos de uploads (si no son necesarios en producción)
 uploads
 
-# Archivos de documentación (permitir README.md)
+# Archivos de documentación
+README.md
 *.md
-!README.md
 
 # Archivos de configuración de desarrollo
 .prettierrc
@@ -56,18 +56,4 @@ jest.config.js
 # Archivos de Docker
 Dockerfile*
 docker-compose*
-.dockerignore
-
-# Archivos de despliegue específicos
-fly.toml
-fly-*.toml
-railway*.json
-railway*.toml
-deploy-*.sh
-deploy-*.ps1
-deploy-*.bat
-debug-*.sh
-debug-*.ps1
-fix-*.ps1
-*.md
-!README.md 
+.dockerignore 

@@ -1,4 +1,4 @@
-# Dockerfile para NestJS API con migraciones y seeders - VERSION 2.0
+# Dockerfile para NestJS API con migraciones y seeders
 
 # Etapa de construcción
 FROM node:22-alpine AS builder
@@ -14,8 +14,9 @@ COPY nest-cli.json ./
 # Instalar dependencias
 RUN npm ci
 
-# Copiar todo el código fuente
-COPY . .
+# Copiar código fuente
+COPY src/ ./src/
+COPY db/ ./db/
 
 # Construir la aplicación
 RUN npm run build
@@ -42,7 +43,7 @@ RUN npm ci --only=production && npm cache clean --force
 # Copiar archivos construidos y necesarios
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/db ./db
-COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/src/config ./src/config
 
 # Copiar script de entrada y configurar permisos
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
