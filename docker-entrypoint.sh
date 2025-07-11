@@ -1,10 +1,17 @@
 #!/bin/sh
 
-# Script de entrada para Docker que ejecuta migraciones y seeders
+# Script de entrada para Docker que ejecuta migraciones y seeders - VERSION 2.0
 
 set -e
 
-echo "🚀 Iniciando aplicación NestJS..."
+echo "🚀 Iniciando aplicación NestJS - VERSION 2.0..."
+echo "📁 Contenido del directorio actual:"
+ls -la
+echo "📁 Contenido del directorio scripts:"
+ls -la scripts/
+echo "🔍 Variables de entorno:"
+echo "  NODE_ENV: $NODE_ENV"
+echo "  PWD: $PWD"
 
 # Función para esperar a que la base de datos esté disponible
 wait_for_db() {
