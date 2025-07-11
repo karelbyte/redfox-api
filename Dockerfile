@@ -78,9 +78,13 @@ USER nestjs
 # Exponer puerto
 EXPOSE 3000
 
-# Variables de entorno por defecto
-ENV NODE_ENV=production
-ENV PORT=3000
+# Convertir ARG a ENV para que estén disponibles en runtime
+ENV APP_DB_PROVIDER=$APP_DB_PROVIDER
+ENV PG_DB_HOST=$PG_DB_HOST
+ENV PG_DB_PORT=$PG_DB_PORT
+ENV PG_DB_USER=$PG_DB_USER
+ENV PG_DB_PASSWORD=$PG_DB_PASSWORD
+ENV PG_DB_NAME=$PG_DB_NAME
 
 # Comando de inicio
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"] 
