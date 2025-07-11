@@ -21,8 +21,8 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
-# Instalar dependencias
-RUN npm ci --no-audit --no-fund
+# Instalar dependencias (incluyendo devDependencies para el build)
+RUN npm ci --no-audit --no-fund --include=dev
 
 # Copiar código fuente
 COPY src/ ./src/
