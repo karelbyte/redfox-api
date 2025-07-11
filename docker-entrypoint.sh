@@ -89,10 +89,21 @@ wait_for_db() {
 # Función para ejecutar migraciones
 run_migrations() {
     echo "🔄 Ejecutando migraciones..."
+    echo "🔍 NODE_ENV: $NODE_ENV"
     if [ "$NODE_ENV" = "production" ]; then
         echo "📦 Usando scripts de producción..."
-        node scripts/migrate.js migrate
+        echo "📁 Verificando que scripts/migrate.js existe..."
+        if [ -f "scripts/migrate.js" ]; then
+            echo "✅ scripts/migrate.js encontrado"
+            node scripts/migrate.js migrate
+        else
+            echo "❌ scripts/migrate.js no encontrado"
+            echo "📁 Contenido del directorio scripts:"
+            ls -la scripts/
+            exit 1
+        fi
     else
+        echo "📦 Usando scripts de desarrollo..."
         npm run migration:run
     fi
     echo "✅ Migraciones completadas"
@@ -101,10 +112,21 @@ run_migrations() {
 # Función para ejecutar seeders
 run_seeders() {
     echo "🌱 Ejecutando seeders..."
+    echo "🔍 NODE_ENV: $NODE_ENV"
     if [ "$NODE_ENV" = "production" ]; then
         echo "📦 Usando scripts de producción..."
-        node scripts/seed.js
+        echo "📁 Verificando que scripts/seed.js existe..."
+        if [ -f "scripts/seed.js" ]; then
+            echo "✅ scripts/seed.js encontrado"
+            node scripts/seed.js
+        else
+            echo "❌ scripts/seed.js no encontrado"
+            echo "📁 Contenido del directorio scripts:"
+            ls -la scripts/
+            exit 1
+        fi
     else
+        echo "📦 Usando scripts de desarrollo..."
         npm run seed
     fi
     echo "✅ Seeders completados"
