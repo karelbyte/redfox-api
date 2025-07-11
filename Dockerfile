@@ -54,11 +54,9 @@ RUN adduser -S nestjs -u 1001
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package*.json ./
-
-# Instalar solo dependencias de producción
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+# Copiar node_modules desde la etapa de construcción
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
 
 # Copiar archivos construidos y necesarios
 COPY --from=builder /app/dist ./dist
