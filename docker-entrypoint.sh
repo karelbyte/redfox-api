@@ -89,14 +89,22 @@ wait_for_db() {
 # Función para ejecutar migraciones
 run_migrations() {
     echo "🔄 Ejecutando migraciones..."
-    npm run migration:run
+    if [ "$NODE_ENV" = "production" ]; then
+        npm run migration:run:prod
+    else
+        npm run migration:run
+    fi
     echo "✅ Migraciones completadas"
 }
 
 # Función para ejecutar seeders
 run_seeders() {
     echo "🌱 Ejecutando seeders..."
-    npm run seed
+    if [ "$NODE_ENV" = "production" ]; then
+        npm run seed:prod
+    else
+        npm run seed
+    fi
     echo "✅ Seeders completados"
 }
 

@@ -22,8 +22,11 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm-cli.config.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm-cli.config.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/config/typeorm-cli.config.ts",
+    "migration:run:prod": "node scripts/migrate.js migrate",
     "seed": "ts-node -r tsconfig-paths/register db/seeds/seed.ts",
-    "seed:permissions": "ts-node -r tsconfig-paths/register db/seeds/permissions-only.seed.ts"
+    "seed:permissions": "ts-node -r tsconfig-paths/register db/seeds/permissions-only.seed.ts",
+    "seed:prod": "node scripts/seed.js",
+    "migrate-and-seed:prod": "node scripts/migrate.js migrate-and-seed"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -48,6 +51,7 @@
     "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "tsconfig-paths": "^4.2.0",
     "typeorm": "^0.3.24"
   },
   "devDependencies": {
@@ -73,7 +77,6 @@
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
