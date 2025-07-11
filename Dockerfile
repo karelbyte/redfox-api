@@ -1,4 +1,4 @@
-# Dockerfile para NestJS API con migraciones y seeders
+# Dockerfile para NestJS API con migraciones y seeders - VERSION 2.0
 
 # Etapa de construcción
 FROM node:22-alpine AS builder

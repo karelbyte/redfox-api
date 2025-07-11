@@ -90,21 +90,19 @@ wait_for_db() {
 run_migrations() {
     echo "🔄 Ejecutando migraciones..."
     echo "🔍 NODE_ENV: $NODE_ENV"
-    if [ "$NODE_ENV" = "production" ]; then
+    echo "📁 Verificando que scripts/migrate.js existe..."
+    
+    if [ -f "scripts/migrate.js" ]; then
+        echo "✅ scripts/migrate.js encontrado"
         echo "📦 Usando scripts de producción..."
-        echo "📁 Verificando que scripts/migrate.js existe..."
-        if [ -f "scripts/migrate.js" ]; then
-            echo "✅ scripts/migrate.js encontrado"
-            node scripts/migrate.js migrate
-        else
-            echo "❌ scripts/migrate.js no encontrado"
-            echo "📁 Contenido del directorio scripts:"
-            ls -la scripts/
-            exit 1
-        fi
+        node scripts/migrate.js migrate
     else
-        echo "📦 Usando scripts de desarrollo..."
-        npm run migration:run
+        echo "❌ scripts/migrate.js no encontrado"
+        echo "📁 Contenido del directorio scripts:"
+        ls -la scripts/
+        echo "📁 Contenido del directorio actual:"
+        ls -la
+        exit 1
     fi
     echo "✅ Migraciones completadas"
 }
@@ -113,39 +111,21 @@ run_migrations() {
 run_seeders() {
     echo "🌱 Ejecutando seeders..."
     echo "🔍 NODE_ENV: $NODE_ENV"
-    if [ "$NODE_ENV" = "production" ]; then
+    echo "📁 Verificando que scripts/seed.js existe..."
+    
+    if [ -f "scripts/seed.js" ]; then
+        echo "✅ scripts/seed.js encontrado"
         echo "📦 Usando scripts de producción..."
-        echo "📁 Verificando que scripts/seed.js existe..."
-        if [ -f "scripts/seed.js" ]; then
-            echo "✅ scripts/seed.js encontrado"
-            node scripts/seed.js
-        else
-            echo "❌ scripts/seed.js no encontrado"
-            echo "📁 Contenido del directorio scripts:"
-            ls -la scripts/
-            exit 1
-        fi
+        node scripts/seed.js
     else
-        echo "📦 Usando scripts de desarrollo..."
-        npm run seed
+        echo "❌ scripts/seed.js no encontrado"
+        echo "📁 Contenido del directorio scripts:"
+        ls -la scripts/
+        echo "📁 Contenido del directorio actual:"
+        ls -la
+        exit 1
     fi
     echo "✅ Seeders completados"
-}
-
-# Función para verificar si las migraciones ya se ejecutaron
-check_migrations() {
-    echo "🔍 Verificando estado de migraciones..."
-    # Aquí podrías agregar lógica para verificar si las migraciones ya se ejecutaron
-    # Por ahora, siempre ejecutamos las migraciones
-    return 1
-}
-
-# Función para verificar si los seeders ya se ejecutaron
-check_seeders() {
-    echo "🔍 Verificando estado de seeders..."
-    # Aquí podrías agregar lógica para verificar si los seeders ya se ejecutaron
-    # Por ahora, siempre ejecutamos los seeders
-    return 1
 }
 
 # Función principal
@@ -153,19 +133,11 @@ main() {
     # Esperar a que la base de datos esté disponible
     wait_for_db
     
-    # Verificar y ejecutar migraciones si es necesario
-    if check_migrations; then
-        echo "ℹ️  Las migraciones ya están aplicadas"
-    else
-        run_migrations
-    fi
+    # Ejecutar migraciones
+    run_migrations
     
-    # Verificar y ejecutar seeders si es necesario
-    if check_seeders; then
-        echo "ℹ️  Los seeders ya fueron ejecutados"
-    else
-        run_seeders
-    fi
+    # Ejecutar seeders
+    run_seeders
     
     echo "🚀 Iniciando aplicación..."
     
