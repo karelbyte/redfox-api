@@ -3,6 +3,16 @@
 # Etapa de construcción
 FROM node:22-alpine AS builder
 
+# Declarar variables de Railway para build time
+ARG APP_DB_PROVIDER
+ARG PG_DB_HOST
+ARG PG_DB_PORT
+ARG PG_DB_USER
+ARG PG_DB_PASSWORD
+ARG PG_DB_NAME
+ARG NODE_ENV
+ARG PORT
+
 # Establecer directorio de trabajo
 WORKDIR /app
 
@@ -23,6 +33,16 @@ RUN npm run build
 
 # Etapa de producción
 FROM node:22-alpine AS production
+
+# Declarar variables de Railway para runtime
+ARG APP_DB_PROVIDER
+ARG PG_DB_HOST
+ARG PG_DB_PORT
+ARG PG_DB_USER
+ARG PG_DB_PASSWORD
+ARG PG_DB_NAME
+ARG NODE_ENV
+ARG PORT
 
 # Instalar dependencias de producción
 RUN apk add --no-cache dumb-init
