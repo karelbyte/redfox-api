@@ -90,7 +90,8 @@ wait_for_db() {
 run_migrations() {
     echo "🔄 Ejecutando migraciones..."
     if [ "$NODE_ENV" = "production" ]; then
-        npm run migration:run:prod
+        echo "📦 Usando scripts de producción..."
+        node scripts/migrate.js migrate
     else
         npm run migration:run
     fi
@@ -101,7 +102,8 @@ run_migrations() {
 run_seeders() {
     echo "🌱 Ejecutando seeders..."
     if [ "$NODE_ENV" = "production" ]; then
-        npm run seed:prod
+        echo "📦 Usando scripts de producción..."
+        node scripts/seed.js
     else
         npm run seed
     fi
