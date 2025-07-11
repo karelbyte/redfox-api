@@ -44,6 +44,7 @@ RUN npm ci --only=production && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/db ./db
 COPY --from=builder /app/src/config ./src/config
+COPY --from=builder /app/tsconfig*.json ./
 
 # Copiar script de entrada y configurar permisos
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
