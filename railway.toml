@@ -13,9 +13,15 @@ restartPolicyMaxRetries = 10
 NODE_ENV = "production"
 PORT = "3000"
 APP_DB_PROVIDER = "postgres"
+JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production"
+JWT_EXPIRES_IN = "24h"
 
 # Configuración para detección automática de PostgreSQL
 [services]
+[[services.application]]
+name = "redfox-api"
+type = "application"
+
 [[services.database]]
 type = "postgresql"
 name = "redfox-db" 

@@ -1,6 +1,6 @@
 {
   "name": "redfox-api",
-  "description": "RedFox API - Sistema de gestión de inventario con PostgreSQL automático",
+  "description": "RedFox API - Sistema de gestión de inventario",
   "services": [
     {
       "name": "redfox-api",
@@ -22,8 +22,7 @@
         "APP_DB_PROVIDER": "postgres",
         "JWT_SECRET": "your-super-secret-jwt-key-change-this-in-production",
         "JWT_EXPIRES_IN": "24h"
-      },
-      "dependencies": ["redfox-db"]
+      }
     },
     {
       "name": "redfox-db",
@@ -41,7 +40,5 @@
     "APP_DB_PROVIDER": "postgres",
     "JWT_SECRET": "your-super-secret-jwt-key-change-this-in-production",
     "JWT_EXPIRES_IN": "24h"
-  },
-  "autoDeploy": true,
-  "autoScale": true
+  }
 } 
