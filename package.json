@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register -r dotenv/config ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm-cli.config.ts",
-    "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm-cli.config.ts",
+    "migration:run": "node -e \"console.log('🔍 Variables en migration:run:'); console.log('APP_DB_PROVIDER:', process.env.APP_DB_PROVIDER); console.log('PG_DB_HOST:', process.env.PG_DB_HOST);\" && npm run typeorm -- migration:run -d src/config/typeorm-cli.config.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/config/typeorm-cli.config.ts",
     "seed": "ts-node -r tsconfig-paths/register db/seeds/seed.ts",
     "seed:permissions": "ts-node -r tsconfig-paths/register db/seeds/permissions-only.seed.ts"
