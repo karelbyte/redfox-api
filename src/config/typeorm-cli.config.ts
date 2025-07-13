@@ -4,19 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-// Debug: Mostrar todas las variables de entorno relevantes
-console.log('🔍 Variables de entorno para TypeORM CLI:');
-console.log('APP_DB_PROVIDER:', process.env.APP_DB_PROVIDER);
-console.log('PG_DB_HOST:', process.env.PG_DB_HOST);
-console.log('PG_DB_PORT:', process.env.PG_DB_PORT);
-console.log('PG_DB_USER:', process.env.PG_DB_USER);
-console.log('PG_DB_PASSWORD:', process.env.PG_DB_PASSWORD ? '***SET***' : 'NOT SET');
-console.log('PG_DB_NAME:', process.env.PG_DB_NAME);
-console.log('MYSQL_DB_HOST:', process.env.MYSQL_DB_HOST);
-console.log('MYSQL_DB_PORT:', process.env.MYSQL_DB_PORT);
-console.log('MYSQL_DB_USER:', process.env.MYSQL_DB_USER);
-console.log('MYSQL_DB_PASSWORD:', process.env.MYSQL_DB_PASSWORD ? '***SET***' : 'NOT SET');
-console.log('MYSQL_DB_NAME:', process.env.MYSQL_DB_NAME);
+
 
 const provider = process.env.APP_DB_PROVIDER || 'mysql';
 

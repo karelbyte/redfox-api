@@ -3,16 +3,6 @@
 # Etapa de construcción
 FROM node:22-alpine AS builder
 
-# Declarar variables de Railway para build time
-ARG APP_DB_PROVIDER
-ARG PG_DB_HOST
-ARG PG_DB_PORT
-ARG PG_DB_USER
-ARG PG_DB_PASSWORD
-ARG PG_DB_NAME
-ARG NODE_ENV
-ARG PORT
-
 # Establecer directorio de trabajo
 WORKDIR /app
 
@@ -27,7 +17,6 @@ RUN npm ci --no-audit --no-fund --include=dev
 # Copiar código fuente
 COPY src/ ./src/
 COPY db/ ./db/
-COPY scripts/ ./scripts/
 
 # Construir la aplicación
 RUN npm run build
@@ -35,15 +24,7 @@ RUN npm run build
 # Etapa de producción
 FROM node:22-alpine AS production
 
-# Declarar variables de Railway para runtime
-ARG APP_DB_PROVIDER
-ARG PG_DB_HOST
-ARG PG_DB_PORT
-ARG PG_DB_USER
-ARG PG_DB_PASSWORD
-ARG PG_DB_NAME
-ARG NODE_ENV
-ARG PORT
+
 
 # Instalar dependencias de producción
 RUN apk add --no-cache dumb-init
@@ -64,7 +45,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/db ./db
 COPY --from=builder /app/src/config ./src/config
 COPY --from=builder /app/tsconfig*.json ./
-COPY --from=builder /app/scripts ./scripts
 
 # Copiar script de entrada y configurar permisos
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -80,13 +60,6 @@ USER nestjs
 # Exponer puerto
 EXPOSE 3000
 
-# Convertir ARG a ENV para que estén disponibles en runtime
-ENV APP_DB_PROVIDER=$APP_DB_PROVIDER
-ENV PG_DB_HOST=$PG_DB_HOST
-ENV PG_DB_PORT=$PG_DB_PORT
-ENV PG_DB_USER=$PG_DB_USER
-ENV PG_DB_PASSWORD=$PG_DB_PASSWORD
-ENV PG_DB_NAME=$PG_DB_NAME
-
-# Comando de inicio
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"] 
+# Variables de entorno por defecto
+ENV NODE_ENV=production
+ENV PORT=3000
