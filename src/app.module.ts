@@ -27,7 +27,6 @@ import { ReturnModule } from './modules/return.module';
 import { CashRegisterModule } from './modules/cash-register.module';
 import { CashTransactionModule } from './modules/cash-transaction.module';
 import { AppConfig } from './config';
-import { HealthController } from './controllers/health.controller';
 import { HomeController } from './controllers/home.controller';
 
 @Module({
