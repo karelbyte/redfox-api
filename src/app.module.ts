@@ -68,7 +68,7 @@ import { HomeController } from './controllers/home.controller';
     CashRegisterModule,
     CashTransactionModule,
   ],
-  controllers: [HealthController, HomeController],
+  controllers: [HomeController],
   providers: [],
 })
 export class AppModule {}
