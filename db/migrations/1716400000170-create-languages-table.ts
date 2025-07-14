@@ -27,8 +27,8 @@ export class CreateLanguagesTable1716400000170 implements MigrationInterface {
           },
           {
             name: 'user_id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
           },
           {

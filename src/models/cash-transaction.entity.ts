@@ -29,7 +29,7 @@ export class CashTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'cash_register_id', length: 36 })
+  @Column({ name: 'cash_register_id' })
   cashRegisterId: string;
 
   @Column({
@@ -59,10 +59,10 @@ export class CashTransaction {
   })
   paymentMethod: PaymentMethod;
 
-  @Column({ name: 'sale_id', length: 36, nullable: true })
+  @Column({ name: 'sale_id', nullable: true })
   saleId: string;
 
-  @Column({ name: 'created_by', length: 36 })
+  @Column({ name: 'created_by' })
   createdBy: string;
 
   @CreateDateColumn()

@@ -59,10 +59,10 @@ export class CashRegister {
   @Column({ name: 'closed_at', nullable: true })
   closedAt: Date;
 
-  @Column({ name: 'opened_by', length: 36 })
+  @Column({ name: 'opened_by' })
   openedBy: string;
 
-  @Column({ name: 'closed_by', length: 36, nullable: true })
+  @Column({ name: 'closed_by', nullable: true })
   closedBy: string;
 
   @CreateDateColumn()

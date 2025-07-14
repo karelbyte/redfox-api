@@ -9,20 +9,22 @@ export class CreateUserRolesTable1716400000020 implements MigrationInterface {
   name = 'CreateUserRoles1716400000020';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const isPostgres =
+      queryRunner.connection.driver.options.type === 'postgres';
     await queryRunner.createTable(
       new Table({
         name: 'user_roles',
         columns: [
           {
             name: 'user_id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
           },
           {
             name: 'role_id',
-            type: 'varchar',
-            length: '36',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
           },
           {

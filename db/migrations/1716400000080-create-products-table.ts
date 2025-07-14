@@ -86,7 +86,7 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
           },
           {
             name: 'measurement_unit_id',
-            type: isPostgres ? 'varchar' : 'varchar',
+            type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
             isNullable: true,
           },

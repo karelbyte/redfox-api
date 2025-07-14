@@ -28,6 +28,7 @@ import { CashRegisterModule } from './modules/cash-register.module';
 import { CashTransactionModule } from './modules/cash-transaction.module';
 import { AppConfig } from './config';
 import { HealthController } from './controllers/health.controller';
+import { HomeController } from './controllers/home.controller';
 
 @Module({
   imports: [
@@ -68,7 +69,7 @@ import { HealthController } from './controllers/health.controller';
     CashRegisterModule,
     CashTransactionModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, HomeController],
   providers: [],
 })
 export class AppModule {}
