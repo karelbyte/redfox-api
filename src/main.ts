@@ -11,13 +11,15 @@ async function bootstrap() {
     console.log(`   PORT: ${process.env.PORT || '3000'}`);
     console.log(`   HOST: ${process.env.HOST || '0.0.0.0'}`);
     console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`   APP_DB_PROVIDER: ${process.env.APP_DB_PROVIDER || 'mysql'}`);
-    
+    console.log(
+      `   APP_DB_PROVIDER: ${process.env.APP_DB_PROVIDER || 'mysql'}`,
+    );
+
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
-    const host = process.env.HOST || '0.0.0.0'; // Cambiar a 0.0.0.0 para Railway
+    // const host = process.env.HOST || '0.0.0.0'; // Cambiar a 0.0.0.0 para Railway
     const port = process.env.PORT || 3000;
 
-    console.log(`📡 Configurando servidor en ${host}:${port}`);
+    console.log(`📡 Configurando servidor en :${port}`);
 
     // Habilitar CORS
     app.enableCors({
@@ -42,9 +44,9 @@ async function bootstrap() {
       prefix: '/uploads',
     });
 
-    await app.listen(port, host);
-    console.log(`✅ Redfox API está corriendo en http://${host}:${port}`);
-    console.log(`🔍 Health check disponible en http://${host}:${port}/api/health`);
+    await app.listen(port);
+    console.log(`✅ Redfox API está corriendo en :${port}`);
+    console.log(`🔍 Health check disponible en :${port}/api/health`);
   } catch (error) {
     console.error('❌ Error al iniciar la aplicación:', error);
     console.error('Stack trace:', error.stack);
