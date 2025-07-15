@@ -23,7 +23,7 @@
     "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm-cli.config.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/config/typeorm-cli.config.ts",
     "seed": "ts-node -r tsconfig-paths/register db/seeds/seed.ts",
-    "seed-js": "ts-node -r tsconfig-paths/register db/seeds/seedjs",
+    "seed-js": "ts-node -r tsconfig-paths/register db/seeds/seed.js",
     "seed:permissions": "ts-node -r tsconfig-paths/register db/seeds/permissions-only.seed.ts"
   },
   "dependencies": {
