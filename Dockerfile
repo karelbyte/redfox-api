@@ -16,7 +16,6 @@ RUN npm ci --no-audit --no-fund --include=dev
 
 # Copiar código fuente
 COPY src/ ./src/
-COPY db/ ./db/
 
 # Construir la aplicación
 RUN npm run build
