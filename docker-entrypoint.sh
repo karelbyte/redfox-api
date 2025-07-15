@@ -49,7 +49,7 @@ run_migrations() {
 # Función para ejecutar seeders
 run_seeders() {
     echo "🌱 Ejecutando seeders..."
-    npm run seed
+    npm run seed-js
     echo "✅ Seeders completados"
 }
 
