@@ -42,7 +42,6 @@ COPY --from=builder /app/package*.json ./
 
 # Copiar archivos construidos y necesarios
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/db ./db
 COPY --from=builder /app/src/config ./src/config
 COPY --from=builder /app/tsconfig*.json ./
 
