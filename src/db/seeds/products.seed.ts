@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
-import { Product, ProductType } from '../../src/models/product.entity';
-import { Brand } from '../../src/models/brand.entity';
-import { Category } from '../../src/models/category.entity';
-import { Tax } from '../../src/models/tax.entity';
-import { MeasurementUnit } from '../../src/models/measurement-unit.entity';
+import { Product, ProductType } from 'src/models/product.entity';
+import { Brand } from 'src/models/brand.entity';
+import { Category } from 'src/models/category.entity';
+import { Tax } from 'src/models/tax.entity';
+import { MeasurementUnit } from 'src/models/measurement-unit.entity';
 import { DeepPartial } from 'typeorm';
 
 export class ProductsSeed {

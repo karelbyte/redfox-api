@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Currency } from '../../src/models/currency.entity';
+import { Currency } from 'src/models/currency.entity';
 
 export class CurrenciesSeed {
   public static async run(dataSource: DataSource): Promise<void> {

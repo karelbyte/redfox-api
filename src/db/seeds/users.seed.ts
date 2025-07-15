@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { User } from '../../src/models/user.entity';
-import { Role } from '../../src/models/role.entity';
+import { User } from 'src/models/user.entity';
+import { Role } from 'src/models/role.entity';
 import { hash } from 'bcrypt';
 
 export class UsersSeed {

@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
-import { RolePermission } from '../../src/models/role-permission.entity';
-import { Role } from '../../src/models/role.entity';
-import { Permission } from '../../src/models/permission.entity';
+import { RolePermission } from 'src/models/role-permission.entity';
+import { Role } from 'src/models/role.entity';
+import { Permission } from 'src/models/permission.entity';
 
 export class RolePermissionsSeed {
   public static async run(dataSource: DataSource): Promise<void> {

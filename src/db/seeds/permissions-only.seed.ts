@@ -1,5 +1,5 @@
 import { PermissionsSeed } from './permissions.seed';
-import dataSource from '../../src/config/typeorm-cli.config';
+import dataSource from 'src/config/typeorm-cli.config';
 
 dataSource
   .initialize()

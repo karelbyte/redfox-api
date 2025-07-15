@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { MeasurementUnit } from '../../src/models/measurement-unit.entity';
+import { MeasurementUnit } from 'src/models/measurement-unit.entity';
 
 export class MeasurementUnitsSeed {
   public static async run(dataSource: DataSource): Promise<void> {

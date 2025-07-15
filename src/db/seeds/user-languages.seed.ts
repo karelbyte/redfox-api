@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { Language } from '../../src/models/language.entity';
-import { User } from '../../src/models/user.entity';
+import { Language } from 'src/models/language.entity';
+import { User } from 'src/models/user.entity';
 
 export class UserLanguagesSeed {
   constructor(private dataSource: DataSource) {}

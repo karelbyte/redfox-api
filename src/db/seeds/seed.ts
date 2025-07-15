@@ -1,5 +1,5 @@
 import { RunSeeds } from './run-seeds';
-import dataSource from '../../src/config/typeorm-cli.config';
+import dataSource from 'src/config/typeorm-cli.config';
 
 dataSource
   .initialize()

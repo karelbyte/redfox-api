@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Tax, TaxType } from '../../src/models/tax.entity';
+import { Tax, TaxType } from 'src/models/tax.entity';
 
 export class TaxesSeed {
   public static async run(dataSource: DataSource): Promise<void> {

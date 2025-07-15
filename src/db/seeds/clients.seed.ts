@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Client } from '../../src/models/client.entity';
+import { Client } from 'src/models/client.entity';
 
 export class ClientsSeed {
   public static async run(dataSource: DataSource): Promise<void> {

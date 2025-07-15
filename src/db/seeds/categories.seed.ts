@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Category } from '../../src/models/category.entity';
+import { Category } from 'src/models/category.entity';
 
 export class CategoriesSeed {
   public static async run(dataSource: DataSource): Promise<void> {

@@ -1,21 +1,26 @@
 import { DataSource } from 'typeorm';
-import { WarehouseAdjustment } from '../../src/models/warehouse-adjustment.entity';
-import { WarehouseAdjustmentDetail } from '../../src/models/warehouse-adjustment-detail.entity';
-import { Warehouse } from '../../src/models/warehouse.entity';
-import { Product } from '../../src/models/product.entity';
+import { WarehouseAdjustment } from 'src/models/warehouse-adjustment.entity';
+import { WarehouseAdjustmentDetail } from 'src/models/warehouse-adjustment-detail.entity';
+import { Warehouse } from 'src/models/warehouse.entity';
+import { Product } from 'src/models/product.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehouseAdjustmentsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
-    const warehouseAdjustmentRepository = dataSource.getRepository(WarehouseAdjustment);
-    const warehouseAdjustmentDetailRepository = dataSource.getRepository(WarehouseAdjustmentDetail);
+    const warehouseAdjustmentRepository =
+      dataSource.getRepository(WarehouseAdjustment);
+    const warehouseAdjustmentDetailRepository = dataSource.getRepository(
+      WarehouseAdjustmentDetail,
+    );
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const productRepository = dataSource.getRepository(Product);
 
     // Obtener almacenes existentes
     const warehouses = await warehouseRepository.find();
     if (warehouses.length < 2) {
-      console.log('⏭️  Se necesitan al menos 2 almacenes para crear ajustes de ejemplo');
+      console.log(
+        '⏭️  Se necesitan al menos 2 almacenes para crear ajustes de ejemplo',
+      );
       return;
     }
 
@@ -35,7 +40,8 @@ export class WarehouseAdjustmentsSeed {
         sourceWarehouseId: sourceWarehouse.id,
         targetWarehouseId: targetWarehouse.id,
         date: new Date('2024-12-01'),
-        description: 'Ajuste de inventario entre almacenes - Transferencia mensual',
+        description:
+          'Ajuste de inventario entre almacenes - Transferencia mensual',
         status: true,
       },
       {
@@ -56,7 +62,8 @@ export class WarehouseAdjustmentsSeed {
       });
 
       if (!existingAdjustment) {
-        const adjustment = await warehouseAdjustmentRepository.save(adjustmentData);
+        const adjustment =
+          await warehouseAdjustmentRepository.save(adjustmentData);
         console.log(`✅ Warehouse adjustment created: ${adjustment.code}`);
 
         // Crear detalles para cada ajuste
@@ -71,12 +78,16 @@ export class WarehouseAdjustmentsSeed {
         }
 
         await warehouseAdjustmentDetailRepository.save(details);
-        console.log(`✅ Created ${details.length} details for adjustment ${adjustment.code}`);
+        console.log(
+          `✅ Created ${details.length} details for adjustment ${adjustment.code}`,
+        );
       } else {
-        console.log(`⏭️  Warehouse adjustment already exists: ${adjustmentData.code}`);
+        console.log(
+          `⏭️  Warehouse adjustment already exists: ${adjustmentData.code}`,
+        );
       }
     }
 
     console.log('✅ Warehouse adjustments seed completed');
   }
-} 
+}

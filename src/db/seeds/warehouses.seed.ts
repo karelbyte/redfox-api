@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { Warehouse } from '../../src/models/warehouse.entity';
-import { Currency } from '../../src/models/currency.entity';
+import { Warehouse } from 'src/models/warehouse.entity';
+import { Currency } from 'src/models/currency.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehousesSeed {

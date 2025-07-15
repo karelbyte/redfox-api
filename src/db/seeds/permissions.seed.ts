@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Permission } from '../../src/models/permission.entity';
+import { Permission } from 'src/models/permission.entity';
 
 export class PermissionsSeed {
   public static async run(dataSource: DataSource): Promise<void> {

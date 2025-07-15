@@ -1,5 +1,5 @@
+import { Brand } from 'src/models/brand.entity';
 import { DataSource } from 'typeorm';
-import { Brand } from '../../src/models/brand.entity';
 
 export class BrandsSeed {
   public static async run(dataSource: DataSource): Promise<void> {

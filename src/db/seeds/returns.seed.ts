@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
-import { Return } from '../../src/models/return.entity';
-import { ReturnDetail } from '../../src/models/return-detail.entity';
-import { Warehouse } from '../../src/models/warehouse.entity';
-import { Provider } from '../../src/models/provider.entity';
-import { Product } from '../../src/models/product.entity';
+import { Return } from 'src/models/return.entity';
+import { ReturnDetail } from 'src/models/return-detail.entity';
+import { Warehouse } from 'src/models/warehouse.entity';
+import { Provider } from 'src/models/provider.entity';
+import { Product } from 'src/models/product.entity';
 import { DeepPartial } from 'typeorm';
 
 export class ReturnsSeed {
