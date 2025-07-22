@@ -23,8 +23,6 @@ RUN npm run build
 # Etapa de producción
 FROM node:22-alpine AS production
 
-
-
 # Instalar dependencias de producción
 RUN apk add --no-cache dumb-init
 
@@ -41,7 +39,7 @@ COPY --from=builder /app/package*.json ./
 
 # Copiar archivos construidos y necesarios
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/config ./src/config
+COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig*.json ./
 
 # Copiar script de entrada y configurar permisos
@@ -61,3 +59,6 @@ EXPOSE 3000
 # Variables de entorno por defecto
 ENV NODE_ENV=production
 ENV PORT=3000
+
+# Comando de inicio
+ENTRYPOINT ["docker-entrypoint.sh"]
