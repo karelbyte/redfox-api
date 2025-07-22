@@ -11,6 +11,12 @@ import {
 } from 'typeorm';
 import { Client } from './client.entity';
 import { WithdrawalDetail } from './withdrawal-detail.entity';
+import { CashTransaction } from './cash-transaction.entity';
+
+export enum WithdrawalType {
+  POS = 'POS',
+  WITHDRAWAL = 'WITHDRAWAL',
+}
 
 @Entity('withdrawals')
 export class Withdrawal {
@@ -29,6 +35,20 @@ export class Withdrawal {
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   amount: number;
+
+  @Column({
+    type: 'enum',
+    enum: WithdrawalType,
+    default: WithdrawalType.WITHDRAWAL,
+  })
+  type: WithdrawalType;
+
+  @ManyToOne(() => CashTransaction, { nullable: true })
+  @JoinColumn({ name: 'cash_transaction_id' })
+  cashTransaction: CashTransaction;
+
+  @Column({ name: 'cash_transaction_id', nullable: true })
+  cashTransactionId: string;
 
   @Column({ default: true })
   status: boolean;

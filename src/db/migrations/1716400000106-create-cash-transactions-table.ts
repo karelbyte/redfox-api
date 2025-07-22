@@ -5,10 +5,10 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateCashTransactionsTable1716400000210
+export class CreateCashTransactionsTable1716400000106
   implements MigrationInterface
 {
-  name = 'CreateCashTransactionsTable1716400000210';
+  name = 'CreateCashTransactionsTable1716400000106';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
@@ -134,17 +134,17 @@ export class CreateCashTransactionsTable1716400000210
       }),
     );
 
-    // Foreign key: sale_id -> withdrawals(id)
-    await queryRunner.createForeignKey(
-      'cash_transactions',
-      new TableForeignKey({
-        columnNames: ['sale_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'withdrawals',
-        onDelete: 'SET NULL',
-        onUpdate: 'CASCADE',
-      }),
-    );
+    // Foreign key: sale_id -> withdrawals(id) - Comentado temporalmente
+    // await queryRunner.createForeignKey(
+    //   'cash_transactions',
+    //   new TableForeignKey({
+    //     columnNames: ['sale_id'],
+    //     referencedColumnNames: ['id'],
+    //     referencedTableName: 'withdrawals',
+    //     onDelete: 'SET NULL',
+    //     onUpdate: 'CASCADE',
+    //   }),
+    // );
 
     // Foreign key: created_by -> users(id)
     await queryRunner.createForeignKey(

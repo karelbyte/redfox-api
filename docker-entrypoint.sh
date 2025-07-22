@@ -53,6 +53,15 @@ run_seeders() {
     echo "✅ Seeders completados"
 }
 
+# Función para verificar si es entorno de desarrollo
+is_development() {
+    if [ "$NODE_ENV" = "development" ] || [ "$NODE_ENV" = "dev" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Función principal
 main() {
     # Esperar a que la base de datos esté disponible
@@ -61,8 +70,13 @@ main() {
     # Ejecutar migraciones
     run_migrations
     
-    # Ejecutar seeders
-    run_seeders
+    # Ejecutar seeders solo en entorno de desarrollo
+    if is_development; then
+        echo "🔧 Entorno de desarrollo detectado, ejecutando seeders..."
+        run_seeders
+    else
+        echo "🚀 Entorno de producción detectado, omitiendo seeders"
+    fi
     
     echo "🚀 Iniciando aplicación..."
     

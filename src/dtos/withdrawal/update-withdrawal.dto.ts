@@ -8,9 +8,11 @@ import {
   ValidateNested,
   IsNumber,
   Min,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
+import { WithdrawalType } from '../../models/withdrawal.entity';
 
 export class UpdateWithdrawalDto {
   @IsString()
@@ -31,6 +33,14 @@ export class UpdateWithdrawalDto {
   @Min(0)
   @IsOptional()
   amount?: number;
+
+  @IsEnum(WithdrawalType)
+  @IsOptional()
+  type?: WithdrawalType;
+
+  @IsUUID()
+  @IsOptional()
+  cash_transaction_id?: string;
 
   @IsBoolean()
   @IsOptional()

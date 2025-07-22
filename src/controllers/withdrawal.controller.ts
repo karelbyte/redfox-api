@@ -76,7 +76,11 @@ export class WithdrawalController {
     @Body() createDetailDto: CreateWithdrawalDetailDto,
     @UserId() userId: string,
   ): Promise<WithdrawalDetailResponseDto> {
-    return this.withdrawalService.createDetail(withdrawalId, createDetailDto, userId);
+    return this.withdrawalService.createDetail(
+      withdrawalId,
+      createDetailDto,
+      userId,
+    );
   }
 
   @Get(':id/details')
@@ -85,7 +89,11 @@ export class WithdrawalController {
     @Query() queryDto: WithdrawalDetailQueryDto,
     @UserId() userId: string,
   ): Promise<PaginatedResponse<WithdrawalDetailResponseDto>> {
-    return this.withdrawalService.findAllDetails(withdrawalId, queryDto, userId);
+    return this.withdrawalService.findAllDetails(
+      withdrawalId,
+      queryDto,
+      userId,
+    );
   }
 
   @Get(':id/details/:detailId')

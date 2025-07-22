@@ -23,8 +23,10 @@ const dataSource = new DataSource({
   database:
     provider === 'mysql' ? process.env.MYSQL_DB_NAME : process.env.PG_DB_NAME,
   entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
-  migrations: [join(__dirname, '..', '..', 'db', 'migrations', '*.{ts,js}')],
+  migrations: [join(__dirname, '..', 'db', 'migrations', '*.{ts,js}')],
+  migrationsTableName: 'migrations',
   synchronize: false,
+  logging: true,
 });
 
 export default dataSource;

@@ -86,7 +86,11 @@ export class ReceptionController {
     @Body() createDetailDto: CreateReceptionDetailDto,
     @UserId() userId: string,
   ): Promise<ReceptionDetailResponseDto> {
-    return this.receptionService.createDetail(receptionId, createDetailDto, userId);
+    return this.receptionService.createDetail(
+      receptionId,
+      createDetailDto,
+      userId,
+    );
   }
 
   @Get(':id/details')

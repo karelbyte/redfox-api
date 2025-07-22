@@ -8,8 +8,10 @@ import {
   ValidateNested,
   IsNumber,
   Min,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { WithdrawalType } from '../../models/withdrawal.entity';
 
 export class CreateWithdrawalDetailDto {
   @IsUUID()
@@ -43,6 +45,14 @@ export class CreateWithdrawalDto {
   @Min(0)
   @IsOptional()
   amount?: number;
+
+  @IsEnum(WithdrawalType)
+  @IsOptional()
+  type?: WithdrawalType;
+
+  @IsUUID()
+  @IsOptional()
+  cash_transaction_id?: string;
 
   @IsBoolean()
   @IsOptional()

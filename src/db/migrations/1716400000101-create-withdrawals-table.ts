@@ -5,8 +5,8 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateWithdrawalsTable1716400000120 implements MigrationInterface {
-  name = 'CreateWithdrawalsTable1716400000120';
+export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
+  name = 'CreateWithdrawalsTable1716400000101';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
@@ -49,6 +49,19 @@ export class CreateWithdrawalsTable1716400000120 implements MigrationInterface {
             scale: 2,
           },
           {
+            name: 'type',
+            type: 'enum',
+            enum: ['POS', 'WITHDRAWAL'],
+            default: "'WITHDRAWAL'",
+            isNullable: false,
+          },
+          {
+            name: 'cash_transaction_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'status',
             type: 'boolean',
             default: true,
@@ -84,6 +97,18 @@ export class CreateWithdrawalsTable1716400000120 implements MigrationInterface {
         onUpdate: 'CASCADE',
       }),
     );
+
+    // Foreign key: cash_transaction_id -> cash_transactions(id) - Comentado temporalmente
+    // await queryRunner.createForeignKey(
+    //   'withdrawals',
+    //   new TableForeignKey({
+    //     columnNames: ['cash_transaction_id'],
+    //     referencedColumnNames: ['id'],
+    //     referencedTableName: 'cash_transactions',
+    //     onDelete: 'SET NULL',
+    //     onUpdate: 'CASCADE',
+    //   }),
+    // );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

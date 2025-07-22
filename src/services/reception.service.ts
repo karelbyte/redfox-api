@@ -397,6 +397,7 @@ export class ReceptionService {
     userId?: string,
   ): Promise<PaginatedResponseDto<ReceptionDetailResponseDto>> {
     // Verificar que la recepción existe
+    console.log('receptionId', receptionId);
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });

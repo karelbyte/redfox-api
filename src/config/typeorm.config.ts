@@ -6,9 +6,11 @@ const getDatabaseConfig = (): TypeOrmModuleOptions => {
 
   const commonConfig = {
     entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
-    migrations: [join(__dirname, '..', '..', 'db', 'migrations', '*.{ts,js}')],
+    migrations: [join(__dirname, '..', 'db', 'migrations', '*.{ts,js}')],
+    migrationsTableName: 'migrations',
     synchronize: false,
     migrationsRun: true,
+    logging: true,
   };
 
   if (provider === 'mysql') {

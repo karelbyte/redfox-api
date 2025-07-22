@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Withdrawal } from '../models/withdrawal.entity';
+import { Withdrawal, WithdrawalType } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
 import { Warehouse } from '../models/warehouse.entity';
@@ -73,6 +73,8 @@ export class WithdrawalService {
       code: withdrawal.code,
       destination: withdrawal.destination,
       amount: withdrawal.amount,
+      type: withdrawal.type,
+      cash_transaction_id: withdrawal.cashTransactionId,
       status: withdrawal.status,
       created_at: withdrawal.created_at,
     };
@@ -125,6 +127,8 @@ export class WithdrawalService {
       destination: createWithdrawalDto.destination,
       client,
       amount: createWithdrawalDto.amount,
+      type: createWithdrawalDto.type || WithdrawalType.WITHDRAWAL,
+      cashTransactionId: createWithdrawalDto.cash_transaction_id,
       status: false,
     });
 
@@ -142,6 +146,7 @@ export class WithdrawalService {
     const [withdrawals, total] = await this.withdrawalRepository.findAndCount({
       relations: [
         'client',
+        'cashTransaction',
         'details',
         'details.product',
         'details.product.brand',
@@ -168,6 +173,7 @@ export class WithdrawalService {
       where: { id },
       relations: [
         'client',
+        'cashTransaction',
         'details',
         'details.product',
         'details.product.brand',
@@ -197,6 +203,7 @@ export class WithdrawalService {
       where: { id },
       relations: [
         'client',
+        'cashTransaction',
         'details',
         'details.product',
         'details.product.brand',
@@ -238,6 +245,12 @@ export class WithdrawalService {
     }
     if (updateWithdrawalDto.amount !== undefined) {
       withdrawal.amount = updateWithdrawalDto.amount;
+    }
+    if (updateWithdrawalDto.type !== undefined) {
+      withdrawal.type = updateWithdrawalDto.type;
+    }
+    if (updateWithdrawalDto.cash_transaction_id !== undefined) {
+      withdrawal.cashTransactionId = updateWithdrawalDto.cash_transaction_id;
     }
     if (updateWithdrawalDto.status !== undefined) {
       withdrawal.status = updateWithdrawalDto.status;
