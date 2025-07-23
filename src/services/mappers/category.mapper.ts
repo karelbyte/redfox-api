@@ -5,6 +5,10 @@ import { CategoryResponseDto } from '../../dtos/category/category-response.dto';
 @Injectable()
 export class CategoryMapper {
   mapToResponseDto(category: Category): CategoryResponseDto {
+    if (!category) {
+      throw new Error('Category cannot be null');
+    }
+
     const {
       id,
       name,

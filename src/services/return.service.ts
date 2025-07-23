@@ -645,9 +645,9 @@ export class ReturnService {
       sourceWarehouse: this.warehouseMapper.mapToResponseDto(
         return_.sourceWarehouse,
       ),
-      targetProvider: this.providerMapper.mapToResponseDto(
-        return_.targetProvider,
-      ),
+      targetProvider: return_.targetProvider 
+        ? this.providerMapper.mapToResponseDto(return_.targetProvider)
+        : null,
       date: return_.date,
       description: return_.description,
       status: return_.status,

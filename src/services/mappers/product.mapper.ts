@@ -16,6 +16,10 @@ export class ProductMapper {
   ) {}
 
   mapToResponseDto(product: Product): ProductResponseDto {
+    if (!product) {
+      throw new Error('Product cannot be null');
+    }
+
     const {
       id,
       name,

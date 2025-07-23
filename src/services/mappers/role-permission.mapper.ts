@@ -5,6 +5,10 @@ export class RolePermissionMapper {
   static toResponseDto(
     rolePermission: RolePermission,
   ): RolePermissionResponseDto {
+    if (!rolePermission) {
+      throw new Error('RolePermission cannot be null');
+    }
+
     return {
       id: rolePermission.id,
       roleId: rolePermission.roleId,

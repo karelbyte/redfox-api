@@ -7,6 +7,10 @@ export class MeasurementUnitMapper {
   mapToResponseDto(
     measurementUnit: MeasurementUnit,
   ): MeasurementUnitResponseDto {
+    if (!measurementUnit) {
+      throw new Error('MeasurementUnit cannot be null');
+    }
+
     const { id, code, description, status, created_at } = measurementUnit;
     return { id, code, description, status, created_at };
   }

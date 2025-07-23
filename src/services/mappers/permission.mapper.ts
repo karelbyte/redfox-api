@@ -3,6 +3,10 @@ import { PermissionResponseDto } from '../../dtos/permission/permission-response
 
 export class PermissionMapper {
   static toResponseDto(permission: Permission): PermissionResponseDto {
+    if (!permission) {
+      throw new Error('Permission cannot be null');
+    }
+
     return {
       id: permission.id,
       code: permission.code,

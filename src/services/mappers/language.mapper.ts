@@ -3,6 +3,10 @@ import { LanguageResponseDto } from '../../dtos/language/language-response.dto';
 
 export class LanguageMapper {
   static toResponseDto(language: Language): LanguageResponseDto {
+    if (!language) {
+      throw new Error('Language cannot be null');
+    }
+
     return {
       id: language.id,
       code: language.code,

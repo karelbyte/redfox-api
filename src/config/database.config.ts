@@ -9,7 +9,10 @@ export const getDatabaseConfig = (
   const prefix = isPostgres ? 'PG_DB_' : 'MYSQL_DB_';
 
   const host = configService.get<string>(`${prefix}HOST`, 'localhost');
-  const port = configService.get<number>(`${prefix}PORT`, isPostgres ? 5432 : 3306);
+  const port = configService.get<number>(
+    `${prefix}PORT`,
+    isPostgres ? 5432 : 3306,
+  );
   const username = configService.get<string>(
     `${prefix}USER`,
     isPostgres ? 'postgres' : 'root',
@@ -19,13 +22,6 @@ export const getDatabaseConfig = (
     isPostgres ? 'postgres' : '',
   );
   const database = configService.get<string>(`${prefix}NAME`, 'redfox-db');
-
-  console.log('🔧 Configuración de base de datos:');
-  console.log(`   Tipo: ${dbType} (isPostgres: ${isPostgres})`);
-  console.log(`   Host: ${host}`);
-  console.log(`   Puerto: ${port}`);
-  console.log(`   Usuario: ${username}`);
-  console.log(`   Base de datos: ${database}`);
 
   return {
     type: isPostgres ? 'postgres' : 'mysql',

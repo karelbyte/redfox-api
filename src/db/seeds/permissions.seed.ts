@@ -753,6 +753,88 @@ export class PermissionsSeed {
         description:
           'Allows deleting role permission assignments | Permite eliminar asignaciones de permisos a roles',
       },
+
+      // Purchase Order Permissions
+      {
+        code: 'purchase_order_module_view',
+        module: 'purchase_orders',
+        description:
+          'Allows viewing the purchase orders module | Permite ver el módulo de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_create',
+        module: 'purchase_orders',
+        description:
+          'Allows creating purchase orders | Permite crear órdenes de compra',
+      },
+      {
+        code: 'purchase_order_read',
+        module: 'purchase_orders',
+        description:
+          'Allows reading purchase orders | Permite leer órdenes de compra',
+      },
+      {
+        code: 'purchase_order_update',
+        module: 'purchase_orders',
+        description:
+          'Allows updating purchase orders | Permite actualizar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_delete',
+        module: 'purchase_orders',
+        description:
+          'Allows deleting purchase orders | Permite eliminar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_approve',
+        module: 'purchase_orders',
+        description:
+          'Allows approving purchase orders | Permite aprobar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_reject',
+        module: 'purchase_orders',
+        description:
+          'Allows rejecting purchase orders | Permite rechazar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_cancel',
+        module: 'purchase_orders',
+        description:
+          'Allows cancelling purchase orders | Permite cancelar órdenes de compra',
+      },
+
+      // Purchase Order Detail Permissions
+      {
+        code: 'purchase_order_detail_module_view',
+        module: 'purchase_order_details',
+        description:
+          'Allows viewing the purchase order details module | Permite ver el módulo de detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_create',
+        module: 'purchase_order_details',
+        description:
+          'Allows creating purchase order details | Permite crear detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_read',
+        module: 'purchase_order_details',
+        description:
+          'Allows reading purchase order details | Permite leer detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_update',
+        module: 'purchase_order_details',
+        description:
+          'Allows updating purchase order details | Permite actualizar detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_delete',
+        module: 'purchase_order_details',
+        description:
+          'Allows deleting purchase order details | Permite eliminar detalles de órdenes de compra',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

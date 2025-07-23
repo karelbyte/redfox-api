@@ -5,6 +5,10 @@ import { ClientResponseDto } from '../../dtos/client/client-response.dto';
 @Injectable()
 export class ClientMapper {
   mapToResponseDto(client: Client): ClientResponseDto {
+    if (!client) {
+      throw new Error('Client cannot be null');
+    }
+
     const {
       id,
       code,

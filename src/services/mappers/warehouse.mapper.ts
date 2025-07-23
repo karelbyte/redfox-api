@@ -8,6 +8,10 @@ export class WarehouseMapper {
   constructor(private readonly currencyMapper: CurrencyMapper) {}
 
   mapToResponseDto(warehouse: Warehouse): WarehouseResponseDto {
+    if (!warehouse) {
+      throw new Error('Warehouse cannot be null');
+    }
+
     const {
       id,
       code,

@@ -26,6 +26,7 @@ import { WarehouseAdjustmentModule } from './modules/warehouse-adjustment.module
 import { ReturnModule } from './modules/return.module';
 import { CashRegisterModule } from './modules/cash-register.module';
 import { CashTransactionModule } from './modules/cash-transaction.module';
+import { PurchaseOrderModule } from './modules/purchase-order.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -67,6 +68,7 @@ import { HomeController } from './controllers/home.controller';
     ReturnModule,
     CashRegisterModule,
     CashTransactionModule,
+    PurchaseOrderModule,
   ],
   controllers: [HomeController],
   providers: [],

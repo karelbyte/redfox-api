@@ -15,6 +15,7 @@ import { UsersSeed } from './users.seed';
 import { UserLanguagesSeed } from './user-languages.seed';
 import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
 import { ReturnsSeed } from './returns.seed';
+import { PurchaseOrdersSeed } from './purchase-orders.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -74,6 +75,10 @@ export class RunSeeds {
       // Returns seeder
       await ReturnsSeed.run(dataSource);
       console.log('✅ Returns created');
+
+      // Purchase orders seeder
+      await PurchaseOrdersSeed.run(dataSource);
+      console.log('✅ Purchase orders created');
 
       console.log('✅ All seeders executed successfully');
     } catch (error) {

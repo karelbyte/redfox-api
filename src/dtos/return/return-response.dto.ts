@@ -6,7 +6,7 @@ export class ReturnResponseDto {
   id: string;
   code: string;
   sourceWarehouse: WarehouseResponseDto;
-  targetProvider: ProviderResponseDto;
+  targetProvider: ProviderResponseDto | null;
   date: Date;
   description: string;
   status: boolean;

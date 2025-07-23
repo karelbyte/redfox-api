@@ -3,6 +3,10 @@ import { CashTransactionResponseDto } from '../../dtos/cash-transaction/cash-tra
 
 export class CashTransactionMapper {
   static mapToResponseDto(cashTransaction: CashTransaction): CashTransactionResponseDto {
+    if (!cashTransaction) {
+      throw new Error('CashTransaction cannot be null');
+    }
+
     return {
       id: cashTransaction.id,
       cash_register_id: cashTransaction.cashRegisterId,

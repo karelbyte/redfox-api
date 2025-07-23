@@ -5,6 +5,10 @@ import { ProviderResponseDto } from '../../dtos/provider/provider-response.dto';
 @Injectable()
 export class ProviderMapper {
   mapToResponseDto(provider: Provider): ProviderResponseDto {
+    if (!provider) {
+      throw new Error('Provider cannot be null');
+    }
+
     return {
       id: provider.id,
       code: provider.code,
