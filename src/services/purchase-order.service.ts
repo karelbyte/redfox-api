@@ -322,7 +322,7 @@ export class PurchaseOrderService {
       .leftJoinAndSelect('detail.product', 'product')
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.measurementUnit', 'measurementUnit')
+      .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
       .where('detail.purchaseOrder.id = :purchaseOrderId', { purchaseOrderId });
 
     if (queryDto.product_id) {
@@ -356,7 +356,7 @@ export class PurchaseOrderService {
         id: detailId,
         purchaseOrder: { id: purchaseOrderId },
       },
-      relations: ['product', 'product.brand', 'product.category', 'product.measurementUnit'],
+      relations: ['product', 'product.brand', 'product.category', 'product.measurement_unit'],
     });
 
     if (!detail) {

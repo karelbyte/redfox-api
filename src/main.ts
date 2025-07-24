@@ -20,16 +20,22 @@ async function bootstrap() {
     console.log(`   PG_DB_USER: ${process.env.PG_DB_USER || 'no definido'}`);
     console.log(`   PG_DB_NAME: ${process.env.PG_DB_NAME || 'no definido'}`);
     console.log('📋 Variables de MySQL:');
-    console.log(`   MYSQL_DB_HOST: ${process.env.MYSQL_DB_HOST || 'no definido'}`);
-    console.log(`   MYSQL_DB_PORT: ${process.env.MYSQL_DB_PORT || 'no definido'}`);
-    console.log(`   MYSQL_DB_USER: ${process.env.MYSQL_DB_USER || 'no definido'}`);
-    console.log(`   MYSQL_DB_NAME: ${process.env.MYSQL_DB_NAME || 'no definido'}`);
+    console.log(
+      `   MYSQL_DB_HOST: ${process.env.MYSQL_DB_HOST || 'no definido'}`,
+    );
+    console.log(
+      `   MYSQL_DB_PORT: ${process.env.MYSQL_DB_PORT || 'no definido'}`,
+    );
+    console.log(
+      `   MYSQL_DB_USER: ${process.env.MYSQL_DB_USER || 'no definido'}`,
+    );
+    console.log(
+      `   MYSQL_DB_NAME: ${process.env.MYSQL_DB_NAME || 'no definido'}`,
+    );
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
     // const host = process.env.HOST || '0.0.0.0'; // Cambiar a 0.0.0.0 para Railway
     const port = process.env.PORT || 3000;
-
-    console.log(`📡 Configurando servidor en :${port}`);
 
     // Habilitar CORS
     app.enableCors({

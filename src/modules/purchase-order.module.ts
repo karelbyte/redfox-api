@@ -5,6 +5,7 @@ import { PurchaseOrderDetail } from '../models/purchase-order-detail.entity';
 import { Provider } from '../models/provider.entity';
 import { Product } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
+import { MeasurementUnit } from '../models/measurement-unit.entity';
 import { PurchaseOrderService } from '../services/purchase-order.service';
 import { PurchaseOrderController } from '../controllers/purchase-order.controller';
 import { ProductModule } from './product.module';
@@ -25,6 +26,7 @@ import { LanguageModule } from './language.module';
       Provider,
       Product,
       Warehouse,
+      MeasurementUnit,
     ]),
     ProductModule,
     LanguageModule,
