@@ -45,6 +45,13 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             isUnique: true,
           },
           {
+            name: 'code',
+            type: 'varchar',
+            length: '20',
+            isNullable: false,
+            isUnique: true,
+          },
+          {
             name: 'weight',
             type: 'decimal',
             precision: 10,

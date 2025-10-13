@@ -61,6 +61,10 @@ export class CreateProductDto {
   @MinLength(3)
   sku: string;
 
+  @IsString()
+  @MinLength(8)
+  code: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()

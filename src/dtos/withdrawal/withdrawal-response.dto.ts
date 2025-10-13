@@ -5,7 +5,7 @@ export class WithdrawalResponseDto {
   id: string;
   code: string;
   destination: string;
-  client: ClientResponseDto;
+  client: ClientResponseDto | null;
   amount: number;
   type: WithdrawalType;
   cash_transaction_id?: string;

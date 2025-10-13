@@ -22,6 +22,9 @@ export class ProductResponseDto {
   sku: string;
 
   @Expose()
+  code: string;
+
+  @Expose()
   weight: number;
 
   @Expose()

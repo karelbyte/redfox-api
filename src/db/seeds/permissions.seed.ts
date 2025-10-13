@@ -835,6 +835,96 @@ export class PermissionsSeed {
         description:
           'Allows deleting purchase order details | Permite eliminar detalles de órdenes de compra',
       },
+
+      // Invoice Permissions
+      {
+        code: 'invoice_module_view',
+        module: 'invoices',
+        description:
+          'Allows viewing the invoices module | Permite ver el módulo de facturas',
+      },
+      {
+        code: 'invoice_create',
+        module: 'invoices',
+        description: 'Allows creating invoices | Permite crear facturas',
+      },
+      {
+        code: 'invoice_read',
+        module: 'invoices',
+        description: 'Allows reading invoices | Permite leer facturas',
+      },
+      {
+        code: 'invoice_update',
+        module: 'invoices',
+        description: 'Allows updating invoices | Permite actualizar facturas',
+      },
+      {
+        code: 'invoice_delete',
+        module: 'invoices',
+        description: 'Allows deleting invoices | Permite eliminar facturas',
+      },
+      {
+        code: 'invoice_generate_cfdi',
+        module: 'invoices',
+        description:
+          'Allows generating CFDI for invoices | Permite generar CFDI para facturas',
+      },
+      {
+        code: 'invoice_cancel_cfdi',
+        module: 'invoices',
+        description:
+          'Allows cancelling CFDI for invoices | Permite cancelar CFDI para facturas',
+      },
+      {
+        code: 'invoice_download_pdf',
+        module: 'invoices',
+        description:
+          'Allows downloading PDF of invoices | Permite descargar PDF de facturas',
+      },
+      {
+        code: 'invoice_download_xml',
+        module: 'invoices',
+        description:
+          'Allows downloading XML of invoices | Permite descargar XML de facturas',
+      },
+      {
+        code: 'invoice_convert_withdrawal',
+        module: 'invoices',
+        description:
+          'Allows converting withdrawals to invoices | Permite convertir retiros en facturas',
+      },
+
+      // Invoice Detail Permissions
+      {
+        code: 'invoice_detail_module_view',
+        module: 'invoice_details',
+        description:
+          'Allows viewing the invoice details module | Permite ver el módulo de detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_create',
+        module: 'invoice_details',
+        description:
+          'Allows creating invoice details | Permite crear detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_read',
+        module: 'invoice_details',
+        description:
+          'Allows reading invoice details | Permite leer detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_update',
+        module: 'invoice_details',
+        description:
+          'Allows updating invoice details | Permite actualizar detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_delete',
+        module: 'invoice_details',
+        description:
+          'Allows deleting invoice details | Permite eliminar detalles de facturas',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

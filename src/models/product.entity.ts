@@ -36,6 +36,9 @@ export class Product {
   @Column({ length: 50, unique: true })
   sku: string;
 
+  @Column({ length: 20, unique: true })
+  code: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   weight: number;
 

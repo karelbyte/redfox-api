@@ -29,7 +29,8 @@ export class WarehouseOpeningService {
       const warehouseOpening = this.warehouseOpeningRepository.create({
         ...createWarehouseOpeningDto,
       });
-      const saved = await this.warehouseOpeningRepository.save(warehouseOpening);
+      const saved =
+        await this.warehouseOpeningRepository.save(warehouseOpening);
 
       // Recargar con relaciones para la respuesta
       const savedWithRelations = await this.warehouseOpeningRepository.findOne({
@@ -110,7 +111,10 @@ export class WarehouseOpeningService {
     };
   }
 
-  async findOne(id: string, userId?: string): Promise<WarehouseOpeningResponseDto> {
+  async findOne(
+    id: string,
+    userId?: string,
+  ): Promise<WarehouseOpeningResponseDto> {
     const warehouseOpening = await this.warehouseOpeningRepository.findOne({
       where: { id },
       relations: [
@@ -165,17 +169,18 @@ export class WarehouseOpeningService {
       });
 
       // Recargar con relaciones para la respuesta
-      const updatedWithRelations = await this.warehouseOpeningRepository.findOne({
-        where: { id: updated.id },
-        relations: [
-          'warehouse',
-          'product',
-          'product.brand',
-          'product.category',
-          'product.tax',
-          'product.measurement_unit',
-        ],
-      });
+      const updatedWithRelations =
+        await this.warehouseOpeningRepository.findOne({
+          where: { id: updated.id },
+          relations: [
+            'warehouse',
+            'product',
+            'product.brand',
+            'product.category',
+            'product.tax',
+            'product.measurement_unit',
+          ],
+        });
 
       if (!updatedWithRelations) {
         const message = await this.translationService.translate(
@@ -235,6 +240,7 @@ export class WarehouseOpeningService {
         slug: warehouseOpening.product.slug,
         description: warehouseOpening.product.description,
         sku: warehouseOpening.product.sku,
+        code: warehouseOpening.product.code,
         weight: warehouseOpening.product.weight,
         width: warehouseOpening.product.width,
         height: warehouseOpening.product.height,
