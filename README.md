@@ -164,6 +164,9 @@ $ npm run migration:show
 
 # Drop schema (development only)
 $ npm run migration:drop
+
+# Reset DB: drop all tables and run migrations (development only)
+$ npm run db:reset
 ```
 
 ## Database Seeds
@@ -235,10 +238,20 @@ redfox-api/
 - **Multi-database support**: MySQL and PostgreSQL
 - **JWT Authentication**: Secure token-based authentication
 - **FacturaAPI Integration**: Electronic invoicing (CFDI) support
+- **Certification pack sync (Clients and Products)**: On create/update, entities are synced with the active certification pack (e.g. Facturapi). Clients use `ClientPackSyncService`; products use `ProductPackSyncService`. Responses include `pack_sync_success` and `pack_sync_error`. Entities store `pack_product_id` (ID in the pack) and `pack_product_response` (raw pack response) for auditing. See [Certification pack sync](#certification-pack-sync) below.
 - **File Uploads**: Image and document upload support
 - **TypeORM**: Database ORM with migrations
 - **Validation**: Class-validator for DTOs
 - **CORS**: Configurable CORS support
+
+## Certification pack sync
+
+When a **client** or **product** is created or updated, the API syncs it with the active certification pack (Facturapi) if one is configured.
+
+- **Clients**: `ClientPackSyncService` maps client fields to Facturapi Customer and calls `createCustomer` / `updateCustomer`. The client entity stores `pack_product_id` (Facturapi customer id) and `pack_product_response`.
+- **Products**: `ProductPackSyncService` maps product fields to Facturapi Product (description, product_key from code, unit_key from measurement_unit, price 0, sku) and calls `createProduct` / `updateProduct`. The product entity stores `pack_product_id` (Facturapi product id) and `pack_product_response`.
+
+Create and update endpoints return `{ client|product, pack_sync_success, pack_sync_error? }`. If sync fails, the entity is still saved; `pack_sync_error` contains the pack error message for the client to show in the UI.
 
 ## Resources
 

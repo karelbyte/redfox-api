@@ -3,17 +3,18 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   ParseUUIDPipe,
   Query,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { ClientService } from '../services/client.service';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
 import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
+import { ClientWithPackStatusResponseDto } from '../dtos/client/client-with-pack-status-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -25,7 +26,9 @@ export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
   @Post()
-  create(@Body() createClientDto: CreateClientDto): Promise<ClientResponseDto> {
+  create(
+    @Body() createClientDto: CreateClientDto,
+  ): Promise<ClientWithPackStatusResponseDto> {
     return this.clientService.create(createClientDto);
   }
 
@@ -45,12 +48,12 @@ export class ClientController {
     return this.clientService.findOne(id, userId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClientDto: UpdateClientDto,
     @UserId() userId: string,
-  ): Promise<ClientResponseDto> {
+  ): Promise<ClientWithPackStatusResponseDto> {
     return this.clientService.update(id, updateClientDto, userId);
   }
 

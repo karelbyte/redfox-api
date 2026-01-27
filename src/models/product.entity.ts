@@ -83,6 +83,14 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   images: string;
 
+  /** ID del producto en el pack de facturación (ej. Facturapi). Indica que está registrado en el pack. */
+  @Column({ length: 255, nullable: true })
+  pack_product_id: string;
+
+  /** Respuesta cruda del pack al crear/actualizar (para auditoría o reintentos). */
+  @Column({ type: 'json', nullable: true })
+  pack_product_response: Record<string, unknown> | null;
+
   @CreateDateColumn()
   created_at: Date;
 

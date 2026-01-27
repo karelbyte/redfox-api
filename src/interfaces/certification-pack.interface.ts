@@ -65,6 +65,35 @@ export interface CustomerResponse {
   [key: string]: any;
 }
 
+/** Datos para crear/actualizar producto en el pack (Facturapi). Ver https://docs.facturapi.io/api/#tag/product */
+export interface ProductData {
+  description: string;
+  product_key: string | number;
+  unit_key?: string;
+  price: number;
+  tax_included?: boolean;
+  taxability?: string;
+  taxes?: Array<{ type: string; rate: number }>;
+  unit_name?: string;
+  sku?: string;
+}
+
+export interface ProductResponse {
+  id: string;
+  created_at: string;
+  livemode: boolean;
+  description: string;
+  product_key: string | number;
+  unit_key: string;
+  price: number;
+  tax_included: boolean;
+  taxability?: string;
+  taxes?: Array<{ type: string; rate: number }>;
+  unit_name?: string;
+  sku?: string;
+  [key: string]: unknown;
+}
+
 export interface ICertificationPackService {
   generateCFDI(invoice: Invoice): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
@@ -80,4 +109,6 @@ export interface ICertificationPackService {
   searchProductKeys(term: string): Promise<ProductKeySuggestion[]>;
   createCustomer(customerData: CustomerData): Promise<CustomerResponse>;
   updateCustomer(customerId: string, customerData: Partial<CustomerData>): Promise<CustomerResponse>;
+  createProduct(productData: ProductData): Promise<ProductResponse>;
+  updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
 }

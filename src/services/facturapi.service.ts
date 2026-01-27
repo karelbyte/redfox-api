@@ -7,6 +7,8 @@ import {
   CFDIResponse,
   CustomerData,
   CustomerResponse,
+  ProductData,
+  ProductResponse,
 } from '../interfaces/certification-pack.interface';
 
 @Injectable()
@@ -219,11 +221,6 @@ export class FacturaAPIService implements ICertificationPackService {
       series: 'A',
       date: this.formatDateForFacturaAPI(invoice.date),
       currency: 'MXN',
-      //  exchange_rate: 1,
-      // total: invoice.total_amount,
-      // subtotal: invoice.subtotal,
-      // tax: invoice.tax_amount,
-      // notes: invoice.notes || '',
     };
   }
 
@@ -258,16 +255,6 @@ export class FacturaAPIService implements ICertificationPackService {
         unit_key: detail.product.measurement_unit?.code || 'H87',
         unit_name: detail.product.measurement_unit?.description || 'Pieza',
       },
-      /*taxes:
-        detail.tax_rate > 0
-          ? [
-              {
-                type: 'IVA',
-                rate: this.convertPercentageToDecimal(detail.tax_rate),
-                factor: 'Tasa',
-              },
-            ]
-          : [],*/
     }));
   }
 
@@ -546,9 +533,10 @@ export class FacturaAPIService implements ICertificationPackService {
           : String(customerAny.created_at || new Date().toISOString()),
       };
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('FacturaAPI Create Customer Error:', error);
-      throw new BadRequestException('Error creating customer in FacturaAPI');
+      const message = error?.message ?? 'Error creating customer in FacturaAPI';
+      throw new BadRequestException(message);
     }
   }
 
@@ -613,9 +601,102 @@ export class FacturaAPIService implements ICertificationPackService {
           : String(customerAny.created_at || new Date().toISOString()),
       };
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('FacturaAPI Update Customer Error:', error);
-      throw new BadRequestException('Error updating customer in FacturaAPI');
+      const message = error?.message ?? 'Error updating customer in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  private getProductsBaseUrl(): string {
+    return 'https://www.facturapi.io/v2/products';
+  }
+
+  async createProduct(productData: ProductData): Promise<ProductResponse> {
+    try {
+      this.ensureInitialized();
+      const payload: Record<string, unknown> = {
+        description: productData.description,
+        product_key: productData.product_key,
+        price: productData.price,
+        unit_key: productData.unit_key ?? 'H87',
+        unit_name: productData.unit_name ?? 'Elemento',
+        tax_included: productData.tax_included ?? true,
+      };
+      if (productData.taxability) payload.taxability = productData.taxability;
+      if (productData.taxes && productData.taxes.length > 0) payload.taxes = productData.taxes;
+      if (productData.sku) payload.sku = productData.sku;
+
+      const res = await fetch(this.getProductsBaseUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = (data as any)?.message ?? data?.message ?? 'Error creating product in FacturaAPI';
+        throw new BadRequestException(message);
+      }
+
+      const created = data as ProductResponse;
+      return {
+        ...created,
+        created_at: typeof created.created_at === 'string' ? created.created_at : (created.created_at as Date)?.toISOString?.() ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('FacturaAPI Create Product Error:', error);
+      const message = error?.message ?? 'Error creating product in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  async updateProduct(
+    productId: string,
+    productData: Partial<ProductData>,
+  ): Promise<ProductResponse> {
+    try {
+      this.ensureInitialized();
+      const payload: Record<string, unknown> = {};
+      if (productData.description !== undefined) payload.description = productData.description;
+      if (productData.product_key !== undefined) payload.product_key = productData.product_key;
+      if (productData.price !== undefined) payload.price = productData.price;
+      if (productData.unit_key !== undefined) payload.unit_key = productData.unit_key;
+      if (productData.unit_name !== undefined) payload.unit_name = productData.unit_name;
+      if (productData.tax_included !== undefined) payload.tax_included = productData.tax_included;
+      if (productData.taxability !== undefined) payload.taxability = productData.taxability;
+      if (productData.taxes !== undefined) payload.taxes = productData.taxes;
+      if (productData.sku !== undefined) payload.sku = productData.sku;
+
+      const res = await fetch(`${this.getProductsBaseUrl()}/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = (data as any)?.message ?? data?.message ?? 'Error updating product in FacturaAPI';
+        throw new BadRequestException(message);
+      }
+
+      const updated = data as ProductResponse;
+      return {
+        ...updated,
+        created_at: typeof updated.created_at === 'string' ? updated.created_at : (updated.created_at as Date)?.toISOString?.() ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('FacturaAPI Update Product Error:', error);
+      const message = error?.message ?? 'Error updating product in FacturaAPI';
+      throw new BadRequestException(message);
     }
   }
 }

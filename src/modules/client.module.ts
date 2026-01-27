@@ -6,6 +6,7 @@ import { Client } from '../models/client.entity';
 import { ClientMapper } from '../services/mappers/client.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
+import { ClientPackSyncService } from '../services/client-pack-sync.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { CertificationPackModule } from './certification-pack.module';
     CertificationPackModule,
   ],
   controllers: [ClientController],
-  providers: [ClientService, ClientMapper],
+  providers: [ClientService, ClientMapper, ClientPackSyncService],
   exports: [ClientService],
 })
 export class ClientModule {}

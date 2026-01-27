@@ -121,6 +121,17 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'pack_product_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'pack_product_response',
+            type: isPostgres ? 'jsonb' : 'json',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

@@ -13,6 +13,11 @@ export class UpdateClientDto {
 
   @IsString()
   @IsOptional()
+  @Length(3, 100)
+  tax_document?: string;
+
+  @IsString()
+  @IsOptional()
   @Length(3, 255)
   description?: string;
 

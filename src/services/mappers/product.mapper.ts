@@ -39,6 +39,7 @@ export class ProductMapper {
       type,
       images,
       created_at,
+      pack_product_id,
     } = product;
 
     return {
@@ -64,6 +65,7 @@ export class ProductMapper {
       type,
       images: images ? (JSON.parse(images) as string[]) : [],
       created_at,
+      pack_product_id: pack_product_id ?? null,
     };
   }
 }
