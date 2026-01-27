@@ -7,8 +7,8 @@ import { Withdrawal } from '../models/withdrawal.entity';
 import { Product } from '../models/product.entity';
 import { Tax } from '../models/tax.entity';
 import { InvoiceService } from '../services/invoice.service';
-import { FacturaAPIService } from '../services/facturapi.service';
 import { InvoiceController } from '../controllers/invoice.controller';
+import { CertificationPackModule } from './certification-pack.module';
 import { ProductModule } from './product.module';
 import { ClientMapper } from '../services/mappers/client.mapper';
 import { WithdrawalMapper } from '../services/mappers/withdrawal.mapper';
@@ -33,11 +33,11 @@ import { LanguageModule } from './language.module';
     ]),
     ProductModule,
     LanguageModule,
+    CertificationPackModule,
   ],
   controllers: [InvoiceController],
   providers: [
     InvoiceService,
-    FacturaAPIService,
     ClientMapper,
     WithdrawalMapper,
     ProductMapper,
@@ -48,6 +48,6 @@ import { LanguageModule } from './language.module';
     InvoiceMapper,
     InvoiceDetailMapper,
   ],
-  exports: [InvoiceService, FacturaAPIService],
+  exports: [InvoiceService],
 })
 export class InvoiceModule {}

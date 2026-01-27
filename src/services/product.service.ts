@@ -16,12 +16,16 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
+import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
 
 interface SearchCondition {
   name?: any;
   slug?: any;
   description?: any;
+  code?: any;
   sku?: any;
+  barcode?: any;
   is_active?: boolean;
   type?: ProductType;
 }
@@ -47,6 +51,7 @@ export class ProductService {
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly productMapper: ProductMapper,
     private translationService: TranslationService,
+    private readonly certificationPackFactory: CertificationPackFactoryService,
   ) {}
 
   async create(
@@ -86,6 +91,8 @@ export class ProductService {
         slug: createProductDto.slug,
         description: createProductDto.description,
         sku: createProductDto.sku,
+        code: createProductDto.code,
+        barcode: createProductDto.barcode,
         weight: createProductDto.weight ?? 0,
         width: createProductDto.width ?? 0,
         height: createProductDto.height ?? 0,
@@ -154,7 +161,9 @@ export class ProductService {
         { name: Like(`%${term}%`) },
         { slug: Like(`%${term}%`) },
         { description: Like(`%${term}%`) },
+        { code: Like(`%${term}%`) },
         { sku: Like(`%${term}%`) },
+        { barcode: Like(`%${term}%`) },
       );
     }
 
@@ -287,6 +296,8 @@ export class ProductService {
         slug: updateProductDto.slug,
         description: updateProductDto.description,
         sku: updateProductDto.sku,
+        code: updateProductDto.code,
+        barcode: updateProductDto.barcode,
         weight: updateProductDto.weight,
         width: updateProductDto.width,
         height: updateProductDto.height,
@@ -417,5 +428,19 @@ export class ProductService {
           : null,
       })),
     };
+  }
+
+  async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {
+    try {
+      const packService = await this.certificationPackFactory.getPackService();
+      return await packService.searchProductKeys(term);
+    } catch (error) {
+      // Si es un error de pack no encontrado, lanzarlo para que el frontend lo maneje
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      // Para otros errores, retornar array vacío
+      return [];
+    }
   }
 }

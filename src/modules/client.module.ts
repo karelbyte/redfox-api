@@ -5,9 +5,14 @@ import { ClientService } from '../services/client.service';
 import { Client } from '../models/client.entity';
 import { ClientMapper } from '../services/mappers/client.mapper';
 import { LanguageModule } from './language.module';
+import { CertificationPackModule } from './certification-pack.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Client]), LanguageModule],
+  imports: [
+    TypeOrmModule.forFeature([Client]),
+    LanguageModule,
+    CertificationPackModule,
+  ],
   controllers: [ClientController],
   providers: [ClientService, ClientMapper],
   exports: [ClientService],

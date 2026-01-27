@@ -42,6 +42,14 @@ export class MeasurementUnitController {
     return this.measurementUnitService.findAll(paginationDto, userId);
   }
 
+  @Get('search/from-pack')
+  searchFromPack(@Query('term') term: string) {
+    if (!term || term.trim().length === 0) {
+      return [];
+    }
+    return this.measurementUnitService.searchFromPack(term.trim());
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,

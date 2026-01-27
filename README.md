@@ -23,15 +23,118 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+RedFox API - Backend API for RedFox Point of Sale system built with NestJS, TypeORM, and supporting MySQL/PostgreSQL databases.
 
-## Project setup
+## Project Setup
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+## Environment Variables
+
+The application requires the following environment variables. Create a `.env` file in the root directory with the following configuration:
+
+### Application Configuration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `NODE_ENV` | Environment mode (development/production) | `development` | No |
+| `PORT` | Server port | `3000` | No |
+| `HOST` | Server host | `0.0.0.0` | No |
+| `CORS_ORIGIN` | Allowed CORS origin | `*` | No |
+| `APP_KEY` | Application key (used for JWT) | - | **Yes** |
+
+### Database Configuration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `APP_DB_PROVIDER` | Database provider (`mysql` or `postgres`) | `mysql` | No |
+
+#### MySQL Configuration (when `APP_DB_PROVIDER=mysql`)
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `MYSQL_DB_HOST` | MySQL host | `localhost` | No |
+| `MYSQL_DB_PORT` | MySQL port | `3306` | No |
+| `MYSQL_DB_USER` | MySQL username | `root` | No |
+| `MYSQL_DB_PASSWORD` | MySQL password | `` (empty) | No |
+| `MYSQL_DB_NAME` | MySQL database name | `redfox-db` | No |
+
+#### PostgreSQL Configuration (when `APP_DB_PROVIDER=postgres`)
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PG_DB_HOST` | PostgreSQL host | `localhost` | No |
+| `PG_DB_PORT` | PostgreSQL port | `5432` | No |
+| `PG_DB_USER` | PostgreSQL username | `postgres` | No |
+| `PG_DB_PASSWORD` | PostgreSQL password | `postgres` | No |
+| `PG_DB_NAME` | PostgreSQL database name | `redfox-db` | No |
+
+#### Database Advanced Options
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DB_SYNC` | Auto-sync database schema (true/false) | `false` | No |
+| `DB_LOGGING` | Enable query logging (true/false) | `false` | No |
+
+### Authentication
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `APP_KEY` | JWT secret key (same as application key) | - | **Yes** |
+
+### FacturaAPI Integration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `FACTURAPI_API_KEY` | FacturaAPI API key | - | **Yes** |
+
+### File Uploads
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `UPLOAD_DEST` | Upload directory path | `./uploads` | No |
+
+### Example `.env` File
+
+```env
+# Application
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+CORS_ORIGIN=*
+APP_KEY=your-super-secret-app-key-change-this-in-production
+
+# Database Provider
+APP_DB_PROVIDER=mysql
+
+# MySQL Configuration
+MYSQL_DB_HOST=localhost
+MYSQL_DB_PORT=3306
+MYSQL_DB_USER=root
+MYSQL_DB_PASSWORD=your_password
+MYSQL_DB_NAME=redfox-db
+
+# PostgreSQL Configuration (alternative)
+# PG_DB_HOST=localhost
+# PG_DB_PORT=5432
+# PG_DB_USER=postgres
+# PG_DB_PASSWORD=your_password
+# PG_DB_NAME=redfox-db
+
+# Database Options
+DB_SYNC=false
+DB_LOGGING=false
+
+# FacturaAPI
+FACTURAPI_API_KEY=sk_test_your_api_key_here
+
+# Uploads
+UPLOAD_DEST=./uploads
+```
+
+## Compile and Run the Project
 
 ```bash
 # development
@@ -44,7 +147,36 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Run tests
+## Database Migrations
+
+```bash
+# Generate migration
+$ npm run migration:generate -- -n MigrationName
+
+# Run migrations
+$ npm run migration:run
+
+# Revert last migration
+$ npm run migration:revert
+
+# Show migration status
+$ npm run migration:show
+
+# Drop schema (development only)
+$ npm run migration:drop
+```
+
+## Database Seeds
+
+```bash
+# Run all seeds
+$ npm run seed
+
+# Run permissions seed only
+$ npm run seed:permissions
+```
+
+## Run Tests
 
 ```bash
 # unit tests
@@ -57,42 +189,65 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Deployment
+## API Endpoints
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+The API is available at `http://localhost:3000/api` with the following main endpoints:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- `/api/health` - Health check endpoint
+- `/api/auth` - Authentication endpoints
+- `/api/users` - User management
+- `/api/products` - Product management
+- `/api/inventory` - Inventory management
+- `/api/invoices` - Invoice management (with FacturaAPI integration)
+- `/api/sales` - Sales management
+- `/api/warehouses` - Warehouse management
+- And more...
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+For detailed API documentation, see [INVOICE_API.md](./INVOICE_API.md) for invoice-related endpoints.
+
+## Docker Deployment
+
+See [DOCKER.md](./DOCKER.md) for detailed Docker setup and deployment instructions.
+
+## Project Structure
+
+```
+redfox-api/
+├── src/
+│   ├── config/          # Configuration files (database, app)
+│   ├── controllers/     # API controllers
+│   ├── services/        # Business logic services
+│   ├── models/          # TypeORM entities
+│   ├── dtos/            # Data Transfer Objects
+│   ├── modules/         # NestJS modules
+│   ├── guards/          # Authentication guards
+│   ├── decorators/      # Custom decorators
+│   ├── db/
+│   │   ├── migrations/  # Database migrations
+│   │   └── seeds/       # Database seeds
+│   └── main.ts          # Application entry point
+├── uploads/             # Uploaded files directory
+└── package.json
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Key Features
+
+- **Multi-database support**: MySQL and PostgreSQL
+- **JWT Authentication**: Secure token-based authentication
+- **FacturaAPI Integration**: Electronic invoicing (CFDI) support
+- **File Uploads**: Image and document upload support
+- **TypeORM**: Database ORM with migrations
+- **Validation**: Class-validator for DTOs
+- **CORS**: Configurable CORS support
 
 ## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [TypeORM Documentation](https://typeorm.io)
+- [FacturaAPI Documentation](https://www.facturapi.io/docs)
+- [Docker Setup Guide](./DOCKER.md)
+- [Invoice API Documentation](./INVOICE_API.md)
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is private and proprietary.

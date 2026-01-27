@@ -44,10 +44,59 @@ export class CreateClientsTable1716400000030 implements MigrationInterface {
             isNullable: false,
           },
           {
-            name: 'address',
+            name: 'address_street',
             type: 'varchar',
             length: '200',
             isNullable: true,
+          },
+          {
+            name: 'address_exterior',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'address_interior',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'address_neighborhood',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'address_city',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'address_municipality',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'address_zip',
+            type: 'varchar',
+            length: '10',
+            isNullable: true,
+          },
+          {
+            name: 'address_state',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'address_country',
+            type: 'varchar',
+            length: '3',
+            isNullable: true,
+            default: "'MEX'",
           },
           {
             name: 'phone',
@@ -62,9 +111,32 @@ export class CreateClientsTable1716400000030 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'tax_system',
+            type: 'varchar',
+            length: '10',
+            isNullable: true,
+          },
+          {
+            name: 'default_invoice_use',
+            type: 'varchar',
+            length: '10',
+            isNullable: true,
+          },
+          {
             name: 'status',
             type: 'boolean',
             default: true,
+          },
+          {
+            name: 'pack_product_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'pack_product_response',
+            type: isPostgres ? 'jsonb' : 'text',
+            isNullable: true,
           },
           {
             name: 'created_at',

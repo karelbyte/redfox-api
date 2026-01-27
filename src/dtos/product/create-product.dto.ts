@@ -65,6 +65,10 @@ export class CreateProductDto {
   @MinLength(8)
   code: string;
 
+  @IsString()
+  @IsOptional()
+  barcode?: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()

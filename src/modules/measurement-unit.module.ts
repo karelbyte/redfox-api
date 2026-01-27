@@ -6,11 +6,13 @@ import { MeasurementUnitService } from '../services/measurement-unit.service';
 import { MeasurementUnitController } from '../controllers/measurement-unit.controller';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { LanguageModule } from './language.module';
+import { CertificationPackModule } from './certification-pack.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MeasurementUnit, Product]),
     LanguageModule,
+    CertificationPackModule,
   ],
   controllers: [MeasurementUnitController],
   providers: [MeasurementUnitService, MeasurementUnitMapper],

@@ -14,6 +14,8 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
 import { TranslationService } from './translation.service';
+import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { MeasurementUnitSuggestion } from '../interfaces/certification-pack.interface';
 
 @Injectable()
 export class MeasurementUnitService {
@@ -24,6 +26,7 @@ export class MeasurementUnitService {
     private readonly productRepository: Repository<Product>,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
     private translationService: TranslationService,
+    private readonly certificationPackFactory: CertificationPackFactoryService,
   ) {}
 
   async create(
@@ -280,5 +283,14 @@ export class MeasurementUnitService {
       productsCount: products.length,
       products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
     };
+  }
+
+  async searchFromPack(term: string): Promise<MeasurementUnitSuggestion[]> {
+    try {
+      const packService = await this.certificationPackFactory.getPackService();
+      return await packService.searchMeasurementUnits(term);
+    } catch (error) {
+      return [];
+    }
   }
 }

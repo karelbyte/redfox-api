@@ -11,6 +11,7 @@ import { CategoryModule } from './category.module';
 import { TaxModule } from './tax.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { LanguageModule } from './language.module';
+import { CertificationPackModule } from './certification-pack.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { LanguageModule } from './language.module';
     CategoryModule,
     TaxModule,
     LanguageModule,
+    CertificationPackModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductMapper],

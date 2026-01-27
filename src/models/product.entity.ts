@@ -39,6 +39,9 @@ export class Product {
   @Column({ length: 20, unique: true })
   code: string;
 
+  @Column({ length: 100, nullable: true })
+  barcode: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   weight: number;
 

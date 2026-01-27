@@ -25,7 +25,31 @@ export class Client {
   description: string;
 
   @Column({ length: 200, nullable: true })
-  address: string;
+  address_street: string;
+
+  @Column({ length: 20, nullable: true })
+  address_exterior: string;
+
+  @Column({ length: 20, nullable: true })
+  address_interior: string;
+
+  @Column({ length: 100, nullable: true })
+  address_neighborhood: string;
+
+  @Column({ length: 100, nullable: true })
+  address_city: string;
+
+  @Column({ length: 100, nullable: true })
+  address_municipality: string;
+
+  @Column({ length: 10, nullable: true })
+  address_zip: string;
+
+  @Column({ length: 100, nullable: true })
+  address_state: string;
+
+  @Column({ length: 3, nullable: true, default: 'MEX' })
+  address_country: string;
 
   @Column({ length: 20, nullable: true })
   phone: string;
@@ -33,8 +57,20 @@ export class Client {
   @Column({ length: 100, nullable: true })
   email: string;
 
+  @Column({ length: 10, nullable: true })
+  tax_system: string;
+
+  @Column({ length: 10, nullable: true })
+  default_invoice_use: string;
+
   @Column({ default: true })
   status: boolean;
+
+  @Column({ length: 255, nullable: true })
+  pack_product_id: string;
+
+  @Column({ type: 'json', nullable: true })
+  pack_product_response: any;
 
   @CreateDateColumn()
   created_at: Date;

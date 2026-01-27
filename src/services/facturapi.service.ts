@@ -2,38 +2,50 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Invoice } from '../models/invoice.entity';
 import Facturapi from 'facturapi';
-
-interface FacturaAPIResponse {
-  id: string;
-  uuid: string;
-  status: string;
-  pdf_url?: string;
-  xml_url?: string;
-  message?: string;
-}
+import {
+  ICertificationPackService,
+  CFDIResponse,
+  CustomerData,
+  CustomerResponse,
+} from '../interfaces/certification-pack.interface';
 
 @Injectable()
-export class FacturaAPIService {
-  private readonly facturapi: Facturapi;
-  private readonly apiKey: string;
+export class FacturaAPIService implements ICertificationPackService {
+  private facturapi: Facturapi | null = null;
+  private apiKey: string;
 
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.configService.get<string>('FACTURAPI_API_KEY') || '';
-
-    if (!this.apiKey) {
-      throw new Error('FACTURAPI_API_KEY is required');
+    if (this.apiKey) {
+      this.facturapi = new Facturapi(this.apiKey);
     }
-
-    this.facturapi = new Facturapi(this.apiKey);
   }
 
-  async generateCFDI(invoice: Invoice): Promise<FacturaAPIResponse> {
+  updateApiKey(apiKey: string): void {
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+    this.apiKey = apiKey;
+    this.facturapi = new Facturapi(apiKey);
+  }
+
+  private ensureInitialized(): void {
+    if (!this.facturapi) {
+      if (!this.apiKey) {
+        throw new BadRequestException('FacturaAPI API key not configured');
+      }
+      this.facturapi = new Facturapi(this.apiKey);
+    }
+  }
+
+  async generateCFDI(invoice: Invoice): Promise<CFDIResponse> {
     try {
+      this.ensureInitialized();
       const cfdiData = this.buildCFDIData(invoice);
 
       console.dir(cfdiData, { depth: null });
 
-      const data = await this.facturapi.invoices.create(cfdiData);
+      const data = await this.facturapi!.invoices.create(cfdiData);
 
       return {
         id: data.id,
@@ -50,7 +62,8 @@ export class FacturaAPIService {
 
   async cancelCFDI(uuid: string, reason: string): Promise<void> {
     try {
-      await this.facturapi.invoices.cancel(uuid, {
+      this.ensureInitialized();
+      await this.facturapi!.invoices.cancel(uuid, {
         motive: reason as any,
       });
     } catch (error) {
@@ -61,7 +74,8 @@ export class FacturaAPIService {
 
   async getCFDIStatus(uuid: string): Promise<any> {
     try {
-      return await this.facturapi.invoices.retrieve(uuid);
+      this.ensureInitialized();
+      return await this.facturapi!.invoices.retrieve(uuid);
     } catch (error) {
       console.error('FacturaAPI Status Error:', error);
       throw new BadRequestException(
@@ -72,7 +86,8 @@ export class FacturaAPIService {
 
   async downloadPDF(uuid: string): Promise<Buffer> {
     try {
-      const pdfBuffer = await this.facturapi.invoices.downloadPdf(uuid);
+      this.ensureInitialized();
+      const pdfBuffer = await this.facturapi!.invoices.downloadPdf(uuid);
 
       // Manejar diferentes tipos de respuesta
       if (pdfBuffer instanceof Buffer) {
@@ -132,7 +147,8 @@ export class FacturaAPIService {
 
   async downloadXML(uuid: string): Promise<string> {
     try {
-      const xmlContent = await this.facturapi.invoices.downloadXml(uuid);
+      this.ensureInitialized();
+      const xmlContent = await this.facturapi!.invoices.downloadXml(uuid);
 
       // Manejar diferentes tipos de respuesta
       if (typeof xmlContent === 'string') {
@@ -426,6 +442,180 @@ export class FacturaAPIService {
     } catch (error) {
       console.error('Uses error:', error);
       return [];
+    }
+  }
+
+  async searchMeasurementUnits(term: string): Promise<any[]> {
+    try {
+      this.ensureInitialized();
+      const response = await fetch(
+        `https://www.facturapi.io/v2/catalogs/units?q=${encodeURIComponent(term)}&limit=20`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Measurement units search error:', error);
+      return [];
+    }
+  }
+
+  async searchProductKeys(term: string): Promise<any[]> {
+    try {
+      this.ensureInitialized();
+      const response = await fetch(
+        `https://www.facturapi.io/v2/catalogs/products?q=${encodeURIComponent(term)}&limit=20`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Product keys search error:', error);
+      return [];
+    }
+  }
+
+  async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {
+    try {
+      this.ensureInitialized();
+      
+      const payload: any = {
+        legal_name: customerData.legal_name,
+        tax_id: customerData.tax_id,
+      };
+
+      if (customerData.tax_system) {
+        payload.tax_system = customerData.tax_system;
+      }
+
+      if (customerData.email) {
+        payload.email = customerData.email;
+      }
+
+      if (customerData.phone) {
+        payload.phone = customerData.phone;
+      }
+
+      if (customerData.default_invoice_use) {
+        payload.default_invoice_use = customerData.default_invoice_use;
+      }
+
+      if (customerData.address) {
+        const address: any = {};
+        
+        if (customerData.address.street) address.street = customerData.address.street;
+        if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
+        if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
+        if (customerData.address.neighborhood) address.neighborhood = customerData.address.neighborhood;
+        if (customerData.address.city) address.city = customerData.address.city;
+        if (customerData.address.municipality) address.municipality = customerData.address.municipality;
+        if (customerData.address.zip !== undefined) address.zip = customerData.address.zip;
+        if (customerData.address.state) address.state = customerData.address.state;
+        if (customerData.address.country) address.country = customerData.address.country;
+
+        if (Object.keys(address).length > 0) {
+          payload.address = address;
+        }
+      }
+
+      const customer = await this.facturapi!.customers.create(payload);
+      // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
+      const customerAny = customer as any;
+      const response: CustomerResponse = {
+        ...customerAny,
+        created_at: customerAny.created_at instanceof Date 
+          ? customerAny.created_at.toISOString() 
+          : String(customerAny.created_at || new Date().toISOString()),
+      };
+      return response;
+    } catch (error) {
+      console.error('FacturaAPI Create Customer Error:', error);
+      throw new BadRequestException('Error creating customer in FacturaAPI');
+    }
+  }
+
+  async updateCustomer(
+    customerId: string,
+    customerData: Partial<CustomerData>,
+  ): Promise<CustomerResponse> {
+    try {
+      this.ensureInitialized();
+      
+      const payload: any = {};
+
+      if (customerData.legal_name) {
+        payload.legal_name = customerData.legal_name;
+      }
+
+      if (customerData.tax_id) {
+        payload.tax_id = customerData.tax_id;
+      }
+
+      if (customerData.tax_system) {
+        payload.tax_system = customerData.tax_system;
+      }
+
+      if (customerData.email !== undefined) {
+        payload.email = customerData.email;
+      }
+
+      if (customerData.phone !== undefined) {
+        payload.phone = customerData.phone;
+      }
+
+      if (customerData.default_invoice_use) {
+        payload.default_invoice_use = customerData.default_invoice_use;
+      }
+
+      if (customerData.address) {
+        const address: any = {};
+        
+        if (customerData.address.street !== undefined) address.street = customerData.address.street;
+        if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
+        if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
+        if (customerData.address.neighborhood !== undefined) address.neighborhood = customerData.address.neighborhood;
+        if (customerData.address.city !== undefined) address.city = customerData.address.city;
+        if (customerData.address.municipality !== undefined) address.municipality = customerData.address.municipality;
+        if (customerData.address.zip !== undefined) address.zip = customerData.address.zip;
+        if (customerData.address.state !== undefined) address.state = customerData.address.state;
+        if (customerData.address.country !== undefined) address.country = customerData.address.country;
+
+        if (Object.keys(address).length > 0) {
+          payload.address = address;
+        }
+      }
+
+      const customer = await this.facturapi!.customers.update(customerId, payload);
+      // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
+      const customerAny = customer as any;
+      const response: CustomerResponse = {
+        ...customerAny,
+        created_at: customerAny.created_at instanceof Date 
+          ? customerAny.created_at.toISOString() 
+          : String(customerAny.created_at || new Date().toISOString()),
+      };
+      return response;
+    } catch (error) {
+      console.error('FacturaAPI Update Customer Error:', error);
+      throw new BadRequestException('Error updating customer in FacturaAPI');
     }
   }
 }

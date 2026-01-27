@@ -31,8 +31,8 @@ export const getDatabaseConfig = (
     password,
     database,
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    synchronize: configService.get<boolean>('DB_SYNC', false),
-    logging: configService.get<boolean>('DB_LOGGING', false),
+    synchronize: false,
+    logging:  false,
     migrations: [__dirname + '/../db/migrations/*{.ts,.js}'],
     migrationsRun: true,
   };

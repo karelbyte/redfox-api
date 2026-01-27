@@ -90,6 +90,11 @@ export class ProductController {
     return this.productService.findAll(paginationDto);
   }
 
+  @Get('search-from-pack')
+  searchFromPack(@Query('term') term: string) {
+    return this.productService.searchFromPack(term || '');
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,

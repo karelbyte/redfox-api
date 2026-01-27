@@ -28,7 +28,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { ClientMapper } from './mappers/client.mapper';
 import { WithdrawalMapper } from './mappers/withdrawal.mapper';
 import { TranslationService } from './translation.service';
-import { FacturaAPIService } from './facturapi.service';
+import { CertificationPackFactoryService } from './certification-pack-factory.service';
 
 @Injectable()
 export class InvoiceService {
@@ -50,7 +50,7 @@ export class InvoiceService {
     private readonly clientMapper: ClientMapper,
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
-    private readonly facturaAPIService: FacturaAPIService,
+    private readonly certificationPackFactory: CertificationPackFactoryService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -508,7 +508,8 @@ export class InvoiceService {
     }
 
     try {
-      const cfdiResult = await this.facturaAPIService.generateCFDI(invoice);
+      const packService = await this.certificationPackFactory.getPackService();
+      const cfdiResult = await packService.generateCFDI(invoice);
 
       invoice.cfdi_uuid = cfdiResult.uuid;
       invoice.facturapi_id = cfdiResult.id;
@@ -564,7 +565,8 @@ export class InvoiceService {
     }
 
     try {
-      await this.facturaAPIService.cancelCFDI(invoice.cfdi_uuid, reason);
+      const packService = await this.certificationPackFactory.getPackService();
+      await packService.cancelCFDI(invoice.cfdi_uuid, reason);
 
       invoice.status = InvoiceStatus.CANCELLED;
 
@@ -878,11 +880,12 @@ export class InvoiceService {
 
     if (!invoice.cfdi_uuid) {
       throw new BadRequestException(
-        'Invoice has not been generated in FacturaAPI',
+        'Invoice has not been generated in certification pack',
       );
     }
 
-    return await this.facturaAPIService.downloadPDF(invoice.facturapi_id);
+    const packService = await this.certificationPackFactory.getPackService();
+    return await packService.downloadPDF(invoice.cfdi_uuid);
   }
 
   async downloadXML(invoiceId: string, userId?: string): Promise<string> {
@@ -901,10 +904,11 @@ export class InvoiceService {
 
     if (!invoice.cfdi_uuid) {
       throw new BadRequestException(
-        'Invoice has not been generated in FacturaAPI',
+        'Invoice has not been generated in certification pack',
       );
     }
 
-    return await this.facturaAPIService.downloadXML(invoice.facturapi_id);
+    const packService = await this.certificationPackFactory.getPackService();
+    return await packService.downloadXML(invoice.cfdi_uuid);
   }
 }

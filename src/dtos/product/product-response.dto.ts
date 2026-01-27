@@ -25,6 +25,9 @@ export class ProductResponseDto {
   code: string;
 
   @Expose()
+  barcode?: string;
+
+  @Expose()
   weight: number;
 
   @Expose()
