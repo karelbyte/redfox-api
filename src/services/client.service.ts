@@ -1,16 +1,26 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Client } from '../models/client.entity';
+import { Invoice } from '../models/invoice.entity';
+import { Withdrawal } from '../models/withdrawal.entity';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
 import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { ClientWithPackStatusResponseDto } from '../dtos/client/client-with-pack-status-response.dto';
+import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ClientMapper } from './mappers/client.mapper';
 import { TranslationService } from './translation.service';
 import { ClientPackSyncService } from './client-pack-sync.service';
+import { ClientPackImportService } from './client-pack-import.service';
+import { CertificationPackFactoryService } from './certification-pack-factory.service';
 
 @Injectable()
 export class ClientService {
@@ -19,9 +29,15 @@ export class ClientService {
   constructor(
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
+    @InjectRepository(Withdrawal)
+    private readonly withdrawalRepository: Repository<Withdrawal>,
     private clientMapper: ClientMapper,
     private readonly translationService: TranslationService,
     private readonly clientPackSyncService: ClientPackSyncService,
+    private readonly clientPackImportService: ClientPackImportService,
+    private readonly certificationPackFactory: CertificationPackFactoryService,
   ) {}
 
   async create(
@@ -158,6 +174,12 @@ export class ClientService {
     };
   }
 
+  async importFromPack(
+    userId?: string,
+  ): Promise<ImportClientsFromPackResponseDto> {
+    return this.clientPackImportService.importAllFromPack(userId);
+  }
+
   async remove(id: string, userId?: string): Promise<void> {
     const client = await this.clientRepository.findOne({
       where: { id },
@@ -171,6 +193,42 @@ export class ClientService {
       );
       throw new NotFoundException(message);
     }
+
+    // Validar uso (facturas / ventas) antes de permitir eliminar
+    const invoiceCount = await this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.client_id = :id', { id })
+      .getCount();
+
+    const withdrawalCount = await this.withdrawalRepository
+      .createQueryBuilder('withdrawal')
+      .where('withdrawal.client_id = :id', { id })
+      .getCount();
+
+    if (invoiceCount > 0 || withdrawalCount > 0) {
+      const message = await this.translationService.translate(
+        'client.cannot_delete_in_use',
+        userId,
+        { invoiceCount, withdrawalCount },
+      );
+      throw new BadRequestException(message);
+    }
+
+    // Best-effort: si tiene pack_client_id e implementación soporta borrado, intentar borrar en pack
+    if (client.pack_client_id) {
+      try {
+        const packService: any = await this.certificationPackFactory.getPackService();
+        if (packService?.deleteCustomer && typeof packService.deleteCustomer === 'function') {
+          await packService.deleteCustomer(client.pack_client_id);
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
+        );
+        // no bloquear eliminación local
+      }
+    }
+
     await this.clientRepository.softRemove(client);
   }
 }

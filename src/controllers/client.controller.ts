@@ -15,6 +15,7 @@ import { CreateClientDto } from '../dtos/client/create-client.dto';
 import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { ClientWithPackStatusResponseDto } from '../dtos/client/client-with-pack-status-response.dto';
+import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -38,6 +39,17 @@ export class ClientController {
   ): Promise<PaginatedResponse<ClientResponseDto>> {
     //await new Promise((resolve) => setTimeout(resolve, 5000));
     return this.clientService.findAll(paginationDto);
+  }
+
+  /**
+   * Importación inversa: trae todos los clientes desde el pack activo hacia nuestra DB.
+   * (Si el pack no está configurado o no soporta listar customers, responde 400)
+   */
+  @Post('import-from-pack')
+  importFromPack(
+    @UserId() userId: string,
+  ): Promise<ImportClientsFromPackResponseDto> {
+    return this.clientService.importFromPack(userId);
   }
 
   @Get(':id')

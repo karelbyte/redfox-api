@@ -172,6 +172,17 @@ export interface ICertificationPackService {
   searchProductKeys(term: string): Promise<ProductKeySuggestion[]>;
   createCustomer(customerData: CustomerData): Promise<CustomerResponse>;
   updateCustomer(customerId: string, customerData: Partial<CustomerData>): Promise<CustomerResponse>;
+  /**
+   * Lista clientes (customers) del pack activo.
+   * Opcional: no todos los packs soportan listar clientes.
+   * Se usa para importación "inversa" (pack -> nuestra DB).
+   */
+  listCustomers?: () => Promise<CustomerResponse[]>;
+  /**
+   * Elimina un cliente (customer) en el pack por su ID del pack.
+   * Opcional: no todos los packs soportan eliminación.
+   */
+  deleteCustomer?: (customerId: string) => Promise<void>;
   createProduct(productData: ProductData): Promise<ProductResponse>;
   updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
   createReceipt(data: ReceiptData): Promise<ReceiptResponse>;

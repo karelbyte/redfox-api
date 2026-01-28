@@ -610,6 +610,112 @@ export class FacturaAPIService implements ICertificationPackService {
     }
   }
 
+  /**
+   * Lista TODOS los customers del pack (Facturapi).
+   * Implementación paginada para no depender del tamaño de la cuenta.
+   */
+  async listCustomers(): Promise<CustomerResponse[]> {
+    this.ensureInitialized();
+
+    const all: CustomerResponse[] = [];
+    const limit = 100;
+    let page = 1;
+
+    while (true) {
+      // Preferir SDK si existe, si no usar HTTP directo
+      let data: any;
+      try {
+        const sdk = (this.facturapi as any)?.customers;
+        if (sdk?.list) {
+          data = await sdk.list({ page, limit });
+        } else {
+          const res = await fetch(
+            `https://api.facturapi.io/v1/customers?page=${page}&limit=${limit}`,
+            { headers: { Authorization: `Bearer ${this.apiKey}` } },
+          );
+          data = await res.json();
+          if (!res.ok) {
+            const message =
+              (data as any)?.message ??
+              'Error listing customers from FacturaAPI';
+            throw new BadRequestException(message);
+          }
+        }
+      } catch (error: any) {
+        if (error instanceof BadRequestException) throw error;
+        throw new BadRequestException(
+          error?.message ?? 'Error listing customers from FacturaAPI',
+        );
+      }
+
+      const items: any[] = Array.isArray(data) ? data : data?.data || [];
+      if (!items.length) break;
+
+      for (const customerAny of items) {
+        all.push({
+          ...(customerAny as any),
+          created_at:
+            customerAny?.created_at instanceof Date
+              ? customerAny.created_at.toISOString()
+              : String(customerAny?.created_at || new Date().toISOString()),
+        } as CustomerResponse);
+      }
+
+      // Heurísticas: si viene `has_more` o `total_pages`, respetarlo; si no, cortar cuando < limit
+      const hasMore =
+        typeof data?.has_more === 'boolean'
+          ? data.has_more
+          : typeof data?.total_pages === 'number'
+            ? page < data.total_pages
+            : items.length === limit;
+
+      if (!hasMore) break;
+      page += 1;
+    }
+
+    return all;
+  }
+
+  /**
+   * Elimina customer en Facturapi.
+   */
+  async deleteCustomer(customerId: string): Promise<void> {
+    this.ensureInitialized();
+
+    try {
+      const sdk = (this.facturapi as any)?.customers;
+      if (sdk?.del) {
+        await sdk.del(customerId);
+        return;
+      }
+      if (sdk?.remove) {
+        await sdk.remove(customerId);
+        return;
+      }
+
+      const res = await fetch(`https://api.facturapi.io/v1/customers/${customerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+      });
+
+      if (res.status === 404) return;
+      if (!res.ok) {
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {}
+        const message =
+          data?.message ?? 'Error deleting customer in FacturaAPI';
+        throw new BadRequestException(message);
+      }
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(
+        error?.message ?? 'Error deleting customer in FacturaAPI',
+      );
+    }
+  }
+
   private getProductsBaseUrl(): string {
     return 'https://www.facturapi.io/v2/products';
   }

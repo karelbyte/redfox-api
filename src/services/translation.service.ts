@@ -692,6 +692,18 @@ export class TranslationService {
       es: 'Cliente eliminado exitosamente',
       en: 'Client deleted successfully',
     },
+    'client.cannot_delete_in_use': {
+      es: 'No se puede eliminar el cliente porque tiene historial (Facturas: {invoiceCount}, Ventas: {withdrawalCount}).',
+      en: 'Cannot delete client because it has history (Invoices: {invoiceCount}, Sales: {withdrawalCount}).',
+    },
+    'client.pack_not_configured': {
+      es: 'No hay un pack activo configurado para importar clientes.',
+      en: 'No active pack configured to import clients.',
+    },
+    'client.pack_list_not_supported': {
+      es: 'El pack activo no soporta listar clientes para importación.',
+      en: 'The active pack does not support listing customers for import.',
+    },
 
     // General messages
     'general.success': {
