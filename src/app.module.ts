@@ -28,6 +28,7 @@ import { CashRegisterModule } from './modules/cash-register.module';
 import { CashTransactionModule } from './modules/cash-transaction.module';
 import { PurchaseOrderModule } from './modules/purchase-order.module';
 import { InvoiceModule } from './modules/invoice.module';
+import { CompanySettingsModule } from './modules/company-settings.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -71,6 +72,7 @@ import { HomeController } from './controllers/home.controller';
     CashTransactionModule,
     PurchaseOrderModule,
     InvoiceModule,
+    CompanySettingsModule,
   ],
   controllers: [HomeController],
   providers: [],

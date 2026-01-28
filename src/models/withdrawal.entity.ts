@@ -53,6 +53,12 @@ export class Withdrawal {
   @Column({ default: true })
   status: boolean;
 
+  @Column('varchar', { name: 'pack_receipt_id', length: 100, nullable: true })
+  pack_receipt_id: string | null;
+
+  @Column({ name: 'pack_receipt_response', type: 'json', nullable: true })
+  pack_receipt_response: Record<string, unknown> | null;
+
   @OneToMany(() => WithdrawalDetail, (detail) => detail.withdrawal)
   details: WithdrawalDetail[];
 

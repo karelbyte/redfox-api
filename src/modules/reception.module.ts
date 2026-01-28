@@ -18,6 +18,7 @@ import { CategoryMapper } from '../services/mappers/category.mapper';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { LanguageModule } from './language.module';
+import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { LanguageModule } from './language.module';
     ]),
     ProductModule,
     LanguageModule,
+    InventoryPackSyncModule,
   ],
   controllers: [ReceptionController],
   providers: [

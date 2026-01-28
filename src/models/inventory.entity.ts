@@ -33,6 +33,12 @@ export class Inventory {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 
+  @Column({ length: 255, nullable: true })
+  pack_product_id: string;
+
+  @Column({ type: 'json', nullable: true })
+  pack_product_response: Record<string, unknown> | null;
+
   @CreateDateColumn()
   created_at: Date;
 

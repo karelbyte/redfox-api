@@ -65,8 +65,12 @@ export class Invoice {
   @Column({ length: 36, nullable: true })
   cfdi_uuid: string;
 
+  /** ID interno del comprobante en el PAC activo (Facturapi, SAT, etc.). Escalable para cualquier pack. */
   @Column({ length: 100, nullable: true })
-  facturapi_id: string;
+  pack_invoice_id: string;
+
+  @Column({ type: 'json', nullable: true })
+  pack_invoice_response: Record<string, unknown> | null;
 
   @Column({
     type: 'enum',

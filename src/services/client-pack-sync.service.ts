@@ -48,8 +48,8 @@ export class ClientPackSyncService {
 
       const packResponse = await packService.createCustomer(customerData);
 
-      client.pack_product_id = packResponse.id;
-      client.pack_product_response = packResponse;
+      client.pack_client_id = packResponse.id;
+      client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
@@ -71,8 +71,8 @@ export class ClientPackSyncService {
 
   /**
    * Sincroniza un cliente actualizado con el pack activo.
-   * - Si no tiene pack_product_id intenta crearlo en el pack.
-   * - Si ya tiene pack_product_id lo actualiza en el pack.
+   * - Si no tiene pack_client_id intenta crearlo en el pack.
+   * - Si ya tiene pack_client_id lo actualiza en el pack.
    */
   async syncOnUpdate(
     client: Client,
@@ -86,7 +86,7 @@ export class ClientPackSyncService {
       const packService = await this.certificationPackFactory.getPackService();
 
       // Si el cliente aún no existe en el pack, intentamos crearlo
-      if (!client.pack_product_id) {
+      if (!client.pack_client_id) {
         const customerData: CustomerData = {
           legal_name: client.name,
           tax_id: client.tax_document,
@@ -109,8 +109,8 @@ export class ClientPackSyncService {
 
         const packResponse = await packService.createCustomer(customerData);
 
-        client.pack_product_id = packResponse.id;
-        client.pack_product_response = packResponse;
+        client.pack_client_id = packResponse.id;
+        client.pack_client_response = packResponse;
 
         const savedClient = await this.clientRepository.save(client);
 
@@ -200,11 +200,11 @@ export class ClientPackSyncService {
       }
 
       const packResponse = await packService.updateCustomer(
-        client.pack_product_id,
+        client.pack_client_id,
         customerData,
       );
 
-      client.pack_product_response = packResponse;
+      client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 

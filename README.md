@@ -44,6 +44,7 @@ The application requires the following environment variables. Create a `.env` fi
 | `HOST` | Server host | `0.0.0.0` | No |
 | `CORS_ORIGIN` | Allowed CORS origin | `*` | No |
 | `APP_KEY` | Application key (used for JWT) | - | **Yes** |
+| `APP_PUBLIC_URL` | Public base URL of this API (used to build absolute asset URLs like the company logo). Example: `https://your-api.com` (no `/api`) | - | No |
 
 ### Database Configuration
 
@@ -95,6 +96,14 @@ The application requires the following environment variables. Create a `.env` fi
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `UPLOAD_DEST` | Upload directory path | `./uploads` | No |
+
+#### Static files (uploads)
+
+- Uploaded files are served by the API under: **`/api/uploads/*`**
+- Example (company logo): `GET /api/uploads/company/<filename>`
+- Notes:
+  - The storage folder is resolved from the process working directory (typically `<redfox-api>/uploads`).
+  - If you set `APP_PUBLIC_URL`, the `company-settings` endpoint will return `logoUrl` as an **absolute URL**.
 
 ### Example `.env` File
 
@@ -198,6 +207,11 @@ The API is available at `http://localhost:3000/api` with the following main endp
 
 - `/api/health` - Health check endpoint
 - `/api/auth` - Authentication endpoints
+- `/api/company-settings` - Company settings (singleton) + logo upload
+  - `GET /api/company-settings`
+  - `PUT /api/company-settings`
+  - `POST /api/company-settings/logo` (multipart/form-data, field: `logo`)
+  - Logo is served at: `GET /api/uploads/company/<filename>`
 - `/api/users` - User management
 - `/api/products` - Product management
 - `/api/inventory` - Inventory management
@@ -238,7 +252,7 @@ redfox-api/
 - **Multi-database support**: MySQL and PostgreSQL
 - **JWT Authentication**: Secure token-based authentication
 - **FacturaAPI Integration**: Electronic invoicing (CFDI) support
-- **Certification pack sync (Clients and Products)**: On create/update, entities are synced with the active certification pack (e.g. Facturapi). Clients use `ClientPackSyncService`; products use `ProductPackSyncService`. Responses include `pack_sync_success` and `pack_sync_error`. Entities store `pack_product_id` (ID in the pack) and `pack_product_response` (raw pack response) for auditing. See [Certification pack sync](#certification-pack-sync) below.
+- **Certification pack sync**: Clients are synced with the pack on create/update (`ClientPackSyncService`; `pack_client_id` / `pack_client_response` in client). Products are catalog only; sync to the pack runs when applying a **reception** or when **closing a warehouse** (aperturas → inventory). Pack data is stored in **inventory** (`pack_product_id`, `pack_product_response`). See [Certification pack sync](#certification-pack-sync) below.
 - **File Uploads**: Image and document upload support
 - **TypeORM**: Database ORM with migrations
 - **Validation**: Class-validator for DTOs
@@ -246,12 +260,11 @@ redfox-api/
 
 ## Certification pack sync
 
-When a **client** or **product** is created or updated, the API syncs it with the active certification pack (Facturapi) if one is configured.
-
-- **Clients**: `ClientPackSyncService` maps client fields to Facturapi Customer and calls `createCustomer` / `updateCustomer`. The client entity stores `pack_product_id` (Facturapi customer id) and `pack_product_response`.
-- **Products**: `ProductPackSyncService` maps product fields to Facturapi Product (description, product_key from code, unit_key from measurement_unit, price 0, sku) and calls `createProduct` / `updateProduct`. The product entity stores `pack_product_id` (Facturapi product id) and `pack_product_response`.
-
-Create and update endpoints return `{ client|product, pack_sync_success, pack_sync_error? }`. If sync fails, the entity is still saved; `pack_sync_error` contains the pack error message for the client to show in the UI.
+- **Clients**: On create/update, `ClientPackSyncService` syncs the client with the active certification pack (Facturapi). The client entity stores `pack_client_id` and `pack_client_response`. Create/update endpoints return `{ client, pack_sync_success, pack_sync_error? }`.
+- **Products**: Products are **catalog only** (no price in the `products` table; price comes from inventory via reception or warehouse opening). Sync to the pack runs when:
+  - A **reception** is applied (products are transferred to inventory with price), or
+  - A **warehouse** is closed (warehouse openings are transferred to inventory with price).
+  `InventoryPackSyncService` builds product data from inventory (product + price), calls Facturapi `createProduct` / `updateProduct`, and stores `pack_product_id` and `pack_product_response` in the **inventory** record. Product create/update no longer sync with the pack.
 
 ## Resources
 

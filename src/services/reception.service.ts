@@ -29,6 +29,7 @@ import { CreateReceptionDetailDto } from '../dtos/reception-detail/create-recept
 import { UpdateReceptionDetailDto } from '../dtos/reception-detail/update-reception-detail.dto';
 import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-detail-query.dto';
 import { TranslationService } from './translation.service';
+import { InventoryPackSyncService } from './inventory-pack-sync.service';
 
 @Injectable()
 export class ReceptionService {
@@ -51,6 +52,7 @@ export class ReceptionService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
+    private readonly inventoryPackSyncService: InventoryPackSyncService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -633,10 +635,10 @@ export class ReceptionService {
       throw new BadRequestException(message);
     }
 
-    // Obtener todos los detalles de la recepción
+    // Obtener todos los detalles de la recepción (product.measurement_unit para sync al pack)
     const receptionDetails = await this.receptionDetailRepository.find({
       where: { reception: { id: receptionId } },
-      relations: ['product'],
+      relations: ['product', 'product.measurement_unit'],
     });
 
     if (receptionDetails.length === 0) {
@@ -699,6 +701,9 @@ export class ReceptionService {
       });
 
       await this.productHistoryRepository.save(productHistory);
+
+      finalInventory.product = detail.product;
+      await this.inventoryPackSyncService.syncForInventory(finalInventory);
 
       transferredProducts++;
       totalQuantity += Number(detail.quantity);

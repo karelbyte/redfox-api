@@ -9,6 +9,7 @@ import { WarehouseController } from '../controllers/warehouse.controller';
 import { CurrencyModule } from './currency.module';
 import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
+import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
     ]),
     CurrencyModule,
     LanguageModule,
+    InventoryPackSyncModule,
   ],
   controllers: [WarehouseController],
   providers: [WarehouseService, WarehouseMapper],

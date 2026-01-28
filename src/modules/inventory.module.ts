@@ -5,6 +5,7 @@ import { InventoryService } from '../services/inventory.service';
 import { InventoryController } from '../controllers/inventory.controller';
 import { ProductModule } from './product.module';
 import { WarehouseModule } from './warehouse.module';
+import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { BrandMapper } from '../services/mappers/brand.mapper';
 import { CategoryMapper } from '../services/mappers/category.mapper';
@@ -19,6 +20,7 @@ import { LanguageModule } from './language.module';
     TypeOrmModule.forFeature([Inventory]),
     ProductModule,
     WarehouseModule,
+    InventoryPackSyncModule,
     LanguageModule,
   ],
   controllers: [InventoryController],

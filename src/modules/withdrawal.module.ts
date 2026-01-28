@@ -18,6 +18,8 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
+import { CertificationPackModule } from './certification-pack.module';
+import { PosPackSyncService } from '../services/pos-pack-sync.service';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { LanguageModule } from './language.module';
     ]),
     ProductModule,
     LanguageModule,
+    CertificationPackModule,
   ],
   controllers: [WithdrawalController],
   providers: [
@@ -43,6 +46,7 @@ import { LanguageModule } from './language.module';
     MeasurementUnitMapper,
     WarehouseMapper,
     CurrencyMapper,
+    PosPackSyncService,
   ],
   exports: [WithdrawalService],
 })

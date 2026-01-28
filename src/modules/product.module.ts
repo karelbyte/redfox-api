@@ -4,7 +4,6 @@ import { Product } from '../models/product.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { ProductService } from '../services/product.service';
-import { ProductPackSyncService } from '../services/product-pack-sync.service';
 import { ProductController } from '../controllers/product.controller';
 import { MeasurementUnitModule } from './measurement-unit.module';
 import { BrandModule } from './brand.module';
@@ -25,7 +24,7 @@ import { CertificationPackModule } from './certification-pack.module';
     CertificationPackModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, ProductMapper, ProductPackSyncService],
+  providers: [ProductService, ProductMapper],
   exports: [ProductService],
 })
 export class ProductModule {}

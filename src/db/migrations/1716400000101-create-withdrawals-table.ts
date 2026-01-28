@@ -67,6 +67,17 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'pack_receipt_id',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'pack_receipt_response',
+            type: isPostgres ? 'jsonb' : 'json',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

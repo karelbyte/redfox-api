@@ -92,7 +92,8 @@ export class InvoiceService {
       total_amount: invoice.total_amount,
       status: invoice.status,
       cfdi_uuid: invoice.cfdi_uuid,
-      facturapi_id: invoice.facturapi_id,
+      pack_invoice_id: invoice.pack_invoice_id ?? null,
+      pack_invoice_response: invoice.pack_invoice_response ?? null,
       payment_method: invoice.payment_method,
       payment_conditions: invoice.payment_conditions,
       notes: invoice.notes,
@@ -399,10 +400,28 @@ export class InvoiceService {
       throw new BadRequestException(message);
     }
 
-    const existingInvoice = await this.invoiceRepository.findOne({
+    // Idempotencia: si ya existe factura para este withdrawal, devolverla
+    const existingByWithdrawal = await this.invoiceRepository.findOne({
+      where: { withdrawal: { id: withdrawalId } },
+      relations: [
+        'client',
+        'withdrawal',
+        'details',
+        'details.product',
+        'details.product.brand',
+        'details.product.category',
+        'details.product.tax',
+        'details.product.measurement_unit',
+      ],
+    });
+    if (existingByWithdrawal) {
+      return this.mapToResponseDto(existingByWithdrawal);
+    }
+
+    const existingByCode = await this.invoiceRepository.findOne({
       where: { code: invoiceCode },
     });
-    if (existingInvoice) {
+    if (existingByCode) {
       const message = await this.translationService.translate(
         'invoice.code_exists',
         userId,
@@ -512,7 +531,13 @@ export class InvoiceService {
       const cfdiResult = await packService.generateCFDI(invoice);
 
       invoice.cfdi_uuid = cfdiResult.uuid;
-      invoice.facturapi_id = cfdiResult.id;
+      invoice.pack_invoice_id = cfdiResult.id;
+      invoice.pack_invoice_response = {
+        uuid: cfdiResult.uuid,
+        status: cfdiResult.status,
+        pdf_url: cfdiResult.pdf_url,
+        xml_url: cfdiResult.xml_url,
+      };
       invoice.status = InvoiceStatus.SENT;
 
       const updatedInvoice = await this.invoiceRepository.save(invoice);
@@ -878,14 +903,14 @@ export class InvoiceService {
       throw new NotFoundException(message);
     }
 
-    if (!invoice.cfdi_uuid) {
+    if (!invoice.pack_invoice_id) {
       throw new BadRequestException(
         'Invoice has not been generated in certification pack',
       );
     }
 
     const packService = await this.certificationPackFactory.getPackService();
-    return await packService.downloadPDF(invoice.cfdi_uuid);
+    return await packService.downloadPDF(invoice.pack_invoice_id);
   }
 
   async downloadXML(invoiceId: string, userId?: string): Promise<string> {
@@ -902,13 +927,13 @@ export class InvoiceService {
       throw new NotFoundException(message);
     }
 
-    if (!invoice.cfdi_uuid) {
+    if (!invoice.pack_invoice_id) {
       throw new BadRequestException(
         'Invoice has not been generated in certification pack',
       );
     }
 
     const packService = await this.certificationPackFactory.getPackService();
-    return await packService.downloadXML(invoice.cfdi_uuid);
+    return await packService.downloadXML(invoice.pack_invoice_id);
   }
 }

@@ -9,6 +9,8 @@ import {
   CustomerResponse,
   ProductData,
   ProductResponse,
+  ReceiptData,
+  ReceiptResponse,
 } from '../interfaces/certification-pack.interface';
 
 @Injectable()
@@ -86,10 +88,10 @@ export class FacturaAPIService implements ICertificationPackService {
     }
   }
 
-  async downloadPDF(uuid: string): Promise<Buffer> {
+  async downloadPDF(packInvoiceId: string): Promise<Buffer> {
     try {
       this.ensureInitialized();
-      const pdfBuffer = await this.facturapi!.invoices.downloadPdf(uuid);
+      const pdfBuffer = await this.facturapi!.invoices.downloadPdf(packInvoiceId);
 
       // Manejar diferentes tipos de respuesta
       if (pdfBuffer instanceof Buffer) {
@@ -147,10 +149,10 @@ export class FacturaAPIService implements ICertificationPackService {
     }
   }
 
-  async downloadXML(uuid: string): Promise<string> {
+  async downloadXML(packInvoiceId: string): Promise<string> {
     try {
       this.ensureInitialized();
-      const xmlContent = await this.facturapi!.invoices.downloadXml(uuid);
+      const xmlContent = await this.facturapi!.invoices.downloadXml(packInvoiceId);
 
       // Manejar diferentes tipos de respuesta
       if (typeof xmlContent === 'string') {
@@ -696,6 +698,61 @@ export class FacturaAPIService implements ICertificationPackService {
       if (error instanceof BadRequestException) throw error;
       console.error('FacturaAPI Update Product Error:', error);
       const message = error?.message ?? 'Error updating product in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  async createReceipt(data: ReceiptData): Promise<ReceiptResponse> {
+    try {
+      this.ensureInitialized();
+
+      const payload: any = {
+        items: data.items,
+        payment_form: data.payment_form,
+      };
+
+      if (data.customer !== undefined) {
+        payload.customer = data.customer;
+      }
+      if (data.date !== undefined) {
+        payload.date = data.date;
+      }
+      if (data.folio_number !== undefined) {
+        payload.folio_number = data.folio_number;
+      }
+      if (data.currency !== undefined) {
+        payload.currency = data.currency;
+      }
+      if (data.exchange !== undefined) {
+        payload.exchange = data.exchange;
+      }
+      if (data.branch !== undefined) {
+        payload.branch = data.branch;
+      }
+      if (data.external_id !== undefined) {
+        payload.external_id = data.external_id;
+      }
+      if (data.idempotency_key !== undefined) {
+        payload.idempotency_key = data.idempotency_key;
+      }
+
+      const receipt = await this.facturapi!.receipts.create(payload);
+      const anyReceipt: any = receipt;
+
+      const createdAt =
+        anyReceipt.created_at instanceof Date
+          ? anyReceipt.created_at.toISOString()
+          : String(anyReceipt.created_at || new Date().toISOString());
+
+      const response: ReceiptResponse = {
+        ...anyReceipt,
+        created_at: createdAt,
+      };
+
+      return response;
+    } catch (error: any) {
+      console.error('FacturaAPI Create Receipt Error:', error);
+      const message = error?.message ?? 'Error creating receipt in FacturaAPI';
       throw new BadRequestException(message);
     }
   }

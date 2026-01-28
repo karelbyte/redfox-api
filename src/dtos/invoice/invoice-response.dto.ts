@@ -35,8 +35,12 @@ export class InvoiceResponseDto {
   @Expose()
   cfdi_uuid?: string | null;
 
+  /** ID interno del comprobante en el PAC activo. Escalable para cualquier pack. */
   @Expose()
-  facturapi_id?: string | null;
+  pack_invoice_id?: string | null;
+
+  @Expose()
+  pack_invoice_response?: Record<string, unknown> | null;
 
   @Expose()
   payment_method: PaymentMethod;

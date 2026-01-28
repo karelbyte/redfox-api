@@ -13,6 +13,7 @@ import { WarehouseService } from './warehouse.service';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
+import { InventoryPackSyncService } from './inventory-pack-sync.service';
 
 @Injectable()
 export class InventoryService {
@@ -24,6 +25,7 @@ export class InventoryService {
     private readonly warehouseService: WarehouseService,
     private readonly warehouseMapper: WarehouseMapper,
     private translationService: TranslationService,
+    private readonly inventoryPackSyncService: InventoryPackSyncService,
   ) {}
 
   private async mapToResponseDto(
@@ -40,6 +42,7 @@ export class InventoryService {
       product,
       quantity: inventory.quantity,
       price: inventory.price,
+      pack_product_id: inventory.pack_product_id ?? null,
       createdAt: inventory.created_at,
       updatedAt: inventory.updated_at,
     };
@@ -57,6 +60,7 @@ export class InventoryService {
       warehouse,
       quantity: inventory.quantity,
       price: inventory.price,
+      pack_product_id: inventory.pack_product_id ?? null,
       createdAt: inventory.created_at,
     };
   }
@@ -183,6 +187,41 @@ export class InventoryService {
       throw new NotFoundException(message);
     }
     await this.inventoryRepository.softRemove(inventory);
+  }
+
+  /**
+   * Resincroniza el producto del inventario con el pack (PAC/Facturapi).
+   * Crea o actualiza el producto en el pack según corresponda (incl. precios).
+   */
+  async syncWithPack(
+    id: string,
+    userId?: string,
+  ): Promise<{
+    inventory: InventoryListResponseDto;
+    pack_sync_success: boolean;
+    pack_sync_error?: string;
+  }> {
+    const inventory = await this.inventoryRepository.findOne({
+      where: { id },
+      relations: ['product', 'product.measurement_unit', 'warehouse'],
+      withDeleted: false,
+    });
+    if (!inventory) {
+      const message = await this.translationService.translate(
+        'inventory.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+    const result = await this.inventoryPackSyncService.syncForInventory(
+      inventory,
+    );
+    return {
+      inventory: this.mapToListResponseDto(result.inventory),
+      pack_sync_success: result.packSyncSuccess,
+      pack_sync_error: result.packErrorMessage,
+    };
   }
 
   /**

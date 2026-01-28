@@ -31,6 +31,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-response.dto';
 import { TranslationService } from './translation.service';
+import { PosPackSyncService } from './pos-pack-sync.service';
 
 @Injectable()
 export class WithdrawalService {
@@ -51,6 +52,7 @@ export class WithdrawalService {
     private readonly productMapper: ProductMapper,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly translationService: TranslationService,
+    private readonly posPackSyncService: PosPackSyncService,
   ) {}
 
   private mapDetailToResponseDto(
@@ -77,6 +79,7 @@ export class WithdrawalService {
       cash_transaction_id: withdrawal.cashTransactionId,
       status: withdrawal.status,
       created_at: withdrawal.created_at,
+      pack_receipt_id: withdrawal.pack_receipt_id ?? null,
     };
   }
 
@@ -617,7 +620,7 @@ export class WithdrawalService {
     // Verificar que la withdrawal existe y está abierta
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
-      relations: ['details', 'details.product', 'details.warehouse'],
+      relations: ['client', 'details', 'details.product', 'details.warehouse'],
     });
 
     if (!withdrawal) {
@@ -703,7 +706,14 @@ export class WithdrawalService {
 
     // Cerrar la withdrawal
     withdrawal.status = true;
-    await this.withdrawalRepository.save(withdrawal);
+    const closedWithdrawal = await this.withdrawalRepository.save(withdrawal);
+
+    // Si es un retiro POS, intentar crear el recibo en el PAC
+    if (closedWithdrawal.type === WithdrawalType.POS) {
+      await this.posPackSyncService.createReceiptForWithdrawal(
+        closedWithdrawal.id,
+      );
+    }
 
     // Retornar resumen de la operación
     const message =
@@ -712,8 +722,8 @@ export class WithdrawalService {
         : 'Withdrawal cerrada exitosamente. No había productos para retirar.';
 
     return {
-      withdrawalId: withdrawal.id,
-      withdrawalCode: withdrawal.code,
+      withdrawalId: closedWithdrawal.id,
+      withdrawalCode: closedWithdrawal.code,
       withdrawnProducts,
       totalQuantity,
       message,

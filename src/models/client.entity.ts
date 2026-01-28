@@ -67,10 +67,10 @@ export class Client {
   status: boolean;
 
   @Column({ length: 255, nullable: true })
-  pack_product_id: string;
+  pack_client_id: string;
 
   @Column({ type: 'json', nullable: true })
-  pack_product_response: any;
+  pack_client_response: any;
 
   @CreateDateColumn()
   created_at: Date;

@@ -50,6 +50,17 @@ export class CreateInventoryTable1716400000090 implements MigrationInterface {
             scale: 2,
           },
           {
+            name: 'pack_product_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'pack_product_response',
+            type: isPostgres ? 'jsonb' : 'text',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

@@ -73,4 +73,16 @@ export class InventoryController {
   ): Promise<void> {
     return this.inventoryService.remove(id, userId);
   }
+
+  @Post(':id/sync-pack')
+  syncWithPack(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<{
+    inventory: InventoryListResponseDto;
+    pack_sync_success: boolean;
+    pack_sync_error?: string;
+  }> {
+    return this.inventoryService.syncWithPack(id, userId);
+  }
 }

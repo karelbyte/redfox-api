@@ -128,13 +128,13 @@ export class CreateClientsTable1716400000030 implements MigrationInterface {
             default: true,
           },
           {
-            name: 'pack_product_id',
+            name: 'pack_client_id',
             type: 'varchar',
             length: '255',
             isNullable: true,
           },
           {
-            name: 'pack_product_response',
+            name: 'pack_client_response',
             type: isPostgres ? 'jsonb' : 'text',
             isNullable: true,
           },

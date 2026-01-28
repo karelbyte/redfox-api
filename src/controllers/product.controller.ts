@@ -19,7 +19,6 @@ import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 import { ProductResponseDto } from '../dtos/product/product-response.dto';
-import { ProductWithPackStatusResponseDto } from '../dtos/product/product-with-pack-status-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -75,7 +74,7 @@ export class ProductController {
       }),
     )
     files?: Express.Multer.File[],
-  ): Promise<ProductWithPackStatusResponseDto> {
+  ): Promise<ProductResponseDto> {
     if (files && files.length > 0) {
       createProductDto.images = files.map(
         (file) => `/uploads/products/${file.filename}`,
@@ -143,7 +142,7 @@ export class ProductController {
       }),
     )
     files?: Express.Multer.File[],
-  ): Promise<ProductWithPackStatusResponseDto> {
+  ): Promise<ProductResponseDto> {
     if (files && files.length > 0) {
       updateProductDto.images = files.map(
         (file) => `/uploads/products/${file.filename}`,

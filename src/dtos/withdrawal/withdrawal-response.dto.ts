@@ -11,4 +11,5 @@ export class WithdrawalResponseDto {
   cash_transaction_id?: string;
   status: boolean;
   created_at: Date;
+  pack_receipt_id?: string | null;
 }

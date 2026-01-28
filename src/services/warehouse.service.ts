@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Warehouse } from '../models/warehouse.entity';
+import { Currency } from '../models/currency.entity';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
 import { UpdateWarehouseDto } from '../dtos/warehouse/update-warehouse.dto';
 import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
@@ -23,6 +24,7 @@ import {
 } from '../models/product-history.entity';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { TranslationService } from './translation.service';
+import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { Like } from 'typeorm';
 
 @Injectable()
@@ -39,6 +41,7 @@ export class WarehouseService {
     private readonly currencyMapper: CurrencyMapper,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly translationService: TranslationService,
+    private readonly inventoryPackSyncService: InventoryPackSyncService,
   ) {}
 
   async create(
@@ -230,10 +233,11 @@ export class WarehouseService {
     }
 
     try {
-      const updatedWarehouse = await this.warehouseRepository.save({
-        ...warehouse,
-        ...updateWarehouseDto,
-      });
+      const toSave = { ...warehouse, ...updateWarehouseDto };
+      if (updateWarehouseDto.currencyId !== undefined) {
+        toSave.currency = { id: updateWarehouseDto.currencyId } as Currency;
+      }
+      const updatedWarehouse = await this.warehouseRepository.save(toSave);
 
       // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
@@ -348,10 +352,10 @@ export class WarehouseService {
       throw new BadRequestException(message);
     }
 
-    // Obtener todos los warehouse openings de este almacén
+    // Obtener todos los warehouse openings de este almacén (product.measurement_unit para sync al pack)
     const warehouseOpenings = await this.warehouseOpeningRepository.find({
       where: { warehouseId },
-      relations: ['product'],
+      relations: ['product', 'product.measurement_unit'],
     });
 
     let transferredProducts = 0;
@@ -406,6 +410,9 @@ export class WarehouseService {
       });
 
       await this.productHistoryRepository.save(productHistory);
+
+      finalInventory.product = opening.product;
+      await this.inventoryPackSyncService.syncForInventory(finalInventory);
 
       transferredProducts++;
       totalQuantity += Number(opening.quantity);

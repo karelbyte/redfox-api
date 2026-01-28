@@ -1,5 +1,11 @@
 import { Invoice } from '../models/invoice.entity';
 
+/**
+ * Respuesta genérica al emitir CFDI en el PAC.
+ * Escalable para cualquier pack (Facturapi, SAT, otro PAC).
+ * - id: identificador interno del comprobante en el PAC → persistir como pack_invoice_id
+ * - uuid: folio fiscal del SAT (CFDI) → persistir como cfdi_uuid
+ */
 export interface CFDIResponse {
   id: string;
   uuid: string;
@@ -94,12 +100,69 @@ export interface ProductResponse {
   [key: string]: unknown;
 }
 
+export interface ReceiptItemProductData {
+  description: string;
+  product_key: string | number;
+  price: number;
+  tax_included?: boolean;
+  taxability?: string;
+  taxes?: Array<{ type: string; rate: number }>;
+  local_taxes?: Array<{ type: string; rate: number }>;
+  unit_key?: string;
+  unit_name?: string;
+  sku?: string;
+}
+
+export interface ReceiptItemData {
+  quantity: number;
+  discount?: number;
+  product: ReceiptItemProductData;
+}
+
+export interface ReceiptData {
+  items: ReceiptItemData[];
+  payment_form: string;
+  customer?: string | CustomerData;
+  date?: string;
+  folio_number?: number;
+  currency?: string;
+  exchange?: number;
+  branch?: string;
+  external_id?: string;
+  idempotency_key?: string;
+}
+
+export interface ReceiptResponse {
+  id: string;
+  created_at: string;
+  livemode: boolean;
+  date: string;
+  expires_at?: string;
+  status: string;
+  self_invoice_url?: string;
+  total: number;
+  invoice?: string;
+  customer?: string | CustomerResponse;
+  key?: string;
+  items: ReceiptItemData[];
+  external_id?: string;
+  idempotency_key?: string;
+  payment_form: string;
+  folio_number?: number;
+  currency?: string;
+  exchange?: number;
+  branch?: string;
+  [key: string]: unknown;
+}
+
 export interface ICertificationPackService {
   generateCFDI(invoice: Invoice): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
   getCFDIStatus(uuid: string): Promise<any>;
-  downloadPDF(uuid: string): Promise<Buffer>;
-  downloadXML(uuid: string): Promise<string>;
+  /** @param packInvoiceId ID interno del comprobante en el PAC (ej. Facturapi id), no el UUID del SAT */
+  downloadPDF(packInvoiceId: string): Promise<Buffer>;
+  /** @param packInvoiceId ID interno del comprobante en el PAC (ej. Facturapi id), no el UUID del SAT */
+  downloadXML(packInvoiceId: string): Promise<string>;
   validateTaxId(taxId: string): Promise<boolean>;
   getTaxRegimes(): Promise<any[]>;
   getProductKeys(): Promise<any[]>;
@@ -111,4 +174,5 @@ export interface ICertificationPackService {
   updateCustomer(customerId: string, customerData: Partial<CustomerData>): Promise<CustomerResponse>;
   createProduct(productData: ProductData): Promise<ProductResponse>;
   updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
+  createReceipt(data: ReceiptData): Promise<ReceiptResponse>;
 }

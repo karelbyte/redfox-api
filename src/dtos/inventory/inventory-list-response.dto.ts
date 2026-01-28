@@ -7,5 +7,6 @@ export class InventoryListResponseDto {
   warehouse: WarehouseResponseDto;
   quantity: number;
   price: number;
+  pack_product_id?: string | null;
   createdAt: Date;
 }

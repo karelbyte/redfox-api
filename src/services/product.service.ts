@@ -12,13 +12,11 @@ import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 import { ProductResponseDto } from '../dtos/product/product-response.dto';
-import { ProductWithPackStatusResponseDto } from '../dtos/product/product-with-pack-status-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
-import { ProductPackSyncService } from './product-pack-sync.service';
 import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
 
 interface SearchCondition {
@@ -54,13 +52,12 @@ export class ProductService {
     private readonly productMapper: ProductMapper,
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-    private readonly productPackSyncService: ProductPackSyncService,
   ) {}
 
   async create(
     createProductDto: CreateProductDto,
     userId?: string,
-  ): Promise<ProductWithPackStatusResponseDto> {
+  ): Promise<ProductResponseDto> {
     try {
       const [existingSlug, existingSku] = await Promise.all([
         this.productRepository.findOne({
@@ -122,15 +119,7 @@ export class ProductService {
         where: { id: savedProduct.id },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
-      const toSync = productWithRelations ?? savedProduct;
-
-      const syncResult = await this.productPackSyncService.syncOnCreate(toSync);
-
-      return {
-        product: this.productMapper.mapToResponseDto(syncResult.product),
-        pack_sync_success: syncResult.packSyncSuccess,
-        pack_sync_error: syncResult.packErrorMessage,
-      };
+      return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
     } catch (error: unknown) {
       const dbError = error as { code?: string; message?: string };
       if (
@@ -301,7 +290,7 @@ export class ProductService {
     id: string,
     updateProductDto: UpdateProductDto,
     userId?: string,
-  ): Promise<ProductWithPackStatusResponseDto> {
+  ): Promise<ProductResponseDto> {
     try {
       const product = await this.findOneEntity(id, userId);
 
@@ -340,18 +329,7 @@ export class ProductService {
         where: { id: savedProduct.id },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
-      const toSync = productWithRelations ?? savedProduct;
-
-      const syncResult = await this.productPackSyncService.syncOnUpdate(
-        toSync,
-        updateProductDto,
-      );
-
-      return {
-        product: this.productMapper.mapToResponseDto(syncResult.product),
-        pack_sync_success: syncResult.packSyncSuccess,
-        pack_sync_error: syncResult.packErrorMessage,
-      };
+      return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
     } catch (error: unknown) {
       // Handle duplicate slug/SKU error in update
       const dbError = error as { code?: string; message?: string };

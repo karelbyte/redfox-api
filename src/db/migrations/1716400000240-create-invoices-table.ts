@@ -85,9 +85,14 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'facturapi_id',
+            name: 'pack_invoice_id',
             type: 'varchar',
             length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'pack_invoice_response',
+            type: 'json',
             isNullable: true,
           },
           {
@@ -143,8 +148,8 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             columnNames: ['cfdi_uuid'],
           },
           {
-            name: 'idx_invoices_facturapi_id',
-            columnNames: ['facturapi_id'],
+            name: 'idx_invoices_pack_invoice_id',
+            columnNames: ['pack_invoice_id'],
           },
           {
             name: 'idx_invoices_date',

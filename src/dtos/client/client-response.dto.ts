@@ -17,8 +17,8 @@ export class ClientResponseDto {
   email: string;
   tax_system?: string;
   default_invoice_use?: string;
-  pack_product_id?: string;
-  pack_product_response?: any;
+  pack_client_id?: string;
+  pack_client_response?: any;
   status: boolean;
   created_at: Date;
 }

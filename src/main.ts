@@ -55,9 +55,10 @@ async function bootstrap() {
       }),
     );
 
-    // Configurar archivos estáticos
-    app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-      prefix: '/uploads',
+    // Misma base que multer (process.cwd()/uploads) para que el archivo recién subido sea visible de inmediato
+    const uploadsPath = join(process.cwd(), 'uploads');
+    app.useStaticAssets(uploadsPath, {
+      prefix: '/api/uploads',
     });
 
     await app.listen(port);

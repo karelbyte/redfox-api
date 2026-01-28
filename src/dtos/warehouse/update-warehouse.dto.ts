@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, Length } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUUID, Length } from 'class-validator';
 
 export class UpdateWarehouseDto {
   @IsString()
@@ -24,4 +24,8 @@ export class UpdateWarehouseDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean;
+
+  @IsUUID()
+  @IsOptional()
+  currencyId?: string;
 }

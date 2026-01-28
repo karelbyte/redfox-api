@@ -28,8 +28,8 @@ export class ClientMapper {
       email,
       tax_system,
       default_invoice_use,
-      pack_product_id,
-      pack_product_response,
+      pack_client_id,
+      pack_client_response,
       status,
       created_at,
     } = client;
@@ -52,8 +52,8 @@ export class ClientMapper {
       email,
       tax_system,
       default_invoice_use,
-      pack_product_id,
-      pack_product_response,
+      pack_client_id,
+      pack_client_response,
       status,
       created_at,
     };

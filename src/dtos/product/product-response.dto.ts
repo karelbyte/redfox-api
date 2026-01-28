@@ -69,8 +69,4 @@ export class ProductResponseDto {
 
   @Expose()
   created_at: Date;
-
-  /** ID del producto en el pack de facturación (ej. Facturapi). Indica que está registrado en el pack. */
-  @Expose()
-  pack_product_id?: string | null;
 }
