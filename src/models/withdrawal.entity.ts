@@ -12,6 +12,7 @@ import {
 import { Client } from './client.entity';
 import { WithdrawalDetail } from './withdrawal-detail.entity';
 import { CashTransaction } from './cash-transaction.entity';
+import { Invoice } from './invoice.entity';
 
 export enum WithdrawalType {
   POS = 'POS',
@@ -58,6 +59,13 @@ export class Withdrawal {
 
   @Column({ name: 'pack_receipt_response', type: 'json', nullable: true })
   pack_receipt_response: Record<string, unknown> | null;
+
+  @ManyToOne(() => Invoice, { nullable: true })
+  @JoinColumn({ name: 'invoice_id' })
+  invoice: Invoice | null;
+
+  @Column({ name: 'invoice_id', nullable: true })
+  invoiceId: string | null;
 
   @OneToMany(() => WithdrawalDetail, (detail) => detail.withdrawal)
   details: WithdrawalDetail[];

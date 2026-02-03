@@ -42,17 +42,6 @@ export class CreateCertificationPacksTable1716400000260
             isNullable: false,
           },
           {
-            name: 'name',
-            type: 'varchar',
-            length: '100',
-            isNullable: false,
-          },
-          {
-            name: 'description',
-            type: 'text',
-            isNullable: true,
-          },
-          {
             name: 'config',
             type: isPostgres ? 'jsonb' : 'json',
             isNullable: false,

@@ -7,6 +7,7 @@ import {
   CFDIResponse,
   CustomerData,
   CustomerResponse,
+  GlobalInvoiceData,
   ProductData,
   ProductResponse,
   ReceiptData,
@@ -859,6 +860,40 @@ export class FacturaAPIService implements ICertificationPackService {
     } catch (error: any) {
       console.error('FacturaAPI Create Receipt Error:', error);
       const message = error?.message ?? 'Error creating receipt in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
+    try {
+      this.ensureInitialized();
+      const payload: Record<string, unknown> = {
+        periodicity: data.periodicity,
+      };
+      if (data.from) payload.from = data.from;
+      if (data.to) payload.to = data.to;
+      if (data.months) payload.months = data.months;
+      if (data.receipts?.length) payload.receipts = data.receipts;
+      if (data.payment_form) payload.payment_form = data.payment_form;
+      if (data.date) payload.date = data.date;
+      if (data.folio_number !== undefined) payload.folio_number = data.folio_number;
+      if (data.series) payload.series = data.series;
+
+      const invoice = await this.facturapi!.receipts.createGlobalInvoice(
+        payload as Record<string, any>,
+      );
+      const anyInv = invoice as any;
+      return {
+        id: anyInv.id,
+        uuid: anyInv.uuid ?? '',
+        status: anyInv.status ?? 'valid',
+        pdf_url: anyInv.pdf_url,
+        xml_url: anyInv.xml_url,
+      };
+    } catch (error: any) {
+      console.error('FacturaAPI Create Global Invoice Error:', error);
+      const message =
+        error?.message ?? 'Error creating global invoice in FacturaAPI';
       throw new BadRequestException(message);
     }
   }

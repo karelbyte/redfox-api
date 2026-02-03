@@ -82,6 +82,16 @@ export class ClientPackImportService {
     }
 
     const customers: CustomerResponse[] = await packService.listCustomers();
+    const summarized = customers.map((customer) => ({
+      id: customer.id,
+      tax_id: customer.tax_id,
+      legal_name: customer.legal_name,
+    }));
+
+    this.logger.log(
+      `Received customers from pack for import: total=${customers.length}`,
+      { total: customers.length, customers: summarized },
+    );
 
     let created = 0;
     let updated = 0;
@@ -90,22 +100,10 @@ export class ClientPackImportService {
 
     for (const customer of customers) {
       try {
-        // 1) Match por pack_client_id
         let existing = await this.clientRepository.findOne({
           where: { pack_client_id: customer.id },
           withDeleted: false,
         });
-
-        // 2) Match por tax_document si existe y no estaba vinculado
-        if (!existing && customer.tax_id) {
-          existing = await this.clientRepository.findOne({
-            where: { tax_document: customer.tax_id },
-            withDeleted: false,
-          });
-          if (existing && !existing.pack_client_id) {
-            linked += 1;
-          }
-        }
 
         const patch = this.mapPackCustomerToClientPatch(customer);
 

@@ -19,7 +19,10 @@ import {
   CreateWithdrawalDetailDto,
 } from '../dtos/withdrawal/create-withdrawal.dto';
 import { UpdateWithdrawalDto } from '../dtos/withdrawal/update-withdrawal.dto';
-import { WithdrawalResponseDto } from '../dtos/withdrawal/withdrawal-response.dto';
+import {
+  WithdrawalResponseDto,
+  PackFiscalStatus,
+} from '../dtos/withdrawal/withdrawal-response.dto';
 import { WithdrawalDetailResponseDto } from '../dtos/withdrawal-detail/withdrawal-detail-response.dto';
 import { CreateWithdrawalDetailDto as CreateDetailDto } from '../dtos/withdrawal-detail/create-withdrawal-detail.dto';
 import { UpdateWithdrawalDetailDto } from '../dtos/withdrawal-detail/update-withdrawal-detail.dto';
@@ -29,6 +32,7 @@ import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductService } from './product.service';
 import { ProductMapper } from './mappers/product.mapper';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
+import { ClientMapper } from './mappers/client.mapper';
 import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-response.dto';
 import { TranslationService } from './translation.service';
 import { PosPackSyncService } from './pos-pack-sync.service';
@@ -51,6 +55,7 @@ export class WithdrawalService {
     private readonly productService: ProductService,
     private readonly productMapper: ProductMapper,
     private readonly warehouseMapper: WarehouseMapper,
+    private readonly clientMapper: ClientMapper,
     private readonly translationService: TranslationService,
     private readonly posPackSyncService: PosPackSyncService,
   ) {}
@@ -69,9 +74,21 @@ export class WithdrawalService {
   }
 
   private mapToResponseDto(withdrawal: Withdrawal): WithdrawalResponseDto {
+    let pack_fiscal_status: PackFiscalStatus = 'RECEIPT_ONLY';
+    let invoice_code: string | null = null;
+    let cfdi_uuid: string | null = null;
+    if (withdrawal.invoiceId && withdrawal.invoice) {
+      const inv = withdrawal.invoice as any;
+      pack_fiscal_status =
+        inv.withdrawal?.id === withdrawal.id ? 'INVOICED_DIRECT' : 'INVOICED_GLOBAL';
+      invoice_code = inv.code ?? null;
+      cfdi_uuid = inv.cfdi_uuid ?? null;
+    }
     return {
       id: withdrawal.id,
-      client: withdrawal.client,
+      client: withdrawal.client
+        ? this.clientMapper.mapToResponseDto(withdrawal.client)
+        : null,
       code: withdrawal.code,
       destination: withdrawal.destination,
       amount: withdrawal.amount,
@@ -80,6 +97,10 @@ export class WithdrawalService {
       status: withdrawal.status,
       created_at: withdrawal.created_at,
       pack_receipt_id: withdrawal.pack_receipt_id ?? null,
+      invoice_id: withdrawal.invoiceId ?? null,
+      pack_fiscal_status,
+      invoice_code,
+      cfdi_uuid,
     };
   }
 
@@ -149,6 +170,8 @@ export class WithdrawalService {
     const [withdrawals, total] = await this.withdrawalRepository.findAndCount({
       relations: [
         'client',
+        'invoice',
+        'invoice.withdrawal',
         'cashTransaction',
         'details',
         'details.product',
@@ -176,6 +199,8 @@ export class WithdrawalService {
       where: { id },
       relations: [
         'client',
+        'invoice',
+        'invoice.withdrawal',
         'cashTransaction',
         'details',
         'details.product',

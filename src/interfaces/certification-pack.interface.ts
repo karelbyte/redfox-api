@@ -186,4 +186,22 @@ export interface ICertificationPackService {
   createProduct(productData: ProductData): Promise<ProductResponse>;
   updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
   createReceipt(data: ReceiptData): Promise<ReceiptResponse>;
+  /**
+   * Crea una factura global en el PAC que agrupa recibos (notas) no facturados.
+   * FacturaAPI: POST /v2/receipts/global-invoice
+   */
+  createGlobalInvoice?(data: GlobalInvoiceData): Promise<CFDIResponse>;
+}
+
+/** Datos para crear factura global en el PAC (ej. FacturaAPI). */
+export interface GlobalInvoiceData {
+  from?: string;
+  to?: string;
+  periodicity: 'day' | 'week' | 'fortnight' | 'month' | 'two_months';
+  months?: string;
+  receipts?: string[];
+  payment_form?: string;
+  date?: string;
+  folio_number?: number;
+  series?: string;
 }

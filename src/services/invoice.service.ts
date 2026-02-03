@@ -454,6 +454,9 @@ export class InvoiceService {
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
+    withdrawal.invoiceId = savedInvoice.id;
+    await this.withdrawalRepository.save(withdrawal);
+
     for (const detailDto of details) {
       const product = await this.productService.findOneEntity(
         detailDto.product_id,
@@ -492,6 +495,135 @@ export class InvoiceService {
       ],
     });
 
+    return this.mapToResponseDto(invoiceWithDetails!);
+  }
+
+  /**
+   * Crea una factura global en el PAC a partir de ventas (withdrawals) que tienen
+   * solo nota (pack_receipt_id) y aún no están facturadas. Actualiza cada withdrawal
+   * con invoice_id apuntando a la nueva factura global.
+   */
+  async createGlobalInvoice(
+    dto: { from?: string; to?: string; periodicity: string; withdrawal_ids?: string[] },
+    userId?: string,
+  ): Promise<InvoiceResponseDto> {
+    let withdrawals: Withdrawal[];
+    if (dto.withdrawal_ids?.length) {
+      withdrawals = await this.withdrawalRepository.find({
+        where: dto.withdrawal_ids.map((id) => ({ id })),
+        relations: ['client'],
+      });
+    } else if (dto.from && dto.to) {
+      const fromDate = new Date(dto.from);
+      const toDate = new Date(dto.to);
+      withdrawals = await this.withdrawalRepository
+        .createQueryBuilder('w')
+        .where('w.created_at >= :from', { from: fromDate })
+        .andWhere('w.created_at <= :to', { to: toDate })
+        .andWhere('w.pack_receipt_id IS NOT NULL')
+        .andWhere('w.invoice_id IS NULL')
+        .getMany();
+    } else {
+      throw new BadRequestException(
+        'Debe enviar withdrawal_ids o from y to para el periodo',
+      );
+    }
+
+    withdrawals = withdrawals.filter(
+      (w) => w.pack_receipt_id && !w.invoiceId,
+    );
+    if (!withdrawals.length) {
+      throw new BadRequestException(
+        'No hay ventas con nota (recibo) sin facturar en el periodo o lista indicada',
+      );
+    }
+
+    const packService = await this.certificationPackFactory.getPackService();
+    const createGlobal =
+      (packService as any).createGlobalInvoice ?? packService.createGlobalInvoice;
+    if (!createGlobal) {
+      throw new BadRequestException(
+        'El PAC activo no soporta factura global',
+      );
+    }
+
+    const receiptIds = withdrawals.map((w) => w.pack_receipt_id!);
+    const from =
+      dto.from ??
+      withdrawals.reduce(
+        (min, w) =>
+          !min || new Date(w.created_at) < new Date(min)
+            ? (w.created_at as Date).toISOString().split('T')[0]
+            : min,
+        null as string | null,
+      );
+    const to =
+      dto.to ??
+      withdrawals.reduce(
+        (max, w) =>
+          !max || new Date(w.created_at) > new Date(max)
+            ? (w.created_at as Date).toISOString().split('T')[0]
+            : max,
+        null as string | null,
+      );
+
+    const cfdiResult = await createGlobal.call(packService, {
+      from: from ?? undefined,
+      to: to ?? undefined,
+      periodicity: dto.periodicity as any,
+      receipts: receiptIds,
+    });
+
+    const firstClient = await this.clientRepository.findOne({
+      where: {},
+      order: { id: 'ASC' },
+    });
+    if (!firstClient) {
+      throw new BadRequestException(
+        'No hay clientes en el sistema; se requiere al menos uno para la factura global',
+      );
+    }
+
+    const globalCode = `GLOBAL-${(to ?? new Date().toISOString().split('T')[0]).replace(/-/g, '')}`;
+    const existingCode = await this.invoiceRepository.findOne({
+      where: { code: globalCode },
+    });
+    const code = existingCode ? `${globalCode}-${Date.now()}` : globalCode;
+
+    const invoice = this.invoiceRepository.create({
+      code,
+      date: new Date(),
+      client: firstClient,
+      withdrawal: undefined,
+      subtotal: 0,
+      tax_amount: 0,
+      total_amount: 0,
+      status: InvoiceStatus.SENT,
+      cfdi_uuid: cfdiResult.uuid,
+      pack_invoice_id: cfdiResult.id,
+      pack_invoice_response: {
+        uuid: cfdiResult.uuid,
+        status: cfdiResult.status,
+        id: cfdiResult.id,
+      },
+      payment_method: 'cash' as any,
+    });
+    const savedInvoice = await this.invoiceRepository.save(invoice);
+
+    for (const w of withdrawals) {
+      w.invoiceId = savedInvoice.id;
+      await this.withdrawalRepository.save(w);
+    }
+
+    const invoiceWithDetails = await this.invoiceRepository.findOne({
+      where: { id: savedInvoice.id },
+      relations: [
+        'client',
+        'withdrawal',
+        'details',
+        'details.product',
+      ],
+    });
     return this.mapToResponseDto(invoiceWithDetails!);
   }
 

@@ -16,12 +16,6 @@ export class CertificationPack {
   @Column({ type: 'enum', enum: CertificationPackType })
   type: CertificationPackType;
 
-  @Column({ length: 100 })
-  name: string;
-
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
   @Column({ type: 'json' })
   config: Record<string, any>;
 

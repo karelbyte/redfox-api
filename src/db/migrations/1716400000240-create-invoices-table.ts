@@ -2,6 +2,7 @@ import {
   MigrationInterface,
   QueryRunner,
   Table,
+  TableColumn,
   TableForeignKey,
 } from 'typeorm';
 
@@ -181,9 +182,39 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
         onUpdate: 'CASCADE',
       }),
     );
+
+    await queryRunner.addColumn(
+      'withdrawals',
+      new TableColumn({
+        name: 'invoice_id',
+        type: isPostgres ? 'uuid' : 'varchar',
+        length: isPostgres ? undefined : '36',
+        isNullable: true,
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'withdrawals',
+      new TableForeignKey({
+        columnNames: ['invoice_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'invoices',
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    const withdrawalsTable = await queryRunner.getTable('withdrawals');
+    const withdrawalsFk = withdrawalsTable?.foreignKeys.find(
+      (fk) => fk.columnNames.indexOf('invoice_id') !== -1,
+    );
+    if (withdrawalsFk) {
+      await queryRunner.dropForeignKey('withdrawals', withdrawalsFk);
+    }
+    await queryRunner.dropColumn('withdrawals', 'invoice_id');
+
     const table = await queryRunner.getTable('invoices');
     const foreignKeys = table?.foreignKeys || [];
 

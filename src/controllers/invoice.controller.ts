@@ -21,6 +21,7 @@ import {
   GenerateCFDIDto,
   CancelCFDIDto,
   ConvertWithdrawalToInvoiceDto,
+  CreateGlobalInvoiceDto,
 } from '../dtos/invoice/facturapi.dto';
 import { CreateInvoiceDetailDto } from '../dtos/invoice-detail/create-invoice-detail.dto';
 import { UpdateInvoiceDetailDto } from '../dtos/invoice-detail/create-invoice-detail.dto';
@@ -85,6 +86,22 @@ export class InvoiceController {
     return this.invoiceService.convertWithdrawalToInvoice(
       convertDto.withdrawal_id,
       convertDto.invoice_code,
+      userId,
+    );
+  }
+
+  @Post('global')
+  createGlobalInvoice(
+    @Body() dto: CreateGlobalInvoiceDto,
+    @UserId() userId: string,
+  ): Promise<InvoiceResponseDto> {
+    return this.invoiceService.createGlobalInvoice(
+      {
+        from: dto.from,
+        to: dto.to,
+        periodicity: dto.periodicity,
+        withdrawal_ids: dto.withdrawal_ids,
+      },
       userId,
     );
   }

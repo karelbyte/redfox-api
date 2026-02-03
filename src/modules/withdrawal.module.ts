@@ -16,6 +16,7 @@ import { CategoryMapper } from '../services/mappers/category.mapper';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
+import { ClientMapper } from '../services/mappers/client.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
@@ -45,9 +46,10 @@ import { PosPackSyncService } from '../services/pos-pack-sync.service';
     TaxMapper,
     MeasurementUnitMapper,
     WarehouseMapper,
+    ClientMapper,
     CurrencyMapper,
     PosPackSyncService,
   ],
   exports: [WithdrawalService],
 })
-export class WithdrawalModule {}
+export class WithdrawalModule { }

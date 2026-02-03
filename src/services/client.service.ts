@@ -194,7 +194,20 @@ export class ClientService {
       throw new NotFoundException(message);
     }
 
-    // Validar uso (facturas / ventas) antes de permitir eliminar
+    if (client.pack_client_id) {
+      try {
+        const packService: any = await this.certificationPackFactory.getPackService();
+        if (packService?.deleteCustomer && typeof packService.deleteCustomer === 'function') {
+          await packService.deleteCustomer(client.pack_client_id);
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
+        );
+        throw new BadRequestException(error?.message || 'Client cannot be deleted in the pack system.');
+      }
+    }
+
     const invoiceCount = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .where('invoice.client_id = :id', { id })
@@ -212,21 +225,6 @@ export class ClientService {
         { invoiceCount, withdrawalCount },
       );
       throw new BadRequestException(message);
-    }
-
-    // Best-effort: si tiene pack_client_id e implementación soporta borrado, intentar borrar en pack
-    if (client.pack_client_id) {
-      try {
-        const packService: any = await this.certificationPackFactory.getPackService();
-        if (packService?.deleteCustomer && typeof packService.deleteCustomer === 'function') {
-          await packService.deleteCustomer(client.pack_client_id);
-        }
-      } catch (error: any) {
-        this.logger.warn(
-          `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
-        );
-        // no bloquear eliminación local
-      }
     }
 
     await this.clientRepository.softRemove(client);

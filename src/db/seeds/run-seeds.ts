@@ -38,8 +38,8 @@ export class RunSeeds {
       await CurrenciesSeed.run(dataSource);
       console.log('✅ Currencies created');
 
-      await ClientsSeed.run(dataSource);
-      console.log('✅ Clients created');
+     /* await ClientsSeed.run(dataSource);
+      console.log('✅ Clients created');*/
 
       await ProvidersSeed.run(dataSource);
       console.log('✅ Providers created');
