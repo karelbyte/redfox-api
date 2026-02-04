@@ -44,6 +44,17 @@ export class CreateSurrogatesTable1716400000300 implements MigrationInterface {
             default: 4,
           },
           {
+            name: 'include_year',
+            type: 'boolean',
+            default: false,
+          },
+          {
+            name: 'year_separator',
+            type: 'varchar',
+            length: '10',
+            default: "'-'",
+          },
+          {
             name: 'description',
             type: 'varchar',
             length: '255',
@@ -81,19 +92,19 @@ export class CreateSurrogatesTable1716400000300 implements MigrationInterface {
 
     // Insertar datos iniciales
     await queryRunner.query(`
-      INSERT INTO surrogates (code, prefix, next_number, padding, description) VALUES
-      ('client', 'CLI', 1, 4, 'Códigos para clientes'),
-      ('product', 'PROD', 1, 4, 'Códigos para productos'),
-      ('invoice', 'INV', 1, 6, 'Códigos para facturas'),
-      ('purchase_order', 'PO', 1, 4, 'Códigos para órdenes de compra'),
-      ('sale', 'VTA', 1, 6, 'Códigos para ventas'),
-      ('provider', 'PROV', 1, 4, 'Códigos para proveedores'),
-      ('warehouse', 'ALM', 1, 3, 'Códigos para almacenes'),
-      ('brand', 'MRC', 1, 3, 'Códigos para marcas'),
-      ('category', 'CAT', 1, 3, 'Códigos para categorías'),
-      ('reception', 'REC', 1, 4, 'Códigos para recepciones'),
-      ('withdrawal', 'RET', 1, 4, 'Códigos para retiros'),
-      ('return', 'DEV', 1, 4, 'Códigos para devoluciones')
+      INSERT INTO surrogates (code, prefix, next_number, padding, include_year, year_separator, description) VALUES
+      ('client', 'CLI', 1, 4, false, '-', 'Códigos para clientes'),
+      ('product', 'PROD', 1, 4, false, '-', 'Códigos para productos'),
+      ('invoice', 'INV', 1, 6, false, '-', 'Códigos para facturas'),
+      ('purchase_order', 'PO', 1, 4, true, '-', 'Códigos para órdenes de compra'),
+      ('sale', 'VTA', 1, 6, false, '-', 'Códigos para ventas'),
+      ('provider', 'PROV', 1, 4, false, '-', 'Códigos para proveedores'),
+      ('warehouse', 'ALM', 1, 3, false, '-', 'Códigos para almacenes'),
+      ('brand', 'MRC', 1, 3, false, '-', 'Códigos para marcas'),
+      ('category', 'CAT', 1, 3, false, '-', 'Códigos para categorías'),
+      ('reception', 'REC', 1, 4, true, '-', 'Códigos para recepciones'),
+      ('withdrawal', 'RET', 1, 4, false, '-', 'Códigos para retiros'),
+      ('return', 'DEV', 1, 4, false, '-', 'Códigos para devoluciones')
     `);
   }
 

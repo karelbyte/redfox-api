@@ -21,6 +21,14 @@ export class UpdateSurrogateDto {
   padding?: number;
 
   @IsOptional()
+  @IsBoolean()
+  include_year?: boolean;
+
+  @IsOptional()
+  @IsString()
+  year_separator?: string;
+
+  @IsOptional()
   @IsString()
   description?: string;
 
