@@ -31,6 +31,7 @@ import { PurchaseOrderModule } from './modules/purchase-order.module';
 import { InvoiceModule } from './modules/invoice.module';
 import { CompanySettingsModule } from './modules/company-settings.module';
 import { BackupModule } from './modules/backup.module';
+import { SurrogateModule } from './modules/surrogate.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -77,6 +78,7 @@ import { HomeController } from './controllers/home.controller';
     InvoiceModule,
     CompanySettingsModule,
     BackupModule,
+    SurrogateModule,
   ],
   controllers: [HomeController],
   providers: [],
