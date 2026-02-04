@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
-import { WithdrawalType } from '../../models/withdrawal.entity';
+import { WithdrawalType, WithdrawalStatus } from '../../models/withdrawal.entity';
 
 export class UpdateWithdrawalDto {
   @IsString()
@@ -42,9 +42,9 @@ export class UpdateWithdrawalDto {
   @IsOptional()
   cash_transaction_id?: string;
 
-  @IsBoolean()
+  @IsEnum(WithdrawalStatus)
   @IsOptional()
-  status?: boolean;
+  status?: WithdrawalStatus;
 
   @IsArray()
   @IsOptional()

@@ -14,7 +14,7 @@ export class InventoryPackSyncService {
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
 
   /**
    * Construye ProductData desde producto + precio (del inventario).
@@ -77,9 +77,32 @@ export class InventoryPackSyncService {
         );
         inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
       } else {
-        const packResponse: ProductResponse = await packService.createProduct(productData);
-        inventory.pack_product_id = packResponse.id;
-        inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+        // Antes de crear, buscar por SKU si existe
+        let existingProduct: ProductResponse | null = null;
+        if (productData.sku) {
+          existingProduct = await packService.findProductBySku(productData.sku);
+        }
+
+        if (existingProduct) {
+          this.logger.log(`Product found by SKU: ${productData.sku}. ID: ${existingProduct.id}`);
+          inventory.pack_product_id = existingProduct.id;
+          inventory.pack_product_response = existingProduct as unknown as Record<string, unknown>;
+
+          // Opcionalmente actualizarlo para que tenga los datos más recientes (precio, etc)
+          const patch: Partial<ProductData> = {
+            description: productData.description,
+            product_key: productData.product_key,
+            unit_key: productData.unit_key,
+            unit_name: productData.unit_name,
+            price,
+          };
+          const packResponse = await packService.updateProduct(inventory.pack_product_id, patch);
+          inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+        } else {
+          const packResponse: ProductResponse = await packService.createProduct(productData);
+          inventory.pack_product_id = packResponse.id;
+          inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+        }
       }
 
       const saved = await this.inventoryRepository.save(inventory);

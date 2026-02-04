@@ -27,7 +27,7 @@ import { UserId } from '../decorators/user-id.decorator';
 @Controller('withdrawals')
 @UseGuards(AuthGuard)
 export class WithdrawalController {
-  constructor(private readonly withdrawalService: WithdrawalService) {}
+  constructor(private readonly withdrawalService: WithdrawalService) { }
 
   @Post()
   create(
@@ -132,5 +132,13 @@ export class WithdrawalController {
     @UserId() userId: string,
   ): Promise<CloseWithdrawalResponseDto> {
     return this.withdrawalService.closeWithdrawal(withdrawalId, userId);
+  }
+
+  @Post(':id/refund')
+  refundWithdrawal(
+    @Param('id', ParseUUIDPipe) withdrawalId: string,
+    @UserId() userId: string,
+  ): Promise<WithdrawalResponseDto> {
+    return this.withdrawalService.refundWithdrawal(withdrawalId, userId);
   }
 }

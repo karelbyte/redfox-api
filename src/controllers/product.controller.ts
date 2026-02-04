@@ -34,7 +34,7 @@ const formatFileName = (fileName: string): string => {
 @Controller('products')
 @UseGuards(AuthGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @Post()
   @UseInterceptors(
@@ -77,7 +77,7 @@ export class ProductController {
   ): Promise<ProductResponseDto> {
     if (files && files.length > 0) {
       createProductDto.images = files.map(
-        (file) => `/uploads/products/${file.filename}`,
+        (file) => `/api/uploads/products/${file.filename}`,
       );
     }
     return this.productService.create(createProductDto, userId);
@@ -145,7 +145,7 @@ export class ProductController {
   ): Promise<ProductResponseDto> {
     if (files && files.length > 0) {
       updateProductDto.images = files.map(
-        (file) => `/uploads/products/${file.filename}`,
+        (file) => `/api/uploads/products/${file.filename}`,
       );
     }
     return this.productService.update(id, updateProductDto, userId);

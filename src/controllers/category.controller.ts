@@ -33,7 +33,7 @@ const formatFileName = (fileName: string): string => {
 @Controller('categories')
 @UseGuards(AuthGuard)
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService) { }
 
   @Post()
   @UseInterceptors(
@@ -75,7 +75,7 @@ export class CategoryController {
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
     if (files && files.length > 0) {
-      createCategoryDto.image = `/uploads/categories/${files[0].filename}`;
+      createCategoryDto.image = `/api/uploads/categories/${files[0].filename}`;
     }
     return this.categoryService.create(createCategoryDto, userId);
   }
@@ -145,7 +145,7 @@ export class CategoryController {
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
     if (files && files.length > 0) {
-      updateCategoryDto.image = `/uploads/categories/${files[0].filename}`;
+      updateCategoryDto.image = `/api/uploads/categories/${files[0].filename}`;
     } else if (updateCategoryDto.imageChanged) {
       updateCategoryDto.image = '';
     }

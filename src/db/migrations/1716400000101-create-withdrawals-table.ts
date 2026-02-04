@@ -63,8 +63,9 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
           },
           {
             name: 'status',
-            type: 'boolean',
-            default: true,
+            type: 'enum',
+            enum: ['OPEN', 'CLOSED', 'RETURNED'],
+            default: "'OPEN'",
           },
           {
             name: 'pack_receipt_id',

@@ -49,6 +49,13 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             type: 'varchar',
             length: '20',
             isNullable: false,
+            isUnique: false,
+          },
+          {
+            name: 'barcode',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
             isUnique: true,
           },
           {

@@ -5,11 +5,20 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Withdrawal, WithdrawalType } from '../models/withdrawal.entity';
+import { Withdrawal, WithdrawalType, WithdrawalStatus } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
 import { Warehouse } from '../models/warehouse.entity';
 import { Inventory } from '../models/inventory.entity';
+import {
+  CashRegister,
+  CashRegisterStatus,
+} from '../models/cash-register.entity';
+import {
+  CashTransaction,
+  CashTransactionType,
+  PaymentMethod,
+} from '../models/cash-transaction.entity';
 import {
   ProductHistory,
   OperationType,
@@ -58,7 +67,7 @@ export class WithdrawalService {
     private readonly clientMapper: ClientMapper,
     private readonly translationService: TranslationService,
     private readonly posPackSyncService: PosPackSyncService,
-  ) {}
+  ) { }
 
   private mapDetailToResponseDto(
     detail: WithdrawalDetail,
@@ -153,7 +162,7 @@ export class WithdrawalService {
       amount: createWithdrawalDto.amount,
       type: createWithdrawalDto.type || WithdrawalType.WITHDRAWAL,
       cashTransactionId: createWithdrawalDto.cash_transaction_id,
-      status: false,
+      status: WithdrawalStatus.OPEN,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
@@ -281,7 +290,7 @@ export class WithdrawalService {
       withdrawal.cashTransactionId = updateWithdrawalDto.cash_transaction_id;
     }
     if (updateWithdrawalDto.status !== undefined) {
-      withdrawal.status = updateWithdrawalDto.status;
+      withdrawal.status = updateWithdrawalDto.status as any;
     }
 
     const updatedWithdrawal = await this.withdrawalRepository.save(withdrawal);
@@ -657,7 +666,7 @@ export class WithdrawalService {
       throw new NotFoundException(message);
     }
 
-    if (withdrawal.status) {
+    if (withdrawal.status !== WithdrawalStatus.OPEN) {
       const message = await this.translationService.translate(
         'withdrawal.already_closed',
         userId,
@@ -730,7 +739,7 @@ export class WithdrawalService {
     }
 
     // Cerrar la withdrawal
-    withdrawal.status = true;
+    withdrawal.status = WithdrawalStatus.CLOSED;
     const closedWithdrawal = await this.withdrawalRepository.save(withdrawal);
 
     // Si es un retiro POS, intentar crear el recibo en el PAC
@@ -754,5 +763,112 @@ export class WithdrawalService {
       message,
       closedAt: new Date(),
     };
+  }
+
+  async refundWithdrawal(
+    withdrawalId: string,
+    userId?: string,
+  ): Promise<WithdrawalResponseDto> {
+    const queryRunner =
+      this.withdrawalRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const withdrawal = await queryRunner.manager.findOne(Withdrawal, {
+        where: { id: withdrawalId },
+        relations: [
+          'client',
+          'details',
+          'details.product',
+          'details.warehouse',
+          'cashTransaction',
+          'cashTransaction.cashRegister',
+        ],
+      });
+
+      if (!withdrawal) {
+        const message = await this.translationService.translate(
+          'withdrawal.not_found',
+          userId,
+          { id: withdrawalId },
+        );
+        throw new NotFoundException(message);
+      }
+
+      if (withdrawal.status === WithdrawalStatus.RETURNED) {
+        throw new BadRequestException('Withdrawal is already returned');
+      }
+
+      if (withdrawal.status !== WithdrawalStatus.CLOSED) {
+        throw new BadRequestException('Only closed withdrawals can be returned');
+      }
+
+      // 1. Restaurar Inventario y crear ProductHistory (Kardex)
+      for (const detail of withdrawal.details) {
+        const inventory = await queryRunner.manager.findOne(Inventory, {
+          where: {
+            product: { id: detail.product.id },
+            warehouse: { id: detail.warehouse.id },
+          },
+        });
+
+        if (inventory) {
+          inventory.quantity = Number(inventory.quantity) + Number(detail.quantity);
+          await queryRunner.manager.save(Inventory, inventory);
+
+          const productHistory = this.productHistoryRepository.create({
+            product: detail.product,
+            warehouse: detail.warehouse,
+            operation_type: OperationType.RETURN_IN,
+            operation_id: withdrawal.id,
+            quantity: Number(detail.quantity),
+            current_stock: Number(inventory.quantity),
+          });
+          await queryRunner.manager.save(ProductHistory, productHistory);
+        }
+      }
+
+      // 2. Ajustar Caja (Refund Transaction)
+      if (withdrawal.cashTransaction) {
+        const cashRegister = withdrawal.cashTransaction.cashRegister;
+        const refundAmount = Number(withdrawal.amount);
+
+        // Crear la transacción de reembolso
+        const refundTransaction = queryRunner.manager.create(CashTransaction, {
+          cashRegisterId: cashRegister.id,
+          type: CashTransactionType.REFUND,
+          amount: refundAmount,
+          description: `Refund for withdrawal ${withdrawal.code}`,
+          reference: withdrawal.code,
+          paymentMethod: withdrawal.cashTransaction.paymentMethod,
+          saleId: withdrawal.id,
+          createdBy: userId || withdrawal.cashTransaction.createdBy,
+        });
+
+        await queryRunner.manager.save(CashTransaction, refundTransaction);
+
+        // Actualizar balance de la caja
+        cashRegister.currentAmount = Number(cashRegister.currentAmount) - refundAmount;
+        await queryRunner.manager.save(CashRegister, cashRegister);
+      }
+
+      // 3. Cancelar recibo en PAC (Facturapi)
+      if (withdrawal.type === WithdrawalType.POS && withdrawal.pack_receipt_id) {
+        await this.posPackSyncService.cancelReceiptForWithdrawal(withdrawal.id);
+      }
+
+      // 4. Actualizar estado a RETURNED
+      withdrawal.status = WithdrawalStatus.RETURNED;
+      const savedWithdrawal = await queryRunner.manager.save(Withdrawal, withdrawal);
+
+      await queryRunner.commitTransaction();
+      return this.mapToResponseDto(savedWithdrawal);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

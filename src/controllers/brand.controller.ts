@@ -34,7 +34,7 @@ const formatFileName = (fileName: string): string => {
 @Controller('brands')
 @UseGuards(AuthGuard)
 export class BrandController {
-  constructor(private readonly brandService: BrandService) {}
+  constructor(private readonly brandService: BrandService) { }
 
   @Post()
   @UseInterceptors(
@@ -76,7 +76,7 @@ export class BrandController {
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
     if (files && files.length > 0) {
-      createBrandDto.img = `/uploads/brands/${files[0].filename}`;
+      createBrandDto.img = `/api/uploads/brands/${files[0].filename}`;
     }
     return this.brandService.create(createBrandDto, userId);
   }
@@ -137,7 +137,7 @@ export class BrandController {
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
     if (files && files.length > 0) {
-      updateBrandDto.img = `/uploads/brands/${files[0].filename}`;
+      updateBrandDto.img = `/api/uploads/brands/${files[0].filename}`;
     } else if (updateBrandDto.imageChanged) {
       updateBrandDto.img = '';
     }

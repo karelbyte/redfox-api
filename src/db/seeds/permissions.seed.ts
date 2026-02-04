@@ -925,6 +925,43 @@ export class PermissionsSeed {
         description:
           'Allows deleting invoice details | Permite eliminar detalles de facturas',
       },
+      // Backup Permissions
+      {
+        code: 'backup_module_view',
+        module: 'backups',
+        description:
+          'Allows viewing the backups module | Permite ver el módulo de respaldos',
+      },
+      {
+        code: 'backup_config_read',
+        module: 'backups',
+        description:
+          'Allows reading backup configuration | Permite leer la configuración de respaldos',
+      },
+      {
+        code: 'backup_config_update',
+        module: 'backups',
+        description:
+          'Allows updating backup configuration | Permite actualizar la configuración de respaldos',
+      },
+      {
+        code: 'backup_run',
+        module: 'backups',
+        description:
+          'Allows running manual backups | Permite realizar respaldos manuales',
+      },
+      {
+        code: 'backup_log_read',
+        module: 'backups',
+        description:
+          'Allows reading backup logs | Permite leer los registros de respaldos',
+      },
+      {
+        code: 'backup_download',
+        module: 'backups',
+        description:
+          'Allows downloading backup files | Permite descargar los archivos de respaldo',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

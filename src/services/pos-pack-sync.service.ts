@@ -20,7 +20,7 @@ export class PosPackSyncService {
     @InjectRepository(WithdrawalDetail)
     private readonly withdrawalDetailRepository: Repository<WithdrawalDetail>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
 
   private buildItems(
     details: WithdrawalDetail[],
@@ -161,6 +161,19 @@ export class PosPackSyncService {
         packErrorMessage: error?.message,
       };
     }
+  }
+
+  async cancelReceiptForWithdrawal(withdrawalId: string): Promise<void> {
+    const withdrawal = await this.withdrawalRepository.findOne({
+      where: { id: withdrawalId },
+    });
+
+    if (!withdrawal || !withdrawal.pack_receipt_id) {
+      return;
+    }
+
+    const packService = await this.certificationPackFactory.getPackService();
+    await packService.cancelReceipt(withdrawal.pack_receipt_id);
   }
 }
 

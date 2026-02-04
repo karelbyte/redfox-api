@@ -19,6 +19,12 @@ export enum WithdrawalType {
   WITHDRAWAL = 'WITHDRAWAL',
 }
 
+export enum WithdrawalStatus {
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  RETURNED = 'RETURNED',
+}
+
 @Entity('withdrawals')
 export class Withdrawal {
   @PrimaryGeneratedColumn('uuid')
@@ -51,8 +57,12 @@ export class Withdrawal {
   @Column({ name: 'cash_transaction_id', nullable: true })
   cashTransactionId: string;
 
-  @Column({ default: true })
-  status: boolean;
+  @Column({
+    type: 'enum',
+    enum: WithdrawalStatus,
+    default: WithdrawalStatus.OPEN,
+  })
+  status: WithdrawalStatus;
 
   @Column('varchar', { name: 'pack_receipt_id', length: 100, nullable: true })
   pack_receipt_id: string | null;

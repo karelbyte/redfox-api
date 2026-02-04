@@ -184,8 +184,10 @@ export interface ICertificationPackService {
    */
   deleteCustomer?: (customerId: string) => Promise<void>;
   createProduct(productData: ProductData): Promise<ProductResponse>;
+  findProductBySku(sku: string): Promise<ProductResponse | null>;
   updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
   createReceipt(data: ReceiptData): Promise<ReceiptResponse>;
+  cancelReceipt(receiptId: string): Promise<void>;
   /**
    * Crea una factura global en el PAC que agrupa recibos (notas) no facturados.
    * FacturaAPI: POST /v2/receipts/global-invoice

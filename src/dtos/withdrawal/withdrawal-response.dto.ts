@@ -1,5 +1,5 @@
 import { ClientResponseDto } from '../client/client-response.dto';
-import { WithdrawalType } from '../../models/withdrawal.entity';
+import { WithdrawalType, WithdrawalStatus } from '../../models/withdrawal.entity';
 
 /** Estado fiscal de la venta respecto al PAC: solo nota, facturada directo o en global. */
 export type PackFiscalStatus =
@@ -15,7 +15,7 @@ export class WithdrawalResponseDto {
   amount: number;
   type: WithdrawalType;
   cash_transaction_id?: string;
-  status: boolean;
+  status: WithdrawalStatus;
   created_at: Date;
   pack_receipt_id?: string | null;
   /** ID de la factura (directa o global) si esta venta ya está facturada. */

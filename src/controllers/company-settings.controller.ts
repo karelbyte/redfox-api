@@ -31,7 +31,7 @@ const getUploadsCompanyDir = (): string => join(process.cwd(), 'uploads', 'compa
 export class CompanySettingsController {
   constructor(
     private readonly companySettingsService: CompanySettingsService,
-  ) {}
+  ) { }
 
   @Get()
   get(): Promise<CompanySettingsResponseDto> {

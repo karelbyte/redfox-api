@@ -36,10 +36,10 @@ export class Product {
   @Column({ length: 50, unique: true })
   sku: string;
 
-  @Column({ length: 20, unique: true })
+  @Column({ length: 20 })
   code: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ length: 100, nullable: true, unique: true })
   barcode: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

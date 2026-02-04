@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { UserModule } from './modules/user.module';
 import { RoleModule } from './modules/role.module';
 import { ClientModule } from './modules/client.module';
@@ -29,6 +30,7 @@ import { CashTransactionModule } from './modules/cash-transaction.module';
 import { PurchaseOrderModule } from './modules/purchase-order.module';
 import { InvoiceModule } from './modules/invoice.module';
 import { CompanySettingsModule } from './modules/company-settings.module';
+import { BackupModule } from './modules/backup.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -39,6 +41,7 @@ import { HomeController } from './controllers/home.controller';
       cache: true,
       load: [AppConfig],
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) =>
@@ -73,8 +76,9 @@ import { HomeController } from './controllers/home.controller';
     PurchaseOrderModule,
     InvoiceModule,
     CompanySettingsModule,
+    BackupModule,
   ],
   controllers: [HomeController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

@@ -486,7 +486,7 @@ export class FacturaAPIService implements ICertificationPackService {
   async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {
     try {
       this.ensureInitialized();
-      
+
       const payload: any = {
         legal_name: customerData.legal_name,
         tax_id: customerData.tax_id,
@@ -510,7 +510,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
       if (customerData.address) {
         const address: any = {};
-        
+
         if (customerData.address.street) address.street = customerData.address.street;
         if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
         if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
@@ -531,8 +531,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const customerAny = customer as any;
       const response: CustomerResponse = {
         ...customerAny,
-        created_at: customerAny.created_at instanceof Date 
-          ? customerAny.created_at.toISOString() 
+        created_at: customerAny.created_at instanceof Date
+          ? customerAny.created_at.toISOString()
           : String(customerAny.created_at || new Date().toISOString()),
       };
       return response;
@@ -549,7 +549,7 @@ export class FacturaAPIService implements ICertificationPackService {
   ): Promise<CustomerResponse> {
     try {
       this.ensureInitialized();
-      
+
       const payload: any = {};
 
       if (customerData.legal_name) {
@@ -578,7 +578,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
       if (customerData.address) {
         const address: any = {};
-        
+
         if (customerData.address.street !== undefined) address.street = customerData.address.street;
         if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
         if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
@@ -599,8 +599,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const customerAny = customer as any;
       const response: CustomerResponse = {
         ...customerAny,
-        created_at: customerAny.created_at instanceof Date 
-          ? customerAny.created_at.toISOString() 
+        created_at: customerAny.created_at instanceof Date
+          ? customerAny.created_at.toISOString()
           : String(customerAny.created_at || new Date().toISOString()),
       };
       return response;
@@ -704,7 +704,7 @@ export class FacturaAPIService implements ICertificationPackService {
         let data: any = null;
         try {
           data = await res.json();
-        } catch {}
+        } catch { }
         const message =
           data?.message ?? 'Error deleting customer in FacturaAPI';
         throw new BadRequestException(message);
@@ -760,6 +760,40 @@ export class FacturaAPIService implements ICertificationPackService {
       if (error instanceof BadRequestException) throw error;
       console.error('FacturaAPI Create Product Error:', error);
       const message = error?.message ?? 'Error creating product in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  async findProductBySku(sku: string): Promise<ProductResponse | null> {
+    try {
+      this.ensureInitialized();
+      const res = await fetch(`${this.getProductsBaseUrl()}?sku=${encodeURIComponent(sku)}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = (data as any)?.message ?? 'Error finding product by SKU in FacturaAPI';
+        throw new BadRequestException(message);
+      }
+
+      const products = data.data || [];
+      if (products.length > 0) {
+        const found = products[0] as ProductResponse;
+        return {
+          ...found,
+          created_at: typeof found.created_at === 'string' ? found.created_at : (found.created_at as Date)?.toISOString?.() ?? new Date().toISOString(),
+        };
+      }
+
+      return null;
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('FacturaAPI Find Product by SKU Error:', error);
+      const message = error?.message ?? 'Error finding product by SKU in FacturaAPI';
       throw new BadRequestException(message);
     }
   }
@@ -860,6 +894,17 @@ export class FacturaAPIService implements ICertificationPackService {
     } catch (error: any) {
       console.error('FacturaAPI Create Receipt Error:', error);
       const message = error?.message ?? 'Error creating receipt in FacturaAPI';
+      throw new BadRequestException(message);
+    }
+  }
+
+  async cancelReceipt(receiptId: string): Promise<void> {
+    try {
+      this.ensureInitialized();
+      await (this.facturapi!.receipts as any).cancel(receiptId);
+    } catch (error: any) {
+      console.error('FacturaAPI Cancel Receipt Error:', error);
+      const message = error?.message ?? 'Error canceling receipt in FacturaAPI';
       throw new BadRequestException(message);
     }
   }
