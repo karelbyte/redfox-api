@@ -962,6 +962,20 @@ export class PermissionsSeed {
         description:
           'Allows downloading backup files | Permite descargar los archivos de respaldo',
       },
+
+      // Analytics Permissions
+      {
+        code: 'analytics_module_view',
+        module: 'analytics',
+        description:
+          'Allows viewing the analytics module | Permite ver el módulo de analíticas',
+      },
+      {
+        code: 'analytics_read',
+        module: 'analytics',
+        description:
+          'Allows reading analytics data | Permite leer datos de analíticas',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');
