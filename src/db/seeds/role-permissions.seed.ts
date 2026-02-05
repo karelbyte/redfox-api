@@ -62,6 +62,10 @@ export class RolePermissionsSeed {
       'quotation_read',
       'quotation_update',
       'quotation_convert_to_sale',
+      'notification_module_view',
+      'notification_read',
+      'notification_update',
+      'notification_mark_read',
     ];
 
     for (const permissionCode of sellerPermissions) {

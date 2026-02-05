@@ -1,0 +1,99 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'redfox-api/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'redfox-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: nitro_test
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    defaults:
+      run:
+        working-directory: ./redfox-api
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: redfox-api/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Wait for MySQL
+      run: |
+        while ! mysqladmin ping -h"127.0.0.1" -P3306 -utest -ptest --silent; do
+          sleep 1
+        done
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run unit tests
+      run: npm run test:cov
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 3306
+        DB_USERNAME: test
+        DB_PASSWORD: test
+        DB_DATABASE: nitro_test
+        JWT_SECRET: test-secret-key
+
+    - name: Run e2e tests
+      run: npm run test:e2e
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 3306
+        DB_USERNAME: test
+        DB_PASSWORD: test
+        DB_DATABASE: nitro_test
+        JWT_SECRET: test-secret-key
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./redfox-api/coverage/lcov.info
+        flags: backend
+        name: backend-coverage
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.node-version }}
+        path: |
+          redfox-api/coverage/
+          redfox-api/test-results/

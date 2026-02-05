@@ -34,6 +34,7 @@ import { BackupModule } from './modules/backup.module';
 import { SurrogateModule } from './modules/surrogate.module';
 import { AnalyticsModule } from './modules/analytics.module';
 import { QuotationModule } from './modules/quotation.module';
+import { NotificationModule } from './modules/notification.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -83,6 +84,7 @@ import { HomeController } from './controllers/home.controller';
     SurrogateModule,
     AnalyticsModule,
     QuotationModule,
+    NotificationModule,
   ],
   controllers: [HomeController],
   providers: [],

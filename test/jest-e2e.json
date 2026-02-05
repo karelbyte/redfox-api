@@ -1,0 +1,25 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "src/**/*.(t|j)s",
+    "!src/**/*.spec.ts",
+    "!src/**/*.interface.ts",
+    "!src/**/*.dto.ts",
+    "!src/**/*.entity.ts",
+    "!src/main.ts",
+    "!src/db/migrations/**",
+    "!src/db/seeds/**"
+  ],
+  "coverageDirectory": "./coverage-e2e",
+  "coverageReporters": ["text", "lcov", "html"],
+  "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
+  "moduleNameMapping": {
+    "^src/(.*)$": "<rootDir>/../src/$1"
+  }
+}

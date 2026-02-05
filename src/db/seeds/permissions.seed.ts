@@ -1009,6 +1009,39 @@ export class PermissionsSeed {
         module: 'quotations',
         description: 'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
       },
+
+      // Notification Permissions
+      {
+        code: 'notification_module_view',
+        module: 'notifications',
+        description:
+          'Allows viewing the notifications module | Permite ver el módulo de notificaciones',
+      },
+      {
+        code: 'notification_create',
+        module: 'notifications',
+        description: 'Allows creating notifications | Permite crear notificaciones',
+      },
+      {
+        code: 'notification_read',
+        module: 'notifications',
+        description: 'Allows reading notifications | Permite leer notificaciones',
+      },
+      {
+        code: 'notification_update',
+        module: 'notifications',
+        description: 'Allows updating notifications | Permite actualizar notificaciones',
+      },
+      {
+        code: 'notification_delete',
+        module: 'notifications',
+        description: 'Allows deleting notifications | Permite eliminar notificaciones',
+      },
+      {
+        code: 'notification_mark_read',
+        module: 'notifications',
+        description: 'Allows marking notifications as read | Permite marcar notificaciones como leídas',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');
