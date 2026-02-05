@@ -33,6 +33,7 @@ import { CompanySettingsModule } from './modules/company-settings.module';
 import { BackupModule } from './modules/backup.module';
 import { SurrogateModule } from './modules/surrogate.module';
 import { AnalyticsModule } from './modules/analytics.module';
+import { QuotationModule } from './modules/quotation.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -81,6 +82,7 @@ import { HomeController } from './controllers/home.controller';
     BackupModule,
     SurrogateModule,
     AnalyticsModule,
+    QuotationModule,
   ],
   controllers: [HomeController],
   providers: [],

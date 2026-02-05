@@ -57,6 +57,11 @@ export class RolePermissionsSeed {
       'withdrawal_create',
       'withdrawal_read',
       'withdrawal_update',
+      'quotation_module_view',
+      'quotation_create',
+      'quotation_read',
+      'quotation_update',
+      'quotation_convert_to_sale',
     ];
 
     for (const permissionCode of sellerPermissions) {

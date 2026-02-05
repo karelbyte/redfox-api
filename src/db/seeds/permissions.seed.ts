@@ -976,6 +976,39 @@ export class PermissionsSeed {
         description:
           'Allows reading analytics data | Permite leer datos de analíticas',
       },
+
+      // Quotation Permissions
+      {
+        code: 'quotation_module_view',
+        module: 'quotations',
+        description:
+          'Allows viewing the quotations module | Permite ver el módulo de cotizaciones',
+      },
+      {
+        code: 'quotation_create',
+        module: 'quotations',
+        description: 'Allows creating quotations | Permite crear cotizaciones',
+      },
+      {
+        code: 'quotation_read',
+        module: 'quotations',
+        description: 'Allows reading quotations | Permite leer cotizaciones',
+      },
+      {
+        code: 'quotation_update',
+        module: 'quotations',
+        description: 'Allows updating quotations | Permite actualizar cotizaciones',
+      },
+      {
+        code: 'quotation_delete',
+        module: 'quotations',
+        description: 'Allows deleting quotations | Permite eliminar cotizaciones',
+      },
+      {
+        code: 'quotation_convert_to_sale',
+        module: 'quotations',
+        description: 'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');
