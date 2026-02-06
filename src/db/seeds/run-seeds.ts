@@ -16,6 +16,7 @@ import { UserLanguagesSeed } from './user-languages.seed';
 import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
 import { ReturnsSeed } from './returns.seed';
 import { PurchaseOrdersSeed } from './purchase-orders.seed';
+import { seedExpenseCategories } from './expense-categories.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -37,6 +38,9 @@ export class RunSeeds {
 
       await CurrenciesSeed.run(dataSource);
       console.log('✅ Currencies created');
+
+      await seedExpenseCategories(dataSource);
+      console.log('✅ Expense categories created');
 
      /* await ClientsSeed.run(dataSource);
       console.log('✅ Clients created');*/

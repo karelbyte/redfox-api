@@ -35,6 +35,9 @@ import { SurrogateModule } from './modules/surrogate.module';
 import { AnalyticsModule } from './modules/analytics.module';
 import { QuotationModule } from './modules/quotation.module';
 import { NotificationModule } from './modules/notification.module';
+import { ExpenseModule } from './modules/expense.module';
+import { AccountReceivableModule } from './modules/account-receivable.module';
+import { GlobalSearchModule } from './modules/global-search.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -85,6 +88,9 @@ import { HomeController } from './controllers/home.controller';
     AnalyticsModule,
     QuotationModule,
     NotificationModule,
+    ExpenseModule,
+    AccountReceivableModule,
+    GlobalSearchModule,
   ],
   controllers: [HomeController],
   providers: [],

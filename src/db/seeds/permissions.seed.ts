@@ -1042,6 +1042,103 @@ export class PermissionsSeed {
         module: 'notifications',
         description: 'Allows marking notifications as read | Permite marcar notificaciones como leídas',
       },
+
+      // Expense Permissions
+      {
+        code: 'expense_module_view',
+        module: 'expenses',
+        description:
+          'Allows viewing the expenses module | Permite ver el módulo de gastos',
+      },
+      {
+        code: 'expense_create',
+        module: 'expenses',
+        description: 'Allows creating expenses | Permite crear gastos',
+      },
+      {
+        code: 'expense_read',
+        module: 'expenses',
+        description: 'Allows reading expenses | Permite leer gastos',
+      },
+      {
+        code: 'expense_update',
+        module: 'expenses',
+        description: 'Allows updating expenses | Permite actualizar gastos',
+      },
+      {
+        code: 'expense_delete',
+        module: 'expenses',
+        description: 'Allows deleting expenses | Permite eliminar gastos',
+      },
+
+      // Account Receivable Permissions
+      {
+        code: 'account_receivable_module_view',
+        module: 'accounts_receivable',
+        description:
+          'Allows viewing the accounts receivable module | Permite ver el módulo de cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_create',
+        module: 'accounts_receivable',
+        description: 'Allows creating accounts receivable | Permite crear cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_read',
+        module: 'accounts_receivable',
+        description: 'Allows reading accounts receivable | Permite leer cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_update',
+        module: 'accounts_receivable',
+        description: 'Allows updating accounts receivable | Permite actualizar cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_delete',
+        module: 'accounts_receivable',
+        description: 'Allows deleting accounts receivable | Permite eliminar cuentas por cobrar',
+      },
+
+      // Account Payable Permissions
+      {
+        code: 'account_payable_module_view',
+        module: 'accounts_payable',
+        description:
+          'Allows viewing the accounts payable module | Permite ver el módulo de cuentas por pagar',
+      },
+      {
+        code: 'account_payable_create',
+        module: 'accounts_payable',
+        description: 'Allows creating accounts payable | Permite crear cuentas por pagar',
+      },
+      {
+        code: 'account_payable_read',
+        module: 'accounts_payable',
+        description: 'Allows reading accounts payable | Permite leer cuentas por pagar',
+      },
+      {
+        code: 'account_payable_update',
+        module: 'accounts_payable',
+        description: 'Allows updating accounts payable | Permite actualizar cuentas por pagar',
+      },
+      {
+        code: 'account_payable_delete',
+        module: 'accounts_payable',
+        description: 'Allows deleting accounts payable | Permite eliminar cuentas por pagar',
+      },
+
+      // Cash Flow Permissions
+      {
+        code: 'cash_flow_module_view',
+        module: 'cash_flow',
+        description:
+          'Allows viewing the cash flow module | Permite ver el módulo de flujo de caja',
+      },
+      {
+        code: 'cash_flow_read',
+        module: 'cash_flow',
+        description: 'Allows reading cash flow data | Permite leer datos de flujo de caja',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

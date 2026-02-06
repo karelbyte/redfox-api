@@ -25,6 +25,57 @@
 
 RedFox API - Backend API for RedFox Point of Sale system built with NestJS, TypeORM, and supporting MySQL/PostgreSQL databases.
 
+## 🚀 Phase 2 Features - Expansion
+
+This version includes the Phase 2 expansion features:
+
+### 💰 Expense Management
+- **Expense Categories**: Customizable expense categories with color coding
+- **Expense Tracking**: Record and manage business expenses with receipts
+- **Recurring Expenses**: Support for monthly, quarterly, and yearly recurring expenses
+- **Expense Reports**: Summary and analytics by category and time period
+- **Vendor Management**: Track expenses by vendor
+
+### 📋 Accounts Receivable
+- **Invoice Tracking**: Monitor pending and overdue invoices
+- **Payment Management**: Record partial and full payments
+- **Client Credit Management**: Track what clients owe
+- **Overdue Alerts**: Automatic status updates for overdue accounts
+- **Payment History**: Complete payment tracking with multiple payment methods
+
+### 🔍 Global Search
+- **Universal Search**: Search across all entities (products, clients, invoices, etc.)
+- **Smart Results**: Grouped and prioritized search results
+- **Barcode Search**: Quick product lookup by barcode
+- **Real-time Search**: Instant results as you type
+
+### 📱 PWA Support
+- **Offline Functionality**: Core features work without internet
+- **Background Sync**: Automatic data sync when connection returns
+- **Push Notifications**: Real-time business alerts
+- **Installable**: Can be installed as a native app
+
+## API Endpoints
+
+### Expense Management
+- `GET /expense-categories` - List expense categories
+- `POST /expense-categories` - Create expense category
+- `GET /expenses` - List expenses with filtering
+- `POST /expenses` - Create expense
+- `GET /expenses/summary` - Get expense summary
+- `GET /expenses/by-category` - Expenses grouped by category
+
+### Accounts Receivable
+- `GET /accounts-receivable` - List accounts receivable
+- `POST /accounts-receivable` - Create account receivable
+- `POST /accounts-receivable/:id/payments` - Add payment
+- `GET /accounts-receivable/summary` - Get AR summary
+- `GET /accounts-receivable/overdue` - Get overdue accounts
+
+### Global Search
+- `GET /search?q={query}` - Universal search
+- `GET /search/barcode?barcode={code}` - Barcode search
+
 ## Project Setup
 
 ```bash
@@ -277,3 +328,97 @@ redfox-api/
 ## License
 
 This project is private and proprietary.
+
+## 📚 Phase 2 API Endpoints
+
+### Expense Management
+
+#### Expense Categories
+- `GET /expense-categories` - List all expense categories
+- `POST /expense-categories` - Create new expense category
+- `PUT /expense-categories/:id` - Update expense category
+- `DELETE /expense-categories/:id` - Delete expense category
+
+#### Expenses
+- `GET /expenses` - List expenses with filtering and pagination
+- `POST /expenses` - Create new expense
+- `PUT /expenses/:id` - Update expense
+- `DELETE /expenses/:id` - Delete expense
+- `GET /expenses/summary` - Get expense summary by category and period
+
+### Accounts Receivable
+
+#### Accounts Receivable
+- `GET /accounts-receivable` - List accounts receivable with filtering
+- `POST /accounts-receivable` - Create new account receivable
+- `PUT /accounts-receivable/:id` - Update account receivable
+- `DELETE /accounts-receivable/:id` - Delete account receivable
+- `GET /accounts-receivable/overdue` - Get overdue accounts
+
+#### Account Receivable Payments
+- `GET /accounts-receivable/:id/payments` - List payments for an account
+- `POST /accounts-receivable/:id/payments` - Record payment
+- `PUT /account-receivable-payments/:id` - Update payment
+- `DELETE /account-receivable-payments/:id` - Delete payment
+
+### Global Search
+- `GET /global-search?q={query}` - Universal search across all entities
+- `GET /global-search/barcode?barcode={code}` - Search products by barcode
+
+### Query Parameters
+
+#### Expense Filtering
+- `search` - Search in description, vendor, or reference
+- `status` - Filter by status (pending, paid, cancelled)
+- `categoryId` - Filter by expense category
+- `startDate` - Filter expenses from date
+- `endDate` - Filter expenses to date
+- `page` - Page number for pagination
+- `limit` - Items per page
+
+#### Accounts Receivable Filtering
+- `search` - Search in reference number or client name
+- `status` - Filter by status (pending, partial, paid, overdue, cancelled)
+- `clientId` - Filter by client
+- `startDate` - Filter by due date from
+- `endDate` - Filter by due date to
+- `page` - Page number for pagination
+- `limit` - Items per page
+
+## 🗄️ Database Schema Updates
+
+### New Tables Added in Phase 2
+
+#### expense_categories
+- Stores expense categories with name, description, and color
+- Used for organizing and reporting expenses
+
+#### expenses
+- Main expense tracking table
+- Links to categories and users
+- Supports recurring expenses and vendor tracking
+
+#### accounts_receivable
+- Tracks money owed by clients
+- Links to clients and optionally to invoices
+- Automatic status management (pending → overdue)
+
+#### account_receivable_payments
+- Records payments against accounts receivable
+- Supports partial payments
+- Maintains payment history
+
+#### accounts_payable
+- Tracks money owed to providers
+- Links to providers and purchase orders
+- Similar structure to accounts receivable
+
+#### account_payable_payments
+- Records payments to providers
+- Supports partial payments
+- Maintains payment history
+
+### Database Indexes
+- Status indexes for quick filtering
+- Date indexes for efficient date range queries
+- Foreign key indexes for optimal joins
