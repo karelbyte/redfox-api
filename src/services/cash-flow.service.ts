@@ -49,33 +49,33 @@ export class CashFlowService {
     endDate?: string,
   ): Promise<CashFlowSummary> {
     const dateFilter = startDate && endDate ? {
-      createdAt: Between(new Date(startDate), new Date(endDate)),
+      created_at: Between(new Date(startDate), new Date(endDate)),
     } : {};
 
     const expenses = await this.expenseRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { expenseDate: Between(new Date(startDate), new Date(endDate)) } : {},
     });
 
     const paidReceivables = await this.accountReceivableRepository.find({
       where: {
         status: AccountReceivableStatus.PAID,
-        ...dateFilter,
+        ...(startDate && endDate ? { dueDate: Between(new Date(startDate), new Date(endDate)) } : {}),
       },
     });
 
     const paidPayables = await this.accountPayableRepository.find({
       where: {
         status: AccountPayableStatus.PAID,
-        ...dateFilter,
+        ...(startDate && endDate ? { dueDate: Between(new Date(startDate), new Date(endDate)) } : {}),
       },
     });
 
     const invoices = await this.invoiceRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { created_at: Between(new Date(startDate), new Date(endDate)) } : {},
     });
 
     const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
-    const totalIncome = invoices.reduce((sum, inv) => sum + Number(inv.total), 0) +
+    const totalIncome = invoices.reduce((sum, inv) => sum + Number(inv.total_amount), 0) +
                        paidReceivables.reduce((sum, ar) => sum + Number(ar.totalAmount), 0);
     const totalPayables = paidPayables.reduce((sum, ap) => sum + Number(ap.totalAmount), 0);
 
@@ -121,44 +121,40 @@ export class CashFlowService {
   ): Promise<CashFlowMovement[]> {
     const movements: CashFlowMovement[] = [];
 
-    const dateFilter = startDate && endDate ? {
-      createdAt: Between(new Date(startDate), new Date(endDate)),
-    } : {};
-
     const expenses = await this.expenseRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { expenseDate: Between(new Date(startDate), new Date(endDate)) } : {},
       relations: ['category'],
     });
 
     const receivables = await this.accountReceivableRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { dueDate: Between(new Date(startDate), new Date(endDate)) } : {},
       relations: ['client'],
     });
 
     const payables = await this.accountPayableRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { dueDate: Between(new Date(startDate), new Date(endDate)) } : {},
       relations: ['provider'],
     });
 
     const invoices = await this.invoiceRepository.find({
-      where: dateFilter,
+      where: startDate && endDate ? { created_at: Between(new Date(startDate), new Date(endDate)) } : {},
       relations: ['client'],
     });
 
     expenses.forEach((exp) => {
       movements.push({
-        date: exp.expenseDate,
+        date: exp.expenseDate.toISOString().split('T')[0],
         type: 'expense',
         description: exp.description,
         amount: -Number(exp.amount),
         balance: 0,
-        reference: exp.reference,
+        reference: exp.id.toString(),
       });
     });
 
     receivables.forEach((ar) => {
       movements.push({
-        date: ar.dueDate,
+        date: ar.dueDate.toISOString().split('T')[0],
         type: 'receivable',
         description: `Account Receivable - ${ar.client?.name || 'Unknown'}`,
         amount: Number(ar.remainingAmount),
@@ -169,7 +165,7 @@ export class CashFlowService {
 
     payables.forEach((ap) => {
       movements.push({
-        date: ap.dueDate,
+        date: ap.dueDate.toISOString().split('T')[0],
         type: 'payable',
         description: `Account Payable - ${ap.provider?.name || 'Unknown'}`,
         amount: -Number(ap.remainingAmount),
@@ -180,10 +176,10 @@ export class CashFlowService {
 
     invoices.forEach((inv) => {
       movements.push({
-        date: inv.createdAt.toISOString().split('T')[0],
+        date: inv.created_at.toISOString().split('T')[0],
         type: 'income',
         description: `Invoice - ${inv.client?.name || 'Unknown'}`,
-        amount: Number(inv.total),
+        amount: Number(inv.total_amount),
         balance: 0,
         reference: inv.id.toString(),
       });
@@ -212,14 +208,14 @@ export class CashFlowService {
 
       const pendingReceivables = await this.accountReceivableRepository.find({
         where: {
-          dueDate: Between(periodStart.toISOString(), periodEnd.toISOString()),
+          dueDate: Between(periodStart, periodEnd),
           status: AccountReceivableStatus.PENDING,
         },
       });
 
       const pendingPayables = await this.accountPayableRepository.find({
         where: {
-          dueDate: Between(periodStart.toISOString(), periodEnd.toISOString()),
+          dueDate: Between(periodStart, periodEnd),
           status: AccountPayableStatus.PENDING,
         },
       });

@@ -40,6 +40,7 @@ import { AccountReceivableModule } from './modules/account-receivable.module';
 import { AccountPayableModule } from './modules/account-payable.module';
 import { CashFlowModule } from './modules/cash-flow.module';
 import { GlobalSearchModule } from './modules/global-search.module';
+import { EmailConfigModule } from './modules/email-config.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -95,6 +96,7 @@ import { HomeController } from './controllers/home.controller';
     AccountPayableModule,
     CashFlowModule,
     GlobalSearchModule,
+    EmailConfigModule,
   ],
   controllers: [HomeController],
   providers: [],
