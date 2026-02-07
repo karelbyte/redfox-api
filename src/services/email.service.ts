@@ -22,7 +22,7 @@ export class EmailService {
   constructor(
     @InjectRepository(EmailConfig)
     private emailConfigRepository: Repository<EmailConfig>,
-  ) {}
+  ) { }
 
   async getConfig(userId: string): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepository.findOne({
@@ -135,6 +135,33 @@ export class EmailService {
         pass: config.password,
       },
     });
+  }
+
+  async sendSystemEmail(to: string | string[], subject: string, html: string): Promise<boolean> {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT),
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: process.env.SMTP_FROM,
+        to,
+        subject,
+        html,
+      };
+
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('Error sending system email:', error);
+      return false;
+    }
   }
 
   private mapToResponseDto(config: EmailConfig): EmailConfigResponseDto {

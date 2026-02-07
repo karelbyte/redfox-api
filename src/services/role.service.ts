@@ -15,7 +15,7 @@ export class RoleService {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   private mapToResponseDto(role: Role): RoleResponseDto {
     const { id, code, description, status, created_at } = role;
@@ -164,5 +164,12 @@ export class RoleService {
       throw new NotFoundException(message);
     }
     await this.roleRepository.softRemove(role);
+  }
+
+  async findByCode(code: string): Promise<Role | null> {
+    return this.roleRepository.findOne({
+      where: { code },
+      withDeleted: false,
+    });
   }
 }

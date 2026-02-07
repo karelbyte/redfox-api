@@ -19,7 +19,7 @@ export class UserService {
     private userRepository: Repository<User>,
     private roleService: RoleService,
     private translationService: TranslationService,
-  ) {}
+  ) { }
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -204,10 +204,9 @@ export class UserService {
       user.roles = roles;
     }
 
-    const updatedUser = await this.userRepository.save({
-      ...user,
-      ...updateUserDto,
-    });
+    // Merge updates into the existing entity to preserve methods
+    const updatedEntity = this.userRepository.merge(user, updateUserDto);
+    const updatedUser = await this.userRepository.save(updatedEntity);
     return this.mapToResponseDto(updatedUser);
   }
 

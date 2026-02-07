@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../config';
 import { AuthController } from '../controllers/auth.controller';
 import { UserModule } from './user.module';
+import { EmailConfigModule } from './email-config.module';
+import { RoleModule } from './role.module';
 @Module({
   imports: [
     JwtModule.register({
@@ -12,9 +14,11 @@ import { UserModule } from './user.module';
       signOptions: { expiresIn: '30d' },
     }),
     UserModule,
+    EmailConfigModule,
+    RoleModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }
