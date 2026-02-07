@@ -147,8 +147,8 @@ export class EmailService {
       fromName: config.fromName,
       secure: config.secure,
       isActive: config.isActive,
-      createdAt: config.createdAt.toISOString(),
-      updatedAt: config.updatedAt.toISOString(),
+      createdAt: typeof config.createdAt === 'string' ? config.createdAt : (config.createdAt as Date).toISOString(),
+      updatedAt: typeof config.updatedAt === 'string' ? config.updatedAt : (config.updatedAt as Date).toISOString(),
     };
   }
 }

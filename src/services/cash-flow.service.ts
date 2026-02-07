@@ -143,7 +143,7 @@ export class CashFlowService {
 
     expenses.forEach((exp) => {
       movements.push({
-        date: exp.expenseDate.toISOString().split('T')[0],
+        date: typeof (exp.expenseDate as any) === 'string' ? (exp.expenseDate as any).split('T')[0] : new Date(exp.expenseDate).toISOString().split('T')[0],
         type: 'expense',
         description: exp.description,
         amount: -Number(exp.amount),
@@ -154,7 +154,7 @@ export class CashFlowService {
 
     receivables.forEach((ar) => {
       movements.push({
-        date: ar.dueDate.toISOString().split('T')[0],
+        date: typeof (ar.dueDate as any) === 'string' ? (ar.dueDate as any).split('T')[0] : new Date(ar.dueDate).toISOString().split('T')[0],
         type: 'receivable',
         description: `Account Receivable - ${ar.client?.name || 'Unknown'}`,
         amount: Number(ar.remainingAmount),
@@ -165,7 +165,7 @@ export class CashFlowService {
 
     payables.forEach((ap) => {
       movements.push({
-        date: ap.dueDate.toISOString().split('T')[0],
+        date: typeof (ap.dueDate as any) === 'string' ? (ap.dueDate as any).split('T')[0] : new Date(ap.dueDate).toISOString().split('T')[0],
         type: 'payable',
         description: `Account Payable - ${ap.provider?.name || 'Unknown'}`,
         amount: -Number(ap.remainingAmount),
@@ -176,7 +176,7 @@ export class CashFlowService {
 
     invoices.forEach((inv) => {
       movements.push({
-        date: inv.created_at.toISOString().split('T')[0],
+        date: typeof (inv.created_at as any) === 'string' ? (inv.created_at as any).split('T')[0] : new Date(inv.created_at).toISOString().split('T')[0],
         type: 'income',
         description: `Invoice - ${inv.client?.name || 'Unknown'}`,
         amount: Number(inv.total_amount),

@@ -41,6 +41,11 @@ import { AccountPayableModule } from './modules/account-payable.module';
 import { CashFlowModule } from './modules/cash-flow.module';
 import { GlobalSearchModule } from './modules/global-search.module';
 import { EmailConfigModule } from './modules/email-config.module';
+import { BookmarkModule } from './modules/bookmark.module';
+import { InternalNoteModule } from './modules/internal-note.module';
+import { TagModule } from './modules/tag.module';
+import { TemplateModule } from './modules/template.module';
+import { AuditLogModule } from './modules/audit-log.module';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -97,6 +102,11 @@ import { HomeController } from './controllers/home.controller';
     CashFlowModule,
     GlobalSearchModule,
     EmailConfigModule,
+    BookmarkModule,
+    InternalNoteModule,
+    TagModule,
+    TemplateModule,
+    AuditLogModule,
   ],
   controllers: [HomeController],
   providers: [],

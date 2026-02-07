@@ -228,8 +228,8 @@ export class NotificationService {
       actionLabel: notification.actionLabel,
       metadata: notification.metadata,
       userId: notification.userId,
-      createdAt: notification.createdAt.toISOString(),
-      updatedAt: notification.updatedAt.toISOString(),
+      createdAt: typeof notification.createdAt === 'string' ? notification.createdAt : (notification.createdAt as Date).toISOString(),
+      updatedAt: typeof notification.updatedAt === 'string' ? notification.updatedAt : (notification.updatedAt as Date).toISOString(),
     };
   }
 }
