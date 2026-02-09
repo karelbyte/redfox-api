@@ -33,11 +33,12 @@ const getDatabaseConfig = (): TypeOrmModuleOptions => {
     username: process.env.PG_DB_USER || 'postgres',
     password: process.env.PG_DB_PASSWORD || 'postgres',
     database: process.env.PG_DB_NAME || 'redfox-db',
-    ssl:{
-          rejectUnauthorized: true,
+    ssl: process.env.NODE_ENV === 'production' 
+      ? {
+          rejectUnauthorized: false,
           ca: process.env.PG_CA_CERT ? [process.env.PG_CA_CERT] : undefined,
         }
-      
+      : false,
   };
 };
 

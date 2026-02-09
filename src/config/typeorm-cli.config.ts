@@ -27,11 +27,12 @@ const dataSource = new DataSource({
   migrationsTableName: 'migrations',
   synchronize: false,
   logging: true,
-  ssl: {
-        rejectUnauthorized: true,
+  ssl: provider === 'postgres' && process.env.NODE_ENV === 'production' 
+    ? {
+        rejectUnauthorized: false,
         ca: process.env.PG_CA_CERT ? [process.env.PG_CA_CERT] : undefined,
       }
-  
+    : false,
 });
 
 export default dataSource;
