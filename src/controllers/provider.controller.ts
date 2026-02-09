@@ -18,11 +18,12 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { BulkDeleteProviderDto } from '../dtos/provider/bulk-delete-provider.dto';
 
 @Controller('providers')
 @UseGuards(AuthGuard)
 export class ProviderController {
-  constructor(private readonly providerService: ProviderService) {}
+  constructor(private readonly providerService: ProviderService) { }
 
   @Post()
   create(
@@ -63,5 +64,13 @@ export class ProviderController {
     @UserId() userId: string,
   ): Promise<void> {
     return this.providerService.remove(id, userId);
+  }
+
+  @Post('bulk-delete')
+  removeMany(
+    @Body() bulkDeleteProviderDto: BulkDeleteProviderDto,
+    @UserId() userId: string,
+  ): Promise<void> {
+    return this.providerService.removeMany(bulkDeleteProviderDto.ids, userId);
   }
 }

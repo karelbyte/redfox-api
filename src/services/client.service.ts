@@ -38,7 +38,7 @@ export class ClientService {
     private readonly clientPackSyncService: ClientPackSyncService,
     private readonly clientPackImportService: ClientPackImportService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
 
   async create(
     createClientDto: CreateClientDto,
@@ -66,16 +66,16 @@ export class ClientService {
     const baseConditions = { withDeleted: false };
     const whereConditions = term
       ? {
-          ...baseConditions,
-          where: [
-            { code: Like(`%${term}%`) },
-            { name: Like(`%${term}%`) },
-            { tax_document: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-            { phone: Like(`%${term}%`) },
-            { email: Like(`%${term}%`) },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`) },
+          { name: Like(`%${term}%`) },
+          { tax_document: Like(`%${term}%`) },
+          { description: Like(`%${term}%`) },
+          { phone: Like(`%${term}%`) },
+          { email: Like(`%${term}%`) },
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -156,7 +156,7 @@ export class ClientService {
       );
       throw new NotFoundException(message);
     }
-    
+
     const updatedClient = await this.clientRepository.save({
       ...client,
       ...updateClientDto,
@@ -228,5 +228,9 @@ export class ClientService {
     }
 
     await this.clientRepository.softRemove(client);
+  }
+
+  async removeMany(ids: string[]): Promise<void> {
+    await this.clientRepository.softDelete(ids);
   }
 }

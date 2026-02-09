@@ -25,14 +25,14 @@ export class UsersSeed {
     const users = [
       {
         name: 'Administrador',
-        email: 'admin@redfox.com',
+        email: 'admin@nitro.com',
         password: await hash('admin123', 10),
         status: true,
         roles: [adminRole],
       },
       {
         name: 'Vendedor',
-        email: 'vendedor@redfox.com',
+        email: 'vendedor@nitro.com',
         password: await hash('seller123', 10),
         status: true,
         roles: [sellerRole],

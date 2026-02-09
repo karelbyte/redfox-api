@@ -17,7 +17,7 @@ export class ProviderService {
     private readonly providerRepository: Repository<Provider>,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
-  ) {}
+  ) { }
 
   async create(
     createProviderDto: CreateProviderDto,
@@ -38,17 +38,17 @@ export class ProviderService {
     const baseConditions = { withDeleted: false };
     const whereConditions = term
       ? {
-          ...baseConditions,
-          where: [
-            { code: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-            { name: Like(`%${term}%`) },
-            { document: Like(`%${term}%`) },
-            { phone: Like(`%${term}%`) },
-            { email: Like(`%${term}%`) },
-            { address: Like(`%${term}%`) },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`) },
+          { description: Like(`%${term}%`) },
+          { name: Like(`%${term}%`) },
+          { document: Like(`%${term}%`) },
+          { phone: Like(`%${term}%`) },
+          { email: Like(`%${term}%`) },
+          { address: Like(`%${term}%`) },
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -148,5 +148,9 @@ export class ProviderService {
       throw new NotFoundException(message);
     }
     await this.providerRepository.softDelete(id);
+  }
+
+  async removeMany(ids: string[], userId?: string): Promise<void> {
+    await this.providerRepository.softDelete(ids);
   }
 }
