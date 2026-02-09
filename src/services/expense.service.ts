@@ -10,7 +10,7 @@ export class ExpenseService {
   constructor(
     @InjectRepository(Expense)
     private expenseRepository: Repository<Expense>,
-  ) {}
+  ) { }
 
   async create(createExpenseDto: CreateExpenseDto, userId: string): Promise<Expense> {
     const expense = this.expenseRepository.create({
@@ -101,6 +101,10 @@ export class ExpenseService {
   async remove(id: number): Promise<void> {
     const expense = await this.findOne(id);
     await this.expenseRepository.remove(expense);
+  }
+
+  async removeMany(ids: number[]): Promise<void> {
+    await this.expenseRepository.delete(ids);
   }
 
   async getExpensesSummary(startDate?: string, endDate?: string): Promise<{

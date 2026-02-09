@@ -60,21 +60,36 @@ export class ClientService {
   async findAll(
     paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<ClientResponseDto>> {
-    const { page, limit, term } = paginationDto || {};
+    const { page, limit, term, is_active } = paginationDto || {};
 
     // Construir las condiciones de búsqueda
-    const baseConditions = { withDeleted: false };
+    const baseConditions: any = { withDeleted: false };
+
+    if (is_active !== undefined) {
+      const isActiveBool = String(is_active) === 'true';
+      baseConditions.where = { status: isActiveBool };
+    }
+
     const whereConditions = term
       ? {
         ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`) },
-          { name: Like(`%${term}%`) },
-          { tax_document: Like(`%${term}%`) },
-          { description: Like(`%${term}%`) },
-          { phone: Like(`%${term}%`) },
-          { email: Like(`%${term}%`) },
-        ],
+        where: baseConditions.where
+          ? [
+            { ...baseConditions.where, code: Like(`%${term}%`) },
+            { ...baseConditions.where, name: Like(`%${term}%`) },
+            { ...baseConditions.where, tax_document: Like(`%${term}%`) },
+            { ...baseConditions.where, description: Like(`%${term}%`) },
+            { ...baseConditions.where, phone: Like(`%${term}%`) },
+            { ...baseConditions.where, email: Like(`%${term}%`) },
+          ]
+          : [
+            { code: Like(`%${term}%`) },
+            { name: Like(`%${term}%`) },
+            { tax_document: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+            { phone: Like(`%${term}%`) },
+            { email: Like(`%${term}%`) },
+          ],
       }
       : baseConditions;
 

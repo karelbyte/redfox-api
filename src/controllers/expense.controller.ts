@@ -5,11 +5,12 @@ import { UpdateExpenseDto } from '../dtos/expense/update-expense.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { ExpenseStatus } from '../models/expense.entity';
+import { BulkDeleteExpenseDto } from '../dtos/expense/bulk-delete-expense.dto';
 
 @Controller('expenses')
 @UseGuards(AuthGuard)
 export class ExpenseController {
-  constructor(private readonly expenseService: ExpenseService) {}
+  constructor(private readonly expenseService: ExpenseService) { }
 
   @Post()
   create(@Body() createExpenseDto: CreateExpenseDto, @UserId() userId: string) {
@@ -71,5 +72,10 @@ export class ExpenseController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.expenseService.remove(+id);
+  }
+
+  @Post('bulk-delete')
+  removeMany(@Body() bulkDeleteExpenseDto: BulkDeleteExpenseDto) {
+    return this.expenseService.removeMany(bulkDeleteExpenseDto.ids);
   }
 }

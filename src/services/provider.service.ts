@@ -32,22 +32,38 @@ export class ProviderService {
     paginationDto?: PaginationDto,
     userId?: string,
   ): Promise<PaginatedResponse<ProviderResponseDto>> {
-    const { page, limit, term } = paginationDto || {};
+    const { page, limit, term, is_active } = paginationDto || {};
 
     // Construir las condiciones de búsqueda
-    const baseConditions = { withDeleted: false };
+    const baseConditions: any = { withDeleted: false };
+
+    if (is_active !== undefined) {
+      const isActiveBool = String(is_active) === 'true';
+      baseConditions.where = { status: isActiveBool };
+    }
+
     const whereConditions = term
       ? {
         ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`) },
-          { description: Like(`%${term}%`) },
-          { name: Like(`%${term}%`) },
-          { document: Like(`%${term}%`) },
-          { phone: Like(`%${term}%`) },
-          { email: Like(`%${term}%`) },
-          { address: Like(`%${term}%`) },
-        ],
+        where: baseConditions.where
+          ? [
+            { ...baseConditions.where, code: Like(`%${term}%`) },
+            { ...baseConditions.where, description: Like(`%${term}%`) },
+            { ...baseConditions.where, name: Like(`%${term}%`) },
+            { ...baseConditions.where, document: Like(`%${term}%`) },
+            { ...baseConditions.where, phone: Like(`%${term}%`) },
+            { ...baseConditions.where, email: Like(`%${term}%`) },
+            { ...baseConditions.where, address: Like(`%${term}%`) },
+          ]
+          : [
+            { code: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+            { name: Like(`%${term}%`) },
+            { document: Like(`%${term}%`) },
+            { phone: Like(`%${term}%`) },
+            { email: Like(`%${term}%`) },
+            { address: Like(`%${term}%`) },
+          ],
       }
       : baseConditions;
 

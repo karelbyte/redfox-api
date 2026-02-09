@@ -23,6 +23,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { BulkDeleteProductDto } from '../dtos/product/bulk-delete-product.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -165,5 +166,12 @@ export class ProductController {
     @UserId() userId: string,
   ): Promise<void> {
     return this.productService.remove(id, userId);
+  }
+
+  @Post('bulk-delete')
+  removeMany(
+    @Body() bulkDeleteProductDto: BulkDeleteProductDto,
+  ): Promise<void> {
+    return this.productService.removeMany(bulkDeleteProductDto.ids);
   }
 }

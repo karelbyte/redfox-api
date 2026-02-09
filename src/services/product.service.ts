@@ -52,7 +52,7 @@ export class ProductService {
     private readonly productMapper: ProductMapper,
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
 
   async create(
     createProductDto: CreateProductDto,
@@ -386,6 +386,10 @@ export class ProductService {
     }
 
     await this.productRepository.softRemove(product);
+  }
+
+  async removeMany(ids: string[]): Promise<void> {
+    await this.productRepository.softDelete(ids);
   }
 
   async getProductUsage(
