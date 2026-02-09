@@ -31,7 +31,8 @@
     "db:reset": "npm run migration:drop && npm run migration:run",
     "seed": "ts-node -r tsconfig-paths/register src/db/seeds/seed.ts",
     "seed-js": "node dist/db/seeds/seed.js",
-    "seed:permissions": "ts-node -r tsconfig-paths/register src/db/seeds/permissions-only.seed.ts"
+    "seed:permissions": "ts-node -r tsconfig-paths/register src/db/seeds/permissions-only.seed.ts",
+    "db:setup": "npm run migration:run && npm run seed-js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.12",

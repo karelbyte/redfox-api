@@ -42,11 +42,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig*.json ./
 
-# Copiar script de entrada y configurar permisos
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
-    chown nestjs:nodejs /usr/local/bin/docker-entrypoint.sh
-
 # Cambiar propietario de archivos de la aplicación
 RUN chown -R nestjs:nodejs /app
 
@@ -60,5 +55,5 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Comando de inicio
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Comando de inicio - ejecutar directamente node
+CMD ["dumb-init", "node", "dist/main.js"]

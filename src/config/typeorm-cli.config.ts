@@ -27,6 +27,11 @@ const dataSource = new DataSource({
   migrationsTableName: 'migrations',
   synchronize: false,
   logging: true,
+  ssl: {
+        rejectUnauthorized: true,
+        ca: process.env.PG_CA_CERT ? [process.env.PG_CA_CERT] : undefined,
+      }
+  
 });
 
 export default dataSource;
