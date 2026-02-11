@@ -78,15 +78,6 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
-    // Create user with inactive status
-    // Note: UserService.create assumes we pass roles. We need to handle default role.
-    // For now, we will let UserService handle user creation, but we need to ensure status is false.
-    // However, UserService.create doesn't take status as arg, it uses default.
-    // We should probably modify UserService.create or handle it here.
-
-    // Let's create the user using UserService
-    // We need to fetch the default role first if we want to assign one.
-    // Assuming 'admin' role for now or a specific ID from env.
     const defaultRoleCode = this.configService.get<string>('DEFAULT_ROLE_ID_FOR_USER_REGISTER');
     let roleIds: string[] = [];
 
@@ -99,40 +90,126 @@ export class AuthService {
       }
     }
 
-    // Solution: Create user, then update status to false.
     const newUser = await this.userService.create({
       ...registerDto,
       role_ids: roleIds,
     });
 
-    // Manually set status to false via repo or update service if it exposed status update (it doesn't seem to)
-    // Looking at UserService.update, it takes UpdateUserDto which might allow status?
-    // Let's assume we can update it or we use raw query? Use update for now.
-    // Actually, Entity default is true. We should probably set it to false explicitly if we can.
-
-    // Hack: We will update the user status to false immediately
     await this.userService.update(newUser.id, { status: false } as any); // Casting as any if status not in DTO
 
-    // Generate activation token
+
     const payload = { sub: newUser.id };
     const token = this.jwtService.sign(payload, { expiresIn: '24h' });
 
-    // Send email
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    // HACK: user locale? We don't know it here. We'll default to 'es' or 'en' based on header? 
-    // For now, let's assume 'es' or just send a generic link.
-    // The frontend handles locale based on where the user lands, but the link needs a locale prefix if using next-intl
-    // We can just link to /activate and let middleware redirect? No, next-intl needs prefix.
-    // Let's assume default locale 'es'.
+
     const activationLink = `${frontendUrl}/es/activate?token=${token}`;
 
     const html = `
-       <h1>Bienvenido a Nitro</h1>
-       <p>Hola ${newUser.name},</p>
-       <p>Gracias por registrarte. Por favor activa tu cuenta haciendo clic en el siguiente enlace:</p>
-       <a href="${activationLink}">Activar Cuenta</a>
-       <p>Este enlace expira en 24 horas.</p>
-     `;
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenido a Nitro</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+          }
+          .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+          }
+          .header {
+            background: #6b7c6b;
+            padding: 40px 20px;
+            text-align: center;
+          }
+          .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+          }
+          .content {
+            padding: 40px;
+          }
+          .footer {
+            background-color: #f1f5f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+          }
+          .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #6b7c6b;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 30px 0;
+            transition: background-color 0.2s;
+          }
+          .welcome-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+          }
+          .instruction-text {
+            color: #475569;
+            margin-bottom: 24px;
+          }
+          .expiry-notice {
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Nitro</h1>
+          </div>
+          <div class="content">
+            <p class="welcome-text">¡Hola, ${newUser.name}!</p>
+            <p class="instruction-text">Te damos la bienvenida a Nitro. Estamos emocionados de tenerte con nosotros.</p>
+            <p class="instruction-text">Para comenzar a explorar todas las funciones, por favor activa tu cuenta haciendo clic en el botón de abajo:</p>
+            
+            <div style="text-align: center;">
+              <a href="${activationLink}" class="button">Activar mi cuenta</a>
+            </div>
+            
+            <p class="instruction-text">Si el botón no funciona, puedes copiar y pegar este enlace en tu navegador:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #6366f1;">${activationLink}</p>
+            
+            <div class="expiry-notice">
+              Este enlace de activación es válido por las próximas 24 horas.<br>
+              Si no solicitaste esta cuenta, puedes ignorar este correo.
+            </div>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} Nitro. Todos los derechos reservados.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
     await this.emailService.sendSystemEmail(newUser.email, 'Activa tu cuenta de Nitro', html);
   }

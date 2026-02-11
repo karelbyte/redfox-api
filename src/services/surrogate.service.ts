@@ -11,7 +11,7 @@ export class SurrogateService {
   constructor(
     @InjectRepository(Surrogate)
     private surrogateRepository: Repository<Surrogate>,
-  ) {}
+  ) { }
 
   async findAll(): Promise<SurrogateResponseDto[]> {
     const surrogates = await this.surrogateRepository.find({
@@ -39,7 +39,7 @@ export class SurrogateService {
 
   async getNextCode(code: string): Promise<NextCodeResponseDto> {
     const surrogate = await this.findByCode(code);
-    
+
     return {
       code: surrogate.code,
       next_code: surrogate.generateNext(),
@@ -49,16 +49,16 @@ export class SurrogateService {
 
   async useNextCode(code: string): Promise<NextCodeResponseDto> {
     const surrogate = await this.findByCode(code);
-    
+
     // Generar el código actual antes de incrementar
     const currentCode = surrogate.generateNext();
-    
+
     // Incrementar el contador
     surrogate.increment();
-    
+
     // Guardar en la base de datos
     await this.surrogateRepository.save(surrogate);
-    
+
     return {
       code: surrogate.code,
       next_code: currentCode,
@@ -68,18 +68,18 @@ export class SurrogateService {
 
   async update(code: string, updateData: UpdateSurrogateDto): Promise<SurrogateResponseDto> {
     const surrogate = await this.findByCode(code);
-    
+
     // Validar que el nuevo next_number sea mayor al actual si se está actualizando
     if (updateData.next_number && updateData.next_number < surrogate.next_number) {
       throw new BadRequestException(
         `Next number cannot be less than current value (${surrogate.next_number})`
       );
     }
-    
+
     Object.assign(surrogate, updateData);
-    
+
     const updated = await this.surrogateRepository.save(surrogate);
-    
+
     return {
       ...updated,
       next_code: updated.generateNext(),
@@ -93,9 +93,9 @@ export class SurrogateService {
 
     const surrogate = await this.findByCode(code);
     surrogate.next_number = startNumber;
-    
+
     const updated = await this.surrogateRepository.save(surrogate);
-    
+
     return {
       ...updated,
       next_code: updated.generateNext(),
@@ -114,11 +114,11 @@ export class SurrogateService {
     const surrogate = await this.findByCode(code);
     let attempts = 0;
     const maxAttempts = 1000; // Prevenir bucles infinitos
-    
+
     while (attempts < maxAttempts) {
       const nextCode = surrogate.generateNext();
       const inUse = await this.isCodeInUse(code, nextCode);
-      
+
       if (!inUse) {
         return {
           code: surrogate.code,
@@ -126,11 +126,19 @@ export class SurrogateService {
           current_number: surrogate.next_number,
         };
       }
-      
+
       surrogate.increment();
       attempts++;
     }
-    
+
     throw new BadRequestException('Could not find available code after maximum attempts');
+  }
+
+  async useCodeIfMatches(code: string, value: string): Promise<void> {
+    const surrogate = await this.findByCode(code);
+    if (surrogate.generateNext() === value) {
+      surrogate.increment();
+      await this.surrogateRepository.save(surrogate);
+    }
   }
 }

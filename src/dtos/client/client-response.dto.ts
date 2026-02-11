@@ -1,24 +1,20 @@
+import { ClientAddressResponseDto } from './client-address-response.dto';
+import { ClientTaxDataResponseDto } from './client-tax-data-response.dto';
+import { ClientCreditResponseDto } from './client-credit-response.dto';
+
 export class ClientResponseDto {
   id: string;
   code: string;
   name: string;
-  tax_document: string;
   description: string;
-  address_street?: string;
-  address_exterior?: string;
-  address_interior?: string;
-  address_neighborhood?: string;
-  address_city?: string;
-  address_municipality?: string;
-  address_zip?: string;
-  address_state?: string;
-  address_country?: string;
   phone: string;
   email: string;
-  tax_system?: string;
-  default_invoice_use?: string;
+  tax_document?: string;
+  status: boolean;
   pack_client_id?: string;
   pack_client_response?: any;
-  status: boolean;
+  addresses: ClientAddressResponseDto[];
+  taxData: ClientTaxDataResponseDto[];
+  credit?: ClientCreditResponseDto;
   created_at: Date;
 }

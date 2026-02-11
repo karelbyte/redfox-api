@@ -12,6 +12,7 @@ import { TaxModule } from './tax.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
+import { SurrogateModule } from './surrogate.module';
 
 @Module({
   imports: [
@@ -22,9 +23,10 @@ import { CertificationPackModule } from './certification-pack.module';
     TaxModule,
     LanguageModule,
     CertificationPackModule,
+    SurrogateModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductMapper],
   exports: [ProductService],
 })
-export class ProductModule {}
+export class ProductModule { }

@@ -14,7 +14,32 @@ export class ClientPackSyncService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
+
+  private extractCustomerData(client: Client): CustomerData {
+    const mainTax = (client.taxData || []).find(t => t.is_main) || client.taxData?.[0];
+    const mainAddress = (client.addresses || []).find(a => a.is_main) || client.addresses?.[0];
+
+    return {
+      legal_name: mainTax?.tax_name || client.name,
+      tax_id: mainTax?.tax_document || 'XAXX010101000',
+      tax_system: mainTax?.tax_system || undefined,
+      email: client.email || undefined,
+      phone: client.phone || undefined,
+      default_invoice_use: mainTax?.default_invoice_use || undefined,
+      address: mainAddress ? {
+        street: mainAddress.street || undefined,
+        exterior: mainAddress.exterior_number || undefined,
+        interior: mainAddress.interior_number || undefined,
+        neighborhood: mainAddress.neighborhood || undefined,
+        city: mainAddress.city || undefined,
+        municipality: mainAddress.municipality || undefined,
+        zip: mainAddress.zip_code || undefined,
+        state: mainAddress.state || undefined,
+        country: mainAddress.country || undefined,
+      } : undefined,
+    };
+  }
 
   async syncOnCreate(
     client: Client,
@@ -25,26 +50,7 @@ export class ClientPackSyncService {
   }> {
     try {
       const packService = await this.certificationPackFactory.getPackService();
-
-      const customerData: CustomerData = {
-        legal_name: client.name,
-        tax_id: client.tax_document,
-        tax_system: client.tax_system || undefined,
-        email: client.email || undefined,
-        phone: client.phone || undefined,
-        default_invoice_use: client.default_invoice_use || undefined,
-        address: {
-          street: client.address_street || undefined,
-          exterior: client.address_exterior || undefined,
-          interior: client.address_interior || undefined,
-          neighborhood: client.address_neighborhood || undefined,
-          city: client.address_city || undefined,
-          municipality: client.address_municipality || undefined,
-          zip: client.address_zip || undefined,
-          state: client.address_state || undefined,
-          country: client.address_country || undefined,
-        },
-      };
+      const customerData = this.extractCustomerData(client);
 
       const packResponse = await packService.createCustomer(customerData);
 
@@ -71,8 +77,6 @@ export class ClientPackSyncService {
 
   /**
    * Sincroniza un cliente actualizado con el pack activo.
-   * - Si no tiene pack_client_id intenta crearlo en el pack.
-   * - Si ya tiene pack_client_id lo actualiza en el pack.
    */
   async syncOnUpdate(
     client: Client,
@@ -87,26 +91,7 @@ export class ClientPackSyncService {
 
       // Si el cliente aún no existe en el pack, intentamos crearlo
       if (!client.pack_client_id) {
-        const customerData: CustomerData = {
-          legal_name: client.name,
-          tax_id: client.tax_document,
-          tax_system: client.tax_system || undefined,
-          email: client.email || undefined,
-          phone: client.phone || undefined,
-          default_invoice_use: client.default_invoice_use || undefined,
-          address: {
-            street: client.address_street || undefined,
-            exterior: client.address_exterior || undefined,
-            interior: client.address_interior || undefined,
-            neighborhood: client.address_neighborhood || undefined,
-            city: client.address_city || undefined,
-            municipality: client.address_municipality || undefined,
-            zip: client.address_zip || undefined,
-            state: client.address_state || undefined,
-            country: client.address_country || undefined,
-          },
-        };
-
+        const customerData = this.extractCustomerData(client);
         const packResponse = await packService.createCustomer(customerData);
 
         client.pack_client_id = packResponse.id;
@@ -120,84 +105,9 @@ export class ClientPackSyncService {
         };
       }
 
-      // Si ya existe en el pack, construimos solo los campos cambiados
-      const customerData: Partial<CustomerData> = {};
-
-      if (updateClientDto.name) {
-        customerData.legal_name = updateClientDto.name;
-      }
-
-      if (updateClientDto.tax_document) {
-        customerData.tax_id = updateClientDto.tax_document;
-      }
-
-      if (updateClientDto.tax_system !== undefined) {
-        customerData.tax_system = updateClientDto.tax_system;
-      }
-
-      if (updateClientDto.email !== undefined) {
-        customerData.email = updateClientDto.email;
-      }
-
-      if (updateClientDto.phone !== undefined) {
-        customerData.phone = updateClientDto.phone;
-      }
-
-      if (updateClientDto.default_invoice_use !== undefined) {
-        customerData.default_invoice_use = updateClientDto.default_invoice_use;
-      }
-
-      // Solo incluir address si hay algún campo de dirección en el update
-      if (
-        updateClientDto.address_street !== undefined ||
-        updateClientDto.address_exterior !== undefined ||
-        updateClientDto.address_interior !== undefined ||
-        updateClientDto.address_neighborhood !== undefined ||
-        updateClientDto.address_city !== undefined ||
-        updateClientDto.address_municipality !== undefined ||
-        updateClientDto.address_zip !== undefined ||
-        updateClientDto.address_state !== undefined ||
-        updateClientDto.address_country !== undefined
-      ) {
-        customerData.address = {
-          street:
-            updateClientDto.address_street !== undefined
-              ? updateClientDto.address_street
-              : client.address_street || undefined,
-          exterior:
-            updateClientDto.address_exterior !== undefined
-              ? updateClientDto.address_exterior
-              : client.address_exterior || undefined,
-          interior:
-            updateClientDto.address_interior !== undefined
-              ? updateClientDto.address_interior
-              : client.address_interior || undefined,
-          neighborhood:
-            updateClientDto.address_neighborhood !== undefined
-              ? updateClientDto.address_neighborhood
-              : client.address_neighborhood || undefined,
-          city:
-            updateClientDto.address_city !== undefined
-              ? updateClientDto.address_city
-              : client.address_city || undefined,
-          municipality:
-            updateClientDto.address_municipality !== undefined
-              ? updateClientDto.address_municipality
-              : client.address_municipality || undefined,
-          zip:
-            updateClientDto.address_zip !== undefined
-              ? updateClientDto.address_zip
-              : client.address_zip || undefined,
-          state:
-            updateClientDto.address_state !== undefined
-              ? updateClientDto.address_state
-              : client.address_state || undefined,
-          country:
-            updateClientDto.address_country !== undefined
-              ? updateClientDto.address_country
-              : client.address_country || undefined,
-        };
-      }
+      // Si ya existe en el pack, construimos los datos finales basados en el estado actual del cliente
+      // (Porque updateClientDto puede no contener todo y queremos enviar el estado actual "limpio")
+      const customerData = this.extractCustomerData(client);
 
       const packResponse = await packService.updateCustomer(
         client.pack_client_id,
@@ -224,4 +134,3 @@ export class ClientPackSyncService {
     }
   }
 }
-

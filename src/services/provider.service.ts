@@ -9,6 +9,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ProviderMapper } from './mappers/provider.mapper';
 import { TranslationService } from './translation.service';
+import { SurrogateService } from './surrogate.service';
 
 @Injectable()
 export class ProviderService {
@@ -17,6 +18,7 @@ export class ProviderService {
     private readonly providerRepository: Repository<Provider>,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
+    private readonly surrogateService: SurrogateService,
   ) { }
 
   async create(
@@ -25,6 +27,10 @@ export class ProviderService {
   ): Promise<ProviderResponseDto> {
     const provider = this.providerRepository.create(createProviderDto);
     const savedProvider = await this.providerRepository.save(provider);
+
+    // Incrementar el contador si el código coincide con el sugerido
+    await this.surrogateService.useCodeIfMatches('provider', createProviderDto.code);
+
     return this.providerMapper.mapToResponseDto(savedProvider);
   }
 

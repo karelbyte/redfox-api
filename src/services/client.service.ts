@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
@@ -21,6 +21,10 @@ import { TranslationService } from './translation.service';
 import { ClientPackSyncService } from './client-pack-sync.service';
 import { ClientPackImportService } from './client-pack-import.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { SurrogateService } from './surrogate.service';
+import { ClientAddress } from '../models/client-address.entity';
+import { ClientTaxData } from '../models/client-tax-data.entity';
+import { ClientCredit } from '../models/client-credit.entity';
 
 @Injectable()
 export class ClientService {
@@ -29,6 +33,12 @@ export class ClientService {
   constructor(
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
+    @InjectRepository(ClientAddress)
+    private readonly clientAddressRepository: Repository<ClientAddress>,
+    @InjectRepository(ClientTaxData)
+    private readonly clientTaxDataRepository: Repository<ClientTaxData>,
+    @InjectRepository(ClientCredit)
+    private readonly clientCreditRepository: Repository<ClientCredit>,
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(Withdrawal)
@@ -38,6 +48,7 @@ export class ClientService {
     private readonly clientPackSyncService: ClientPackSyncService,
     private readonly clientPackImportService: ClientPackImportService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly surrogateService: SurrogateService,
   ) { }
 
   async create(
@@ -45,6 +56,9 @@ export class ClientService {
   ): Promise<ClientWithPackStatusResponseDto> {
     const client = this.clientRepository.create(createClientDto);
     const savedClient = await this.clientRepository.save(client);
+
+    // Incrementar el contador si el código coincide con el sugerido
+    await this.surrogateService.useCodeIfMatches('client', createClientDto.code);
 
     const syncResult = await this.clientPackSyncService.syncOnCreate(
       savedClient,
@@ -62,66 +76,40 @@ export class ClientService {
   ): Promise<PaginatedResponse<ClientResponseDto>> {
     const { page, limit, term, is_active } = paginationDto || {};
 
-    // Construir las condiciones de búsqueda
-    const baseConditions: any = { withDeleted: false };
+    const query = this.clientRepository.createQueryBuilder('client')
+      .leftJoinAndSelect('client.addresses', 'address')
+      .leftJoinAndSelect('client.taxData', 'taxData')
+      .leftJoinAndSelect('client.credit', 'credit')
+      .where('client.deleted_at IS NULL');
 
     if (is_active !== undefined) {
       const isActiveBool = String(is_active) === 'true';
-      baseConditions.where = { status: isActiveBool };
+      query.andWhere('client.status = :status', { status: isActiveBool });
     }
 
-    const whereConditions = term
-      ? {
-        ...baseConditions,
-        where: baseConditions.where
-          ? [
-            { ...baseConditions.where, code: Like(`%${term}%`) },
-            { ...baseConditions.where, name: Like(`%${term}%`) },
-            { ...baseConditions.where, tax_document: Like(`%${term}%`) },
-            { ...baseConditions.where, description: Like(`%${term}%`) },
-            { ...baseConditions.where, phone: Like(`%${term}%`) },
-            { ...baseConditions.where, email: Like(`%${term}%`) },
-          ]
-          : [
-            { code: Like(`%${term}%`) },
-            { name: Like(`%${term}%`) },
-            { tax_document: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-            { phone: Like(`%${term}%`) },
-            { email: Like(`%${term}%`) },
-          ],
-      }
-      : baseConditions;
-
-    // Si no se proporciona paginación, devolver toda la data
-    if (!page && !limit) {
-      const clients = await this.clientRepository.find(whereConditions);
-
-      const data = clients.map((client) =>
-        this.clientMapper.mapToResponseDto(client),
-      );
-
-      return {
-        data,
-        meta: {
-          total: data.length,
-          page: 1,
-          limit: data.length,
-          totalPages: 1,
-        },
-      };
+    if (term) {
+      query.andWhere(new Brackets(qb => {
+        qb.where('client.code LIKE :term', { term: `%${term}%` })
+          .orWhere('client.name LIKE :term', { term: `%${term}%` })
+          .orWhere('client.description LIKE :term', { term: `%${term}%` })
+          .orWhere('client.phone LIKE :term', { term: `%${term}%` })
+          .orWhere('client.email LIKE :term', { term: `%${term}%` })
+          .orWhere('taxData.tax_document LIKE :term', { term: `%${term}%` })
+          .orWhere('taxData.tax_name LIKE :term', { term: `%${term}%` })
+          .orWhere('address.street LIKE :term', { term: `%${term}%` })
+          .orWhere('address.city LIKE :term', { term: `%${term}%` });
+      }));
     }
 
-    // Si se proporciona paginación, aplicar la lógica de paginación
+    // Paginación
     const currentPage = page || 1;
     const currentLimit = limit || 8;
     const skip = (currentPage - 1) * currentLimit;
 
-    const [clients, total] = await this.clientRepository.findAndCount({
-      ...whereConditions,
-      skip,
-      take: currentLimit,
-    });
+    const [clients, total] = await query
+      .skip(skip)
+      .take(currentLimit)
+      .getManyAndCount();
 
     const data = clients.map((client) =>
       this.clientMapper.mapToResponseDto(client),
@@ -141,6 +129,7 @@ export class ClientService {
   async findOne(id: string, userId?: string): Promise<ClientResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id },
+      relations: ['addresses', 'taxData', 'credit'],
       withDeleted: false,
     });
     if (!client) {
@@ -161,8 +150,10 @@ export class ClientService {
   ): Promise<ClientWithPackStatusResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id },
+      relations: ['addresses', 'taxData', 'credit'],
       withDeleted: false,
     });
+
     if (!client) {
       const message = await this.translationService.translate(
         'client.not_found',
@@ -172,13 +163,36 @@ export class ClientService {
       throw new NotFoundException(message);
     }
 
-    const updatedClient = await this.clientRepository.save({
-      ...client,
-      ...updateClientDto,
-    });
+    // Actualizar campos básicos
+    const { delete_addresses, delete_tax_data, credit, ...baseData } = updateClientDto;
+    Object.assign(client, baseData);
+
+    // Manejar crédito
+    if (credit) {
+      if (!client.credit) {
+        client.credit = this.clientCreditRepository.create({
+          ...credit,
+          client_id: id,
+        });
+      } else {
+        Object.assign(client.credit, credit);
+      }
+    }
+
+    // Manejar eliminaciones
+    if (delete_addresses && delete_addresses.length > 0) {
+      await this.clientAddressRepository.delete(delete_addresses);
+    }
+    if (delete_tax_data && delete_tax_data.length > 0) {
+      await this.clientTaxDataRepository.delete(delete_tax_data);
+    }
+
+    // Si se envían direcciones, reemplazarlas o manejarlas
+    // Nota: TypeORM save con cascade: true reemplazará o actualizará según el id
+    const savedClient = await this.clientRepository.save(client);
 
     const syncResult = await this.clientPackSyncService.syncOnUpdate(
-      updatedClient,
+      savedClient,
       updateClientDto,
     );
 

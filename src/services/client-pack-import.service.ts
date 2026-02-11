@@ -6,6 +6,7 @@ import { CertificationPackFactoryService } from './certification-pack-factory.se
 import { CustomerResponse } from '../interfaces/certification-pack.interface';
 import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
 import { TranslationService } from './translation.service';
+import { AddressType } from '../models/client-address.entity';
 
 @Injectable()
 export class ClientPackImportService {
@@ -16,7 +17,7 @@ export class ClientPackImportService {
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   private async generateUniqueCode(base: string): Promise<string> {
     const normalized = base.slice(0, 50);
@@ -30,27 +31,36 @@ export class ClientPackImportService {
     return (normalized.slice(0, 50 - suffix.length) + suffix).slice(0, 50);
   }
 
-  private mapPackCustomerToClientPatch(customer: CustomerResponse): Partial<Client> {
+  private mapPackCustomerToClientData(customer: CustomerResponse): any {
     const address = customer.address || {};
     return {
       name: customer.legal_name,
-      tax_document: customer.tax_id,
       email: customer.email || undefined,
       phone: customer.phone || undefined,
-      tax_system: (customer as any).tax_system || undefined,
-      default_invoice_use: (customer as any).default_invoice_use || undefined,
-      address_street: (address as any).street || undefined,
-      address_exterior:
-        (address as any).exterior !== undefined ? String((address as any).exterior) : undefined,
-      address_interior:
-        (address as any).interior !== undefined ? String((address as any).interior) : undefined,
-      address_neighborhood: (address as any).neighborhood || undefined,
-      address_city: (address as any).city || undefined,
-      address_municipality: (address as any).municipality || undefined,
-      address_zip:
-        (address as any).zip !== undefined ? String((address as any).zip) : undefined,
-      address_state: (address as any).state || undefined,
-      address_country: (address as any).country || undefined,
+      addresses: [
+        {
+          is_main: true,
+          type: AddressType.FISCAL,
+          street: (address as any).street || undefined,
+          exterior_number: (address as any).exterior !== undefined ? String((address as any).exterior) : undefined,
+          interior_number: (address as any).interior !== undefined ? String((address as any).interior) : undefined,
+          neighborhood: (address as any).neighborhood || undefined,
+          city: (address as any).city || undefined,
+          municipality: (address as any).municipality || undefined,
+          zip_code: (address as any).zip !== undefined ? String((address as any).zip) : undefined,
+          state: (address as any).state || undefined,
+          country: (address as any).country || 'MEX',
+        }
+      ],
+      taxData: [
+        {
+          is_main: true,
+          tax_document: customer.tax_id,
+          tax_name: customer.legal_name,
+          tax_system: (customer as any).tax_system || undefined,
+          default_invoice_use: (customer as any).default_invoice_use || undefined,
+        }
+      ],
       pack_client_id: customer.id,
       pack_client_response: customer as unknown as Record<string, unknown>,
       status: true,
@@ -59,7 +69,6 @@ export class ClientPackImportService {
 
   /**
    * Importa todos los clientes desde el pack activo hacia nuestra DB (proceso inverso).
-   * Escalable: usa la abstracción del pack (listCustomers).
    */
   async importAllFromPack(userId?: string): Promise<ImportClientsFromPackResponseDto> {
     let packService: any;
@@ -82,36 +91,27 @@ export class ClientPackImportService {
     }
 
     const customers: CustomerResponse[] = await packService.listCustomers();
-    const summarized = customers.map((customer) => ({
-      id: customer.id,
-      tax_id: customer.tax_id,
-      legal_name: customer.legal_name,
-    }));
-
-    this.logger.log(
-      `Received customers from pack for import: total=${customers.length}`,
-      { total: customers.length, customers: summarized },
-    );
 
     let created = 0;
     let updated = 0;
-    let linked = 0;
     let skipped = 0;
 
     for (const customer of customers) {
       try {
         let existing = await this.clientRepository.findOne({
           where: { pack_client_id: customer.id },
+          relations: ['addresses', 'taxData'],
           withDeleted: false,
         });
 
-        const patch = this.mapPackCustomerToClientPatch(customer);
+        const data = this.mapPackCustomerToClientData(customer);
 
         if (existing) {
-          await this.clientRepository.save({
-            ...existing,
-            ...patch,
-          });
+          // Para actualizar, removemos las anteriores y agregamos las nuevas (simplificado para dev)
+          // O podríamos intentar buscar la principal y actualizarla.
+          // Por simplicidad en esta fase, reemplazamos:
+          Object.assign(existing, data);
+          await this.clientRepository.save(existing);
           updated += 1;
           continue;
         }
@@ -121,10 +121,8 @@ export class ClientPackImportService {
         const code = await this.generateUniqueCode(codeBase);
         const client = this.clientRepository.create({
           code,
-          name: patch.name || 'Cliente',
-          tax_document: patch.tax_document || 'N/A',
           description: 'Importado del pack',
-          ...patch,
+          ...data,
         });
 
         await this.clientRepository.save(client);
@@ -141,9 +139,8 @@ export class ClientPackImportService {
       totalFromPack: customers.length,
       created,
       updated,
-      linked,
+      linked: 0,
       skipped,
     };
   }
 }
-

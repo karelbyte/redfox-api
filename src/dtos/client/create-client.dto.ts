@@ -4,7 +4,12 @@ import {
   Length,
   IsOptional,
   IsEmail,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateClientAddressDto } from './create-client-address.dto';
+import { CreateClientTaxDataDto } from './create-client-tax-data.dto';
 
 export class CreateClientDto {
   @IsString()
@@ -18,59 +23,9 @@ export class CreateClientDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
-  @Length(3, 100)
-  tax_document: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @Length(3, 255)
+  @IsOptional()
+  @Length(0, 255)
   description: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 200)
-  address_street?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 20)
-  address_exterior?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 20)
-  address_interior?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 100)
-  address_neighborhood?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 100)
-  address_city?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 100)
-  address_municipality?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 10)
-  address_zip?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 100)
-  address_state?: string;
-
-  @IsString()
-  @IsOptional()
-  @Length(0, 3)
-  address_country?: string;
 
   @IsString()
   @IsOptional()
@@ -83,13 +38,15 @@ export class CreateClientDto {
   @Length(3, 100)
   email?: string;
 
-  @IsString()
+  @IsArray()
   @IsOptional()
-  @Length(0, 10)
-  tax_system?: string;
+  @ValidateNested({ each: true })
+  @Type(() => CreateClientAddressDto)
+  addresses?: CreateClientAddressDto[];
 
-  @IsString()
+  @IsArray()
   @IsOptional()
-  @Length(0, 10)
-  default_invoice_use?: string;
+  @ValidateNested({ each: true })
+  @Type(() => CreateClientTaxDataDto)
+  taxData?: CreateClientTaxDataDto[];
 }

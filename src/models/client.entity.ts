@@ -5,7 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
+  OneToOne,
 } from 'typeorm';
+import { ClientAddress } from './client-address.entity';
+import { ClientTaxData } from './client-tax-data.entity';
+import { ClientCredit } from './client-credit.entity';
 
 @Entity('clients')
 export class Client {
@@ -18,50 +23,14 @@ export class Client {
   @Column({ length: 100 })
   name: string;
 
-  @Column({ length: 100 })
-  tax_document: string;
-
   @Column({ length: 255 })
   description: string;
-
-  @Column({ length: 200, nullable: true })
-  address_street: string;
-
-  @Column({ length: 20, nullable: true })
-  address_exterior: string;
-
-  @Column({ length: 20, nullable: true })
-  address_interior: string;
-
-  @Column({ length: 100, nullable: true })
-  address_neighborhood: string;
-
-  @Column({ length: 100, nullable: true })
-  address_city: string;
-
-  @Column({ length: 100, nullable: true })
-  address_municipality: string;
-
-  @Column({ length: 10, nullable: true })
-  address_zip: string;
-
-  @Column({ length: 100, nullable: true })
-  address_state: string;
-
-  @Column({ length: 3, nullable: true, default: 'MEX' })
-  address_country: string;
 
   @Column({ length: 20, nullable: true })
   phone: string;
 
   @Column({ length: 100, nullable: true })
   email: string;
-
-  @Column({ length: 10, nullable: true })
-  tax_system: string;
-
-  @Column({ length: 10, nullable: true })
-  default_invoice_use: string;
 
   @Column({ default: true })
   status: boolean;
@@ -71,6 +40,15 @@ export class Client {
 
   @Column({ type: 'json', nullable: true })
   pack_client_response: any;
+
+  @OneToMany(() => ClientAddress, (address) => address.client, { cascade: true })
+  addresses: ClientAddress[];
+
+  @OneToMany(() => ClientTaxData, (taxData) => taxData.client, { cascade: true })
+  taxData: ClientTaxData[];
+
+  @OneToOne(() => ClientCredit, (credit) => credit.client, { cascade: true })
+  credit: ClientCredit;
 
   @CreateDateColumn()
   created_at: Date;

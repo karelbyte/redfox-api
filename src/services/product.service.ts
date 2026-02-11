@@ -18,6 +18,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
+import { SurrogateService } from './surrogate.service';
 
 interface SearchCondition {
   name?: any;
@@ -52,6 +53,7 @@ export class ProductService {
     private readonly productMapper: ProductMapper,
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly surrogateService: SurrogateService,
   ) { }
 
   async create(
@@ -115,6 +117,10 @@ export class ProductService {
       });
 
       const savedProduct = await this.productRepository.save(product);
+
+      // Incrementar el contador si el código coincide con el sugerido
+      await this.surrogateService.useCodeIfMatches('product', createProductDto.code);
+
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
