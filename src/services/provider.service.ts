@@ -10,12 +10,21 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ProviderMapper } from './mappers/provider.mapper';
 import { TranslationService } from './translation.service';
 import { SurrogateService } from './surrogate.service';
+import { ProviderAddress } from '../models/provider-address.entity';
+import { ProviderTaxData } from '../models/provider-tax-data.entity';
+import { ProviderCredit } from '../models/provider-credit.entity';
 
 @Injectable()
 export class ProviderService {
   constructor(
     @InjectRepository(Provider)
     private readonly providerRepository: Repository<Provider>,
+    @InjectRepository(ProviderAddress)
+    private readonly providerAddressRepository: Repository<ProviderAddress>,
+    @InjectRepository(ProviderTaxData)
+    private readonly providerTaxDataRepository: Repository<ProviderTaxData>,
+    @InjectRepository(ProviderCredit)
+    private readonly providerCreditRepository: Repository<ProviderCredit>,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
     private readonly surrogateService: SurrogateService,
@@ -56,19 +65,15 @@ export class ProviderService {
             { ...baseConditions.where, code: Like(`%${term}%`) },
             { ...baseConditions.where, description: Like(`%${term}%`) },
             { ...baseConditions.where, name: Like(`%${term}%`) },
-            { ...baseConditions.where, document: Like(`%${term}%`) },
             { ...baseConditions.where, phone: Like(`%${term}%`) },
             { ...baseConditions.where, email: Like(`%${term}%`) },
-            { ...baseConditions.where, address: Like(`%${term}%`) },
           ]
           : [
             { code: Like(`%${term}%`) },
             { description: Like(`%${term}%`) },
             { name: Like(`%${term}%`) },
-            { document: Like(`%${term}%`) },
             { phone: Like(`%${term}%`) },
             { email: Like(`%${term}%`) },
-            { address: Like(`%${term}%`) },
           ],
       }
       : baseConditions;
@@ -77,6 +82,7 @@ export class ProviderService {
     if (!page && !limit) {
       const providers = await this.providerRepository.find({
         ...whereConditions,
+        relations: ['addresses', 'taxData', 'credit'],
         order: {
           created_at: 'DESC',
         },
@@ -106,6 +112,7 @@ export class ProviderService {
       ...whereConditions,
       skip,
       take: currentLimit,
+      relations: ['addresses', 'taxData', 'credit'],
       order: {
         created_at: 'DESC',
       },
@@ -127,7 +134,10 @@ export class ProviderService {
   }
 
   async findOne(id: string, userId?: string): Promise<ProviderResponseDto> {
-    const provider = await this.providerRepository.findOne({ where: { id } });
+    const provider = await this.providerRepository.findOne({
+      where: { id },
+      relations: ['addresses', 'taxData', 'credit']
+    });
     if (!provider) {
       const message = await this.translationService.translate(
         'provider.not_found',
@@ -144,7 +154,12 @@ export class ProviderService {
     updateProviderDto: UpdateProviderDto,
     userId?: string,
   ): Promise<ProviderResponseDto> {
-    const provider = await this.providerRepository.findOne({ where: { id } });
+    const provider = await this.providerRepository.findOne({
+      where: { id },
+      relations: ['addresses', 'taxData', 'credit'],
+      withDeleted: false,
+    });
+
     if (!provider) {
       const message = await this.translationService.translate(
         'provider.not_found',
@@ -154,7 +169,29 @@ export class ProviderService {
       throw new NotFoundException(message);
     }
 
-    Object.assign(provider, updateProviderDto);
+    const { delete_addresses, delete_tax_data, credit, ...baseData } = updateProviderDto;
+    Object.assign(provider, baseData);
+
+    // Handle Credit
+    if (credit) {
+      if (!provider.credit) {
+        provider.credit = this.providerCreditRepository.create({
+          ...credit,
+          provider_id: id,
+        });
+      } else {
+        Object.assign(provider.credit, credit);
+      }
+    }
+
+    // Handle Deletions
+    if (delete_addresses && delete_addresses.length > 0) {
+      await this.providerAddressRepository.delete(delete_addresses);
+    }
+    if (delete_tax_data && delete_tax_data.length > 0) {
+      await this.providerTaxDataRepository.delete(delete_tax_data);
+    }
+
     const updatedProvider = await this.providerRepository.save(provider);
     return this.providerMapper.mapToResponseDto(updatedProvider);
   }

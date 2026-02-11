@@ -38,12 +38,6 @@ export class CreateProvidersTable1716400000060 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'document',
-            type: 'varchar',
-            length: '20',
-            isNullable: true,
-          },
-          {
             name: 'phone',
             type: 'varchar',
             length: '20',
@@ -53,12 +47,6 @@ export class CreateProvidersTable1716400000060 implements MigrationInterface {
             name: 'email',
             type: 'varchar',
             length: '100',
-            isNullable: true,
-          },
-          {
-            name: 'address',
-            type: 'varchar',
-            length: '200',
             isNullable: true,
           },
           {

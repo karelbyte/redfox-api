@@ -4,7 +4,14 @@ import {
   IsOptional,
   Length,
   IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsObject,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateProviderAddressDto } from './create-provider-address.dto';
+import { CreateProviderTaxDataDto } from './create-provider-tax-data.dto';
+import { UpdateProviderCreditDto } from './update-provider-credit.dto';
 
 export class UpdateProviderDto {
   @IsString()
@@ -23,24 +30,43 @@ export class UpdateProviderDto {
   name?: string;
 
   @IsString()
-  @Length(1, 20)
   @IsOptional()
-  document?: string;
-
-  @IsString()
-  @Length(1, 20)
-  @IsOptional()
+  @Length(3, 20)
   phone?: string;
 
-  @IsEmail()
-  @Length(1, 100)
+  @IsString()
   @IsOptional()
+  @IsEmail()
+  @Length(3, 100)
   email?: string;
 
-  @IsString()
-  @Length(1, 200)
+  @IsArray()
   @IsOptional()
-  address?: string;
+  @ValidateNested({ each: true })
+  @Type(() => CreateProviderAddressDto)
+  addresses?: CreateProviderAddressDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProviderTaxDataDto)
+  taxData?: CreateProviderTaxDataDto[];
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  delete_addresses?: string[];
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  delete_tax_data?: string[];
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateProviderCreditDto)
+  credit?: UpdateProviderCreditDto;
 
   @IsBoolean()
   @IsOptional()

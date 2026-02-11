@@ -26,4 +26,16 @@ export class AuthController {
   async activate(@Body() body: { token: string }): Promise<void> {
     return this.authService.activate(body.token);
   }
+
+  @Public()
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }): Promise<void> {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string, password: string }): Promise<void> {
+    return this.authService.resetPassword(body.token, body.password);
+  }
 }

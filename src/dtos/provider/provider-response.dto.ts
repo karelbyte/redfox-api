@@ -1,12 +1,15 @@
+import { ProviderAddressResponseDto, ProviderCreditResponseDto, ProviderTaxDataResponseDto } from "./provider-related-response.dto";
+
 export class ProviderResponseDto {
   id: string;
   code: string;
   description: string;
   name: string;
-  document: string;
-  phone: string;
-  email: string;
-  address: string;
   status: boolean;
+  phone?: string;
+  email?: string;
+  addresses?: ProviderAddressResponseDto[];
+  taxData?: ProviderTaxDataResponseDto[];
+  credit?: ProviderCreditResponseDto;
   created_at: Date;
 }

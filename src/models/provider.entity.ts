@@ -6,9 +6,13 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { Product } from './product.entity';
 import { Reception } from './reception.entity';
+import { ProviderAddress } from './provider-address.entity';
+import { ProviderTaxData } from './provider-tax-data.entity';
+import { ProviderCredit } from './provider-credit.entity';
 
 @Entity('providers')
 export class Provider {
@@ -24,8 +28,6 @@ export class Provider {
   @Column({ length: 100, nullable: true })
   name: string;
 
-  @Column({ length: 20, nullable: true })
-  document: string;
 
   @Column({ length: 20, nullable: true })
   phone: string;
@@ -33,8 +35,6 @@ export class Provider {
   @Column({ length: 100, nullable: true })
   email: string;
 
-  @Column({ length: 200, nullable: true })
-  address: string;
 
   @Column({ default: true })
   status: boolean;
@@ -50,4 +50,13 @@ export class Provider {
 
   @OneToMany(() => Reception, (reception) => reception.provider)
   receptions: Reception[];
+
+  @OneToMany(() => ProviderAddress, (address) => address.provider, { cascade: true })
+  addresses: ProviderAddress[];
+
+  @OneToMany(() => ProviderTaxData, (tax) => tax.provider, { cascade: true })
+  taxData: ProviderTaxData[];
+
+  @OneToOne(() => ProviderCredit, (credit) => credit.provider, { cascade: true })
+  credit: ProviderCredit;
 }

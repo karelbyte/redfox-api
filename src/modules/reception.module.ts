@@ -19,6 +19,7 @@ import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { LanguageModule } from './language.module';
 import { InventoryPackSyncModule } from './inventory-pack-sync.module';
+import { ProviderModule } from './provider.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { InventoryPackSyncModule } from './inventory-pack-sync.module';
     ProductModule,
     LanguageModule,
     InventoryPackSyncModule,
+    ProviderModule,
   ],
   controllers: [ReceptionController],
   providers: [
@@ -48,4 +50,4 @@ import { InventoryPackSyncModule } from './inventory-pack-sync.module';
   ],
   exports: [ReceptionService],
 })
-export class ReceptionModule {}
+export class ReceptionModule { }

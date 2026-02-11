@@ -30,6 +30,7 @@ import { UpdateReceptionDetailDto } from '../dtos/reception-detail/update-recept
 import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-detail-query.dto';
 import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
+import { ProviderMapper } from './mappers/provider.mapper';
 
 @Injectable()
 export class ReceptionService {
@@ -53,7 +54,8 @@ export class ReceptionService {
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
-  ) {}
+    private readonly providerMapper: ProviderMapper,
+  ) { }
 
   private mapDetailToResponseDto(
     detail: ReceptionDetail,
@@ -72,7 +74,7 @@ export class ReceptionService {
       id: reception.id,
       code: reception.code,
       date: reception.date,
-      provider: reception.provider,
+      provider: this.providerMapper.mapToResponseDto(reception.provider),
       warehouse: this.warehouseMapper.mapToResponseDto(reception.warehouse),
       document: reception.document,
       amount: reception.amount,
@@ -672,7 +674,7 @@ export class ReceptionService {
         // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
-            (Number(existingInventory.quantity) - Number(detail.quantity)) +
+          (Number(existingInventory.quantity) - Number(detail.quantity)) +
           Number(detail.price) * Number(detail.quantity);
         existingInventory.price =
           totalValue / Number(existingInventory.quantity);
@@ -716,14 +718,14 @@ export class ReceptionService {
     // Retornar resumen de la operación
     const message = transferredProducts > 0
       ? await this.translationService.translate(
-          'reception.closed_successfully',
-          userId,
-          { transferredProducts },
-        )
+        'reception.closed_successfully',
+        userId,
+        { transferredProducts },
+      )
       : await this.translationService.translate(
-          'reception.closed_no_products',
-          userId,
-        );
+        'reception.closed_no_products',
+        userId,
+      );
 
     return {
       receptionId: reception.id,
