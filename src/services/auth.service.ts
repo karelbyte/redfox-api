@@ -9,6 +9,7 @@ import { compare } from 'bcrypt';
 import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import { RoleService } from './role.service';
+import { EmailQueue } from '../queues/email.queue';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private emailService: EmailService,
     private configService: ConfigService,
     private roleService: RoleService,
+    private emailQueue: EmailQueue,
   ) { }
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -211,7 +213,11 @@ export class AuthService {
       </html>
     `;
 
-    await this.emailService.sendSystemEmail(newUser.email, 'Activa tu cuenta de Nitro', html);
+    await this.emailQueue.addEmailJob({
+      to: newUser.email,
+      subject: 'Activa tu cuenta de Nitro',
+      html,
+    });
   }
 
   async activate(token: string): Promise<void> {
@@ -351,7 +357,11 @@ export class AuthService {
       </html>
     `;
 
-    await this.emailService.sendSystemEmail(user.email, 'Restablecer contraseña - Nitro', html);
+    await this.emailQueue.addEmailJob({
+      to: user.email,
+      subject: 'Restablecer contraseña - Nitro',
+      html,
+    });
   }
 
   async resetPassword(token: string, password: string): Promise<void> {

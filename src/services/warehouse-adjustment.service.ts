@@ -46,7 +46,7 @@ export class WarehouseAdjustmentService {
     private warehouseMapper: WarehouseMapper,
     private productMapper: ProductMapper,
     private translationService: TranslationService,
-  ) {}
+  ) { }
 
   async create(
     createDto: CreateWarehouseAdjustmentDto,
@@ -150,6 +150,7 @@ export class WarehouseAdjustmentService {
           'product.category',
           'product.tax',
           'product.measurement_unit',
+          'product.prices',
         ],
       });
 
@@ -198,6 +199,7 @@ export class WarehouseAdjustmentService {
           'product.category',
           'product.tax',
           'product.measurement_unit',
+          'product.prices',
         ],
       });
 

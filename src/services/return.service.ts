@@ -51,7 +51,7 @@ export class ReturnService {
     private productMapper: ProductMapper,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
-  ) {}
+  ) { }
 
   async create(
     createDto: CreateReturnDto,
@@ -142,6 +142,7 @@ export class ReturnService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -188,6 +189,7 @@ export class ReturnService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -284,6 +286,7 @@ export class ReturnService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -328,6 +331,7 @@ export class ReturnService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -645,7 +649,7 @@ export class ReturnService {
       sourceWarehouse: this.warehouseMapper.mapToResponseDto(
         return_.sourceWarehouse,
       ),
-      targetProvider: return_.targetProvider 
+      targetProvider: return_.targetProvider
         ? this.providerMapper.mapToResponseDto(return_.targetProvider)
         : null,
       date: return_.date,

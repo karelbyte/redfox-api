@@ -27,6 +27,6 @@ import { SurrogateModule } from './surrogate.module';
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductMapper],
-  exports: [ProductService],
+  exports: [ProductService, ProductMapper],
 })
 export class ProductModule { }

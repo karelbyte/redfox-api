@@ -1,4 +1,4 @@
-import { IsUUID, IsNumber, Min } from 'class-validator';
+import { IsUUID, IsNumber, Min, IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateReceptionDetailDto {
   @IsUUID()
@@ -11,4 +11,12 @@ export class CreateReceptionDetailDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @IsString()
+  @IsOptional()
+  batch_number?: string;
+
+  @IsDateString()
+  @IsOptional()
+  expiration_date?: string;
 }

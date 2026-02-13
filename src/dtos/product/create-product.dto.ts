@@ -9,9 +9,12 @@ import {
   Min,
   IsUrl,
   IsEnum,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Transform, TransformFnParams } from 'class-transformer';
-import { ProductType } from '../../models/product.entity';
+import { ProductType, InventoryStrategy } from '../../models/product.entity';
+import { ProductPriceDto } from './product-price.dto';
 
 const transformToNumber = ({
   value,
@@ -117,9 +120,25 @@ export class CreateProductDto {
   @IsOptional()
   type?: ProductType;
 
+  @IsEnum(InventoryStrategy)
+  @IsOptional()
+  inventory_strategy?: InventoryStrategy;
+
   @IsArray()
   @IsUrl({}, { each: true })
   @IsOptional()
   @Transform(transformToArray)
   images?: string[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Transform(transformToNumber)
+  base_price?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductPriceDto)
+  @IsOptional()
+  prices?: ProductPriceDto[];
 }

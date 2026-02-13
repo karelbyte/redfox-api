@@ -12,6 +12,7 @@ import { UpdateWarehouseOpeningDto } from '../dtos/warehouse-opening/update-ware
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
+import { ProductMapper } from './mappers/product.mapper';
 
 @Injectable()
 export class WarehouseOpeningService {
@@ -19,7 +20,8 @@ export class WarehouseOpeningService {
     @InjectRepository(WarehouseOpening)
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly productMapper: ProductMapper,
+  ) { }
 
   async create(
     createWarehouseOpeningDto: CreateWarehouseOpeningDto,
@@ -42,6 +44,7 @@ export class WarehouseOpeningService {
           'product.category',
           'product.tax',
           'product.measurement_unit',
+          'product.prices',
         ],
       });
 
@@ -91,6 +94,7 @@ export class WarehouseOpeningService {
           'product.category',
           'product.tax',
           'product.measurement_unit',
+          'product.prices',
         ],
         skip,
         take: limit,
@@ -234,28 +238,7 @@ export class WarehouseOpeningService {
     return {
       id: warehouseOpening.id,
       warehouseId: warehouseOpening.warehouseId,
-      product: {
-        id: warehouseOpening.product.id,
-        name: warehouseOpening.product.name,
-        slug: warehouseOpening.product.slug,
-        description: warehouseOpening.product.description,
-        sku: warehouseOpening.product.sku,
-        code: warehouseOpening.product.code,
-        weight: warehouseOpening.product.weight,
-        width: warehouseOpening.product.width,
-        height: warehouseOpening.product.height,
-        length: warehouseOpening.product.length,
-        brand: warehouseOpening.product.brand,
-        category: warehouseOpening.product.category,
-        tax: warehouseOpening.product.tax,
-        measurement_unit: warehouseOpening.product.measurement_unit,
-        is_active: warehouseOpening.product.is_active,
-        type: warehouseOpening.product.type,
-        images: warehouseOpening.product.images
-          ? (JSON.parse(warehouseOpening.product.images) as string[])
-          : [],
-        created_at: warehouseOpening.product.created_at,
-      },
+      product: this.productMapper.mapToResponseDto(warehouseOpening.product),
       quantity: warehouseOpening.quantity,
       price: warehouseOpening.price,
       createdAt: warehouseOpening.createdAt,

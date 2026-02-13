@@ -123,6 +123,20 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'inventory_strategy',
+            type: 'enum',
+            enum: ['fifo', 'fefo', 'average'],
+            default: "'average'",
+            isNullable: false,
+          },
+          {
+            name: 'base_price',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            default: 0,
+          },
+          {
             name: 'images',
             type: isPostgres ? 'text' : 'text',
             isNullable: true,

@@ -7,16 +7,24 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
 import { Tax } from './tax.entity';
 import { MeasurementUnit } from './measurement-unit.entity';
+import { ProductPrice } from './product-price.entity';
 
 export enum ProductType {
   DIGITAL = 'digital',
   SERVICE = 'service',
   TANGIBLE = 'tangible',
+}
+
+export enum InventoryStrategy {
+  FIFO = 'fifo',
+  FEFO = 'fefo',
+  AVERAGE = 'average',
 }
 
 @Entity('products')
@@ -79,6 +87,19 @@ export class Product {
     default: ProductType.TANGIBLE,
   })
   type: ProductType;
+
+  @Column({
+    type: 'enum',
+    enum: InventoryStrategy,
+    default: InventoryStrategy.AVERAGE,
+  })
+  inventory_strategy: InventoryStrategy;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  base_price: number;
+
+  @OneToMany(() => ProductPrice, (price) => price.product, { cascade: true })
+  prices: ProductPrice[];
 
   @Column({ type: 'text', nullable: true })
   images: string;

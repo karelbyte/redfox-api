@@ -16,5 +16,7 @@ export class ProductHistoryResponseDto {
   operation_id: string;
   quantity: number;
   current_stock: number;
+  batch_number?: string;
+  expiration_date?: Date;
   created_at: Date;
 }

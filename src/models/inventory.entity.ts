@@ -16,7 +16,7 @@ export class Inventory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'string' })
+  @Column({ name: 'product_id' })
   product_id: string;
 
   @ManyToOne(() => Product)
@@ -38,6 +38,15 @@ export class Inventory {
 
   @Column({ type: 'json', nullable: true })
   pack_product_response: Record<string, unknown> | null;
+
+  @Column({ length: 100, nullable: true })
+  batch_number: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expiration_date: Date;
+
+  @Column({ length: 255, nullable: true })
+  entry_id: string;
 
   @CreateDateColumn()
   created_at: Date;

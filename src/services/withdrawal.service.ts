@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { Withdrawal, WithdrawalType, WithdrawalStatus } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
@@ -23,6 +23,7 @@ import {
   ProductHistory,
   OperationType,
 } from '../models/product-history.entity';
+import { Product, InventoryStrategy } from '../models/product.entity';
 import {
   CreateWithdrawalDto,
   CreateWithdrawalDetailDto,
@@ -186,6 +187,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.product.prices',
         'details.warehouse',
       ],
       skip,
@@ -215,6 +217,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.product.prices',
         'details.warehouse',
       ],
     });
@@ -245,6 +248,7 @@ export class WithdrawalService {
         'details.product',
         'details.product.brand',
         'details.product.measurement_unit',
+        'details.product.prices',
         'details.warehouse',
       ],
     });
@@ -363,6 +367,7 @@ export class WithdrawalService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
       ],
     });
@@ -434,6 +439,7 @@ export class WithdrawalService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
       ],
     });
@@ -475,6 +481,7 @@ export class WithdrawalService {
           'product.category',
           'product.tax',
           'product.measurement_unit',
+          'product.prices',
           'warehouse',
         ],
         skip,
@@ -524,6 +531,7 @@ export class WithdrawalService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
       ],
     });
@@ -560,6 +568,7 @@ export class WithdrawalService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
       ],
     });
@@ -689,50 +698,69 @@ export class WithdrawalService {
     let withdrawnProducts = 0;
     let totalQuantity = 0;
 
-    // Procesar cada producto de la withdrawal
     for (const detail of withdrawalDetails) {
-      // Buscar si el producto existe en inventory
-      const existingInventory = await this.inventoryRepository.findOne({
+      const product = await this.productService.findOneEntity(detail.product.id);
+      const strategy = product.inventory_strategy || InventoryStrategy.AVERAGE;
+
+      let lots = await this.inventoryRepository.find({
         where: {
           product: { id: detail.product.id },
           warehouse: { id: detail.warehouse.id },
+          quantity: MoreThan(0),
         },
-        relations: ['product', 'warehouse'],
+        order: {
+          created_at: 'ASC',
+        },
       });
 
-      if (!existingInventory) {
+      if (strategy === InventoryStrategy.FEFO) {
+        lots.sort((a, b) => {
+          if (!a.expiration_date) return 1;
+          if (!b.expiration_date) return -1;
+          const aTime = new Date(a.expiration_date).getTime();
+          const bTime = new Date(b.expiration_date).getTime();
+          return aTime - bTime;
+        });
+      } else {
+        lots.sort((a, b) => {
+          const aTime = new Date(a.created_at).getTime();
+          const bTime = new Date(b.created_at).getTime();
+          return aTime - bTime;
+        });
+      }
+
+      const totalAvailable = lots.reduce((sum, lot) => sum + Number(lot.quantity), 0);
+      if (totalAvailable < Number(detail.quantity)) {
         throw new BadRequestException(
-          `Producto ${detail.product.name} no existe en el inventario del almacén ${detail.warehouse.name}`,
+          `Insufficient stock for product ${detail.product.name}. Available: ${totalAvailable}, Requested: ${detail.quantity}`,
         );
       }
 
-      // Verificar que hay suficiente stock
-      if (Number(existingInventory.quantity) < Number(detail.quantity)) {
-        throw new BadRequestException(
-          `Stock insuficiente para el producto ${detail.product.name}. Disponible: ${existingInventory.quantity}, Solicitado: ${detail.quantity}`,
-        );
+      let remainingToDeduct = Number(detail.quantity);
+      for (const lot of lots) {
+        if (remainingToDeduct <= 0) break;
+
+        const lotQuantity = Number(lot.quantity);
+        const deduction = Math.min(lotQuantity, remainingToDeduct);
+
+        lot.quantity = lotQuantity - deduction;
+        remainingToDeduct -= deduction;
+
+        const finalLot = await this.inventoryRepository.save(lot);
+
+        const productHistory = this.productHistoryRepository.create({
+          product: detail.product,
+          warehouse: detail.warehouse,
+          operation_type: OperationType.WITHDRAWAL,
+          operation_id: withdrawal.id,
+          quantity: deduction,
+          current_stock: Number(finalLot.quantity),
+          batch_number: lot.batch_number,
+          expiration_date: lot.expiration_date,
+        });
+
+        await this.productHistoryRepository.save(productHistory);
       }
-
-      // Descontar la cantidad del inventario
-      existingInventory.quantity =
-        Number(existingInventory.quantity) - Number(detail.quantity);
-
-      // Si el stock llega a 0, mantener el precio actual
-      // Si no, el precio se mantiene igual
-      const finalInventory =
-        await this.inventoryRepository.save(existingInventory);
-
-      // Crear registro en ProductHistory
-      const productHistory = this.productHistoryRepository.create({
-        product: detail.product,
-        warehouse: detail.warehouse,
-        operation_type: OperationType.WITHDRAWAL,
-        operation_id: withdrawal.id,
-        quantity: Number(detail.quantity),
-        current_stock: Number(finalInventory.quantity),
-      });
-
-      await this.productHistoryRepository.save(productHistory);
 
       withdrawnProducts++;
       totalQuantity += Number(detail.quantity);
@@ -824,6 +852,8 @@ export class WithdrawalService {
             operation_id: withdrawal.id,
             quantity: Number(detail.quantity),
             current_stock: Number(inventory.quantity),
+            batch_number: inventory.batch_number,
+            expiration_date: inventory.expiration_date,
           });
           await queryRunner.manager.save(ProductHistory, productHistory);
         }

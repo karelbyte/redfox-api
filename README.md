@@ -300,6 +300,9 @@ redfox-api/
 
 ## Key Features
 
+- **Lot/Batch-based Inventory**: Transitioned from a merged stock system to a lot-based system for precise traceability.
+- **Inventory Strategies**: Support for FIFO, FEFO (First Expired, First Out), and Weighted Average costing.
+- **Traceability**: Track every unit back to its original reception lot via `entry_id`.
 - **Multi-database support**: MySQL and PostgreSQL
 - **JWT Authentication**: Secure token-based authentication
 - **FacturaAPI Integration**: Electronic invoicing (CFDI) support
@@ -308,6 +311,20 @@ redfox-api/
 - **TypeORM**: Database ORM with migrations
 - **Validation**: Class-validator for DTOs
 - **CORS**: Configurable CORS support
+
+## 📦 Lot/Batch Inventory System
+
+The system now supports advanced inventory management via lot tracking.
+
+### Strategies
+- **FIFO (First In, First Out)**: Stock is deducted from the oldest lots first based on their creation date.
+- **FEFO (First Expired, First Out)**: Stock is deducted from lots closest to their expiration date. Ideal for pharmacies and food businesses.
+- **AVERAGE**: Stock is deducted from the lot with the lowest `entry_id` (oldest reception) but costing is based on the weighted average (legacy support).
+
+### Key Entities
+- **Inventory**: Now stores `batch_number`, `expiration_date`, and `entry_id`.
+- **ReceptionDetail**: Captures lot information during product reception.
+- **WithdrawalService**: Implements the "Picking Engine" that automatically selects lots based on the product's strategy.
 
 ## Certification pack sync
 

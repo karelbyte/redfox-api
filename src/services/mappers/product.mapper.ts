@@ -13,7 +13,7 @@ export class ProductMapper {
     private readonly categoryMapper: CategoryMapper,
     private readonly taxMapper: TaxMapper,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
-  ) {}
+  ) { }
 
   mapToResponseDto(product: Product): ProductResponseDto {
     if (!product) {
@@ -37,6 +37,9 @@ export class ProductMapper {
       measurement_unit,
       is_active,
       type,
+      inventory_strategy,
+      base_price,
+      prices,
       images,
       created_at,
     } = product;
@@ -62,6 +65,15 @@ export class ProductMapper {
         : null,
       is_active,
       type,
+      inventory_strategy,
+      base_price: Number(base_price),
+      prices: prices
+        ? prices.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+        }))
+        : [],
       images: images ? (JSON.parse(images) as string[]) : [],
       created_at,
     };

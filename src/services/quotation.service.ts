@@ -46,7 +46,7 @@ export class QuotationService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   private mapDetailToResponseDto(
     detail: QuotationDetail,
@@ -106,7 +106,7 @@ export class QuotationService {
 
     for (const detail of quotation.details) {
       subtotal += Number(detail.subtotal);
-      
+
       if (detail.product.tax) {
         const taxAmount = (Number(detail.subtotal) * Number(detail.product.tax.value)) / 100;
         totalTax += taxAmount;
@@ -343,6 +343,7 @@ export class QuotationService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -402,6 +403,7 @@ export class QuotationService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -445,6 +447,7 @@ export class QuotationService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
       skip,
       take: limit,
@@ -491,6 +494,7 @@ export class QuotationService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -532,6 +536,7 @@ export class QuotationService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 

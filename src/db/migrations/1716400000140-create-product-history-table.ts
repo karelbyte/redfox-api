@@ -6,8 +6,7 @@ import {
 } from 'typeorm';
 
 export class CreateProductHistoryTable1716400000140
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateProductHistoryTable1716400000140';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -80,6 +79,17 @@ export class CreateProductHistoryTable1716400000140
             scale: 2,
             isNullable: false,
             comment: 'Stock actual después de la operación',
+          },
+          {
+            name: 'batch_number',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'expiration_date',
+            type: 'date',
+            isNullable: true,
           },
           {
             name: 'created_at',

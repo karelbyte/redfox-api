@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Product, ProductType } from '../models/product.entity';
+import { Product, ProductType, InventoryStrategy } from '../models/product.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
@@ -111,6 +111,9 @@ export class ProductService {
         measurement_unit: { id: createProductDto.measurement_unit_id },
         is_active: createProductDto.is_active ?? true,
         type: createProductDto.type ?? ProductType.TANGIBLE,
+        inventory_strategy: createProductDto.inventory_strategy ?? InventoryStrategy.AVERAGE,
+        base_price: createProductDto.base_price ?? 0,
+        prices: createProductDto.prices ?? [],
         images: createProductDto.images
           ? JSON.stringify(createProductDto.images)
           : undefined,
@@ -259,7 +262,7 @@ export class ProductService {
   async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ['brand', 'category', 'tax', 'measurement_unit'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
     });
 
     if (!product) {
@@ -277,7 +280,7 @@ export class ProductService {
   async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ['brand', 'category', 'tax', 'measurement_unit'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
     });
 
     if (!product) {
@@ -325,6 +328,9 @@ export class ProductService {
           : undefined,
         is_active: updateProductDto.is_active,
         type: updateProductDto.type,
+        inventory_strategy: updateProductDto.inventory_strategy,
+        base_price: updateProductDto.base_price,
+        prices: updateProductDto.prices,
         images: updateProductDto.images
           ? JSON.stringify(updateProductDto.images)
           : undefined,

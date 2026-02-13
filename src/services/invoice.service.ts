@@ -51,7 +51,7 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+  ) { }
 
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
@@ -809,6 +809,7 @@ export class InvoiceService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -880,6 +881,7 @@ export class InvoiceService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -972,6 +974,7 @@ export class InvoiceService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 

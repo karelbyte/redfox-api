@@ -61,6 +61,23 @@ export class CreateInventoryTable1716400000090 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'batch_number',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'expiration_date',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            isNullable: true,
+          },
+          {
+            name: 'entry_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

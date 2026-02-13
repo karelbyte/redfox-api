@@ -6,8 +6,7 @@ import {
 } from 'typeorm';
 
 export class CreateReceptionDetailsTable1716400000110
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateReceptionDetailsTable1716400000110';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -52,6 +51,17 @@ export class CreateReceptionDetailsTable1716400000110
             scale: 2,
             isNullable: false,
             default: 0,
+          },
+          {
+            name: 'batch_number',
+            type: 'varchar',
+            length: '100',
+            isNullable: true,
+          },
+          {
+            name: 'expiration_date',
+            type: isPostgres ? 'timestamp' : 'datetime',
+            isNullable: true,
           },
           {
             name: 'created_at',

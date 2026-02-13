@@ -26,7 +26,7 @@ export class InventoryService {
     private readonly warehouseMapper: WarehouseMapper,
     private translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
-  ) {}
+  ) { }
 
   private async mapToResponseDto(
     inventory: Inventory,
@@ -94,6 +94,7 @@ export class InventoryService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
       ],
       withDeleted: false,

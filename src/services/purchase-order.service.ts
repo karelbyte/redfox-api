@@ -42,7 +42,7 @@ export class PurchaseOrderService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   private mapDetailToResponseDto(
     detail: PurchaseOrderDetail,
@@ -323,6 +323,7 @@ export class PurchaseOrderService {
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
+      .leftJoinAndSelect('product.prices', 'prices')
       .where('detail.purchaseOrder.id = :purchaseOrderId', { purchaseOrderId });
 
     if (queryDto.product_id) {
@@ -356,7 +357,7 @@ export class PurchaseOrderService {
         id: detailId,
         purchaseOrder: { id: purchaseOrderId },
       },
-      relations: ['product', 'product.brand', 'product.category', 'product.measurement_unit'],
+      relations: ['product', 'product.brand', 'product.category', 'product.measurement_unit', 'product.prices'],
     });
 
     if (!detail) {

@@ -30,6 +30,12 @@ export class ReceptionDetail {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 
+  @Column({ length: 100, nullable: true })
+  batch_number: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expiration_date: Date;
+
   @CreateDateColumn()
   created_at: Date;
 

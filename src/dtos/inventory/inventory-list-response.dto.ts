@@ -8,5 +8,7 @@ export class InventoryListResponseDto {
   quantity: number;
   price: number;
   pack_product_id?: string | null;
+  batch_number?: string;
+  expiration_date?: Date;
   createdAt: Date;
 }

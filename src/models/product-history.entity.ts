@@ -56,6 +56,12 @@ export class ProductHistory {
   @Column('decimal', { precision: 10, scale: 2 })
   current_stock: number;
 
+  @Column({ nullable: true })
+  batch_number: string;
+
+  @Column({ type: 'date', nullable: true })
+  expiration_date: Date;
+
   @CreateDateColumn()
   created_at: Date;
 

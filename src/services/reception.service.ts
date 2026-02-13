@@ -268,13 +268,11 @@ export class ReceptionService {
     await this.receptionRepository.softDelete(id);
   }
 
-  // Métodos para detalles de recepción
   async createDetail(
     receptionId: string,
     createDetailDto: CreateReceptionDetailDto,
     userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
-    // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
     });
@@ -287,7 +285,6 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Verificar que el producto existe
     const product = await this.productRepository.findOne({
       where: { id: createDetailDto.product_id },
     });
@@ -300,78 +297,29 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Verificar si ya existe un detalle con este producto en la recepción
-    const existingDetail = await this.receptionDetailRepository.findOne({
-      where: {
-        reception: { id: receptionId },
-        product: { id: createDetailDto.product_id },
-      },
-      relations: [
-        'product',
-        'product.brand',
-        'product.category',
-        'product.tax',
-        'product.measurement_unit',
-      ],
-    });
+    const detailToSave: Partial<ReceptionDetail> = {
+      reception: reception,
+      product: product,
+      quantity: createDetailDto.quantity,
+      price: createDetailDto.price,
+      batch_number: createDetailDto.batch_number,
+      expiration_date: createDetailDto.expiration_date
+        ? new Date(createDetailDto.expiration_date)
+        : undefined,
+    };
 
-    let detailToSave: ReceptionDetail;
+    const detailAmount = this.calculateAmount(
+      createDetailDto.quantity,
+      createDetailDto.price,
+    );
 
-    if (existingDetail) {
-      // El producto ya existe, actualizar cantidad y promediar precio
-      const oldQuantity = Number(existingDetail.quantity);
-      const oldPrice = Number(existingDetail.price);
-      const newQuantity = Number(createDetailDto.quantity);
-      const newPrice = Number(createDetailDto.price);
+    const currentAmount = reception.amount || 0;
+    const newTotalAmount = Number(currentAmount) + Number(detailAmount);
 
-      // Calcular el monto anterior para restarlo del total
-      const oldAmount = this.calculateAmount(oldQuantity, oldPrice);
-
-      // Sumar cantidades
-      const totalQuantity = oldQuantity + newQuantity;
-
-      // Calcular precio promedio ponderado
-      const totalAmount = oldQuantity * oldPrice + newQuantity * newPrice;
-      const averagePrice = totalAmount / totalQuantity;
-
-      // Actualizar el detalle existente
-      existingDetail.quantity = totalQuantity;
-      existingDetail.price = averagePrice;
-
-      detailToSave = existingDetail;
-
-      // Calcular el nuevo monto total para la recepción
-      const newAmount = this.calculateAmount(totalQuantity, averagePrice);
-      const currentAmount = reception.amount || 0;
-      const newTotalAmount = currentAmount - oldAmount + newAmount;
-
-      await this.updateReceptionAmount(receptionId, newTotalAmount);
-    } else {
-      const detail = this.receptionDetailRepository.create({
-        reception: reception,
-        product: product,
-        quantity: createDetailDto.quantity,
-        price: createDetailDto.price,
-      });
-
-      detailToSave = detail;
-
-      // Calcular el monto del nuevo detalle
-      const detailAmount = this.calculateAmount(
-        createDetailDto.quantity,
-        createDetailDto.price,
-      );
-
-      // Actualizar el monto total de la recepción
-      const currentAmount = reception.amount || 0;
-      const newTotalAmount = Number(currentAmount) + Number(detailAmount);
-
-      await this.updateReceptionAmount(receptionId, newTotalAmount);
-    }
+    await this.updateReceptionAmount(receptionId, newTotalAmount);
 
     const savedDetail = await this.receptionDetailRepository.save(detailToSave);
 
-    // Recargar con relaciones para la respuesta
     const detailWithRelations = await this.receptionDetailRepository.findOne({
       where: { id: savedDetail.id },
       relations: [
@@ -380,6 +328,7 @@ export class ReceptionService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -394,6 +343,7 @@ export class ReceptionService {
 
     return this.mapDetailToResponseDto(detailWithRelations);
   }
+
 
   async findAllDetails(
     receptionId: string,
@@ -425,6 +375,7 @@ export class ReceptionService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
       skip,
       take: limit,
@@ -472,6 +423,7 @@ export class ReceptionService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -514,6 +466,7 @@ export class ReceptionService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
       ],
     });
 
@@ -614,7 +567,6 @@ export class ReceptionService {
     receptionId: string,
     userId?: string,
   ): Promise<CloseReceptionResponseDto> {
-    // Verificar que la recepción existe y está abierta
     const reception = await this.receptionRepository.findOne({
       where: { id: receptionId },
       relations: ['warehouse', 'details', 'details.product'],
@@ -637,7 +589,6 @@ export class ReceptionService {
       throw new BadRequestException(message);
     }
 
-    // Obtener todos los detalles de la recepción (product.measurement_unit para sync al pack)
     const receptionDetails = await this.receptionDetailRepository.find({
       where: { reception: { id: receptionId } },
       relations: ['product', 'product.measurement_unit'],
@@ -654,45 +605,19 @@ export class ReceptionService {
     let transferredProducts = 0;
     let totalQuantity = 0;
 
-    // Procesar cada producto de la recepción
     for (const detail of receptionDetails) {
-      // Buscar si el producto ya existe en inventory
-      const existingInventory = await this.inventoryRepository.findOne({
-        where: {
-          product: { id: detail.product.id },
-          warehouse: { id: reception.warehouse.id },
-        },
-        relations: ['product', 'warehouse'],
+      const newInventory = this.inventoryRepository.create({
+        product: detail.product,
+        warehouse: reception.warehouse,
+        quantity: detail.quantity,
+        price: detail.price,
+        batch_number: detail.batch_number,
+        expiration_date: detail.expiration_date,
+        entry_id: reception.id,
       });
 
-      let finalInventory: Inventory;
+      const finalInventory = await this.inventoryRepository.save(newInventory);
 
-      if (existingInventory) {
-        // Si existe, sumar las cantidades
-        existingInventory.quantity =
-          Number(existingInventory.quantity) + Number(detail.quantity);
-        // Actualizar precio con el promedio ponderado
-        const totalValue =
-          Number(existingInventory.price) *
-          (Number(existingInventory.quantity) - Number(detail.quantity)) +
-          Number(detail.price) * Number(detail.quantity);
-        existingInventory.price =
-          totalValue / Number(existingInventory.quantity);
-
-        finalInventory = await this.inventoryRepository.save(existingInventory);
-      } else {
-        // Si no existe, crear nuevo registro en inventory
-        const newInventory = this.inventoryRepository.create({
-          product: detail.product,
-          warehouse: reception.warehouse,
-          quantity: detail.quantity,
-          price: detail.price,
-        });
-
-        finalInventory = await this.inventoryRepository.save(newInventory);
-      }
-
-      // Crear registro en ProductHistory
       const productHistory = this.productHistoryRepository.create({
         product: detail.product,
         warehouse: reception.warehouse,
@@ -700,6 +625,8 @@ export class ReceptionService {
         operation_id: reception.id,
         quantity: Number(detail.quantity),
         current_stock: Number(finalInventory.quantity),
+        batch_number: detail.batch_number,
+        expiration_date: detail.expiration_date,
       });
 
       await this.productHistoryRepository.save(productHistory);
@@ -711,11 +638,9 @@ export class ReceptionService {
       totalQuantity += Number(detail.quantity);
     }
 
-    // Cerrar la recepción
     reception.status = false;
     await this.receptionRepository.save(reception);
 
-    // Retornar resumen de la operación
     const message = transferredProducts > 0
       ? await this.translationService.translate(
         'reception.closed_successfully',

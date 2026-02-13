@@ -6,6 +6,8 @@ import { AuthController } from '../controllers/auth.controller';
 import { UserModule } from './user.module';
 import { EmailConfigModule } from './email-config.module';
 import { RoleModule } from './role.module';
+import { QueueModule } from './queue.module';
+
 @Module({
   imports: [
     JwtModule.register({
@@ -16,6 +18,7 @@ import { RoleModule } from './role.module';
     UserModule,
     EmailConfigModule,
     RoleModule,
+    QueueModule.forRootAsync(),
   ],
   controllers: [AuthController],
   providers: [AuthService],
