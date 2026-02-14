@@ -11,8 +11,7 @@ import {
   IsEnum,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { Transform, TransformFnParams } from 'class-transformer';
+import { Type, Transform, TransformFnParams, plainToInstance } from 'class-transformer';
 import { ProductType, InventoryStrategy } from '../../models/product.entity';
 import { ProductPriceDto } from './product-price.dto';
 
@@ -34,13 +33,19 @@ const transformToBoolean = ({
 
 const transformToArray = ({
   value,
-}: TransformFnParams): string[] | undefined => {
+  key,
+}: TransformFnParams): any[] | undefined => {
   if (!value) return undefined;
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
     try {
-      return JSON.parse(value);
-    } catch {
+      const parsed = JSON.parse(value);
+      if (key === 'prices') {
+        const instances = plainToInstance(ProductPriceDto, parsed) as unknown as any[];
+        return instances;
+      }
+      return parsed;
+    } catch (error) {
       return [value];
     }
   }
@@ -140,5 +145,6 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => ProductPriceDto)
   @IsOptional()
+  @Transform(transformToArray)
   prices?: ProductPriceDto[];
 }

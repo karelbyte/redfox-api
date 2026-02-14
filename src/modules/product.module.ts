@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from '../models/product.entity';
+import { ProductPrice } from '../models/product-price.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { ProductService } from '../services/product.service';
@@ -16,7 +17,7 @@ import { SurrogateModule } from './surrogate.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Inventory, WarehouseOpening]),
+    TypeOrmModule.forFeature([Product, ProductPrice, Inventory, WarehouseOpening]),
     MeasurementUnitModule,
     BrandModule,
     CategoryModule,

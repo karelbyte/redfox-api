@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Product, ProductType, InventoryStrategy } from '../models/product.entity';
+import { ProductPrice } from '../models/product-price.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
@@ -113,11 +114,20 @@ export class ProductService {
         type: createProductDto.type ?? ProductType.TANGIBLE,
         inventory_strategy: createProductDto.inventory_strategy ?? InventoryStrategy.AVERAGE,
         base_price: createProductDto.base_price ?? 0,
-        prices: createProductDto.prices ?? [],
         images: createProductDto.images
           ? JSON.stringify(createProductDto.images)
           : undefined,
       });
+
+      if (createProductDto.prices) {
+        product.prices = createProductDto.prices.map((p) => {
+          const price = new ProductPrice();
+          price.name = p.name;
+          price.price = p.price;
+          price.product = product;
+          return price;
+        });
+      }
 
       const savedProduct = await this.productRepository.save(product);
 
@@ -126,7 +136,7 @@ export class ProductService {
 
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id },
-        relations: ['brand', 'category', 'tax', 'measurement_unit'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
       return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
     } catch (error: unknown) {
@@ -162,7 +172,7 @@ export class ProductService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      relations: ['brand', 'category', 'tax', 'measurement_unit'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
     };
 
     // Construir condiciones de búsqueda OR (para el término)
@@ -330,16 +340,25 @@ export class ProductService {
         type: updateProductDto.type,
         inventory_strategy: updateProductDto.inventory_strategy,
         base_price: updateProductDto.base_price,
-        prices: updateProductDto.prices,
         images: updateProductDto.images
           ? JSON.stringify(updateProductDto.images)
           : undefined,
       });
 
+      if (updateProductDto.prices) {
+        updatedProduct.prices = updateProductDto.prices.map((p) => {
+          const price = new ProductPrice();
+          price.name = p.name;
+          price.price = p.price;
+          price.product = updatedProduct;
+          return price;
+        });
+      }
+
       const savedProduct = await this.productRepository.save(updatedProduct);
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id },
-        relations: ['brand', 'category', 'tax', 'measurement_unit'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
       return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
     } catch (error: unknown) {
