@@ -1139,6 +1139,116 @@ export class PermissionsSeed {
         module: 'cash_flow',
         description: 'Allows reading cash flow data | Permite leer datos de flujo de caja',
       },
+
+      // Audit Log Permissions
+      {
+        code: 'audit_log_module_view',
+        module: 'audit_logs',
+        description:
+          'Allows viewing the audit logs module | Permite ver el módulo de logs de auditoría',
+      },
+      {
+        code: 'audit_log_read',
+        module: 'audit_logs',
+        description: 'Allows reading audit logs | Permite leer logs de auditoría',
+      },
+      {
+        code: 'audit_log_export',
+        module: 'audit_logs',
+        description: 'Allows exporting audit logs | Permite exportar logs de auditoría',
+      },
+
+      // Company Settings Permissions
+      {
+        code: 'company_settings_module_view',
+        module: 'company_settings',
+        description:
+          'Allows viewing the company settings module | Permite ver el módulo de configuración de empresa',
+      },
+      {
+        code: 'company_settings_read',
+        module: 'company_settings',
+        description: 'Allows reading company settings | Permite leer configuración de empresa',
+      },
+      {
+        code: 'company_settings_update',
+        module: 'company_settings',
+        description: 'Allows updating company settings | Permite actualizar configuración de empresa',
+      },
+
+      // Email Configuration Permissions
+      {
+        code: 'email_config_module_view',
+        module: 'email_config',
+        description:
+          'Allows viewing the email configuration module | Permite ver el módulo de configuración de correo',
+      },
+      {
+        code: 'email_config_read',
+        module: 'email_config',
+        description: 'Allows reading email configuration | Permite leer configuración de correo',
+      },
+      {
+        code: 'email_config_update',
+        module: 'email_config',
+        description: 'Allows updating email configuration | Permite actualizar configuración de correo',
+      },
+      {
+        code: 'email_config_test',
+        module: 'email_config',
+        description: 'Allows testing email configuration | Permite probar configuración de correo',
+      },
+
+      // Payment Gateway Permissions
+      {
+        code: 'payment_gateway_module_view',
+        module: 'payment_gateway',
+        description:
+          'Allows viewing the payment gateway module | Permite ver el módulo de pasarela de pago',
+      },
+      {
+        code: 'payment_gateway_read',
+        module: 'payment_gateway',
+        description: 'Allows reading payment gateway configuration | Permite leer configuración de pasarela de pago',
+      },
+      {
+        code: 'payment_gateway_update',
+        module: 'payment_gateway',
+        description: 'Allows updating payment gateway configuration | Permite actualizar configuración de pasarela de pago',
+      },
+
+      // Certification Pack Permissions (SAT/CFDI)
+      {
+        code: 'certification_pack_module_view',
+        module: 'certification_packs',
+        description:
+          'Allows viewing the certification packs module | Permite ver el módulo de paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_read',
+        module: 'certification_packs',
+        description: 'Allows reading certification packs | Permite leer paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_create',
+        module: 'certification_packs',
+        description: 'Allows creating certification packs | Permite crear paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_update',
+        module: 'certification_packs',
+        description: 'Allows updating certification packs | Permite actualizar paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_delete',
+        module: 'certification_packs',
+        description: 'Allows deleting certification packs | Permite eliminar paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_activate',
+        module: 'certification_packs',
+        description: 'Allows activating certification packs | Permite activar paquetes de certificación',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');
