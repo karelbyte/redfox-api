@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UserModule } from './modules/user.module';
 import { RoleModule } from './modules/role.module';
 import { ClientModule } from './modules/client.module';
@@ -46,6 +47,7 @@ import { InternalNoteModule } from './modules/internal-note.module';
 import { TagModule } from './modules/tag.module';
 import { TemplateModule } from './modules/template.module';
 import { AuditLogModule } from './modules/audit-log.module';
+import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
 
@@ -109,6 +111,11 @@ import { HomeController } from './controllers/home.controller';
     AuditLogModule,
   ],
   controllers: [HomeController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
+  ],
 })
 export class AppModule { }

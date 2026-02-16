@@ -1,7 +1,12 @@
-import { IsString, IsNumber, Min, MinLength } from 'class-validator';
+import { IsString, IsNumber, Min, MinLength, IsOptional, IsUUID } from 'class-validator';
 import { Expose } from 'class-transformer';
 
 export class ProductPriceDto {
+    @Expose()
+    @IsUUID()
+    @IsOptional()
+    id?: string;
+
     @Expose()
     @IsString()
     @MinLength(1)

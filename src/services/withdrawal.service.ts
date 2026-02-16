@@ -173,11 +173,18 @@ export class WithdrawalService {
 
   async findAll(
     paginationDto: PaginationDto,
+    clientId?: string,
   ): Promise<PaginatedResponseDto<WithdrawalResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    const where: any = {};
+    if (clientId) {
+      where.client = { id: clientId };
+    }
+
     const [withdrawals, total] = await this.withdrawalRepository.findAndCount({
+      where,
       relations: [
         'client',
         'invoice',
@@ -192,6 +199,9 @@ export class WithdrawalService {
       ],
       skip,
       take: limit,
+      order: {
+        created_at: 'DESC',
+      },
     });
 
     return {

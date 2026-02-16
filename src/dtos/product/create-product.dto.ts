@@ -130,7 +130,7 @@ export class CreateProductDto {
   inventory_strategy?: InventoryStrategy;
 
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsString({ each: true })
   @IsOptional()
   @Transform(transformToArray)
   images?: string[];

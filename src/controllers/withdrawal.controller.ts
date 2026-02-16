@@ -40,8 +40,9 @@ export class WithdrawalController {
   @Get()
   findAll(
     @Query() paginationDto: PaginationDto,
+    @Query('client_id') clientId?: string,
   ): Promise<PaginatedResponse<WithdrawalResponseDto>> {
-    return this.withdrawalService.findAll(paginationDto);
+    return this.withdrawalService.findAll(paginationDto, clientId);
   }
 
   @Get(':id')

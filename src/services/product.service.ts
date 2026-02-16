@@ -345,14 +345,40 @@ export class ProductService {
           : undefined,
       });
 
-      if (updateProductDto.prices) {
-        updatedProduct.prices = updateProductDto.prices.map((p) => {
-          const price = new ProductPrice();
-          price.name = p.name;
-          price.price = p.price;
-          price.product = updatedProduct;
-          return price;
-        });
+      // Manejar actualización de precios
+      if (updateProductDto.prices !== undefined) {
+        // Obtener los IDs de los precios que vienen en el DTO
+        const incomingPriceIds = updateProductDto.prices
+          .filter(p => p.id)
+          .map(p => p.id);
+
+        // Eliminar precios que ya no están en la lista
+        if (product.prices && product.prices.length > 0) {
+          updatedProduct.prices = product.prices.filter(existingPrice => 
+            incomingPriceIds.includes(existingPrice.id)
+          );
+        } else {
+          updatedProduct.prices = [];
+        }
+
+        // Actualizar o crear precios
+        for (const priceDto of updateProductDto.prices) {
+          if (priceDto.id) {
+            // Actualizar precio existente
+            const existingPrice = updatedProduct.prices.find(p => p.id === priceDto.id);
+            if (existingPrice) {
+              existingPrice.name = priceDto.name;
+              existingPrice.price = priceDto.price;
+            }
+          } else {
+            // Crear nuevo precio
+            const newPrice = new ProductPrice();
+            newPrice.name = priceDto.name;
+            newPrice.price = priceDto.price;
+            newPrice.product = updatedProduct;
+            updatedProduct.prices.push(newPrice);
+          }
+        }
       }
 
       const savedProduct = await this.productRepository.save(updatedProduct);

@@ -251,6 +251,7 @@ export class InventoryService {
         'product.category',
         'product.tax',
         'product.measurement_unit',
+        'product.prices',
         'warehouse',
         'warehouse.currency',
       ],

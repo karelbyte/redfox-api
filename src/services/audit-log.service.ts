@@ -33,6 +33,56 @@ export class AuditLogService {
     return this.auditLogRepository.save(log);
   }
 
+  async findAll(
+    page: number = 1,
+    limit: number = 50,
+    entityType?: string,
+    action?: AuditAction,
+    userId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{ data: AuditLog[]; meta: any }> {
+    const query = this.auditLogRepository
+      .createQueryBuilder('log')
+      .leftJoinAndSelect('log.user', 'user');
+
+    if (entityType) {
+      query.andWhere('log.entityType = :entityType', { entityType });
+    }
+
+    if (action) {
+      query.andWhere('log.action = :action', { action });
+    }
+
+    if (userId) {
+      query.andWhere('log.userId = :userId', { userId });
+    }
+
+    if (startDate) {
+      query.andWhere('log.created_at >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      query.andWhere('log.created_at <= :endDate', { endDate });
+    }
+
+    const [data, total] = await query
+      .orderBy('log.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit,
+      },
+    };
+  }
+
   async findByEntity(
     entityType: string,
     entityId: string,

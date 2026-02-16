@@ -43,4 +43,25 @@ export class AuditLogController {
   async getStats(@Param('entityType') entityType: string) {
     return this.auditLogService.getStats(entityType);
   }
+
+  @Get()
+  async findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 50,
+    @Query('entityType') entityType?: string,
+    @Query('action') action?: AuditAction,
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.auditLogService.findAll(
+      page,
+      limit,
+      entityType,
+      action,
+      userId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
 }
