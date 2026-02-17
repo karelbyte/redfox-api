@@ -68,6 +68,13 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
             default: "'OPEN'",
           },
           {
+            name: 'payment_method',
+            type: 'enum',
+            enum: ['cash', 'card', 'credit'],
+            default: "'cash'",
+            isNullable: false,
+          },
+          {
             name: 'pack_receipt_id',
             type: 'varchar',
             length: '100',

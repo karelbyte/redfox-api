@@ -11,7 +11,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { WithdrawalType, WithdrawalStatus } from '../../models/withdrawal.entity';
+import { WithdrawalType, WithdrawalStatus, PaymentMethod } from '../../models/withdrawal.entity';
 
 export class CreateWithdrawalDetailDto {
   @IsUUID()
@@ -57,4 +57,8 @@ export class CreateWithdrawalDto {
   @IsEnum(WithdrawalStatus)
   @IsOptional()
   status?: WithdrawalStatus;
+
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  payment_method?: PaymentMethod;
 }

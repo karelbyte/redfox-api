@@ -21,6 +21,7 @@ export class WithdrawalMapper {
       type,
       cashTransactionId,
       status,
+      paymentMethod,
       created_at,
     } = withdrawal;
 
@@ -33,6 +34,7 @@ export class WithdrawalMapper {
       type,
       cash_transaction_id: cashTransactionId,
       status,
+      payment_method: paymentMethod,
       created_at,
     };
   }

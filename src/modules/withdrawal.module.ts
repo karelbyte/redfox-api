@@ -21,6 +21,7 @@ import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
 import { PosPackSyncService } from '../services/pos-pack-sync.service';
+import { AccountReceivableModule } from './account-receivable.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PosPackSyncService } from '../services/pos-pack-sync.service';
     ProductModule,
     LanguageModule,
     CertificationPackModule,
+    AccountReceivableModule,
   ],
   controllers: [WithdrawalController],
   providers: [

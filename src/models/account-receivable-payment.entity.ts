@@ -39,14 +39,14 @@ export class AccountReceivablePayment {
   @JoinColumn({ name: 'accountReceivableId' })
   accountReceivable: AccountReceivable;
 
-  @Column()
+  @Column({ name: 'accountReceivableId' })
   accountReceivableId: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })
   createdByUser: User;
 
-  @Column()
+  @Column({ nullable: true })
   createdBy: string;
 
   @CreateDateColumn()

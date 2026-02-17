@@ -19,18 +19,28 @@ export class AuditLogService {
     newValues?: Record<string, any>,
     description?: string,
     ipAddress?: string,
-  ): Promise<AuditLog> {
-    const log = this.auditLogRepository.create({
-      userId,
-      entityType,
-      entityId,
-      action,
-      oldValues,
-      newValues,
-      description,
-      ipAddress,
-    });
-    return this.auditLogRepository.save(log);
+  ): Promise<AuditLog | null> {
+    try {
+      const log = this.auditLogRepository.create({
+        userId,
+        entityType,
+        entityId,
+        action,
+        oldValues,
+        newValues,
+        description,
+        ipAddress,
+      });
+      return await this.auditLogRepository.save(log);
+    } catch (error) {
+      // Si falla por foreign key (usuario no existe), solo logueamos el warning
+      if (error.code === '23503') {
+        console.warn(`[AuditLogService] User ${userId} not found, skipping audit log`);
+        return null;
+      }
+      // Para otros errores, los re-lanzamos
+      throw error;
+    }
   }
 
   async findAll(

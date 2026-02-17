@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { Withdrawal, WithdrawalType, WithdrawalStatus } from '../models/withdrawal.entity';
+import { Withdrawal, WithdrawalType, WithdrawalStatus, PaymentMethod as WithdrawalPaymentMethod } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
 import { Warehouse } from '../models/warehouse.entity';
@@ -46,6 +46,7 @@ import { ClientMapper } from './mappers/client.mapper';
 import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-response.dto';
 import { TranslationService } from './translation.service';
 import { PosPackSyncService } from './pos-pack-sync.service';
+import { AccountReceivableService } from './account-receivable.service';
 
 @Injectable()
 export class WithdrawalService {
@@ -68,6 +69,7 @@ export class WithdrawalService {
     private readonly clientMapper: ClientMapper,
     private readonly translationService: TranslationService,
     private readonly posPackSyncService: PosPackSyncService,
+    private readonly accountReceivableService: AccountReceivableService,
   ) { }
 
   private mapDetailToResponseDto(
@@ -105,6 +107,7 @@ export class WithdrawalService {
       type: withdrawal.type,
       cash_transaction_id: withdrawal.cashTransactionId,
       status: withdrawal.status,
+      payment_method: withdrawal.paymentMethod,
       created_at: withdrawal.created_at,
       pack_receipt_id: withdrawal.pack_receipt_id ?? null,
       invoice_id: withdrawal.invoiceId ?? null,
@@ -146,6 +149,7 @@ export class WithdrawalService {
   ): Promise<WithdrawalResponseDto> {
     const client = await this.clientRepository.findOne({
       where: { id: createWithdrawalDto.client_id },
+      relations: ['credit'],
     });
     if (!client) {
       const message = await this.translationService.translate(
@@ -156,6 +160,13 @@ export class WithdrawalService {
       throw new NotFoundException(message);
     }
 
+    // Validar si el cliente tiene crédito activo cuando se selecciona pago a crédito
+    if (createWithdrawalDto.payment_method === WithdrawalPaymentMethod.CREDIT) {
+      if (!client.credit || !client.credit.is_active) {
+        throw new BadRequestException('El cliente no tiene crédito activo');
+      }
+    }
+
     const withdrawal = this.withdrawalRepository.create({
       code: createWithdrawalDto.code,
       destination: createWithdrawalDto.destination,
@@ -164,6 +175,7 @@ export class WithdrawalService {
       type: createWithdrawalDto.type || WithdrawalType.WITHDRAWAL,
       cashTransactionId: createWithdrawalDto.cash_transaction_id,
       status: WithdrawalStatus.OPEN,
+      paymentMethod: createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
@@ -779,6 +791,29 @@ export class WithdrawalService {
     // Cerrar la withdrawal
     withdrawal.status = WithdrawalStatus.CLOSED;
     const closedWithdrawal = await this.withdrawalRepository.save(withdrawal);
+
+    // Si el pago es a crédito, crear cuenta por cobrar
+    if (closedWithdrawal.paymentMethod === WithdrawalPaymentMethod.CREDIT) {
+      const client = await this.clientRepository.findOne({
+        where: { id: closedWithdrawal.client.id },
+        relations: ['credit'],
+      });
+
+      if (client && client.credit && client.credit.is_active) {
+        const issueDate = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + client.credit.credit_days);
+
+        await this.accountReceivableService.create({
+          referenceNumber: closedWithdrawal.code,
+          totalAmount: Number(closedWithdrawal.amount),
+          issueDate: issueDate.toISOString().split('T')[0],
+          dueDate: dueDate.toISOString().split('T')[0],
+          clientId: client.id,
+          notes: `Venta a crédito - ${closedWithdrawal.type}`,
+        });
+      }
+    }
 
     // Si es un retiro POS, intentar crear el recibo en el PAC
     if (closedWithdrawal.type === WithdrawalType.POS) {

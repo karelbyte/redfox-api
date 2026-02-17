@@ -3,6 +3,7 @@ import { AccountReceivableService } from '../services/account-receivable.service
 import { CreateAccountReceivableDto } from '../dtos/account-receivable/create-account-receivable.dto';
 import { UpdateAccountReceivableDto } from '../dtos/account-receivable/update-account-receivable.dto';
 import { CreateAccountReceivablePaymentDto } from '../dtos/account-receivable/create-payment.dto';
+import { AddPaymentDto } from '../dtos/account-receivable/add-payment.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { AccountReceivableStatus } from '../models/account-receivable.entity';
@@ -46,6 +47,11 @@ export class AccountReceivableController {
     return this.accountReceivableService.getOverdueAccounts();
   }
 
+  @Get('client/:clientId/analysis')
+  getClientCreditAnalysis(@Param('clientId') clientId: string) {
+    return this.accountReceivableService.getClientCreditAnalysis(clientId);
+  }
+
   @Post('update-overdue-status')
   updateOverdueStatus() {
     return this.accountReceivableService.updateOverdueStatus();
@@ -69,10 +75,14 @@ export class AccountReceivableController {
   @Post(':id/payments')
   addPayment(
     @Param('id') id: string,
-    @Body() createPaymentDto: CreateAccountReceivablePaymentDto,
+    @Body() addPaymentDto: AddPaymentDto,
     @UserId() userId: string,
   ) {
-    createPaymentDto.accountReceivableId = +id;
+    // Crear el DTO completo con el accountReceivableId
+    const createPaymentDto: CreateAccountReceivablePaymentDto = {
+      ...addPaymentDto,
+      accountReceivableId: +id,
+    };
     return this.accountReceivableService.addPayment(createPaymentDto, userId);
   }
 }

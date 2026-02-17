@@ -122,12 +122,22 @@ export class AccountReceivableService {
       throw new BadRequestException('Payment amount cannot exceed remaining amount');
     }
 
-    const payment = this.paymentRepository.create({
-      ...createPaymentDto,
+    // Usar insert en lugar de create + save para evitar problemas con TypeORM
+    const insertResult = await this.paymentRepository.insert({
+      amount: createPaymentDto.amount,
+      paymentDate: createPaymentDto.paymentDate,
+      paymentMethod: createPaymentDto.paymentMethod,
+      reference: createPaymentDto.reference,
+      notes: createPaymentDto.notes,
+      accountReceivableId: createPaymentDto.accountReceivableId,
       createdBy: userId,
     });
 
-    const savedPayment = await this.paymentRepository.save(payment);
+    // Obtener el pago recién creado
+    const savedPayment = await this.paymentRepository.findOne({
+      where: { id: insertResult.identifiers[0].id },
+      relations: ['createdByUser'],
+    });
 
     account.paidAmount = Number(account.paidAmount) + Number(createPaymentDto.amount);
     account.remainingAmount = Number(account.totalAmount) - Number(account.paidAmount);
@@ -206,5 +216,88 @@ export class AccountReceivableService {
         statuses: [AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL] 
       })
       .execute();
+  }
+
+  async getClientCreditAnalysis(clientId: string): Promise<{
+    totalCredit: number;
+    usedCredit: number;
+    availableCredit: number;
+    overdueBalance: number;
+    currentBalance: number;
+    accounts: Array<{
+      id: number;
+      referenceNumber: string;
+      issueDate: Date;
+      dueDate: Date;
+      totalAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      status: AccountReceivableStatus;
+      daysOverdue: number;
+      agingCategory: string;
+    }>;
+  }> {
+    const accounts = await this.accountReceivableRepository.find({
+      where: { clientId },
+      relations: ['client', 'client.credit', 'client.credit.currency'],
+      order: { dueDate: 'ASC' },
+    });
+
+    const today = new Date();
+    const totalCredit = accounts[0]?.client?.credit?.credit_limit || 0;
+    
+    let usedCredit = 0;
+    let overdueBalance = 0;
+    let currentBalance = 0;
+
+    const accountsWithAging = accounts.map(account => {
+      const remainingAmount = Number(account.remainingAmount);
+      usedCredit += remainingAmount;
+
+      const dueDate = new Date(account.dueDate);
+      const daysOverdue = account.status !== AccountReceivableStatus.PAID && dueDate < today
+        ? Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      if (daysOverdue > 0) {
+        overdueBalance += remainingAmount;
+      } else if (account.status !== AccountReceivableStatus.PAID) {
+        currentBalance += remainingAmount;
+      }
+
+      // Categorizar por antigüedad
+      let agingCategory = 'current';
+      if (daysOverdue > 0 && daysOverdue <= 30) {
+        agingCategory = '1-30';
+      } else if (daysOverdue > 30 && daysOverdue <= 60) {
+        agingCategory = '31-60';
+      } else if (daysOverdue > 60 && daysOverdue <= 90) {
+        agingCategory = '61-90';
+      } else if (daysOverdue > 90) {
+        agingCategory = '90+';
+      }
+
+      return {
+        id: account.id,
+        referenceNumber: account.referenceNumber,
+        issueDate: account.issueDate,
+        dueDate: account.dueDate,
+        totalAmount: Number(account.totalAmount),
+        paidAmount: Number(account.paidAmount),
+        remainingAmount: remainingAmount,
+        status: account.status,
+        daysOverdue,
+        agingCategory,
+      };
+    });
+
+    return {
+      totalCredit,
+      usedCredit,
+      availableCredit: totalCredit - usedCredit,
+      overdueBalance,
+      currentBalance,
+      accounts: accountsWithAging,
+    };
   }
 }
