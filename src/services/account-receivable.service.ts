@@ -139,6 +139,10 @@ export class AccountReceivableService {
       relations: ['createdByUser'],
     });
 
+    if (!savedPayment) {
+      throw new NotFoundException('Payment could not be created');
+    }
+
     account.paidAmount = Number(account.paidAmount) + Number(createPaymentDto.amount);
     account.remainingAmount = Number(account.totalAmount) - Number(account.paidAmount);
 

@@ -50,6 +50,7 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
             name: 'createdBy',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
+            isNullable: true,
           },
           {
             name: 'createdAt',
@@ -83,7 +84,7 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
         columnNames: ['createdBy'],
         referencedColumnNames: ['id'],
         referencedTableName: 'users',
-        onDelete: 'RESTRICT',
+        onDelete: 'SET NULL',
       })
     );
   }
