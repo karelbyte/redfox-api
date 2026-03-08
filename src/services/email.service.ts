@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
@@ -6,6 +6,7 @@ import { EmailConfig } from '../models/email-config.entity';
 import { CreateEmailConfigDto } from '../dtos/email-config/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dtos/email-config/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dtos/email-config/email-config-response.dto';
+import { TenantContext } from './tenant-context.service';
 
 interface EmailOptions {
   to: string | string[];
@@ -22,11 +23,20 @@ export class EmailService {
   constructor(
     @InjectRepository(EmailConfig)
     private emailConfigRepository: Repository<EmailConfig>,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required for Email Configuration');
+    }
+    return orgId;
+  }
 
   async getConfig(userId: string): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, isActive: true },
+      where: { userId, organization_id: this.organizationId, isActive: true },
     });
 
     if (!config) {
@@ -38,7 +48,7 @@ export class EmailService {
 
   async createConfig(userId: string, createEmailConfigDto: CreateEmailConfigDto): Promise<EmailConfigResponseDto> {
     const existingConfig = await this.emailConfigRepository.findOne({
-      where: { userId },
+      where: { userId, organization_id: this.organizationId },
     });
 
     if (existingConfig) {
@@ -48,6 +58,7 @@ export class EmailService {
     const config = this.emailConfigRepository.create({
       ...createEmailConfigDto,
       userId,
+      organization_id: this.organizationId,
       secure: createEmailConfigDto.secure ?? false,
     });
 
@@ -57,7 +68,7 @@ export class EmailService {
 
   async updateConfig(userId: string, updateEmailConfigDto: UpdateEmailConfigDto): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepository.findOne({
-      where: { userId },
+      where: { userId, organization_id: this.organizationId },
     });
 
     if (!config) {
@@ -72,7 +83,7 @@ export class EmailService {
 
   async testConnection(userId: string): Promise<{ success: boolean; message: string }> {
     const config = await this.emailConfigRepository.findOne({
-      where: { userId },
+      where: { userId, organization_id: this.organizationId },
     });
 
     if (!config) {
@@ -93,7 +104,7 @@ export class EmailService {
 
   async sendEmail(userId: string, emailOptions: EmailOptions): Promise<{ success: boolean; messageId: string }> {
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, isActive: true },
+      where: { userId, organization_id: this.organizationId, isActive: true },
     });
 
     if (!config) {
@@ -174,6 +185,7 @@ export class EmailService {
       fromName: config.fromName,
       secure: config.secure,
       isActive: config.isActive,
+      organization_id: config.organization_id,
       createdAt: typeof config.createdAt === 'string' ? config.createdAt : (config.createdAt as Date).toISOString(),
       updatedAt: typeof config.updatedAt === 'string' ? config.updatedAt : (config.updatedAt as Date).toISOString(),
     };

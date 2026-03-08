@@ -25,35 +25,35 @@ export class RunSeeds {
       console.log('Starting seeders...');
 
       // Execute seeders in order
-      /* await MeasurementUnitsSeed.run(dataSource);
-       console.log('✅ Measurement units created');
- 
-       await CategoriesSeed.run(dataSource);
-       console.log('✅ Categories created');
- 
-       await BrandsSeed.run(dataSource);
-       console.log('✅ Brands created');
- 
-       await TaxesSeed.run(dataSource);
-       console.log('✅ Taxes created');
- 
-       await CurrenciesSeed.run(dataSource);
-       console.log('✅ Currencies created');
- 
-       await seedExpenseCategories(dataSource);
-       console.log('✅ Expense categories created');
- 
-       await ClientsSeed.run(dataSource);
-       console.log('✅ Clients created');
- 
-       await ProvidersSeed.run(dataSource);
-       console.log('✅ Providers created');
- 
-       await ProductsSeed.run(dataSource);
-       console.log('✅ Products created');
- 
-       await WarehousesSeed.run(dataSource);
-       console.log('✅ Warehouses created');*/
+     {/* await MeasurementUnitsSeed.run(dataSource);
+      console.log('✅ Measurement units created');
+
+      await CategoriesSeed.run(dataSource);
+      console.log('✅ Categories created');
+
+      await BrandsSeed.run(dataSource);
+      console.log('✅ Brands created');
+
+      await TaxesSeed.run(dataSource);
+      console.log('✅ Taxes created');
+
+      await CurrenciesSeed.run(dataSource);
+      console.log('✅ Currencies created');
+
+      await seedExpenseCategories(dataSource);
+      console.log('✅ Expense categories created');
+
+      await ClientsSeed.run(dataSource);
+      console.log('✅ Clients created');
+
+      await ProvidersSeed.run(dataSource);
+      console.log('✅ Providers created');
+
+      await ProductsSeed.run(dataSource);
+      console.log('✅ Products created');
+
+      await WarehousesSeed.run(dataSource);
+      console.log('✅ Warehouses created');*/} 
 
       // Authentication and permissions seeders
       await PermissionsSeed.run(dataSource);
@@ -76,17 +76,13 @@ export class RunSeeds {
       await userLanguagesSeed.run();
       console.log('✅ User languages assigned');
 
-      /*
-      await WarehouseAdjustmentsSeed.run(dataSource);
-      console.log('✅ Warehouse adjustments created');
+    {/*  console.log('✅ Warehouse adjustments created');
 
-     
       await ReturnsSeed.run(dataSource);
       console.log('✅ Returns created');
 
-    
       await PurchaseOrdersSeed.run(dataSource);
-      console.log('✅ Purchase orders created');*/
+      console.log('✅ Purchase orders created'); */}
 
       console.log('✅ All seeders executed successfully');
     } catch (error) {

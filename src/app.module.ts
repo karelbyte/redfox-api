@@ -53,6 +53,8 @@ import { TenantInterceptor } from './interceptors/tenant.interceptor';
 import { TenantContext } from './services/tenant-context.service';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
+import { TenantMiddleware } from './middlewares/tenant.middleware';
+import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 @Module({
   imports: [
@@ -127,4 +129,10 @@ import { HomeController } from './controllers/home.controller';
     TenantContext,
   ],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(TenantMiddleware)
+      .forRoutes('*');
+  }
+}

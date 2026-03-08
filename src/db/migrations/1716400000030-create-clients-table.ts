@@ -72,6 +72,13 @@ export class CreateClientsTable1716400000030 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'balance',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            default: 0,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

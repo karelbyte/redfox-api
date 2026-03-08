@@ -8,6 +8,7 @@ import {
   Query,
   ParseUUIDPipe,
   UseGuards,
+  UseInterceptors,
   Put,
   Patch,
 } from '@nestjs/common';
@@ -22,11 +23,13 @@ import { AuthGuard } from '../guards/auth.guard';
 import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
 import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('warehouses')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class WarehouseController {
-  constructor(private readonly warehouseService: WarehouseService) {}
+  constructor(private readonly warehouseService: WarehouseService) { }
 
   @Post()
   create(

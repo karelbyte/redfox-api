@@ -25,6 +25,10 @@ export class CreateProductPricesTable1716400000085 implements MigrationInterface
                         scale: 2,
                     },
                     {
+                        name: 'organization_id',
+                        type: 'uuid',
+                    },
+                    {
                         name: 'product_id',
                         type: 'uuid',
                     },
@@ -46,6 +50,16 @@ export class CreateProductPricesTable1716400000085 implements MigrationInterface
                 ],
             }),
             true,
+        );
+
+        await queryRunner.createForeignKey(
+            'product_prices',
+            new TableForeignKey({
+                columnNames: ['organization_id'],
+                referencedColumnNames: ['id'],
+                referencedTableName: 'organizations',
+                onDelete: 'CASCADE',
+            }),
         );
 
         await queryRunner.createForeignKey(

@@ -2,11 +2,11 @@ import {
   MigrationInterface,
   QueryRunner,
   Table,
+  TableForeignKey,
 } from 'typeorm';
 
 export class CreateCertificationPacksTable1716400000260
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateCertificationPacksTable1716400000260';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -39,6 +39,12 @@ export class CreateCertificationPacksTable1716400000260
             type: isPostgres ? 'certification_pack_type_enum' : 'enum',
             length: isPostgres ? undefined : undefined,
             enum: isPostgres ? undefined : ['FACTURAAPI', 'SAT'],
+            isNullable: false,
+          },
+          {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isNullable: false,
           },
           {
@@ -77,10 +83,17 @@ export class CreateCertificationPacksTable1716400000260
             isNullable: true,
           },
         ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
       }),
       true,
     );
-
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

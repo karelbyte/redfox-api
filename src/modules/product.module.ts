@@ -14,6 +14,7 @@ import { ProductMapper } from '../services/mappers/product.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
 import { SurrogateModule } from './surrogate.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SurrogateModule } from './surrogate.module';
     LanguageModule,
     CertificationPackModule,
     SurrogateModule,
+    OrganizationModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductMapper],

@@ -109,6 +109,9 @@ export class Product {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   base_price: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  total_stock: number;
+
   @OneToMany(() => ProductPrice, (price) => price.product, { cascade: true })
   prices: ProductPrice[];
 

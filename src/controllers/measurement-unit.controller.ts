@@ -9,6 +9,7 @@ import {
   Query,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { MeasurementUnitService } from '../services/measurement-unit.service';
 import { CreateMeasurementUnitDto } from '../dtos/measurement-unit/create-measurement-unit.dto';
@@ -18,13 +19,15 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('measurement-units')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class MeasurementUnitController {
   constructor(
     private readonly measurementUnitService: MeasurementUnitService,
-  ) {}
+  ) { }
 
   @Post()
   create(

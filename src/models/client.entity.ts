@@ -53,6 +53,9 @@ export class Client {
   @Column({ type: 'json', nullable: true })
   pack_client_response: any;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  balance: number;
+
   @OneToMany(() => ClientAddress, (address) => address.client, { cascade: true })
   addresses: ClientAddress[];
 

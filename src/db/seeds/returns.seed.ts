@@ -4,6 +4,7 @@ import { ReturnDetail } from 'src/models/return-detail.entity';
 import { Warehouse } from 'src/models/warehouse.entity';
 import { Provider } from 'src/models/provider.entity';
 import { Product } from 'src/models/product.entity';
+import { Organization } from 'src/models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class ReturnsSeed {
@@ -13,6 +14,13 @@ export class ReturnsSeed {
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const providerRepository = dataSource.getRepository(Provider);
     const productRepository = dataSource.getRepository(Product);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     // Obtener almacenes existentes
     const warehouses = await warehouseRepository.find();
@@ -52,6 +60,7 @@ export class ReturnsSeed {
         date: new Date('2024-12-01'),
         description: 'Devolución de productos defectuosos al proveedor',
         status: false,
+        organization_id: organization.id,
       },
       {
         code: 'DEV202412020001',

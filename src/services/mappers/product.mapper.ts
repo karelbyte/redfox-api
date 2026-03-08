@@ -41,6 +41,7 @@ export class ProductMapper {
       base_price,
       prices,
       images,
+      total_stock,
       created_at,
     } = product;
 
@@ -67,6 +68,7 @@ export class ProductMapper {
       type,
       inventory_strategy,
       base_price: Number(base_price),
+      total_stock: Number(total_stock || 0),
       prices: prices
         ? prices.map((p) => ({
           id: p.id,

@@ -1,33 +1,62 @@
 import { Injectable } from '@nestjs/common';
+import { AsyncLocalStorage } from 'async_hooks';
+
+interface TenantStore {
+    organizationId: string | null;
+    tenantSlug: string | null;
+    pacConfig?: Record<string, any> | null;
+}
 
 /**
  * TenantContext stores the current tenant's organizationId on a per-request basis
  * using AsyncLocalStorage for thread-safe per-request state isolation.
- * This avoids the Scope.REQUEST DI issue while still being request-specific.
  */
 @Injectable()
 export class TenantContext {
-    private organizationId: string | null = null;
-    private tenantSlug: string | null = null;
+    private static readonly storage = new AsyncLocalStorage<TenantStore>();
+
+    run(store: TenantStore, callback: () => any) {
+        return TenantContext.storage.run(store, callback);
+    }
 
     setOrganizationId(id: string) {
-        this.organizationId = id;
+        const store = TenantContext.storage.getStore();
+        if (store) {
+            store.organizationId = id;
+        }
     }
 
     getOrganizationId(): string | null {
-        return this.organizationId;
+        return TenantContext.storage.getStore()?.organizationId || null;
     }
 
     setTenantSlug(slug: string) {
-        this.tenantSlug = slug;
+        const store = TenantContext.storage.getStore();
+        if (store) {
+            store.tenantSlug = slug;
+        }
     }
 
     getTenantSlug(): string | null {
-        return this.tenantSlug;
+        return TenantContext.storage.getStore()?.tenantSlug || null;
+    }
+
+    setPacConfig(config: Record<string, any>) {
+        const store = TenantContext.storage.getStore();
+        if (store) {
+            store.pacConfig = config;
+        }
+    }
+
+    getPacConfig(): Record<string, any> | null {
+        return TenantContext.storage.getStore()?.pacConfig || null;
     }
 
     clear() {
-        this.organizationId = null;
-        this.tenantSlug = null;
+        const store = TenantContext.storage.getStore();
+        if (store) {
+            store.organizationId = null;
+            store.tenantSlug = null;
+        }
     }
 }

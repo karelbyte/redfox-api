@@ -9,6 +9,7 @@ import { ProviderController } from '../controllers/provider.controller';
 import { ProviderMapper } from '../services/mappers/provider.mapper';
 import { LanguageModule } from './language.module';
 import { SurrogateModule } from './surrogate.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SurrogateModule } from './surrogate.module';
     ]),
     LanguageModule,
     SurrogateModule,
+    OrganizationModule,
   ],
   controllers: [ProviderController],
   providers: [ProviderService, ProviderMapper],

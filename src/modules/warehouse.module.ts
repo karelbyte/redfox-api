@@ -10,6 +10,7 @@ import { CurrencyModule } from './currency.module';
 import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { InventoryPackSyncModule } from './inventory-pack-sync.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -22,9 +23,10 @@ import { InventoryPackSyncModule } from './inventory-pack-sync.module';
     CurrencyModule,
     LanguageModule,
     InventoryPackSyncModule,
+    OrganizationModule,
   ],
   controllers: [WarehouseController],
   providers: [WarehouseService, WarehouseMapper],
   exports: [WarehouseService],
 })
-export class WarehouseModule {}
+export class WarehouseModule { }

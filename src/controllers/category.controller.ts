@@ -23,6 +23,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 
@@ -32,6 +33,7 @@ const formatFileName = (fileName: string): string => {
 
 @Controller('categories')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) { }
 

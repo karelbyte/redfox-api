@@ -8,18 +8,24 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { CertificationPackService } from '../services/certification-pack.service';
 import {
   CreateCertificationPackDto,
   UpdateCertificationPackDto,
 } from '../dtos/certification-pack/create-certification-pack.dto';
+import { AuthGuard } from '../guards/auth.guard';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('certification-packs')
+@UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class CertificationPackController {
   constructor(
     private readonly certificationPackService: CertificationPackService,
-  ) {}
+  ) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

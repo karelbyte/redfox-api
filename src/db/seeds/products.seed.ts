@@ -4,6 +4,7 @@ import { Brand } from 'src/models/brand.entity';
 import { Category } from 'src/models/category.entity';
 import { Tax } from 'src/models/tax.entity';
 import { MeasurementUnit } from 'src/models/measurement-unit.entity';
+import { Organization } from 'src/models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class ProductsSeed {
@@ -13,6 +14,13 @@ export class ProductsSeed {
     const categoryRepository = dataSource.getRepository(Category);
     const taxRepository = dataSource.getRepository(Tax);
     const measurementUnitRepository = dataSource.getRepository(MeasurementUnit);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     // Obtener todas las marcas
     const brands = await brandRepository.find();
@@ -44,6 +52,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Samsung Galaxy S24 Ultra',
@@ -61,6 +70,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Google Pixel 8 Pro',
@@ -78,6 +88,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Xiaomi 14 Ultra',
@@ -95,6 +106,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'OnePlus 12',
@@ -112,6 +124,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Laptops
@@ -131,6 +144,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Dell XPS 15',
@@ -148,6 +162,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Lenovo ThinkPad X1 Carbon',
@@ -165,6 +180,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'ASUS ROG Strix G16',
@@ -182,6 +198,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'MSI Raider GE78 HX',
@@ -199,6 +216,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Auriculares
@@ -218,6 +236,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Sony WH-1000XM5',
@@ -235,6 +254,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Bose QuietComfort 45',
@@ -253,6 +273,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Sennheiser HD 660S',
@@ -270,6 +291,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'JBL Flip 6',
@@ -287,6 +309,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Componentes de PC
@@ -306,6 +329,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'AMD Ryzen 9 7950X',
@@ -323,6 +347,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'NVIDIA RTX 4090',
@@ -340,6 +365,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Kingston Fury DDR5 32GB',
@@ -357,6 +383,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Samsung 990 Pro 2TB',
@@ -374,6 +401,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Periféricos Gaming
@@ -393,6 +421,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Logitech G Pro X Superlight',
@@ -410,6 +439,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'SteelSeries Apex Pro',
@@ -427,6 +457,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Corsair K100 RGB',
@@ -444,6 +475,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Razer BlackShark V2 Pro',
@@ -461,6 +493,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Cámaras
@@ -480,6 +513,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Nikon Z9',
@@ -497,6 +531,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Sony A7R V',
@@ -514,6 +549,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Monitores
@@ -533,6 +569,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Samsung Odyssey G9',
@@ -550,6 +587,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Tablets
@@ -570,6 +608,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Samsung Galaxy Tab S9 Ultra',
@@ -587,6 +626,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Smartwatches
@@ -606,6 +646,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Samsung Galaxy Watch 6 Classic',
@@ -623,6 +664,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Consolas Gaming
@@ -642,6 +684,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Xbox Series X',
@@ -659,6 +702,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Almacenamiento
@@ -678,6 +722,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
       {
         name: 'Seagate FireCuda 530 2TB',
@@ -695,6 +740,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.TANGIBLE,
+        organization_id: organization.id,
       },
 
       // Servicios
@@ -710,6 +756,7 @@ export class ProductsSeed {
         measurement_unit: unit,
         is_active: true,
         type: ProductType.SERVICE,
+        organization_id: organization.id,
       },
       {
         name: 'Servicio de Reparación Smartphone',

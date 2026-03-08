@@ -14,6 +14,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { CurrencyMapper } from './mappers/currency.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CurrencyService {
@@ -22,7 +23,16 @@ export class CurrencyService {
     private readonly currencyRepository: Repository<Currency>,
     private readonly currencyMapper: CurrencyMapper,
     private translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required for Currencies');
+    }
+    return orgId;
+  }
 
   async create(
     createCurrencyDto: CreateCurrencyDto,
@@ -31,7 +41,7 @@ export class CurrencyService {
     try {
       // Verificar si ya existe una moneda con el mismo código
       const existingCurrency = await this.currencyRepository.findOne({
-        where: { code: createCurrencyDto.code.toUpperCase() },
+        where: { code: createCurrencyDto.code.toUpperCase(), organization_id: this.organizationId },
       });
 
       if (existingCurrency) {
@@ -46,6 +56,7 @@ export class CurrencyService {
       const currency = this.currencyRepository.create({
         ...createCurrencyDto,
         code: createCurrencyDto.code.toUpperCase(),
+        organization_id: this.organizationId,
       });
 
       const saved = await this.currencyRepository.save(currency);
@@ -75,16 +86,19 @@ export class CurrencyService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      where: {},
+      where: { organization_id: this.organizationId },
       order: {
         name: 'ASC' as const,
       },
     };
     const whereConditions: FindManyOptions<Currency> = term
       ? {
-          ...baseConditions,
-          where: [{ code: Like(`%${term}%`) }, { name: Like(`%${term}%`) }],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`), organization_id: this.organizationId },
+          { name: Like(`%${term}%`), organization_id: this.organizationId }
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -134,7 +148,7 @@ export class CurrencyService {
 
   async findOne(id: string, userId?: string): Promise<CurrencyResponseDto> {
     const currency = await this.currencyRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!currency) {
@@ -154,7 +168,7 @@ export class CurrencyService {
     userId?: string,
   ): Promise<CurrencyResponseDto> {
     const currency = await this.currencyRepository.findOne({
-      where: { code: code.toUpperCase() },
+      where: { code: code.toUpperCase(), organization_id: this.organizationId },
     });
 
     if (!currency) {
@@ -176,7 +190,7 @@ export class CurrencyService {
   ): Promise<CurrencyResponseDto> {
     try {
       const currency = await this.currencyRepository.findOne({
-        where: { id },
+        where: { id, organization_id: this.organizationId },
       });
 
       if (!currency) {
@@ -194,7 +208,7 @@ export class CurrencyService {
         updateCurrencyDto.code.toUpperCase() !== currency.code
       ) {
         const existingCurrency = await this.currencyRepository.findOne({
-          where: { code: updateCurrencyDto.code.toUpperCase() },
+          where: { code: updateCurrencyDto.code.toUpperCase(), organization_id: this.organizationId },
         });
 
         if (existingCurrency) {
@@ -240,7 +254,7 @@ export class CurrencyService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const currency = await this.currencyRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!currency) {

@@ -6,11 +6,13 @@ import { CertificationPackFactoryService } from '../services/certification-pack-
 import { CertificationPackController } from '../controllers/certification-pack.controller';
 import { FacturaAPIService } from '../services/facturapi.service';
 import { ConfigModule } from '@nestjs/config';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CertificationPack]),
     ConfigModule,
+    OrganizationModule,
   ],
   controllers: [CertificationPackController],
   providers: [
@@ -23,4 +25,4 @@ import { ConfigModule } from '@nestjs/config';
     CertificationPackFactoryService,
   ],
 })
-export class CertificationPackModule {}
+export class CertificationPackModule { }

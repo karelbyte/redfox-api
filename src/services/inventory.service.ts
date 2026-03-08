@@ -69,8 +69,20 @@ export class InventoryService {
     createInventoryDto: CreateInventoryDto,
     userId?: string,
   ): Promise<InventoryResponseDto> {
-    const inventory = this.inventoryRepository.create(createInventoryDto);
+    const inventory = this.inventoryRepository.create({
+      warehouse: { id: createInventoryDto.warehouseId },
+      product: { id: createInventoryDto.productId },
+      quantity: createInventoryDto.quantity,
+      price: createInventoryDto.price,
+    });
     const savedInventory = await this.inventoryRepository.save(inventory);
+
+    // Update denormalized total_stock
+    await this.productService.updateStock(
+      createInventoryDto.productId,
+      savedInventory.quantity,
+    );
+
     return this.mapToResponseDto(savedInventory);
   }
 
@@ -167,16 +179,32 @@ export class InventoryService {
       );
       throw new NotFoundException(message);
     }
+
+    const oldQuantity = Number(inventory.quantity);
+    const newQuantity =
+      updateInventoryDto.stock !== undefined
+        ? Number(updateInventoryDto.stock)
+        : oldQuantity;
+    const diff = newQuantity - oldQuantity;
+
     const updatedInventory = await this.inventoryRepository.save({
       ...inventory,
+      quantity: newQuantity,
       ...updateInventoryDto,
     });
+
+    if (diff !== 0 && inventory.product && inventory.product.id) {
+      // Update denormalized total_stock
+      await this.productService.updateStock(inventory.product.id, diff);
+    }
+
     return this.mapToResponseDto(updatedInventory);
   }
 
   async remove(id: string, userId?: string): Promise<void> {
     const inventory = await this.inventoryRepository.findOne({
       where: { id },
+      relations: ['product'],
       withDeleted: false,
     });
     if (!inventory) {
@@ -187,7 +215,17 @@ export class InventoryService {
       );
       throw new NotFoundException(message);
     }
+
+    const quantityToRemove = Number(inventory.quantity);
     await this.inventoryRepository.softRemove(inventory);
+
+    // Update denormalized total_stock
+    if (inventory.product && inventory.product.id) {
+      await this.productService.updateStock(
+        inventory.product.id,
+        -quantityToRemove,
+      );
+    }
   }
 
   /**

@@ -26,6 +26,7 @@ import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
@@ -33,6 +34,7 @@ const formatFileName = (fileName: string): string => {
 
 @Controller('brands')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class BrandController {
   constructor(private readonly brandService: BrandService) { }
 

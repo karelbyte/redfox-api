@@ -15,6 +15,7 @@ export class ClientResponseDto {
   pack_client_response?: any;
   addresses: ClientAddressResponseDto[];
   taxData: ClientTaxDataResponseDto[];
+  balance: number;
   credit?: ClientCreditResponseDto;
   created_at: Date;
 }

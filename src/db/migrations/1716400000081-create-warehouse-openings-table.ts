@@ -6,8 +6,7 @@ import {
 } from 'typeorm';
 
 export class CreateWarehouseOpeningsTable1716400000081
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -25,6 +24,12 @@ export class CreateWarehouseOpeningsTable1716400000081
           },
           {
             name: 'warehouse_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
+            name: 'organization_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
             isNullable: false,
@@ -70,6 +75,17 @@ export class CreateWarehouseOpeningsTable1716400000081
         ],
       }),
       true,
+    );
+
+    await queryRunner.createForeignKey(
+      'warehouse_openings',
+      new TableForeignKey({
+        name: 'FK_WarehouseOpenings_Organizations',
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
     );
 
     await queryRunner.createForeignKey(

@@ -5,14 +5,16 @@ import { CompanySettings } from '../models/company-settings.entity';
 import { CompanySettingsService } from '../services/company-settings.service';
 import { CompanySettingsController } from '../controllers/company-settings.controller';
 import { CompanySettingsMapper } from '../services/mappers/company-settings.mapper';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CompanySettings]),
     ConfigModule,
+    OrganizationModule,
   ],
   controllers: [CompanySettingsController],
   providers: [CompanySettingsService, CompanySettingsMapper],
   exports: [CompanySettingsService, CompanySettingsMapper],
 })
-export class CompanySettingsModule {}
+export class CompanySettingsModule { }

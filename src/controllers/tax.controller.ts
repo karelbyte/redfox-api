@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  UseInterceptors,
   Put,
   Query,
 } from '@nestjs/common';
@@ -16,15 +17,17 @@ import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 
 @Controller('taxes')
+@UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class TaxController {
-  constructor(private readonly taxService: TaxService) {}
+  constructor(private readonly taxService: TaxService) { }
 
   @Post()
-  @UseGuards(AuthGuard)
   create(
     @Body() createTaxDto: CreateTaxDto,
     @UserId() userId: string,

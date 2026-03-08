@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Organization } from './organization.entity';
 
 export enum AuditAction {
   CREATE = 'CREATE',
@@ -18,9 +20,19 @@ export enum AuditAction {
 }
 
 @Entity('audit_logs')
+@Index(['organization_id', 'userId'])
+@Index(['organization_id', 'entityType', 'entityId'])
+@Index(['organization_id', 'created_at'])
 export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column()
   userId: string;

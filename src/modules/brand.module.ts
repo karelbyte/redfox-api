@@ -7,11 +7,12 @@ import { BrandController } from '../controllers/brand.controller';
 import { BrandMapper } from '../services/mappers/brand.mapper';
 import { TranslationService } from '../services/translation.service';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Brand, Product]), LanguageModule],
+  imports: [TypeOrmModule.forFeature([Brand, Product]), LanguageModule, OrganizationModule],
   controllers: [BrandController],
   providers: [BrandService, BrandMapper],
   exports: [BrandService, BrandMapper],
 })
-export class BrandModule {}
+export class BrandModule { }

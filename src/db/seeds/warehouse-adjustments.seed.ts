@@ -3,6 +3,7 @@ import { WarehouseAdjustment } from 'src/models/warehouse-adjustment.entity';
 import { WarehouseAdjustmentDetail } from 'src/models/warehouse-adjustment-detail.entity';
 import { Warehouse } from 'src/models/warehouse.entity';
 import { Product } from 'src/models/product.entity';
+import { Organization } from 'src/models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehouseAdjustmentsSeed {
@@ -14,6 +15,13 @@ export class WarehouseAdjustmentsSeed {
     );
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const productRepository = dataSource.getRepository(Product);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     // Obtener almacenes existentes
     const warehouses = await warehouseRepository.find();
@@ -43,6 +51,7 @@ export class WarehouseAdjustmentsSeed {
         description:
           'Ajuste de inventario entre almacenes - Transferencia mensual',
         status: true,
+        organization_id: organization.id,
       },
       {
         code: 'AJU202412020001',

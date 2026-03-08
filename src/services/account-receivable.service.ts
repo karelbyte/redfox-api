@@ -6,6 +6,8 @@ import { AccountReceivablePayment } from '../models/account-receivable-payment.e
 import { CreateAccountReceivableDto } from '../dtos/account-receivable/create-account-receivable.dto';
 import { UpdateAccountReceivableDto } from '../dtos/account-receivable/update-account-receivable.dto';
 import { CreateAccountReceivablePaymentDto } from '../dtos/account-receivable/create-payment.dto';
+import { ClientService } from './client.service';
+import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class AccountReceivableService {
@@ -14,7 +16,9 @@ export class AccountReceivableService {
     private accountReceivableRepository: Repository<AccountReceivable>,
     @InjectRepository(AccountReceivablePayment)
     private paymentRepository: Repository<AccountReceivablePayment>,
-  ) {}
+    @Inject(forwardRef(() => ClientService))
+    private readonly clientService: ClientService,
+  ) { }
 
   async create(createAccountReceivableDto: CreateAccountReceivableDto): Promise<AccountReceivable> {
     const existingAccount = await this.accountReceivableRepository.findOne({
@@ -30,7 +34,12 @@ export class AccountReceivableService {
       remainingAmount: createAccountReceivableDto.totalAmount,
     });
 
-    return await this.accountReceivableRepository.save(accountReceivable);
+    const savedAccount = await this.accountReceivableRepository.save(accountReceivable);
+
+    // Update denormalized client balance (increase debt)
+    await this.clientService.updateBalance(createAccountReceivableDto.clientId, createAccountReceivableDto.totalAmount);
+
+    return savedAccount;
   }
 
   async findAll(
@@ -154,6 +163,9 @@ export class AccountReceivableService {
 
     await this.accountReceivableRepository.save(account);
 
+    // Update denormalized client balance (decrease debt)
+    await this.clientService.updateBalance(account.clientId, -Number(createPaymentDto.amount));
+
     return savedPayment;
   }
 
@@ -197,7 +209,7 @@ export class AccountReceivableService {
 
   async getOverdueAccounts(): Promise<AccountReceivable[]> {
     const today = new Date();
-    
+
     return await this.accountReceivableRepository.find({
       where: {
         dueDate: LessThan(today),
@@ -210,14 +222,14 @@ export class AccountReceivableService {
 
   async updateOverdueStatus(): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
-    
+
     await this.accountReceivableRepository
       .createQueryBuilder()
       .update(AccountReceivable)
       .set({ status: AccountReceivableStatus.OVERDUE })
       .where('dueDate < :today', { today })
-      .andWhere('status IN (:...statuses)', { 
-        statuses: [AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL] 
+      .andWhere('status IN (:...statuses)', {
+        statuses: [AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL]
       })
       .execute();
   }
@@ -249,7 +261,7 @@ export class AccountReceivableService {
 
     const today = new Date();
     const totalCredit = accounts[0]?.client?.credit?.credit_limit || 0;
-    
+
     let usedCredit = 0;
     let overdueBalance = 0;
     let currentBalance = 0;

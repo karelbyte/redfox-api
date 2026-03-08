@@ -16,6 +16,7 @@ import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { MeasurementUnitSuggestion } from '../interfaces/certification-pack.interface';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class MeasurementUnitService {
@@ -27,7 +28,12 @@ export class MeasurementUnitService {
     private readonly measurementUnitMapper: MeasurementUnitMapper,
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createMeasurementUnitDto: CreateMeasurementUnitDto,
@@ -35,7 +41,7 @@ export class MeasurementUnitService {
   ): Promise<MeasurementUnitResponseDto> {
     try {
       const existingUnit = await this.measurementUnitRepository.findOne({
-        where: { code: createMeasurementUnitDto.code },
+        where: { code: createMeasurementUnitDto.code, organization_id: this.organizationId },
         withDeleted: false,
       });
 
@@ -48,9 +54,10 @@ export class MeasurementUnitService {
         throw new BadRequestException(message);
       }
 
-      const measurementUnit = this.measurementUnitRepository.create(
-        createMeasurementUnitDto,
-      );
+      const measurementUnit = this.measurementUnitRepository.create({
+        ...createMeasurementUnitDto,
+        organization_id: this.organizationId,
+      });
       const savedMeasurementUnit =
         await this.measurementUnitRepository.save(measurementUnit);
       return this.measurementUnitMapper.mapToResponseDto(savedMeasurementUnit);
@@ -78,15 +85,15 @@ export class MeasurementUnitService {
     const { page, limit, term } = paginationDto || {};
 
     // Construir las condiciones de búsqueda
-    const baseConditions = { withDeleted: false };
+    const baseConditions = { where: { organization_id: this.organizationId }, withDeleted: false };
     const whereConditions = term
       ? {
-          ...baseConditions,
-          where: [
-            { code: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`), organization_id: this.organizationId },
+          { description: Like(`%${term}%`), organization_id: this.organizationId },
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -141,7 +148,7 @@ export class MeasurementUnitService {
     userId?: string,
   ): Promise<MeasurementUnitResponseDto> {
     const measurementUnit = await this.measurementUnitRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!measurementUnit) {
@@ -162,7 +169,7 @@ export class MeasurementUnitService {
   ): Promise<MeasurementUnitResponseDto> {
     try {
       const measurementUnit = await this.measurementUnitRepository.findOne({
-        where: { id },
+        where: { id, organization_id: this.organizationId },
         withDeleted: false,
       });
       if (!measurementUnit) {
@@ -217,7 +224,7 @@ export class MeasurementUnitService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const measurementUnit = await this.measurementUnitRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!measurementUnit) {
@@ -259,7 +266,7 @@ export class MeasurementUnitService {
     products: any[];
   }> {
     const measurementUnit = await this.measurementUnitRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!measurementUnit) {

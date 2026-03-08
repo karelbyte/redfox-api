@@ -33,7 +33,7 @@ export class Provider {
   @Column({ length: 50 })
   code: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   description: string;
 
   @Column({ length: 100, nullable: true })
@@ -47,6 +47,9 @@ export class Provider {
 
   @Column({ default: true })
   status: boolean;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  balance: number;
 
   @CreateDateColumn()
   created_at: Date;

@@ -7,18 +7,35 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Invoice } from './invoice.entity';
 import { Product } from './product.entity';
+import { Organization } from './organization.entity';
 
 @Entity('invoice_details')
+@Index(['organization_id', 'invoice_id'])
+@Index(['organization_id', 'product_id'])
 export class InvoiceDetail {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ name: 'invoice_id' })
+  invoice_id: string;
+
   @ManyToOne(() => Invoice, (invoice) => invoice.details)
   @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
+
+  @Column({ name: 'product_id' })
+  product_id: string;
 
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })

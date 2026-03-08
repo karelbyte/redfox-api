@@ -25,6 +25,12 @@ export class CreateProductHistoryTable1716400000140
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'product_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
@@ -97,45 +103,44 @@ export class CreateProductHistoryTable1716400000140
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
         ],
+        indices: [
+          {
+            name: 'IDX_PROD_HISTORY_ORG_DATE',
+            columnNames: ['organization_id', 'created_at'],
+          },
+          {
+            name: 'IDX_PROD_HISTORY_ORG_PRODUCT',
+            columnNames: ['organization_id', 'product_id'],
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+          {
+            columnNames: ['product_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'products',
+            onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
+          },
+          {
+            columnNames: ['warehouse_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'warehouses',
+            onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
+          },
+        ],
       }),
       true,
-    );
-
-    // Añadir claves foráneas
-    await queryRunner.createForeignKey(
-      'product_history',
-      new TableForeignKey({
-        columnNames: ['product_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'products',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'product_history',
-      new TableForeignKey({
-        columnNames: ['warehouse_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'warehouses',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('product_history');
-    if (!table) return;
-    const foreignKeys = table.foreignKeys;
-
-    await Promise.all(
-      foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('product_history', foreignKey),
-      ),
-    );
-
     await queryRunner.dropTable('product_history');
   }
 }

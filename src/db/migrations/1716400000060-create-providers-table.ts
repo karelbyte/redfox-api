@@ -35,7 +35,7 @@ export class CreateProvidersTable1716400000060 implements MigrationInterface {
             name: 'description',
             type: 'varchar',
             length: '255',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'name',
@@ -59,6 +59,13 @@ export class CreateProvidersTable1716400000060 implements MigrationInterface {
             name: 'status',
             type: 'boolean',
             default: true,
+          },
+          {
+            name: 'balance',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            default: 0,
           },
           {
             name: 'created_at',

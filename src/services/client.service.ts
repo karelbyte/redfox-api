@@ -267,4 +267,13 @@ export class ClientService {
   async removeMany(ids: string[]): Promise<void> {
     await this.clientRepository.softDelete(ids);
   }
+
+  async updateBalance(id: string, amount: number, manager?: any): Promise<void> {
+    const repo = manager ? manager.getRepository(Client) : this.clientRepository;
+    const client = await repo.findOneBy({ id });
+    if (client) {
+      client.balance = Number(client.balance || 0) + Number(amount);
+      await repo.save(client, { reload: false });
+    }
+  }
 }

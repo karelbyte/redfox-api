@@ -22,6 +22,7 @@ export class ClientMapper {
       pack_client_id: client.pack_client_id,
       pack_client_response: client.pack_client_response,
       status: client.status,
+      balance: Number(client.balance || 0),
       created_at: client.created_at,
       addresses: (client.addresses || []).map(addr => ({
         id: addr.id,

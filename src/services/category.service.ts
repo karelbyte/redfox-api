@@ -15,6 +15,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { CategoryMapper } from './mappers/category.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CategoryService {
@@ -28,7 +29,12 @@ export class CategoryService {
     private dataSource: DataSource,
     private readonly categoryMapper: CategoryMapper,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private async validateHierarchyCycle(
     categoryId: string,
@@ -137,7 +143,10 @@ export class CategoryService {
       throw new BadRequestException(message);
     }
 
-    const category = this.categoryRepository.create(createCategoryDto);
+    const category = this.categoryRepository.create({
+      ...createCategoryDto,
+      organization_id: this.organizationId,
+    });
     const savedCategory = await this.categoryRepository.save(category);
     return this.categoryMapper.mapToResponseDto(savedCategory);
   }
@@ -160,13 +169,13 @@ export class CategoryService {
 
     const whereConditions: FindManyOptions<Category> = term
       ? {
-          ...baseConditions,
-          where: [
-            { name: Like(`%${term}%`) },
-            { slug: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { name: Like(`%${term}%`) },
+          { slug: Like(`%${term}%`) },
+          { description: Like(`%${term}%`) },
+        ],
+      }
       : baseConditions;
 
     if (!page && !limit) {

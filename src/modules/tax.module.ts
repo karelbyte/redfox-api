@@ -6,11 +6,12 @@ import { TaxService } from '../services/tax.service';
 import { TaxController } from '../controllers/tax.controller';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tax, Product]), LanguageModule],
+  imports: [TypeOrmModule.forFeature([Tax, Product]), LanguageModule, OrganizationModule],
   controllers: [TaxController],
   providers: [TaxService, TaxMapper],
   exports: [TaxService, TaxMapper],
 })
-export class TaxModule {}
+export class TaxModule { }

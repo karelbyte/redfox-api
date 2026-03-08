@@ -9,6 +9,7 @@ import {
   Query,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrencyService } from '../services/currency.service';
 import { CreateCurrencyDto } from '../dtos/currency/create-currency.dto';
@@ -18,11 +19,13 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('currencies')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class CurrencyController {
-  constructor(private readonly currencyService: CurrencyService) {}
+  constructor(private readonly currencyService: CurrencyService) { }
 
   @Post()
   create(

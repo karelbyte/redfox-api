@@ -10,11 +10,19 @@ import {
 } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
 import { Product } from './product.entity';
+import { Organization } from './organization.entity';
 
 @Entity('warehouse_openings')
 export class WarehouseOpening {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ name: 'warehouse_id' })
   warehouseId: string;

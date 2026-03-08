@@ -6,8 +6,7 @@ import {
 } from 'typeorm';
 
 export class CreateInvoiceDetailsTable1716400000250
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateInvoiceDetailsTable1716400000250';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -24,6 +23,12 @@ export class CreateInvoiceDetailsTable1716400000250
             isPrimary: true,
             generationStrategy: 'uuid',
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
+          },
+          {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'invoice_id',
@@ -100,51 +105,42 @@ export class CreateInvoiceDetailsTable1716400000250
         ],
         indices: [
           {
-            name: 'idx_invoice_details_invoice_id',
-            columnNames: ['invoice_id'],
+            name: 'idx_invoice_details_org_invoice',
+            columnNames: ['organization_id', 'invoice_id'],
           },
           {
-            name: 'idx_invoice_details_product_id',
+            name: 'idx_invoice_details_org_product',
+            columnNames: ['organization_id', 'product_id'],
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+          {
+            columnNames: ['invoice_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'invoices',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+          },
+          {
             columnNames: ['product_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'products',
+            onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
           },
         ],
       }),
       true,
     );
-
-    await queryRunner.createForeignKey(
-      'invoice_details',
-      new TableForeignKey({
-        columnNames: ['invoice_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'invoices',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'invoice_details',
-      new TableForeignKey({
-        columnNames: ['product_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'products',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      }),
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('invoice_details');
-    const foreignKeys = table?.foreignKeys || [];
-
-    await Promise.all(
-      foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('invoice_details', foreignKey),
-      ),
-    );
-
     await queryRunner.dropTable('invoice_details');
   }
 }

@@ -16,6 +16,11 @@ export class CreateAuditLogsTable1716400000430 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: 'uuid',
+            isNullable: false,
+          },
+          {
             name: 'userId',
             type: 'uuid',
             isNullable: false,
@@ -64,30 +69,34 @@ export class CreateAuditLogsTable1716400000430 implements MigrationInterface {
         ],
         indices: [
           {
-            name: 'IDX_audit_logs_userId',
+            name: 'IDX_audit_logs_org_user',
+            columnNames: ['organization_id', 'userId'],
+          },
+          {
+            name: 'IDX_audit_logs_org_entity',
+            columnNames: ['organization_id', 'entityType', 'entityId'],
+          },
+          {
+            name: 'IDX_audit_logs_org_created_at',
+            columnNames: ['organization_id', 'created_at'],
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+          {
             columnNames: ['userId'],
-          },
-          {
-            name: 'IDX_audit_logs_entityType_entityId',
-            columnNames: ['entityType', 'entityId'],
-          },
-          {
-            name: 'IDX_audit_logs_created_at',
-            columnNames: ['created_at'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'users',
+            onDelete: 'CASCADE',
           },
         ],
       }),
       true,
-    );
-
-    await queryRunner.createForeignKey(
-      'audit_logs',
-      new TableForeignKey({
-        columnNames: ['userId'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'users',
-        onDelete: 'CASCADE',
-      }),
     );
   }
 

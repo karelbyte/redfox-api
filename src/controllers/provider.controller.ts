@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProviderService } from '../services/provider.service';
 import { CreateProviderDto } from '../dtos/provider/create-provider.dto';
@@ -19,9 +20,11 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { BulkDeleteProviderDto } from '../dtos/provider/bulk-delete-provider.dto';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('providers')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ProviderController {
   constructor(private readonly providerService: ProviderService) { }
 

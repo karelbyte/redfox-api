@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Product } from './product.entity';
 import { Warehouse } from './warehouse.entity';
+import { Organization } from './organization.entity';
 
 export enum OperationType {
   // Entradas
@@ -29,13 +31,28 @@ export enum OperationType {
 }
 
 @Entity('product_history')
+@Index(['organization_id', 'created_at'])
+@Index(['organization_id', 'product_id'])
 export class ProductHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ name: 'product_id' })
+  product_id: string;
+
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @Column({ name: 'warehouse_id' })
+  warehouse_id: string;
 
   @ManyToOne(() => Warehouse, { nullable: false })
   @JoinColumn({ name: 'warehouse_id' })

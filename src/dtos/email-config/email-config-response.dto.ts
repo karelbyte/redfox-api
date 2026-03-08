@@ -9,4 +9,5 @@ export class EmailConfigResponseDto {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  organization_id: string;
 }

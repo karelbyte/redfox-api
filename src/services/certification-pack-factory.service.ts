@@ -5,6 +5,7 @@ import { CertificationPack } from '../models/certification-pack.entity';
 import { CertificationPackType } from '../constants/certification-packs.constant';
 import { ICertificationPackService } from '../interfaces/certification-pack.interface';
 import { FacturaAPIService } from './facturapi.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CertificationPackFactoryService {
@@ -14,6 +15,7 @@ export class CertificationPackFactoryService {
     @InjectRepository(CertificationPack)
     private readonly certificationPackRepository: Repository<CertificationPack>,
     private readonly facturaAPIService: FacturaAPIService,
+    private readonly tenantContext: TenantContext,
   ) {
     this.initializePackServices();
   }
@@ -25,9 +27,17 @@ export class CertificationPackFactoryService {
     );
   }
 
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() || '';
+  }
+
   async getActivePack(): Promise<CertificationPack> {
     const defaultPack = await this.certificationPackRepository.findOne({
-      where: { is_default: true, is_active: true },
+      where: {
+        is_default: true,
+        is_active: true,
+        organization_id: this.organizationId,
+      },
     });
 
     if (defaultPack) {
@@ -35,7 +45,7 @@ export class CertificationPackFactoryService {
     }
 
     const activePack = await this.certificationPackRepository.findOne({
-      where: { is_active: true },
+      where: { is_active: true, organization_id: this.organizationId },
       order: { created_at: 'ASC' },
     });
 
@@ -53,7 +63,11 @@ export class CertificationPackFactoryService {
 
     if (packType) {
       pack = await this.certificationPackRepository.findOne({
-        where: { type: packType, is_active: true },
+        where: {
+          type: packType,
+          is_active: true,
+          organization_id: this.organizationId,
+        },
       });
     } else {
       pack = await this.getActivePack();
@@ -73,12 +87,8 @@ export class CertificationPackFactoryService {
       );
     }
 
-    if (service instanceof FacturaAPIService) {
-      const apiKey = pack.config?.api_key;
-      if (apiKey) {
-        (service as any).updateApiKey(apiKey);
-      }
-    }
+    // Almacenar la configuración en el contexto del tenant para que el servicio pueda acceder a ella de forma segura
+    this.tenantContext.setPacConfig(pack.config || {});
 
     return service;
   }

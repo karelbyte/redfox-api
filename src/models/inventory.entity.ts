@@ -7,14 +7,24 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
 import { Product } from './product.entity';
+import { Organization } from './organization.entity';
 
 @Entity('inventory')
+@Index(['organization_id', 'product_id', 'warehouse_id'])
 export class Inventory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ name: 'product_id' })
   product_id: string;
@@ -22,6 +32,9 @@ export class Inventory {
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @Column({ name: 'warehouse_id' })
+  warehouse_id: string;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'warehouse_id' })

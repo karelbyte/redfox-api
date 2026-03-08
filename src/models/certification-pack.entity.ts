@@ -5,13 +5,23 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { CertificationPackType } from '../constants/certification-packs.constant';
+import { Organization } from './organization.entity';
 
 @Entity('certification_packs')
 export class CertificationPack {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ type: 'enum', enum: CertificationPackType })
   type: CertificationPackType;

@@ -10,6 +10,7 @@ export class ProviderResponseDto {
   email?: string;
   addresses?: ProviderAddressResponseDto[];
   taxData?: ProviderTaxDataResponseDto[];
+  balance: number;
   credit?: ProviderCreditResponseDto;
   created_at: Date;
 }

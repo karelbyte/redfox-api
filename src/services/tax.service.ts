@@ -14,6 +14,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TaxMapper } from './mappers/tax.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class TaxService {
@@ -24,14 +25,22 @@ export class TaxService {
     private readonly productRepository: Repository<Product>,
     private readonly taxMapper: TaxMapper,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createTaxDto: CreateTaxDto,
     userId?: string,
   ): Promise<TaxResponseDto> {
     try {
-      const tax = this.taxRepository.create(createTaxDto);
+      const tax = this.taxRepository.create({
+        ...createTaxDto,
+        organization_id: this.organizationId,
+      });
       const savedTax = await this.taxRepository.save(tax);
       return this.taxMapper.mapToResponseDto(savedTax);
     } catch (error: unknown) {
@@ -58,16 +67,16 @@ export class TaxService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      where: {},
+      where: { organization_id: this.organizationId },
       order: {
         createdAt: 'DESC' as const,
       },
     };
     const whereConditions: FindManyOptions<Tax> = term
       ? {
-          ...baseConditions,
-          where: [{ code: Like(`%${term}%`) }, { name: Like(`%${term}%`) }],
-        }
+        ...baseConditions,
+        where: [{ code: Like(`%${term}%`), organization_id: this.organizationId }, { name: Like(`%${term}%`), organization_id: this.organizationId }],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data

@@ -1,7 +1,11 @@
-import { IsEnum, IsString, IsOptional, Length, IsBoolean } from 'class-validator';
+import { IsEnum, IsString, IsOptional, Length, IsBoolean, IsUUID } from 'class-validator';
 import { ProviderAddressType } from '../../models/provider-address.entity';
 
 export class CreateProviderAddressDto {
+    @IsUUID()
+    @IsOptional()
+    id?: string;
+
     @IsEnum(ProviderAddressType)
     @IsOptional()
     type?: ProviderAddressType;

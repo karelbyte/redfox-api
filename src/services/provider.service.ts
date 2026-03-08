@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { Provider } from '../models/provider.entity';
 import { CreateProviderDto } from '../dtos/provider/create-provider.dto';
 import { UpdateProviderDto } from '../dtos/provider/update-provider.dto';
@@ -13,6 +13,7 @@ import { SurrogateService } from './surrogate.service';
 import { ProviderAddress } from '../models/provider-address.entity';
 import { ProviderTaxData } from '../models/provider-tax-data.entity';
 import { ProviderCredit } from '../models/provider-credit.entity';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class ProviderService {
@@ -28,13 +29,25 @@ export class ProviderService {
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
     private readonly surrogateService: SurrogateService,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required for Providers');
+    }
+    return orgId;
+  }
 
   async create(
     createProviderDto: CreateProviderDto,
     userId?: string,
   ): Promise<ProviderResponseDto> {
-    const provider = this.providerRepository.create(createProviderDto);
+    const provider = this.providerRepository.create({
+      ...createProviderDto,
+      organization_id: this.organizationId,
+    });
     const savedProvider = await this.providerRepository.save(provider);
 
     // Incrementar el contador si el código coincide con el sugerido
@@ -49,32 +62,25 @@ export class ProviderService {
   ): Promise<PaginatedResponse<ProviderResponseDto>> {
     const { page, limit, term, is_active } = paginationDto || {};
 
-    // Construir las condiciones de búsqueda
-    const baseConditions: any = { withDeleted: false };
+    const baseWhere: any = { organization_id: this.organizationId };
 
     if (is_active !== undefined) {
       const isActiveBool = String(is_active) === 'true';
-      baseConditions.where = { status: isActiveBool };
+      baseWhere.status = isActiveBool;
     }
+
+    const baseConditions: any = { withDeleted: false, where: baseWhere };
 
     const whereConditions = term
       ? {
         ...baseConditions,
-        where: baseConditions.where
-          ? [
-            { ...baseConditions.where, code: Like(`%${term}%`) },
-            { ...baseConditions.where, description: Like(`%${term}%`) },
-            { ...baseConditions.where, name: Like(`%${term}%`) },
-            { ...baseConditions.where, phone: Like(`%${term}%`) },
-            { ...baseConditions.where, email: Like(`%${term}%`) },
-          ]
-          : [
-            { code: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-            { name: Like(`%${term}%`) },
-            { phone: Like(`%${term}%`) },
-            { email: Like(`%${term}%`) },
-          ],
+        where: [
+          { ...baseWhere, code: Like(`%${term}%`) },
+          { ...baseWhere, description: Like(`%${term}%`) },
+          { ...baseWhere, name: Like(`%${term}%`) },
+          { ...baseWhere, phone: Like(`%${term}%`) },
+          { ...baseWhere, email: Like(`%${term}%`) },
+        ],
       }
       : baseConditions;
 
@@ -135,7 +141,7 @@ export class ProviderService {
 
   async findOne(id: string, userId?: string): Promise<ProviderResponseDto> {
     const provider = await this.providerRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['addresses', 'taxData', 'credit']
     });
     if (!provider) {
@@ -155,7 +161,7 @@ export class ProviderService {
     userId?: string,
   ): Promise<ProviderResponseDto> {
     const provider = await this.providerRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['addresses', 'taxData', 'credit'],
       withDeleted: false,
     });
@@ -169,8 +175,28 @@ export class ProviderService {
       throw new NotFoundException(message);
     }
 
-    const { delete_addresses, delete_tax_data, credit, ...baseData } = updateProviderDto;
+    const { delete_addresses, delete_tax_data, credit, taxData, addresses, ...baseData } = updateProviderDto;
     Object.assign(provider, baseData);
+
+    if (taxData) {
+      provider.taxData = taxData.map(dtoTax => {
+        const existingTax = provider.taxData?.find(t => t.id === dtoTax.id);
+        if (existingTax) {
+          return Object.assign(existingTax, dtoTax);
+        }
+        return this.providerTaxDataRepository.create({ ...dtoTax, provider_id: id });
+      });
+    }
+
+    if (addresses) {
+      provider.addresses = addresses.map(dtoAddr => {
+        const existingAddr = provider.addresses?.find(a => a.id === dtoAddr.id);
+        if (existingAddr) {
+          return Object.assign(existingAddr, dtoAddr);
+        }
+        return this.providerAddressRepository.create({ ...dtoAddr, provider_id: id });
+      });
+    }
 
     // Handle Credit
     if (credit) {
@@ -187,9 +213,15 @@ export class ProviderService {
     // Handle Deletions
     if (delete_addresses && delete_addresses.length > 0) {
       await this.providerAddressRepository.delete(delete_addresses);
+      if (provider.addresses) {
+        provider.addresses = provider.addresses.filter(a => !delete_addresses.includes(a.id));
+      }
     }
     if (delete_tax_data && delete_tax_data.length > 0) {
       await this.providerTaxDataRepository.delete(delete_tax_data);
+      if (provider.taxData) {
+        provider.taxData = provider.taxData.filter(t => !delete_tax_data.includes(t.id));
+      }
     }
 
     const updatedProvider = await this.providerRepository.save(provider);
@@ -197,7 +229,7 @@ export class ProviderService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
-    const provider = await this.providerRepository.findOne({ where: { id } });
+    const provider = await this.providerRepository.findOne({ where: { id, organization_id: this.organizationId } });
     if (!provider) {
       const message = await this.translationService.translate(
         'provider.not_found',
@@ -210,6 +242,18 @@ export class ProviderService {
   }
 
   async removeMany(ids: string[], userId?: string): Promise<void> {
-    await this.providerRepository.softDelete(ids);
+    await this.providerRepository.softDelete({
+      id: In(ids),
+      organization_id: this.organizationId,
+    });
+  }
+
+  async updateBalance(id: string, amount: number, manager?: any): Promise<void> {
+    const repo = manager ? manager.getRepository(Provider) : this.providerRepository;
+    const provider = await repo.findOneBy({ id });
+    if (provider) {
+      provider.balance = Number(provider.balance || 0) + Number(amount);
+      await repo.save(provider, { reload: false });
+    }
   }
 }

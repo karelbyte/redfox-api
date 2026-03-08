@@ -15,6 +15,7 @@ import { CompanySettingsService } from '../services/company-settings.service';
 import { UpdateCompanySettingsDto } from '../dtos/company-settings/update-company-settings.dto';
 import { CompanySettingsResponseDto } from '../dtos/company-settings/company-settings-response.dto';
 import { AuthGuard } from '../guards/auth.guard';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
@@ -28,6 +29,7 @@ const getUploadsCompanyDir = (): string => join(process.cwd(), 'uploads', 'compa
 
 @Controller('company-settings')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class CompanySettingsController {
   constructor(
     private readonly companySettingsService: CompanySettingsService,

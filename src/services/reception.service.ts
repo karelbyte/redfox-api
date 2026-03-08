@@ -631,6 +631,9 @@ export class ReceptionService {
 
       await this.productHistoryRepository.save(productHistory);
 
+      // Update denormalized total_stock
+      await this.productService.updateStock(detail.product.id, Number(detail.quantity));
+
       finalInventory.product = detail.product;
       await this.inventoryPackSyncService.syncForInventory(finalInventory);
 

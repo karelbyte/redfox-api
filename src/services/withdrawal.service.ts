@@ -784,6 +784,9 @@ export class WithdrawalService {
         await this.productHistoryRepository.save(productHistory);
       }
 
+      // Update denormalized total_stock
+      await this.productService.updateStock(detail.product.id, -Number(detail.quantity));
+
       withdrawnProducts++;
       totalQuantity += Number(detail.quantity);
     }
@@ -823,7 +826,7 @@ export class WithdrawalService {
     }
 
     // Retornar resumen de la operación
-    const message =
+    const resMessage =
       withdrawnProducts > 0
         ? `Withdrawal cerrada exitosamente. ${withdrawnProducts} productos retirados del inventario.`
         : 'Withdrawal cerrada exitosamente. No había productos para retirar.';
@@ -833,7 +836,7 @@ export class WithdrawalService {
       withdrawalCode: closedWithdrawal.code,
       withdrawnProducts,
       totalQuantity,
-      message,
+      message: resMessage,
       closedAt: new Date(),
     };
   }
@@ -901,6 +904,9 @@ export class WithdrawalService {
             expiration_date: inventory.expiration_date,
           });
           await queryRunner.manager.save(ProductHistory, productHistory);
+
+          // Update denormalized total_stock
+          await this.productService.updateStock(detail.product.id, Number(detail.quantity), queryRunner.manager);
         }
       }
 

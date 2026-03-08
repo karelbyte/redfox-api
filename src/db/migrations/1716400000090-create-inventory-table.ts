@@ -24,6 +24,12 @@ export class CreateInventoryTable1716400000090 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'product_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
@@ -94,44 +100,40 @@ export class CreateInventoryTable1716400000090 implements MigrationInterface {
             isNullable: true,
           },
         ],
+        indices: [
+          {
+            name: 'IDX_INVENTORY_ORG_PRODUCT_WAREHOUSE',
+            columnNames: ['organization_id', 'product_id', 'warehouse_id'],
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+          {
+            columnNames: ['product_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'products',
+            onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
+          },
+          {
+            columnNames: ['warehouse_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'warehouses',
+            onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
+          },
+        ],
       }),
       true,
-    );
-
-    // Añadir claves foráneas
-    await queryRunner.createForeignKey(
-      'inventory',
-      new TableForeignKey({
-        columnNames: ['product_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'products',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'inventory',
-      new TableForeignKey({
-        columnNames: ['warehouse_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'warehouses',
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('inventory');
-    const foreignKeys = table?.foreignKeys || [];
-
-    await Promise.all(
-      foreignKeys.map((foreignKey) =>
-        queryRunner.dropForeignKey('inventory', foreignKey),
-      ),
-    );
-
     await queryRunner.dropTable('inventory');
   }
 }

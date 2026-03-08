@@ -1,12 +1,20 @@
 import { DataSource } from 'typeorm';
 import { Warehouse } from 'src/models/warehouse.entity';
 import { Currency } from 'src/models/currency.entity';
+import { Organization } from 'src/models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehousesSeed {
   public static async run(dataSource: DataSource): Promise<void> {
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const currencyRepository = dataSource.getRepository(Currency);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     // Get the USD currency as default
     const defaultCurrency = await currencyRepository.findOne({
@@ -28,6 +36,7 @@ export class WarehousesSeed {
         isOpen: true,
         status: true,
         currencyId: defaultCurrency.id,
+        organization_id: organization.id,
       },
       {
         code: 'ALM-NORTE',
@@ -37,6 +46,7 @@ export class WarehousesSeed {
         isOpen: true,
         status: true,
         currencyId: defaultCurrency.id,
+        organization_id: organization.id,
       },
       {
         code: 'ALM-SUR',

@@ -14,43 +14,47 @@ import {
   ReceiptResponse,
 } from '../interfaces/certification-pack.interface';
 
+import { TenantContext } from './tenant-context.service';
+
 @Injectable()
 export class FacturaAPIService implements ICertificationPackService {
-  private facturapi: Facturapi | null = null;
-  private apiKey: string;
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly tenantContext: TenantContext,
+  ) { }
 
-  constructor(private readonly configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('FACTURAPI_API_KEY') || '';
-    if (this.apiKey) {
-      this.facturapi = new Facturapi(this.apiKey);
-    }
-  }
+  private getClient(): Facturapi {
+    const pacConfig = this.tenantContext.getPacConfig();
+    const apiKey = pacConfig?.api_key || this.configService.get<string>('FACTURAPI_API_KEY');
 
-  updateApiKey(apiKey: string): void {
     if (!apiKey) {
-      throw new Error('API key is required');
+      throw new BadRequestException('FacturaAPI API key not configured');
     }
-    this.apiKey = apiKey;
-    this.facturapi = new Facturapi(apiKey);
+
+    return new Facturapi(apiKey);
   }
 
-  private ensureInitialized(): void {
-    if (!this.facturapi) {
-      if (!this.apiKey) {
-        throw new BadRequestException('FacturaAPI API key not configured');
-      }
-      this.facturapi = new Facturapi(this.apiKey);
+  private getApiKey(): string {
+    const pacConfig = this.tenantContext.getPacConfig();
+    const apiKey = pacConfig?.api_key || this.configService.get<string>('FACTURAPI_API_KEY');
+
+    if (!apiKey) {
+      throw new BadRequestException('FacturaAPI API key not configured');
     }
+
+    return apiKey;
   }
+
+
 
   async generateCFDI(invoice: Invoice): Promise<CFDIResponse> {
     try {
-      this.ensureInitialized();
+      const client = this.getClient();
       const cfdiData = this.buildCFDIData(invoice);
 
       console.dir(cfdiData, { depth: null });
 
-      const data = await this.facturapi!.invoices.create(cfdiData);
+      const data = await client.invoices.create(cfdiData);
 
       return {
         id: data.id,
@@ -67,8 +71,8 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async cancelCFDI(uuid: string, reason: string): Promise<void> {
     try {
-      this.ensureInitialized();
-      await this.facturapi!.invoices.cancel(uuid, {
+      const client = this.getClient();
+      await client.invoices.cancel(uuid, {
         motive: reason as any,
       });
     } catch (error) {
@@ -79,8 +83,8 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getCFDIStatus(uuid: string): Promise<any> {
     try {
-      this.ensureInitialized();
-      return await this.facturapi!.invoices.retrieve(uuid);
+      const client = this.getClient();
+      return await client.invoices.retrieve(uuid);
     } catch (error) {
       console.error('FacturaAPI Status Error:', error);
       throw new BadRequestException(
@@ -91,8 +95,10 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async downloadPDF(packInvoiceId: string): Promise<Buffer> {
     try {
-      this.ensureInitialized();
-      const pdfBuffer = await this.facturapi!.invoices.downloadPdf(packInvoiceId);
+      const client = this.getClient();
+      const pdfBuffer = await client.invoices.downloadPdf(packInvoiceId);
+
+      // (rest of the logic remains the same, assuming it uses pdfBuffer)
 
       // Manejar diferentes tipos de respuesta
       if (pdfBuffer instanceof Buffer) {
@@ -152,8 +158,8 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async downloadXML(packInvoiceId: string): Promise<string> {
     try {
-      this.ensureInitialized();
-      const xmlContent = await this.facturapi!.invoices.downloadXml(packInvoiceId);
+      const client = this.getClient();
+      const xmlContent = await client.invoices.downloadXml(packInvoiceId);
 
       // Manejar diferentes tipos de respuesta
       if (typeof xmlContent === 'string') {
@@ -326,11 +332,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async validateTaxId(taxId: string): Promise<boolean> {
     try {
+      const apiKey = this.getApiKey();
       const response = await fetch(
         `https://api.facturapi.io/v1/customers/tax-id/${taxId}`,
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -349,11 +356,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getTaxRegimes(): Promise<any[]> {
     try {
+      const apiKey = this.getApiKey();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/tax-regimes',
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -371,11 +379,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getProductKeys(): Promise<any[]> {
     try {
+      const apiKey = this.getApiKey();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/products',
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -393,11 +402,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getPaymentForms(): Promise<any[]> {
     try {
+      const apiKey = this.getApiKey();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/payment-forms',
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -415,11 +425,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getUses(): Promise<any[]> {
     try {
+      const apiKey = this.getApiKey();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/uses',
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -437,12 +448,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async searchMeasurementUnits(term: string): Promise<any[]> {
     try {
-      this.ensureInitialized();
+      const apiKey = this.getApiKey();
       const response = await fetch(
         `https://www.facturapi.io/v2/catalogs/units?q=${encodeURIComponent(term)}&limit=20`,
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -461,12 +472,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async searchProductKeys(term: string): Promise<any[]> {
     try {
-      this.ensureInitialized();
+      const apiKey = this.getApiKey();
       const response = await fetch(
         `https://www.facturapi.io/v2/catalogs/products?q=${encodeURIComponent(term)}&limit=20`,
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         },
       );
@@ -485,32 +496,21 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {
     try {
-      this.ensureInitialized();
+      const client = this.getClient();
 
       const payload: any = {
         legal_name: customerData.legal_name,
         tax_id: customerData.tax_id,
       };
 
-      if (customerData.tax_system) {
-        payload.tax_system = customerData.tax_system;
-      }
-
-      if (customerData.email) {
-        payload.email = customerData.email;
-      }
-
-      if (customerData.phone) {
-        payload.phone = customerData.phone;
-      }
-
-      if (customerData.default_invoice_use) {
-        payload.default_invoice_use = customerData.default_invoice_use;
-      }
+      // ... (rest of logic) ...
+      if (customerData.tax_system) payload.tax_system = customerData.tax_system;
+      if (customerData.email) payload.email = customerData.email;
+      if (customerData.phone) payload.phone = customerData.phone;
+      if (customerData.default_invoice_use) payload.default_invoice_use = customerData.default_invoice_use;
 
       if (customerData.address) {
         const address: any = {};
-
         if (customerData.address.street) address.street = customerData.address.street;
         if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
         if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
@@ -526,7 +526,7 @@ export class FacturaAPIService implements ICertificationPackService {
         }
       }
 
-      const customer = await this.facturapi!.customers.create(payload);
+      const customer = await client.customers.create(payload);
       // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
       const response: CustomerResponse = {
@@ -548,37 +548,19 @@ export class FacturaAPIService implements ICertificationPackService {
     customerData: Partial<CustomerData>,
   ): Promise<CustomerResponse> {
     try {
-      this.ensureInitialized();
+      const client = this.getClient();
 
       const payload: any = {};
-
-      if (customerData.legal_name) {
-        payload.legal_name = customerData.legal_name;
-      }
-
-      if (customerData.tax_id) {
-        payload.tax_id = customerData.tax_id;
-      }
-
-      if (customerData.tax_system) {
-        payload.tax_system = customerData.tax_system;
-      }
-
-      if (customerData.email !== undefined) {
-        payload.email = customerData.email;
-      }
-
-      if (customerData.phone !== undefined) {
-        payload.phone = customerData.phone;
-      }
-
-      if (customerData.default_invoice_use) {
-        payload.default_invoice_use = customerData.default_invoice_use;
-      }
+      // ... (rest of logic) ...
+      if (customerData.legal_name) payload.legal_name = customerData.legal_name;
+      if (customerData.tax_id) payload.tax_id = customerData.tax_id;
+      if (customerData.tax_system) payload.tax_system = customerData.tax_system;
+      if (customerData.email !== undefined) payload.email = customerData.email;
+      if (customerData.phone !== undefined) payload.phone = customerData.phone;
+      if (customerData.default_invoice_use) payload.default_invoice_use = customerData.default_invoice_use;
 
       if (customerData.address) {
         const address: any = {};
-
         if (customerData.address.street !== undefined) address.street = customerData.address.street;
         if (customerData.address.exterior !== undefined) address.exterior = customerData.address.exterior;
         if (customerData.address.interior !== undefined) address.interior = customerData.address.interior;
@@ -594,7 +576,7 @@ export class FacturaAPIService implements ICertificationPackService {
         }
       }
 
-      const customer = await this.facturapi!.customers.update(customerId, payload);
+      const customer = await client.customers.update(customerId, payload);
       // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
       const response: CustomerResponse = {
@@ -616,7 +598,8 @@ export class FacturaAPIService implements ICertificationPackService {
    * Implementación paginada para no depender del tamaño de la cuenta.
    */
   async listCustomers(): Promise<CustomerResponse[]> {
-    this.ensureInitialized();
+    const client = this.getClient();
+    const apiKey = this.getApiKey();
 
     const all: CustomerResponse[] = [];
     const limit = 100;
@@ -626,13 +609,13 @@ export class FacturaAPIService implements ICertificationPackService {
       // Preferir SDK si existe, si no usar HTTP directo
       let data: any;
       try {
-        const sdk = (this.facturapi as any)?.customers;
+        const sdk = (client as any)?.customers;
         if (sdk?.list) {
           data = await sdk.list({ page, limit });
         } else {
           const res = await fetch(
             `https://api.facturapi.io/v1/customers?page=${page}&limit=${limit}`,
-            { headers: { Authorization: `Bearer ${this.apiKey}` } },
+            { headers: { Authorization: `Bearer ${apiKey}` } },
           );
           data = await res.json();
           if (!res.ok) {
@@ -681,10 +664,11 @@ export class FacturaAPIService implements ICertificationPackService {
    * Elimina customer en Facturapi.
    */
   async deleteCustomer(customerId: string): Promise<void> {
-    this.ensureInitialized();
+    const client = this.getClient();
+    const apiKey = this.getApiKey();
 
     try {
-      const sdk = (this.facturapi as any)?.customers;
+      const sdk = (client as any)?.customers;
       if (sdk?.del) {
         await sdk.del(customerId);
         return;
@@ -696,7 +680,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
       const res = await fetch(`https://api.facturapi.io/v1/customers/${customerId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${this.apiKey}` },
+        headers: { Authorization: `Bearer ${apiKey}` },
       });
 
       if (res.status === 404) return;
@@ -723,7 +707,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createProduct(productData: ProductData): Promise<ProductResponse> {
     try {
-      this.ensureInitialized();
+      const apiKey = this.getApiKey();
       const payload: Record<string, unknown> = {
         description: productData.description,
         product_key: productData.product_key,
@@ -740,7 +724,7 @@ export class FacturaAPIService implements ICertificationPackService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -766,11 +750,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async findProductBySku(sku: string): Promise<ProductResponse | null> {
     try {
-      this.ensureInitialized();
+      const apiKey = this.getApiKey();
       const res = await fetch(`${this.getProductsBaseUrl()}?sku=${encodeURIComponent(sku)}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
       });
 
@@ -803,7 +787,7 @@ export class FacturaAPIService implements ICertificationPackService {
     productData: Partial<ProductData>,
   ): Promise<ProductResponse> {
     try {
-      this.ensureInitialized();
+      const apiKey = this.getApiKey();
       const payload: Record<string, unknown> = {};
       if (productData.description !== undefined) payload.description = productData.description;
       if (productData.product_key !== undefined) payload.product_key = productData.product_key;
@@ -819,7 +803,7 @@ export class FacturaAPIService implements ICertificationPackService {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -845,39 +829,24 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createReceipt(data: ReceiptData): Promise<ReceiptResponse> {
     try {
-      this.ensureInitialized();
+      const client = this.getClient();
 
       const payload: any = {
         items: data.items,
         payment_form: data.payment_form,
       };
 
-      if (data.customer !== undefined) {
-        payload.customer = data.customer;
-      }
-      if (data.date !== undefined) {
-        payload.date = data.date;
-      }
-      if (data.folio_number !== undefined) {
-        payload.folio_number = data.folio_number;
-      }
-      if (data.currency !== undefined) {
-        payload.currency = data.currency;
-      }
-      if (data.exchange !== undefined) {
-        payload.exchange = data.exchange;
-      }
-      if (data.branch !== undefined) {
-        payload.branch = data.branch;
-      }
-      if (data.external_id !== undefined) {
-        payload.external_id = data.external_id;
-      }
-      if (data.idempotency_key !== undefined) {
-        payload.idempotency_key = data.idempotency_key;
-      }
+      // ... (rest of logic) ...
+      if (data.customer !== undefined) payload.customer = data.customer;
+      if (data.date !== undefined) payload.date = data.date;
+      if (data.folio_number !== undefined) payload.folio_number = data.folio_number;
+      if (data.currency !== undefined) payload.currency = data.currency;
+      if (data.exchange !== undefined) payload.exchange = data.exchange;
+      if (data.branch !== undefined) payload.branch = data.branch;
+      if (data.external_id !== undefined) payload.external_id = data.external_id;
+      if (data.idempotency_key !== undefined) payload.idempotency_key = data.idempotency_key;
 
-      const receipt = await this.facturapi!.receipts.create(payload);
+      const receipt = await client.receipts.create(payload);
       const anyReceipt: any = receipt;
 
       const createdAt =
@@ -900,8 +869,8 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async cancelReceipt(receiptId: string): Promise<void> {
     try {
-      this.ensureInitialized();
-      await (this.facturapi!.receipts as any).cancel(receiptId);
+      const client = this.getClient();
+      await (client.receipts as any).cancel(receiptId);
     } catch (error: any) {
       console.error('FacturaAPI Cancel Receipt Error:', error);
       const message = error?.message ?? 'Error canceling receipt in FacturaAPI';
@@ -911,7 +880,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
     try {
-      this.ensureInitialized();
+      const client = this.getClient();
       const payload: Record<string, unknown> = {
         periodicity: data.periodicity,
       };
@@ -924,7 +893,7 @@ export class FacturaAPIService implements ICertificationPackService {
       if (data.folio_number !== undefined) payload.folio_number = data.folio_number;
       if (data.series) payload.series = data.series;
 
-      const invoice = await this.facturapi!.receipts.createGlobalInvoice(
+      const invoice = await client.receipts.createGlobalInvoice(
         payload as Record<string, any>,
       );
       const anyInv = invoice as any;

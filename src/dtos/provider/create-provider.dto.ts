@@ -17,8 +17,9 @@ export class CreateProviderDto {
   code: string;
 
   @IsString()
-  @Length(3, 255)
-  description: string;
+  @IsOptional()
+  @Length(0, 255)
+  description?: string;
 
   @IsString()
   @Length(1, 100)

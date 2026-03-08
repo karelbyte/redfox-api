@@ -79,5 +79,8 @@ export class ProductResponseDto {
   prices: ProductPriceResponseDto[];
 
   @Expose()
+  total_stock: number;
+
+  @Expose()
   created_at: Date;
 }

@@ -24,6 +24,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { BulkDeleteProductDto } from '../dtos/product/bulk-delete-product.dto';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -34,6 +35,7 @@ const formatFileName = (fileName: string): string => {
 
 @Controller('products')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ProductController {
   constructor(private readonly productService: ProductService) { }
 

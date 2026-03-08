@@ -1,6 +1,10 @@
-import { IsString, IsOptional, Length, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, Length, IsBoolean, IsUUID } from 'class-validator';
 
 export class CreateProviderTaxDataDto {
+    @IsUUID()
+    @IsOptional()
+    id?: string;
+
     @IsString()
     @Length(1, 100)
     tax_document: string;

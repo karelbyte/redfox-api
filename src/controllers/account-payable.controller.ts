@@ -2,13 +2,14 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } f
 import { AccountPayableService } from '../services/account-payable.service';
 import { CreateAccountPayableDto } from '../dtos/account-payable/create-account-payable.dto';
 import { UpdateAccountPayableDto } from '../dtos/account-payable/update-account-payable.dto';
+import { CreateAccountPayablePaymentDto } from '../dtos/account-payable/create-payment.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { AccountPayableStatus } from '../models/account-payable.entity';
 
 @Controller('accounts-payable')
 @UseGuards(AuthGuard)
 export class AccountPayableController {
-  constructor(private readonly accountPayableService: AccountPayableService) {}
+  constructor(private readonly accountPayableService: AccountPayableService) { }
 
   @Post()
   create(@Body() createAccountPayableDto: CreateAccountPayableDto) {
@@ -52,6 +53,18 @@ export class AccountPayableController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAccountPayableDto: UpdateAccountPayableDto) {
     return this.accountPayableService.update(+id, updateAccountPayableDto);
+  }
+
+  @Post(':id/payments')
+  addPayment(
+    @Param('id') id: string,
+    @Body() createPaymentDto: CreateAccountPayablePaymentDto,
+    @Query('userId') userId: string, // Temporary until Auth system is unified
+  ) {
+    return this.accountPayableService.addPayment({
+      ...createPaymentDto,
+      accountPayableId: +id,
+    }, userId);
   }
 
   @Delete(':id')

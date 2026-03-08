@@ -15,6 +15,7 @@ export class ProviderMapper {
       description: provider.description,
       name: provider.name,
       status: provider.status,
+      balance: Number(provider.balance || 0),
       created_at: provider.created_at,
       phone: provider.phone,
       email: provider.email,

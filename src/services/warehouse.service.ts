@@ -26,6 +26,7 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { Like } from 'typeorm';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class WarehouseService {
@@ -42,14 +43,22 @@ export class WarehouseService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createWarehouseDto: CreateWarehouseDto,
     userId?: string,
   ): Promise<WarehouseResponseDto> {
     try {
-      const warehouse = this.warehouseRepository.create(createWarehouseDto);
+      const warehouse = this.warehouseRepository.create({
+        ...createWarehouseDto,
+        organization_id: this.organizationId,
+      });
       const savedWarehouse = await this.warehouseRepository.save(warehouse);
 
       // Recargar con relaciones para la respuesta
@@ -95,38 +104,37 @@ export class WarehouseService {
       withDeleted: false,
     };
 
+    // A base filter: always scope by organization
+    const orgFilter = { organization_id: this.organizationId };
+
     // Construir condiciones de where
     let whereConditions;
 
     if (isClosed !== undefined && term) {
-      // Si hay filtro de estado y término de búsqueda
       whereConditions = {
         ...baseConditions,
         where: [
-          { code: Like(`%${term}%`), isOpen: !isClosed },
-          { name: Like(`%${term}%`), isOpen: !isClosed },
-          { address: Like(`%${term}%`), isOpen: !isClosed },
+          { code: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
+          { name: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
+          { address: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
         ],
       };
     } else if (isClosed !== undefined) {
-      // Solo filtro de estado
       whereConditions = {
         ...baseConditions,
-        where: { isOpen: !isClosed },
+        where: { isOpen: !isClosed, ...orgFilter },
       };
     } else if (term) {
-      // Solo término de búsqueda
       whereConditions = {
         ...baseConditions,
         where: [
-          { code: Like(`%${term}%`) },
-          { name: Like(`%${term}%`) },
-          { address: Like(`%${term}%`) },
+          { code: Like(`%${term}%`), ...orgFilter },
+          { name: Like(`%${term}%`), ...orgFilter },
+          { address: Like(`%${term}%`), ...orgFilter },
         ],
       };
     } else {
-      // Sin filtros
-      whereConditions = baseConditions;
+      whereConditions = { ...baseConditions, where: orgFilter };
     }
 
     // Si no se proporciona paginación, devolver toda la data
@@ -181,7 +189,7 @@ export class WarehouseService {
 
   async findClosed(): Promise<WarehouseSimpleResponseDto[]> {
     const warehouses = await this.warehouseRepository.find({
-      where: { isOpen: false },
+      where: { isOpen: false, organization_id: this.organizationId },
       select: ['id', 'code', 'name'],
       order: {
         created_at: 'DESC',
@@ -197,7 +205,7 @@ export class WarehouseService {
 
   async findOne(id: string, userId?: string): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['currency'],
     });
 
@@ -219,7 +227,7 @@ export class WarehouseService {
     userId?: string,
   ): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['currency'],
     });
 
@@ -273,7 +281,7 @@ export class WarehouseService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!warehouse) {
@@ -294,7 +302,7 @@ export class WarehouseService {
     userId?: string,
   ): Promise<WarehouseResponseDto> {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['currency'],
     });
     if (!warehouse) {
@@ -331,7 +339,7 @@ export class WarehouseService {
   ): Promise<CloseWarehouseResponseDto> {
     // Verificar que el warehouse existe y está abierto
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: warehouseId },
+      where: { id: warehouseId, organization_id: this.organizationId },
       relations: ['currency'],
     });
 
@@ -381,7 +389,7 @@ export class WarehouseService {
         // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
-            (Number(existingInventory.quantity) - Number(opening.quantity)) +
+          (Number(existingInventory.quantity) - Number(opening.quantity)) +
           Number(opening.price) * Number(opening.quantity);
         existingInventory.price =
           totalValue / Number(existingInventory.quantity);

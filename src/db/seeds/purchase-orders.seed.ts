@@ -3,6 +3,7 @@ import { PurchaseOrderDetail } from 'src/models/purchase-order-detail.entity';
 import { Provider } from 'src/models/provider.entity';
 import { Product } from 'src/models/product.entity';
 import { Warehouse } from 'src/models/warehouse.entity';
+import { Organization } from 'src/models/organization.entity';
 import { DataSource } from 'typeorm';
 
 export class PurchaseOrdersSeed {
@@ -13,6 +14,13 @@ export class PurchaseOrdersSeed {
     const providerRepository = dataSource.getRepository(Provider);
     const productRepository = dataSource.getRepository(Product);
     const warehouseRepository = dataSource.getRepository(Warehouse);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     // Obtener proveedores, productos y almacenes existentes
     const providers = await providerRepository.find();
@@ -41,6 +49,7 @@ export class PurchaseOrdersSeed {
         status: 'APPROVED',
         notes: 'Orden de compra para equipos de cómputo',
         expected_delivery_date: new Date('2024-01-25'),
+        organization_id: organization.id,
       },
       {
         code: 'PO-2024-002',

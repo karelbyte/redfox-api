@@ -5,6 +5,7 @@ import {
   Put,
   Body,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EmailService } from '../services/email.service';
 import { CreateEmailConfigDto } from '../dtos/email-config/create-email-config.dto';
@@ -12,11 +13,13 @@ import { UpdateEmailConfigDto } from '../dtos/email-config/update-email-config.d
 import { EmailConfigResponseDto } from '../dtos/email-config/email-config-response.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('email-config')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class EmailConfigController {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService) { }
 
   @Get()
   getConfig(@UserId() userId: string): Promise<EmailConfigResponseDto> {

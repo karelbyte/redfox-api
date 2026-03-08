@@ -7,15 +7,17 @@ import { MeasurementUnitController } from '../controllers/measurement-unit.contr
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MeasurementUnit, Product]),
     LanguageModule,
     CertificationPackModule,
+    OrganizationModule,
   ],
   controllers: [MeasurementUnitController],
   providers: [MeasurementUnitService, MeasurementUnitMapper],
   exports: [MeasurementUnitService, MeasurementUnitMapper],
 })
-export class MeasurementUnitModule {}
+export class MeasurementUnitModule { }

@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CompanySettings } from '../models/company-settings.entity';
 import { UpdateCompanySettingsDto } from '../dtos/company-settings/update-company-settings.dto';
 import { CompanySettingsResponseDto } from '../dtos/company-settings/company-settings-response.dto';
 import { CompanySettingsMapper } from './mappers/company-settings.mapper';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CompanySettingsService {
@@ -12,16 +13,26 @@ export class CompanySettingsService {
     @InjectRepository(CompanySettings)
     private readonly companySettingsRepository: Repository<CompanySettings>,
     private readonly companySettingsMapper: CompanySettingsMapper,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required for Company Settings');
+    }
+    return orgId;
+  }
 
   async get(): Promise<CompanySettingsResponseDto> {
     let settings = await this.companySettingsRepository.findOne({
-      where: {},
-      order: { createdAt: 'ASC' },
+      where: { organization_id: this.organizationId },
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({});
+      settings = this.companySettingsRepository.create({
+        organization_id: this.organizationId,
+      });
       settings = await this.companySettingsRepository.save(settings);
     }
 
@@ -32,12 +43,13 @@ export class CompanySettingsService {
     dto: UpdateCompanySettingsDto,
   ): Promise<CompanySettingsResponseDto> {
     let settings = await this.companySettingsRepository.findOne({
-      where: {},
-      order: { createdAt: 'ASC' },
+      where: { organization_id: this.organizationId },
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({});
+      settings = this.companySettingsRepository.create({
+        organization_id: this.organizationId,
+      });
       settings = await this.companySettingsRepository.save(settings);
     }
 
@@ -51,8 +63,7 @@ export class CompanySettingsService {
 
   async updateLogoUrl(logoUrl: string): Promise<CompanySettingsResponseDto> {
     let settings = await this.companySettingsRepository.findOne({
-      where: {},
-      order: { createdAt: 'ASC' },
+      where: { organization_id: this.organizationId },
     });
 
     if (!settings) {

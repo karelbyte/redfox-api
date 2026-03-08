@@ -20,6 +20,7 @@ import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
 import { SurrogateService } from './surrogate.service';
+import { TenantContext } from './tenant-context.service';
 
 interface SearchCondition {
   name?: any;
@@ -30,11 +31,13 @@ interface SearchCondition {
   barcode?: any;
   is_active?: boolean;
   type?: ProductType;
+  organization_id?: string;
 }
 
 interface FilterCondition {
   is_active?: boolean;
   type?: ProductType;
+  organization_id?: string;
 }
 
 interface WhereConditions {
@@ -55,7 +58,12 @@ export class ProductService {
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createProductDto: CreateProductDto,
@@ -64,10 +72,10 @@ export class ProductService {
     try {
       const [existingSlug, existingSku] = await Promise.all([
         this.productRepository.findOne({
-          where: { slug: createProductDto.slug },
+          where: { slug: createProductDto.slug, organization_id: this.organizationId },
         }),
         this.productRepository.findOne({
-          where: { sku: createProductDto.sku },
+          where: { sku: createProductDto.sku, organization_id: this.organizationId },
         }),
       ]);
 
@@ -129,13 +137,16 @@ export class ProductService {
         });
       }
 
-      const savedProduct = await this.productRepository.save(product);
+      const savedProduct = await this.productRepository.save({
+        ...product,
+        organization_id: this.organizationId,
+      });
 
       // Incrementar el contador si el código coincide con el sugerido
       await this.surrogateService.useCodeIfMatches('product', createProductDto.code);
 
       const productWithRelations = await this.productRepository.findOne({
-        where: { id: savedProduct.id },
+        where: { id: savedProduct.id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
       return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
@@ -204,6 +215,8 @@ export class ProductService {
       filterConditions.type = type as ProductType;
     }
 
+    filterConditions.organization_id = this.organizationId;
+
     // Combinar condiciones
     const whereConditions: WhereConditions = { ...baseConditions };
 
@@ -271,7 +284,7 @@ export class ProductService {
 
   async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
     });
 
@@ -289,7 +302,7 @@ export class ProductService {
 
   async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
     });
 
@@ -354,7 +367,7 @@ export class ProductService {
 
         // Eliminar precios que ya no están en la lista
         if (product.prices && product.prices.length > 0) {
-          updatedProduct.prices = product.prices.filter(existingPrice => 
+          updatedProduct.prices = product.prices.filter(existingPrice =>
             incomingPriceIds.includes(existingPrice.id)
           );
         } else {
@@ -376,6 +389,7 @@ export class ProductService {
             newPrice.name = priceDto.name;
             newPrice.price = priceDto.price;
             newPrice.product = updatedProduct;
+            newPrice.organization_id = this.organizationId;
             updatedProduct.prices.push(newPrice);
           }
         }
@@ -383,7 +397,7 @@ export class ProductService {
 
       const savedProduct = await this.productRepository.save(updatedProduct);
       const productWithRelations = await this.productRepository.findOne({
-        where: { id: savedProduct.id },
+        where: { id: savedProduct.id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
       return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
@@ -419,13 +433,13 @@ export class ProductService {
 
     // Verificar si el producto está siendo usado en inventory
     const inventoryCount = await this.inventoryRepository.count({
-      where: { product_id: id },
+      where: { product_id: id, organization_id: this.organizationId },
       withDeleted: false,
     });
 
     // Verificar si el producto está siendo usado en warehouse openings
     const warehouseOpeningCount = await this.warehouseOpeningRepository.count({
-      where: { productId: id },
+      where: { productId: id, organization_id: this.organizationId },
       withDeleted: false,
     });
 
@@ -462,14 +476,14 @@ export class ProductService {
     const product = await this.findOneEntity(id, userId);
 
     const inventory = await this.inventoryRepository.find({
-      where: { product: { id } },
+      where: { product: { id }, organization_id: this.organizationId },
       select: ['id', 'quantity', 'price'],
       relations: ['warehouse'],
       withDeleted: false,
     });
 
     const warehouseOpenings = await this.warehouseOpeningRepository.find({
-      where: { product: { id } },
+      where: { product: { id }, organization_id: this.organizationId },
       select: ['id', 'quantity', 'price'],
       relations: ['warehouse'],
       withDeleted: false,
@@ -496,6 +510,17 @@ export class ProductService {
           : null,
       })),
     };
+  }
+
+  async updateStock(id: string, quantity: number, manager?: any): Promise<void> {
+    const repo = manager ? manager.getRepository(Product) : this.productRepository;
+    const product = await repo.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
+    if (product) {
+      product.total_stock = Number(product.total_stock || 0) + Number(quantity);
+      await repo.save(product, { reload: false });
+    }
   }
 
   async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {

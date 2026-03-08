@@ -143,6 +143,13 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             default: 0,
           },
           {
+            name: 'total_stock',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            default: 0,
+          },
+          {
             name: 'images',
             type: isPostgres ? 'text' : 'text',
             isNullable: true,

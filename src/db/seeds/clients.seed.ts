@@ -1,9 +1,17 @@
 import { DataSource } from 'typeorm';
 import { Client } from 'src/models/client.entity';
+import { Organization } from 'src/models/organization.entity';
 
 export class ClientsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
     const clientRepository = dataSource.getRepository(Client);
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+
+    if (!organization) {
+      throw new Error('Landlord organization not found for seeding');
+    }
 
     const clients = [
       {
@@ -15,6 +23,7 @@ export class ClientsSeed {
         phone: '5551234567',
         email: 'juan.perez@email.com',
         status: true,
+        organization_id: organization.id,
       },
       {
         code: 'CLI002',
@@ -25,6 +34,7 @@ export class ClientsSeed {
         phone: '5559876543',
         email: 'maria.garcia@email.com',
         status: true,
+        organization_id: organization.id,
       },
       {
         code: 'CLI003',
@@ -35,6 +45,7 @@ export class ClientsSeed {
         phone: '5551112233',
         email: 'contacto@empresaabc.com',
         status: true,
+        organization_id: organization.id,
       },
     ];
 

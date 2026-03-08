@@ -1,20 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountPayable, AccountPayableStatus } from '../models/account-payable.entity';
 import { CreateAccountPayableDto } from '../dtos/account-payable/create-account-payable.dto';
 import { UpdateAccountPayableDto } from '../dtos/account-payable/update-account-payable.dto';
+import { CreateAccountPayablePaymentDto } from '../dtos/account-payable/create-payment.dto';
+import { AccountPayablePayment } from '../models/account-payable-payment.entity';
+import { ProviderService } from './provider.service';
 
 @Injectable()
 export class AccountPayableService {
   constructor(
     @InjectRepository(AccountPayable)
     private accountPayableRepository: Repository<AccountPayable>,
-  ) {}
+    @InjectRepository(AccountPayablePayment)
+    private paymentRepository: Repository<AccountPayablePayment>,
+    @Inject(forwardRef(() => ProviderService))
+    private readonly providerService: ProviderService,
+  ) { }
 
   async create(createAccountPayableDto: CreateAccountPayableDto): Promise<AccountPayable> {
     const accountPayable = this.accountPayableRepository.create(createAccountPayableDto);
-    return await this.accountPayableRepository.save(accountPayable);
+    const savedAccount = await this.accountPayableRepository.save(accountPayable);
+
+    // Update denormalized provider balance (increase debt to provider)
+    await this.providerService.updateBalance(createAccountPayableDto.providerId, createAccountPayableDto.totalAmount);
+
+    return savedAccount;
   }
 
   async findAll(
@@ -145,5 +157,47 @@ export class AccountPayableService {
     );
 
     return summary;
+  }
+
+  async addPayment(createPaymentDto: CreateAccountPayablePaymentDto, userId: string): Promise<AccountPayablePayment> {
+    const account = await this.findOne(createPaymentDto.accountPayableId);
+
+    if (createPaymentDto.amount > account.remainingAmount) {
+      throw new BadRequestException('Payment amount cannot exceed remaining amount');
+    }
+
+    const insertResult = await this.paymentRepository.insert({
+      amount: createPaymentDto.amount,
+      paymentDate: createPaymentDto.paymentDate,
+      paymentMethod: createPaymentDto.paymentMethod,
+      reference: createPaymentDto.reference,
+      notes: createPaymentDto.notes,
+      accountPayableId: createPaymentDto.accountPayableId,
+      createdBy: userId,
+    });
+
+    const savedPayment = await this.paymentRepository.findOne({
+      where: { id: insertResult.identifiers[0].id },
+    });
+
+    if (!savedPayment) {
+      throw new NotFoundException('Payment could not be created');
+    }
+
+    account.paidAmount = Number(account.paidAmount) + Number(createPaymentDto.amount);
+    account.remainingAmount = Number(account.totalAmount) - Number(account.paidAmount);
+
+    if (account.remainingAmount === 0) {
+      account.status = AccountPayableStatus.PAID;
+    } else if (account.paidAmount > 0) {
+      account.status = AccountPayableStatus.PARTIAL;
+    }
+
+    await this.accountPayableRepository.save(account);
+
+    // Update denormalized provider balance (decrease debt to provider)
+    await this.providerService.updateBalance(account.providerId, -Number(createPaymentDto.amount));
+
+    return savedPayment;
   }
 }

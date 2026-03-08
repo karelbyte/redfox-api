@@ -14,7 +14,7 @@ export class UserLanguagesSeed {
     try {
       // Search the user admin
       const adminUser = await userRepository.findOne({
-        where: { email: 'admin@redfox.com' },
+        where: { email: 'admin@nitro.com' },
       });
 
       if (adminUser) {

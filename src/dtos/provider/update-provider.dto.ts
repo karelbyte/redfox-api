@@ -20,7 +20,7 @@ export class UpdateProviderDto {
   code?: string;
 
   @IsString()
-  @Length(3, 255)
+  @Length(0, 255)
   @IsOptional()
   description?: string;
 

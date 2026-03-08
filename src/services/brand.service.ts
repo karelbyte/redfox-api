@@ -14,6 +14,7 @@ import { BrandResponseDto } from '../dtos/brand/brand-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class BrandService {
@@ -23,7 +24,12 @@ export class BrandService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapToResponseDto(brand: Brand): BrandResponseDto {
     const { id, code, description, img, isActive, created_at } = brand;
@@ -42,7 +48,10 @@ export class BrandService {
     userId?: string,
   ): Promise<BrandResponseDto> {
     try {
-      const brand = this.brandRepository.create(createBrandDto);
+      const brand = this.brandRepository.create({
+        ...createBrandDto,
+        organization_id: this.organizationId,
+      });
       const savedBrand = await this.brandRepository.save(brand);
       return this.mapToResponseDto(savedBrand);
     } catch (error) {
@@ -68,6 +77,7 @@ export class BrandService {
     // If no pagination parameters, bring all records
     if (!paginationDto) {
       const brands = await this.brandRepository.find({
+        where: { organization_id: this.organizationId },
         withDeleted: false,
       });
 
@@ -89,6 +99,7 @@ export class BrandService {
     const skip = (page - 1) * limit;
 
     const [brands, total] = await this.brandRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       withDeleted: false,
       skip,
       take: limit,
@@ -109,7 +120,7 @@ export class BrandService {
 
   async findOne(id: string, userId?: string): Promise<BrandResponseDto> {
     const brand = await this.brandRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
 
@@ -132,7 +143,7 @@ export class BrandService {
   ): Promise<BrandResponseDto> {
     try {
       const brand = await this.brandRepository.findOne({
-        where: { id },
+        where: { id, organization_id: this.organizationId },
         withDeleted: false,
       });
 
@@ -169,7 +180,7 @@ export class BrandService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const brand = await this.brandRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!brand) {
@@ -183,7 +194,7 @@ export class BrandService {
 
     // Check if the brand is being used in products
     const productsUsingBrand = await this.productRepository.count({
-      where: { brand: { id } },
+      where: { brand: { id }, organization_id: this.organizationId },
       withDeleted: false,
     });
 
@@ -211,7 +222,7 @@ export class BrandService {
     products: any[];
   }> {
     const brand = await this.brandRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!brand) {
