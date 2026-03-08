@@ -7,19 +7,30 @@ import {
   DeleteDateColumn,
   OneToMany,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
-import { Product } from './product.entity';
 import { Reception } from './reception.entity';
 import { ProviderAddress } from './provider-address.entity';
 import { ProviderTaxData } from './provider-tax-data.entity';
 import { ProviderCredit } from './provider-credit.entity';
+import { Organization } from './organization.entity';
 
 @Entity('providers')
+@Index(['organization_id', 'code'], { unique: true })
 export class Provider {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ length: 255 })
@@ -28,13 +39,11 @@ export class Provider {
   @Column({ length: 100, nullable: true })
   name: string;
 
-
   @Column({ length: 20, nullable: true })
   phone: string;
 
   @Column({ length: 100, nullable: true })
   email: string;
-
 
   @Column({ default: true })
   status: boolean;

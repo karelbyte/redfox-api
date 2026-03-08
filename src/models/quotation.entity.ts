@@ -8,10 +8,12 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Client } from './client.entity';
 import { Warehouse } from './warehouse.entity';
 import { QuotationDetail } from './quotation-detail.entity';
+import { Organization } from './organization.entity';
 
 export enum QuotationStatus {
   DRAFT = 'draft',
@@ -23,11 +25,19 @@ export enum QuotationStatus {
 }
 
 @Entity('quotations')
+@Index(['organization_id', 'code'], { unique: true })
 export class Quotation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ type: 'date' })

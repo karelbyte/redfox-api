@@ -7,6 +7,7 @@ import { UserModule } from './user.module';
 import { EmailConfigModule } from './email-config.module';
 import { RoleModule } from './role.module';
 import { QueueModule } from './queue.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { QueueModule } from './queue.module';
     EmailConfigModule,
     RoleModule,
     QueueModule.forRootAsync(),
+    OrganizationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

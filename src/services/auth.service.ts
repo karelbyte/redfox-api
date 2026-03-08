@@ -10,6 +10,7 @@ import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import { RoleService } from './role.service';
 import { EmailQueue } from '../queues/email.queue';
+import { OrganizationService } from './organization.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,7 @@ export class AuthService {
     private configService: ConfigService,
     private roleService: RoleService,
     private emailQueue: EmailQueue,
+    private organizationService: OrganizationService,
   ) { }
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -47,6 +49,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       roles: user.roles.map((role) => role.code),
+      organizationId: user.organization_id,
     };
 
     const expiresIn = '72h';
@@ -60,6 +63,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        organization_id: user.organization_id,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -97,7 +101,15 @@ export class AuthService {
       role_ids: roleIds,
     });
 
-    await this.userService.update(newUser.id, { status: false } as any); // Casting as any if status not in DTO
+    const organization = await this.organizationService.create({
+      name: registerDto.companyName,
+      slug: registerDto.companyName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+    });
+
+    await this.userService.update(newUser.id, {
+      status: false,
+      organization_id: organization.id,
+    } as any);
 
 
     const payload = { sub: newUser.id };

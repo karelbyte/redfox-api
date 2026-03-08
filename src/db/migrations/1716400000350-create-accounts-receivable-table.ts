@@ -16,10 +16,16 @@ export class CreateAccountsReceivableTable1716400000350 implements MigrationInte
             generationStrategy: 'increment',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'referenceNumber',
             type: 'varchar',
             length: '50',
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'totalAmount',
@@ -89,6 +95,16 @@ export class CreateAccountsReceivableTable1716400000350 implements MigrationInte
     await queryRunner.createForeignKey(
       'accounts_receivable',
       new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'accounts_receivable',
+      new TableForeignKey({
         columnNames: ['clientId'],
         referencedColumnNames: ['id'],
         referencedTableName: 'clients',
@@ -104,6 +120,15 @@ export class CreateAccountsReceivableTable1716400000350 implements MigrationInte
         referencedTableName: 'invoices',
         onDelete: 'SET NULL',
       })
+    );
+
+    await queryRunner.createIndex(
+      'accounts_receivable',
+      new TableIndex({
+        name: 'IDX_ACCOUNTS_RECEIVABLE_ORGANIZATION_REF',
+        columnNames: ['organization_id', 'referenceNumber'],
+        isUnique: true,
+      }),
     );
 
     await queryRunner.createIndex(

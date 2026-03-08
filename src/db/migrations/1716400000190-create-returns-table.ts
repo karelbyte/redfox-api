@@ -6,8 +6,7 @@ import {
 } from 'typeorm';
 
 export class CreateReturnsTable1716400000190
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateReturnsTable1716400000190';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -26,11 +25,17 @@ export class CreateReturnsTable1716400000190
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'source_warehouse_id',

@@ -27,11 +27,13 @@ export class UserService {
   }
 
   private mapToResponseDto(user: User): UserResponseDto {
-    const { id, name, email, roles, status, created_at } = user;
+    const { id, name, email, roles, status, created_at, organization_id, organization } = user;
     return {
       id,
       name,
       email,
+      organization_id,
+      organization_slug: organization?.slug,
       roles:
         roles?.map((role) => ({
           id: role.id,
@@ -49,11 +51,13 @@ export class UserService {
   private mapToResponseWithPermissionDescriptionsDto(
     user: User,
   ): UserWithPermissionDescriptionsDto {
-    const { id, name, email, roles, status, created_at } = user;
+    const { id, name, email, roles, status, created_at, organization_id, organization } = user;
     return {
       id,
       name,
       email,
+      organization_id,
+      organization_slug: organization?.slug,
       roles:
         roles?.map((role) => ({
           id: role.id,
@@ -101,6 +105,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
       skip,
@@ -127,6 +132,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });
@@ -153,6 +159,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });
@@ -180,6 +187,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });
@@ -235,6 +243,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });
@@ -263,6 +272,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });
@@ -281,6 +291,7 @@ export class UserService {
         'roles',
         'roles.rolePermissions',
         'roles.rolePermissions.permission',
+        'organization',
       ],
       withDeleted: false,
     });

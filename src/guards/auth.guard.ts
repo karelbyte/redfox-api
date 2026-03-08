@@ -15,6 +15,7 @@ interface JwtPayload {
   id: string;
   email: string;
   role: string;
+  organizationId: string;
   iat: number;
   exp: number;
 }
@@ -31,7 +32,7 @@ export class CustomUnauthorizedException extends HttpException {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(private jwtService: JwtService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();

@@ -62,7 +62,7 @@ async function bootstrap() {
     });
 
     await app.listen(port);
-    console.log(`✅ Redfox API está corriendo en :${port}`);
+    console.log(`✅ Nitro API está corriendo en :${port}`);
     console.log(`🔍 Health check disponible en :${port}/api/health`);
   } catch (error) {
     console.error('❌ Error al iniciar la aplicación:', error);

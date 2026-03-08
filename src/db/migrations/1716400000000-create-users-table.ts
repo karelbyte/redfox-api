@@ -22,6 +22,12 @@ export class CreateUsersTable1716400000000 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'name',
             type: 'varchar',
             length: '255',
@@ -60,6 +66,14 @@ export class CreateUsersTable1716400000000 implements MigrationInterface {
             name: 'deleted_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'SET NULL',
           },
         ],
       }),

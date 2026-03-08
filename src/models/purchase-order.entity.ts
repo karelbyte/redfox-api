@@ -8,17 +8,27 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Provider } from './provider.entity';
 import { Warehouse } from './warehouse.entity';
 import { PurchaseOrderDetail } from './purchase-order-detail.entity';
+import { Organization } from './organization.entity';
 
 @Entity('purchase_orders')
+@Index(['organization_id', 'code'], { unique: true })
 export class PurchaseOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ type: 'date' })
@@ -38,8 +48,8 @@ export class PurchaseOrder {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'],
     default: 'PENDING'
   })
@@ -62,4 +72,4 @@ export class PurchaseOrder {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

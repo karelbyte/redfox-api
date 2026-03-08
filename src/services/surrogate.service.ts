@@ -5,17 +5,30 @@ import { Surrogate } from '../models/surrogate.entity';
 import { SurrogateResponseDto } from '../dtos/surrogate/surrogate-response.dto';
 import { UpdateSurrogateDto } from '../dtos/surrogate/update-surrogate.dto';
 import { NextCodeResponseDto } from '../dtos/surrogate/next-code-response.dto';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class SurrogateService {
   constructor(
     @InjectRepository(Surrogate)
     private surrogateRepository: Repository<Surrogate>,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required for Surrogates');
+    }
+    return orgId;
+  }
 
   async findAll(): Promise<SurrogateResponseDto[]> {
     const surrogates = await this.surrogateRepository.find({
-      where: { is_active: true },
+      where: {
+        is_active: true,
+        organization_id: this.organizationId,
+      },
       order: { code: 'ASC' },
     });
 
@@ -26,15 +39,56 @@ export class SurrogateService {
   }
 
   async findByCode(code: string): Promise<Surrogate> {
-    const surrogate = await this.surrogateRepository.findOne({
-      where: { code, is_active: true },
+    let surrogate = await this.surrogateRepository.findOne({
+      where: {
+        code,
+        is_active: true,
+        organization_id: this.organizationId,
+      },
     });
 
     if (!surrogate) {
-      throw new NotFoundException(`Surrogate with code '${code}' not found`);
+      // Lazy Initialization: Si no existe, crearlo con valores por defecto
+      surrogate = await this.lazyInitializeSurrogate(code);
     }
 
     return surrogate;
+  }
+
+  // Define defaults for common surrogate codes
+  private async lazyInitializeSurrogate(code: string): Promise<Surrogate> {
+    const defaults: Record<string, Partial<Surrogate>> = {
+      'client': { prefix: 'CLI', padding: 4, include_year: false, description: 'Códigos para clientes' },
+      'product': { prefix: 'PROD', padding: 4, include_year: false, description: 'Códigos para productos' },
+      'invoice': { prefix: 'INV', padding: 6, include_year: false, description: 'Códigos para facturas' },
+      'purchase_order': { prefix: 'PO', padding: 4, include_year: true, description: 'Códigos para órdenes de compra' },
+      'sale': { prefix: 'VTA', padding: 6, include_year: false, description: 'Códigos para ventas' },
+      'provider': { prefix: 'PROV', padding: 4, include_year: false, description: 'Códigos para proveedores' },
+      'warehouse': { prefix: 'ALM', padding: 3, include_year: false, description: 'Códigos para almacenes' },
+      'brand': { prefix: 'MRC', padding: 3, include_year: false, description: 'Códigos para marcas' },
+      'category': { prefix: 'CAT', padding: 3, include_year: false, description: 'Códigos para categorías' },
+      'reception': { prefix: 'REC', padding: 4, include_year: true, description: 'Códigos para recepciones' },
+      'withdrawal': { prefix: 'RET', padding: 4, include_year: false, description: 'Códigos para retiros' },
+      'return': { prefix: 'DEV', padding: 4, include_year: false, description: 'Códigos para devoluciones' }
+    };
+
+    const config = defaults[code];
+
+    if (!config) {
+      throw new NotFoundException(`Valid default configuration not found for surrogate code '${code}'`);
+    }
+
+    const newSurrogate = this.surrogateRepository.create({
+      code,
+      organization_id: this.organizationId,
+      ...config,
+      next_number: 1,
+      is_active: true,
+      suffix: '',
+      year_separator: '-',
+    });
+
+    return await this.surrogateRepository.save(newSurrogate);
   }
 
   async getNextCode(code: string): Promise<NextCodeResponseDto> {
@@ -104,8 +158,8 @@ export class SurrogateService {
 
   // Método para verificar si un código ya existe en uso
   async isCodeInUse(code: string, generatedCode: string): Promise<boolean> {
-    // Este método podría verificar en las tablas correspondientes
-    // Por ahora retorna false, pero se puede extender según necesidades
+    // Aquí idealmente verificaríamos en la tabla destino (ej. facturas, clientes)
+    // filtrando por organization_id y el código generado
     return false;
   }
 

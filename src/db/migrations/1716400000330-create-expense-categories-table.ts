@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateExpenseCategoriesTable1716400000330 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const isPostgres = queryRunner.connection.options.type === 'postgres';
     await queryRunner.createTable(
       new Table({
         name: 'expense_categories',
@@ -12,6 +13,12 @@ export class CreateExpenseCategoriesTable1716400000330 implements MigrationInter
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
+          },
+          {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
           },
           {
             name: 'name',
@@ -44,6 +51,21 @@ export class CreateExpenseCategoriesTable1716400000330 implements MigrationInter
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
             onUpdate: 'CURRENT_TIMESTAMP',
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_EXPENSE_CATEGORY_ORGANIZATION_NAME',
+            columnNames: ['organization_id', 'name'],
+            isUnique: true,
           },
         ],
       }),

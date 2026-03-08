@@ -8,17 +8,27 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
 import { Provider } from './provider.entity';
 import { ReturnDetail } from './return-detail.entity';
+import { Organization } from './organization.entity';
 
 @Entity('returns')
+@Index(['organization_id', 'code'], { unique: true })
 export class Return {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ name: 'source_warehouse_id' })
@@ -55,4 +65,4 @@ export class Return {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

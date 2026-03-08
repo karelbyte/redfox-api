@@ -16,10 +16,16 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
             generationStrategy: 'increment',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'referenceNumber',
             type: 'varchar',
             length: '50',
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'totalAmount',
@@ -89,6 +95,16 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
     await queryRunner.createForeignKey(
       'accounts_payable',
       new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'accounts_payable',
+      new TableForeignKey({
         columnNames: ['providerId'],
         referencedColumnNames: ['id'],
         referencedTableName: 'providers',
@@ -104,6 +120,15 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
         referencedTableName: 'purchase_orders',
         onDelete: 'SET NULL',
       })
+    );
+
+    await queryRunner.createIndex(
+      'accounts_payable',
+      new TableIndex({
+        name: 'IDX_ACCOUNTS_PAYABLE_ORGANIZATION_REF',
+        columnNames: ['organization_id', 'referenceNumber'],
+        isUnique: true,
+      }),
     );
 
     await queryRunner.createIndex(

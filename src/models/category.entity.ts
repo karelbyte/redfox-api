@@ -8,17 +8,27 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
+import { Organization } from './organization.entity';
 
 @Entity('categories')
+@Index(['organization_id', 'slug'], { unique: true })
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
   @Column({ length: 100 })
   name: string;
 
-  @Column({ length: 150, unique: true })
+  @Column({ length: 150 })
   slug: string;
 
   @Column({ type: 'text', nullable: true })

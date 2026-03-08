@@ -10,11 +10,20 @@ import {
 } from 'typeorm';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
+import { Organization } from './organization.entity';
+import { ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true })
+  organization_id: string;
+
+  @ManyToOne(() => Organization, (organization) => organization.users)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ length: 100 })
   name: string;

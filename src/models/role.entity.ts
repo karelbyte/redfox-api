@@ -7,16 +7,28 @@ import {
   DeleteDateColumn,
   ManyToMany,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { RolePermission } from './role-permission.entity';
+import { Organization } from './organization.entity';
 
 @Entity('roles')
+@Index(['organization_id', 'code'], { unique: true })
 export class Role {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ length: 100 })

@@ -7,17 +7,29 @@ import {
   DeleteDateColumn,
   OneToMany,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { ClientAddress } from './client-address.entity';
 import { ClientTaxData } from './client-tax-data.entity';
 import { ClientCredit } from './client-credit.entity';
+import { Organization } from './organization.entity';
 
 @Entity('clients')
+@Index(['organization_id', 'code'], { unique: true })
 export class Client {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ length: 100 })

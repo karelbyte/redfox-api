@@ -8,11 +8,13 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Client } from './client.entity';
 import { WithdrawalDetail } from './withdrawal-detail.entity';
 import { CashTransaction } from './cash-transaction.entity';
 import { Invoice } from './invoice.entity';
+import { Organization } from './organization.entity';
 
 export enum WithdrawalType {
   POS = 'POS',
@@ -32,11 +34,19 @@ export enum PaymentMethod {
 }
 
 @Entity('withdrawals')
+@Index(['organization_id', 'code'], { unique: true })
 export class Withdrawal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   code: string;
 
   @Column({ length: 200 })

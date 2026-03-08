@@ -1,8 +1,7 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateCashRegistersTable1716400000105
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateCashRegistersTable1716400000105';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -21,11 +20,17 @@ export class CreateCashRegistersTable1716400000105
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'name',
@@ -100,7 +105,20 @@ export class CreateCashRegistersTable1716400000105
             isNullable: true,
           },
         ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
         indices: [
+          {
+            name: 'IDX_CASH_REGISTER_ORGANIZATION_CODE',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
+          },
           {
             name: 'idx_cash_registers_status',
             columnNames: ['status'],

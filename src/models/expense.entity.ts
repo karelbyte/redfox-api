@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { ExpenseCategory } from './expense-category.entity';
 import { User } from './user.entity';
 import { Provider } from './provider.entity';
+import { Organization } from './organization.entity';
 
 export enum ExpenseStatus {
   PENDING = 'pending',
@@ -22,6 +23,13 @@ export enum ExpenseRecurrence {
 export class Expense {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ length: 100 })
   description: string;

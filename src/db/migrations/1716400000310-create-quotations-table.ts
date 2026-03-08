@@ -15,10 +15,15 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
             default: 'gen_random_uuid()',
           },
           {
+            name: 'organization_id',
+            type: 'uuid',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
-            isUnique: true,
+            isUnique: false,
             isNullable: false,
           },
           {
@@ -181,6 +186,16 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
     await queryRunner.createForeignKey(
       'quotations',
       new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'quotations',
+      new TableForeignKey({
         columnNames: ['client_id'],
         referencedColumnNames: ['id'],
         referencedTableName: 'clients',
@@ -227,8 +242,9 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
     await queryRunner.createIndex(
       'quotations',
       new TableIndex({
-        name: 'IDX_QUOTATIONS_CODE',
-        columnNames: ['code'],
+        name: 'IDX_QUOTATIONS_ORGANIZATION_CODE',
+        columnNames: ['organization_id', 'code'],
+        isUnique: true,
       }),
     );
 
@@ -256,11 +272,6 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
       }),
     );
 
-    // Add quotation surrogate
-    await queryRunner.query(`
-      INSERT INTO surrogates (code, prefix, next_number, padding, include_year, year_separator, description) VALUES
-      ('quotation', 'COT', 1, 4, true, '-', 'Códigos para cotizaciones')
-    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -309,8 +320,5 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
     // Drop tables
     await queryRunner.dropTable('quotation_details');
     await queryRunner.dropTable('quotations');
-
-    // Remove quotation surrogate
-    await queryRunner.query(`DELETE FROM surrogates WHERE code = 'quotation'`);
   }
 }

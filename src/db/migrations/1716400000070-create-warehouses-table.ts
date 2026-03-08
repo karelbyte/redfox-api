@@ -24,11 +24,17 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'name',
@@ -79,6 +85,21 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
             name: 'deleted_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_WAREHOUSE_ORGANIZATION_CODE',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
           },
         ],
       }),

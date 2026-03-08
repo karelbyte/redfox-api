@@ -7,15 +7,21 @@ import {
   Body,
   Query,
   ParseIntPipe,
+  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { SurrogateService } from '../services/surrogate.service';
 import { UpdateSurrogateDto } from '../dtos/surrogate/update-surrogate.dto';
 import { SurrogateResponseDto } from '../dtos/surrogate/surrogate-response.dto';
 import { NextCodeResponseDto } from '../dtos/surrogate/next-code-response.dto';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('surrogates')
+@UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class SurrogateController {
-  constructor(private readonly surrogateService: SurrogateService) {}
+  constructor(private readonly surrogateService: SurrogateService) { }
 
   @Get()
   async findAll(): Promise<SurrogateResponseDto[]> {

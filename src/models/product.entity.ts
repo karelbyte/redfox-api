@@ -8,12 +8,14 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
 import { Tax } from './tax.entity';
 import { MeasurementUnit } from './measurement-unit.entity';
 import { ProductPrice } from './product-price.entity';
+import { Organization } from './organization.entity';
 
 export enum ProductType {
   DIGITAL = 'digital',
@@ -28,26 +30,35 @@ export enum InventoryStrategy {
 }
 
 @Entity('products')
+@Index(['organization_id', 'slug'], { unique: true })
+@Index(['organization_id', 'sku'], { unique: true })
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
   @Column({ length: 100 })
   name: string;
 
-  @Column({ length: 100, unique: true })
+  @Column({ length: 100 })
   slug: string;
 
   @Column({ length: 255 })
   description: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ length: 50 })
   sku: string;
 
   @Column({ length: 20 })
   code: string;
 
-  @Column({ length: 100, nullable: true, unique: true })
+  @Column({ length: 100, nullable: true })
   barcode: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

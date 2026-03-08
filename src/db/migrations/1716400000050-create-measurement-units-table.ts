@@ -1,8 +1,7 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateMeasurementUnitsTable1716400000050
-  implements MigrationInterface
-{
+  implements MigrationInterface {
   name = 'CreateMeasurementUnitsTable1716400000050';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -21,10 +20,17 @@ export class CreateMeasurementUnitsTable1716400000050
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
             isNullable: false,
+            isUnique: false,
           },
           {
             name: 'description',
@@ -52,6 +58,21 @@ export class CreateMeasurementUnitsTable1716400000050
             name: 'deleted_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_MEASUREMENT_UNIT_ORGANIZATION_CODE',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
           },
         ],
       }),

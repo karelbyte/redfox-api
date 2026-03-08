@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { Provider } from './provider.entity';
 import { PurchaseOrder } from './purchase-order.entity';
 import { AccountPayablePayment } from './account-payable-payment.entity';
+import { Organization } from './organization.entity';
 
 export enum AccountPayableStatus {
   PENDING = 'pending',
@@ -12,11 +13,19 @@ export enum AccountPayableStatus {
 }
 
 @Entity('accounts_payable')
+@Index(['organization_id', 'referenceNumber'], { unique: true })
 export class AccountPayable {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 50, unique: true })
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ length: 50 })
   referenceNumber: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

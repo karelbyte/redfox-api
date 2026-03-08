@@ -25,11 +25,17 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'date',
@@ -131,7 +137,24 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             isNullable: true,
           },
         ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
         indices: [
+          {
+            name: 'idx_invoices_organization_id',
+            columnNames: ['organization_id'],
+          },
+          {
+            name: 'idx_invoices_organization_code',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
+          },
           {
             name: 'idx_invoices_client_id',
             columnNames: ['client_id'],

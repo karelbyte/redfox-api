@@ -25,6 +25,7 @@ import { SurrogateService } from './surrogate.service';
 import { ClientAddress } from '../models/client-address.entity';
 import { ClientTaxData } from '../models/client-tax-data.entity';
 import { ClientCredit } from '../models/client-credit.entity';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class ClientService {
@@ -49,12 +50,16 @@ export class ClientService {
     private readonly clientPackImportService: ClientPackImportService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
+    private readonly tenantContext: TenantContext,
   ) { }
 
   async create(
     createClientDto: CreateClientDto,
   ): Promise<ClientWithPackStatusResponseDto> {
-    const client = this.clientRepository.create(createClientDto);
+    const client = this.clientRepository.create({
+      ...createClientDto,
+      organization_id: this.tenantContext.getOrganizationId() as string,
+    });
     const savedClient = await this.clientRepository.save(client);
 
     // Incrementar el contador si el código coincide con el sugerido

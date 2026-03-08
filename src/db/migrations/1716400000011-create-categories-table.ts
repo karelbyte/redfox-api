@@ -22,6 +22,12 @@ export class CreateCategoriesTable1716400000011 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'name',
             type: 'varchar',
             length: '100',
@@ -32,7 +38,7 @@ export class CreateCategoriesTable1716400000011 implements MigrationInterface {
             type: 'varchar',
             length: '150',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'description',
@@ -76,6 +82,21 @@ export class CreateCategoriesTable1716400000011 implements MigrationInterface {
             name: 'deleted_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_CATEGORY_ORGANIZATION_SLUG',
+            columnNames: ['organization_id', 'slug'],
+            isUnique: true,
           },
         ],
       }),

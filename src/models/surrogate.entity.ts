@@ -5,15 +5,26 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
+import { Organization } from './organization.entity';
+
 @Entity('surrogates')
-@Index('IDX_SURROGATES_CODE', ['code'])
+@Index('IDX_SURROGATES_CODE_ORG', ['code', 'organization_id'], { unique: true })
 export class Surrogate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  @Column({ type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
+
+  @Column({ type: 'varchar', length: 50 })
   code: string;
 
   @Column({ type: 'varchar', length: 10 })
@@ -49,12 +60,12 @@ export class Surrogate {
   // Método para generar el siguiente código
   generateNext(): string {
     const paddedNumber = this.next_number.toString().padStart(this.padding, '0');
-    
+
     if (this.include_year) {
       const currentYear = new Date().getFullYear();
       return `${this.prefix}${this.year_separator}${currentYear}${this.year_separator}${paddedNumber}`;
     }
-    
+
     return `${this.prefix}${this.suffix}${paddedNumber}`;
   }
 

@@ -14,10 +14,15 @@ export class CreatePurchaseOrdersTable1716400000220 implements MigrationInterfac
             default: 'uuid_generate_v4()',
           },
           {
+            name: 'organization_id',
+            type: 'uuid',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'date',
@@ -76,6 +81,12 @@ export class CreatePurchaseOrdersTable1716400000220 implements MigrationInterfac
         ],
         foreignKeys: [
           {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+          {
             columnNames: ['provider_id'],
             referencedColumnNames: ['id'],
             referencedTableName: 'providers',
@@ -86,6 +97,13 @@ export class CreatePurchaseOrdersTable1716400000220 implements MigrationInterfac
             referencedColumnNames: ['id'],
             referencedTableName: 'warehouses',
             onDelete: 'RESTRICT',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_PURCHASE_ORDER_ORGANIZATION_CODE',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
           },
         ],
       }),

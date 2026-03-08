@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { RolePermission } from 'src/models/role-permission.entity';
 import { Role } from 'src/models/role.entity';
 import { Permission } from 'src/models/permission.entity';
+import { Organization } from 'src/models/organization.entity';
 
 export class RolePermissionsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -9,17 +10,35 @@ export class RolePermissionsSeed {
     const roleRepository = dataSource.getRepository(Role);
     const permissionRepository = dataSource.getRepository(Permission);
 
-    // Obtener roles
+    const organizationRepository = dataSource.getRepository(Organization);
+
+    // Obtain landlord organization
+    const landlordOrg = await organizationRepository.findOne({
+      where: { slug: 'landlord' },
+    });
+
+    if (!landlordOrg) {
+      console.log('⚠️ Landlord organization not found. Be sure to run organizations seed first.');
+      return;
+    }
+
+    // Obtener roles de la organización landlord
     const adminRole = await roleRepository.findOne({
-      where: { code: 'ADMIN' },
+      where: {
+        code: 'ADMIN',
+        organization_id: landlordOrg.id,
+      },
     });
 
     const sellerRole = await roleRepository.findOne({
-      where: { code: 'SELLER' },
+      where: {
+        code: 'SELLER',
+        organization_id: landlordOrg.id,
+      },
     });
 
     if (!adminRole || !sellerRole) {
-      console.log('⚠️ Not found roles. Be sure to run rolesseed first.');
+      console.log('⚠️ Not found roles for landslide organization. Be sure to run roles seed first.');
       return;
     }
 

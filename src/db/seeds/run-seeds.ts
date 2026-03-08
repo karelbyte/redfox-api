@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { MeasurementUnitsSeed } from './measurement-units.seed';
+import { OrganizationsSeed } from './organizations.seed';
 import { CategoriesSeed } from './categories.seed';
 import { BrandsSeed } from './brands.seed';
 import { TaxesSeed } from './taxes.seed';
@@ -24,39 +25,42 @@ export class RunSeeds {
       console.log('Starting seeders...');
 
       // Execute seeders in order
-     /* await MeasurementUnitsSeed.run(dataSource);
-      console.log('✅ Measurement units created');
-
-      await CategoriesSeed.run(dataSource);
-      console.log('✅ Categories created');
-
-      await BrandsSeed.run(dataSource);
-      console.log('✅ Brands created');
-
-      await TaxesSeed.run(dataSource);
-      console.log('✅ Taxes created');
-
-      await CurrenciesSeed.run(dataSource);
-      console.log('✅ Currencies created');
-
-      await seedExpenseCategories(dataSource);
-      console.log('✅ Expense categories created');
-
-      await ClientsSeed.run(dataSource);
-      console.log('✅ Clients created');
-
-      await ProvidersSeed.run(dataSource);
-      console.log('✅ Providers created');
-
-      await ProductsSeed.run(dataSource);
-      console.log('✅ Products created');
-
-      await WarehousesSeed.run(dataSource);
-      console.log('✅ Warehouses created');*/
+      /* await MeasurementUnitsSeed.run(dataSource);
+       console.log('✅ Measurement units created');
+ 
+       await CategoriesSeed.run(dataSource);
+       console.log('✅ Categories created');
+ 
+       await BrandsSeed.run(dataSource);
+       console.log('✅ Brands created');
+ 
+       await TaxesSeed.run(dataSource);
+       console.log('✅ Taxes created');
+ 
+       await CurrenciesSeed.run(dataSource);
+       console.log('✅ Currencies created');
+ 
+       await seedExpenseCategories(dataSource);
+       console.log('✅ Expense categories created');
+ 
+       await ClientsSeed.run(dataSource);
+       console.log('✅ Clients created');
+ 
+       await ProvidersSeed.run(dataSource);
+       console.log('✅ Providers created');
+ 
+       await ProductsSeed.run(dataSource);
+       console.log('✅ Products created');
+ 
+       await WarehousesSeed.run(dataSource);
+       console.log('✅ Warehouses created');*/
 
       // Authentication and permissions seeders
       await PermissionsSeed.run(dataSource);
       console.log('✅ Permissions created');
+
+      await OrganizationsSeed.run(dataSource);
+      console.log('✅ Organizations created');
 
       await RolesSeed.run(dataSource);
       console.log('✅ Roles created');
@@ -67,11 +71,11 @@ export class RunSeeds {
       await UsersSeed.run(dataSource);
       console.log('✅ Default users created');
 
-    
+
       const userLanguagesSeed = new UserLanguagesSeed(dataSource);
       await userLanguagesSeed.run();
       console.log('✅ User languages assigned');
- 
+
       /*
       await WarehouseAdjustmentsSeed.run(dataSource);
       console.log('✅ Warehouse adjustments created');

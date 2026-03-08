@@ -17,11 +17,17 @@ export class CreateCurrenciesTable1716400000065 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '3',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'name',
@@ -44,6 +50,21 @@ export class CreateCurrenciesTable1716400000065 implements MigrationInterface {
             name: 'deleted_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             isNullable: true,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_CURRENCY_ORGANIZATION_CODE',
+            columnNames: ['organization_id', 'code'],
+            isUnique: true,
           },
         ],
       }),

@@ -14,10 +14,13 @@ export class CreateSurrogatesTable1716400000300 implements MigrationInterface {
             default: 'gen_random_uuid()',
           },
           {
+            name: 'organization_id',
+            type: 'uuid',
+          },
+          {
             name: 'code',
             type: 'varchar',
             length: '50',
-            isUnique: true,
             isNullable: false,
           },
           {
@@ -81,35 +84,29 @@ export class CreateSurrogatesTable1716400000300 implements MigrationInterface {
       true,
     );
 
-    // Crear índice en el campo code para búsquedas rápidas
+    // Crear índice compuesto en los campos code y organization_id para búsquedas rápidas
     await queryRunner.createIndex(
       'surrogates',
       new TableIndex({
-        name: 'IDX_SURROGATES_CODE',
-        columnNames: ['code'],
+        name: 'IDX_SURROGATES_CODE_ORG',
+        columnNames: ['code', 'organization_id'],
+        isUnique: true,
       }),
     );
 
-    // Insertar datos iniciales
+    // Add foreign key constraint
     await queryRunner.query(`
-      INSERT INTO surrogates (code, prefix, next_number, padding, include_year, year_separator, description) VALUES
-      ('client', 'CLI', 1, 4, false, '-', 'Códigos para clientes'),
-      ('product', 'PROD', 1, 4, false, '-', 'Códigos para productos'),
-      ('invoice', 'INV', 1, 6, false, '-', 'Códigos para facturas'),
-      ('purchase_order', 'PO', 1, 4, true, '-', 'Códigos para órdenes de compra'),
-      ('sale', 'VTA', 1, 6, false, '-', 'Códigos para ventas'),
-      ('provider', 'PROV', 1, 4, false, '-', 'Códigos para proveedores'),
-      ('warehouse', 'ALM', 1, 3, false, '-', 'Códigos para almacenes'),
-      ('brand', 'MRC', 1, 3, false, '-', 'Códigos para marcas'),
-      ('category', 'CAT', 1, 3, false, '-', 'Códigos para categorías'),
-      ('reception', 'REC', 1, 4, true, '-', 'Códigos para recepciones'),
-      ('withdrawal', 'RET', 1, 4, false, '-', 'Códigos para retiros'),
-      ('return', 'DEV', 1, 4, false, '-', 'Códigos para devoluciones')
+      ALTER TABLE "surrogates"
+      ADD CONSTRAINT "FK_surrogates_organization_id"
+      FOREIGN KEY ("organization_id")
+      REFERENCES "organizations"("id")
+      ON DELETE CASCADE
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropIndex('surrogates', 'IDX_SURROGATES_CODE');
+    await queryRunner.query(`ALTER TABLE "surrogates" DROP CONSTRAINT "FK_surrogates_organization_id"`);
+    await queryRunner.dropIndex('surrogates', 'IDX_SURROGATES_CODE_ORG');
     await queryRunner.dropTable('surrogates');
   }
 }

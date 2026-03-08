@@ -16,6 +16,12 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
             generationStrategy: 'increment',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'description',
             type: 'varchar',
             length: '100',
@@ -92,6 +98,16 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
         ],
       }),
       true
+    );
+
+    await queryRunner.createForeignKey(
+      'expenses',
+      new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
     );
 
     await queryRunner.createForeignKey(

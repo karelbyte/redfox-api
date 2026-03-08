@@ -14,6 +14,7 @@ import { CertificationPackModule } from './certification-pack.module';
 import { ClientPackSyncService } from '../services/client-pack-sync.service';
 import { ClientPackImportService } from '../services/client-pack-import.service';
 import { SurrogateModule } from './surrogate.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SurrogateModule } from './surrogate.module';
     LanguageModule,
     CertificationPackModule,
     SurrogateModule,
+    OrganizationModule,
   ],
   controllers: [ClientController],
   providers: [ClientService, ClientMapper, ClientPackSyncService, ClientPackImportService],

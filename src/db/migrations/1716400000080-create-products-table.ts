@@ -19,6 +19,12 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: false,
+          },
+          {
             name: 'name',
             type: 'varchar',
             length: '100',
@@ -29,7 +35,7 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             type: 'varchar',
             length: '100',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'description',
@@ -42,7 +48,7 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             type: 'varchar',
             length: '50',
             isNullable: false,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'code',
@@ -56,7 +62,7 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             type: 'varchar',
             length: '100',
             isNullable: true,
-            isUnique: true,
+            isUnique: false,
           },
           {
             name: 'weight',
@@ -186,6 +192,18 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             referencedTableName: 'measurement_units',
             referencedColumnNames: ['id'],
             onDelete: 'SET NULL',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_PRODUCT_ORGANIZATION_SLUG',
+            columnNames: ['organization_id', 'slug'],
+            isUnique: true,
+          },
+          {
+            name: 'IDX_PRODUCT_ORGANIZATION_SKU',
+            columnNames: ['organization_id', 'sku'],
+            isUnique: true,
           },
         ],
       }),
