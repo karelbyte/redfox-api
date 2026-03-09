@@ -20,6 +20,7 @@ import { TranslationService } from '../services/translation.service';
 import { UserContextService } from '../services/user-context.service';
 import { Language } from '../models/language.entity';
 import { User } from '../models/user.entity';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { User } from '../models/user.entity';
       Language,
       User,
     ]),
+    OrganizationModule,
   ],
   controllers: [QuotationController],
   providers: [

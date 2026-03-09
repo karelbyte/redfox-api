@@ -21,6 +21,7 @@ import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { ProviderMapper } from '../services/mappers/provider.mapper';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ProviderMapper } from '../services/mappers/provider.mapper';
     TaxModule,
     MeasurementUnitModule,
     LanguageModule,
+    OrganizationModule,
   ],
   controllers: [ReturnController],
   providers: [ReturnService, WarehouseMapper, ProductMapper, ProviderMapper],

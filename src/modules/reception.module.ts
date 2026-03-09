@@ -20,6 +20,7 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 import { LanguageModule } from './language.module';
 import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 import { ProviderModule } from './provider.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ProviderModule } from './provider.module';
     LanguageModule,
     InventoryPackSyncModule,
     ProviderModule,
+    OrganizationModule,
   ],
   controllers: [ReceptionController],
   providers: [

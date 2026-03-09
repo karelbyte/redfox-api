@@ -27,6 +27,8 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 
+import { TenantContext } from './tenant-context.service';
+
 @Injectable()
 export class WarehouseAdjustmentService {
   constructor(
@@ -46,7 +48,12 @@ export class WarehouseAdjustmentService {
     private warehouseMapper: WarehouseMapper,
     private productMapper: ProductMapper,
     private translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createDto: CreateWarehouseAdjustmentDto,
@@ -54,11 +61,15 @@ export class WarehouseAdjustmentService {
   ): Promise<WarehouseAdjustmentResponseDto> {
     // Validar que los almacenes existan y estén abiertos
     const sourceWarehouse = await this.warehouseRepository.findOne({
-      where: { id: createDto.sourceWarehouseId, isOpen: false },
+      where: {
+        id: createDto.sourceWarehouseId,
+        isOpen: true,
+        organization_id: this.organizationId,
+      },
     });
     if (!sourceWarehouse) {
       throw new NotFoundException(
-        this.translationService.translate(
+        await this.translationService.translate(
           'warehouse.source_not_found_or_closed',
           userId,
         ),
@@ -66,11 +77,15 @@ export class WarehouseAdjustmentService {
     }
 
     const targetWarehouse = await this.warehouseRepository.findOne({
-      where: { id: createDto.targetWarehouseId, isOpen: false },
+      where: {
+        id: createDto.targetWarehouseId,
+        isOpen: true,
+        organization_id: this.organizationId,
+      },
     });
     if (!targetWarehouse) {
       throw new NotFoundException(
-        this.translationService.translate(
+        await this.translationService.translate(
           'warehouse.target_not_found_or_closed',
           userId,
         ),
@@ -97,6 +112,7 @@ export class WarehouseAdjustmentService {
       date: new Date(createDto.date),
       description: createDto.description,
       status: false,
+      organization_id: this.organizationId,
     });
 
     const savedAdjustment =
@@ -113,7 +129,7 @@ export class WarehouseAdjustmentService {
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id: adjustmentId },
+      where: { id: adjustmentId, organization_id: this.organizationId },
     });
     if (!adjustment) {
       throw new NotFoundException(
@@ -127,7 +143,7 @@ export class WarehouseAdjustmentService {
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.productId },
+      where: { id: createDetailDto.productId, organization_id: this.organizationId },
     });
     if (!product) {
       throw new NotFoundException(
@@ -222,7 +238,7 @@ export class WarehouseAdjustmentService {
   ): Promise<PaginatedResponse<WarehouseAdjustmentDetailResponseDto>> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id: adjustmentId },
+      where: { id: adjustmentId, organization_id: this.organizationId },
     });
     if (!adjustment) {
       throw new NotFoundException(
@@ -244,7 +260,11 @@ export class WarehouseAdjustmentService {
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.tax', 'tax')
       .leftJoinAndSelect('product.measurement_unit', 'measurement_unit')
+      .innerJoin('detail.warehouseAdjustment', 'adjustment')
       .where('detail.warehouseAdjustmentId = :adjustmentId', { adjustmentId })
+      .andWhere('adjustment.organization_id = :orgId', {
+        orgId: this.organizationId,
+      })
       .orderBy('detail.created_at', 'DESC');
 
     if (queryDto?.productId) {
@@ -278,7 +298,7 @@ export class WarehouseAdjustmentService {
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id: adjustmentId },
+      where: { id: adjustmentId, organization_id: this.organizationId },
     });
     if (!adjustment) {
       throw new NotFoundException(
@@ -322,7 +342,7 @@ export class WarehouseAdjustmentService {
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id: adjustmentId },
+      where: { id: adjustmentId, organization_id: this.organizationId },
     });
     if (!adjustment) {
       throw new NotFoundException(
@@ -376,7 +396,7 @@ export class WarehouseAdjustmentService {
   ): Promise<void> {
     // Verificar que el ajuste existe
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id: adjustmentId },
+      where: { id: adjustmentId, organization_id: this.organizationId },
     });
     if (!adjustment) {
       throw new NotFoundException(
@@ -416,7 +436,7 @@ export class WarehouseAdjustmentService {
     try {
       // Verificar que el ajuste existe y no ha sido procesado
       const adjustment = await this.warehouseAdjustmentRepository.findOne({
-        where: { id: adjustmentId },
+        where: { id: adjustmentId, organization_id: this.organizationId },
         relations: ['details', 'sourceWarehouse', 'targetWarehouse'],
       });
 
@@ -455,6 +475,7 @@ export class WarehouseAdjustmentService {
           where: {
             product_id: detail.productId,
             warehouse: { id: adjustment.sourceWarehouseId },
+            organization_id: this.organizationId,
           },
         });
 
@@ -474,7 +495,7 @@ export class WarehouseAdjustmentService {
         // Actualizar inventario del almacén origen (reducir)
         await queryRunner.manager.update(
           Inventory,
-          { id: sourceInventory.id },
+          { id: sourceInventory.id, organization_id: this.organizationId },
           {
             quantity:
               Number(sourceInventory.quantity) - Number(detail.quantity),
@@ -486,13 +507,14 @@ export class WarehouseAdjustmentService {
           where: {
             product_id: detail.productId,
             warehouse: { id: adjustment.targetWarehouseId },
+            organization_id: this.organizationId,
           },
         });
 
         if (targetInventory) {
           await queryRunner.manager.update(
             Inventory,
-            { id: targetInventory.id },
+            { id: targetInventory.id, organization_id: this.organizationId },
             {
               quantity:
                 Number(targetInventory.quantity) + Number(detail.quantity),
@@ -504,6 +526,7 @@ export class WarehouseAdjustmentService {
             warehouse: { id: adjustment.targetWarehouseId },
             quantity: detail.quantity,
             price: detail.price,
+            organization_id: this.organizationId,
           });
         }
 
@@ -516,6 +539,7 @@ export class WarehouseAdjustmentService {
           quantity: detail.quantity,
           current_stock:
             Number(sourceInventory.quantity) - Number(detail.quantity),
+          organization_id: this.organizationId,
         });
 
         const targetHistory = queryRunner.manager.create(ProductHistory, {
@@ -526,6 +550,7 @@ export class WarehouseAdjustmentService {
           quantity: detail.quantity,
           current_stock:
             (Number(targetInventory?.quantity) || 0) + Number(detail.quantity),
+          organization_id: this.organizationId,
         });
 
         await queryRunner.manager.save([sourceHistory, targetHistory]);
@@ -534,7 +559,7 @@ export class WarehouseAdjustmentService {
       // Marcar el ajuste como procesado
       await queryRunner.manager.update(
         WarehouseAdjustment,
-        { id: adjustmentId },
+        { id: adjustmentId, organization_id: this.organizationId },
         { status: true },
       );
 
@@ -564,6 +589,9 @@ export class WarehouseAdjustmentService {
       .leftJoinAndSelect('adjustment.targetWarehouse', 'targetWarehouse')
       .leftJoinAndSelect('adjustment.details', 'details')
       .leftJoinAndSelect('details.product', 'product')
+      .where('adjustment.organization_id = :orgId', {
+        orgId: this.organizationId,
+      })
       .orderBy('adjustment.created_at', 'DESC');
 
     if (queryDto?.sourceWarehouseId) {
@@ -621,7 +649,7 @@ export class WarehouseAdjustmentService {
     userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'sourceWarehouse',
         'targetWarehouse',
@@ -645,7 +673,7 @@ export class WarehouseAdjustmentService {
 
   async remove(id: string, userId: string): Promise<void> {
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['details'],
     });
 
@@ -669,7 +697,10 @@ export class WarehouseAdjustmentService {
       );
     }
 
-    await this.warehouseAdjustmentRepository.softDelete(id);
+    await this.warehouseAdjustmentRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   private async generateUniqueCode(): Promise<string> {
@@ -680,6 +711,7 @@ export class WarehouseAdjustmentService {
     const lastAdjustment = await this.warehouseAdjustmentRepository.findOne({
       where: {
         code: Like(`${prefix}${date}%`),
+        organization_id: this.organizationId,
       },
       order: { code: 'DESC' },
     });

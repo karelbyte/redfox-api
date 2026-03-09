@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InventoryService } from '../services/inventory.service';
 import { CreateInventoryDto } from '../dtos/inventory/create-inventory.dto';
@@ -19,9 +20,11 @@ import { InventoryQueryDto } from '../dtos/inventory/inventory-query.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('inventory')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 

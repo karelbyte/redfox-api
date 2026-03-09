@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WithdrawalService } from '../services/withdrawal.service';
 import { CreateWithdrawalDto } from '../dtos/withdrawal/create-withdrawal.dto';
@@ -23,9 +24,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('withdrawals')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class WithdrawalController {
   constructor(private readonly withdrawalService: WithdrawalService) {}
 

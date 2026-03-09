@@ -44,7 +44,7 @@ export class WarehouseService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -63,7 +63,7 @@ export class WarehouseService {
 
       // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
-        where: { id: savedWarehouse.id },
+        where: { id: savedWarehouse.id, organization_id: this.organizationId },
         relations: ['currency'],
       });
 
@@ -249,7 +249,7 @@ export class WarehouseService {
 
       // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
-        where: { id: updatedWarehouse.id },
+        where: { id: updatedWarehouse.id, organization_id: this.organizationId },
         relations: ['currency'],
       });
 
@@ -318,7 +318,7 @@ export class WarehouseService {
     const updated = await this.warehouseRepository.save(warehouse);
     // Recargar con relaciones para la respuesta
     const warehouseWithRelations = await this.warehouseRepository.findOne({
-      where: { id: updated.id },
+      where: { id: updated.id, organization_id: this.organizationId },
       relations: ['currency'],
     });
 
@@ -362,7 +362,7 @@ export class WarehouseService {
 
     // Obtener todos los warehouse openings de este almacén (product.measurement_unit para sync al pack)
     const warehouseOpenings = await this.warehouseOpeningRepository.find({
-      where: { warehouseId },
+      where: { warehouseId, organization_id: this.organizationId },
       relations: ['product', 'product.measurement_unit'],
     });
 
@@ -376,6 +376,7 @@ export class WarehouseService {
         where: {
           product: { id: opening.product.id },
           warehouse: { id: warehouseId },
+          organization_id: this.organizationId,
         },
         relations: ['product', 'warehouse'],
       });
@@ -389,7 +390,7 @@ export class WarehouseService {
         // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
-            (Number(existingInventory.quantity) - Number(opening.quantity)) +
+          (Number(existingInventory.quantity) - Number(opening.quantity)) +
           Number(opening.price) * Number(opening.quantity);
         existingInventory.price =
           totalValue / Number(existingInventory.quantity);
@@ -402,6 +403,7 @@ export class WarehouseService {
           warehouse: warehouse,
           quantity: opening.quantity,
           price: opening.price,
+          organization_id: this.organizationId,
         });
 
         finalInventory = await this.inventoryRepository.save(newInventory);
@@ -415,6 +417,7 @@ export class WarehouseService {
         operation_id: opening.id, // ID real del WarehouseOpening
         quantity: Number(opening.quantity),
         current_stock: Number(finalInventory.quantity),
+        organization_id: this.organizationId,
       });
 
       await this.productHistoryRepository.save(productHistory);

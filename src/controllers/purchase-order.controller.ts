@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PurchaseOrderService } from '../services/purchase-order.service';
 import { CreatePurchaseOrderDto } from '../dtos/purchase-order/create-purchase-order.dto';
@@ -23,9 +24,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('purchase-orders')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class PurchaseOrderController {
   constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 

@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ReceptionService } from '../services/reception.service';
 import { CreateReceptionDto } from '../dtos/reception/create-reception.dto';
@@ -23,9 +24,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('receptions')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ReceptionController {
   constructor(private readonly receptionService: ReceptionService) {}
 

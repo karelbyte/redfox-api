@@ -6,6 +6,7 @@ import { WarehouseOpeningController } from '../controllers/warehouse-opening.con
 import { ProductModule } from './product.module';
 import { WarehouseModule } from './warehouse.module';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { LanguageModule } from './language.module';
     ProductModule,
     WarehouseModule,
     LanguageModule,
+    OrganizationModule,
   ],
   controllers: [WarehouseOpeningController],
   providers: [WarehouseOpeningService],

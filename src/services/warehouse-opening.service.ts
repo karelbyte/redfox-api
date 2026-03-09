@@ -14,6 +14,8 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
 import { ProductMapper } from './mappers/product.mapper';
 
+import { TenantContext } from './tenant-context.service';
+
 @Injectable()
 export class WarehouseOpeningService {
   constructor(
@@ -21,7 +23,12 @@ export class WarehouseOpeningService {
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly translationService: TranslationService,
     private readonly productMapper: ProductMapper,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createWarehouseOpeningDto: CreateWarehouseOpeningDto,
@@ -30,13 +37,14 @@ export class WarehouseOpeningService {
     try {
       const warehouseOpening = this.warehouseOpeningRepository.create({
         ...createWarehouseOpeningDto,
+        organization_id: this.organizationId,
       });
       const saved =
         await this.warehouseOpeningRepository.save(warehouseOpening);
 
       // Recargar con relaciones para la respuesta
       const savedWithRelations = await this.warehouseOpeningRepository.findOne({
-        where: { id: saved.id },
+        where: { id: saved.id, organization_id: this.organizationId },
         relations: [
           'warehouse',
           'product',
@@ -86,7 +94,7 @@ export class WarehouseOpeningService {
 
     const [warehouseOpenings, total] =
       await this.warehouseOpeningRepository.findAndCount({
-        where: { warehouseId },
+        where: { warehouseId, organization_id: this.organizationId },
         relations: [
           'warehouse',
           'product',
@@ -120,7 +128,7 @@ export class WarehouseOpeningService {
     userId?: string,
   ): Promise<WarehouseOpeningResponseDto> {
     const warehouseOpening = await this.warehouseOpeningRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'warehouse',
         'product',
@@ -147,7 +155,7 @@ export class WarehouseOpeningService {
     userId?: string,
   ): Promise<WarehouseOpeningResponseDto> {
     const warehouseOpening = await this.warehouseOpeningRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'warehouse',
         'product',
@@ -175,7 +183,7 @@ export class WarehouseOpeningService {
       // Recargar con relaciones para la respuesta
       const updatedWithRelations =
         await this.warehouseOpeningRepository.findOne({
-          where: { id: updated.id },
+          where: { id: updated.id, organization_id: this.organizationId },
           relations: [
             'warehouse',
             'product',
@@ -217,7 +225,7 @@ export class WarehouseOpeningService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const warehouseOpening = await this.warehouseOpeningRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!warehouseOpening) {
@@ -229,7 +237,10 @@ export class WarehouseOpeningService {
       throw new NotFoundException(message);
     }
 
-    await this.warehouseOpeningRepository.softDelete(id);
+    await this.warehouseOpeningRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   private mapToResponseDto(

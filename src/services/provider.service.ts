@@ -286,7 +286,9 @@ export class ProviderService {
     const repo = manager
       ? manager.getRepository(Provider)
       : this.providerRepository;
-    const provider = await repo.findOneBy({ id });
+    const provider = await repo.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
     if (provider) {
       provider.balance = Number(provider.balance || 0) + Number(amount);
       await repo.save(provider, { reload: false });

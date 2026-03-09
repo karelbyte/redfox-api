@@ -5,11 +5,13 @@ import { AccountReceivableController } from '../controllers/account-receivable.c
 import { AccountReceivable } from '../models/account-receivable.entity';
 import { AccountReceivablePayment } from '../models/account-receivable-payment.entity';
 import { ClientModule } from './client.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([AccountReceivable, AccountReceivablePayment]),
     forwardRef(() => ClientModule),
+    OrganizationModule,
   ],
   controllers: [AccountReceivableController],
   providers: [AccountReceivableService],

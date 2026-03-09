@@ -13,6 +13,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { RoleService } from './role.service';
 import { TranslationService } from './translation.service';
 import { UserContextService } from './user-context.service';
+import { TenantContext } from './tenant-context.service';
 import { hash } from 'bcrypt';
 
 @Injectable()
@@ -22,7 +23,12 @@ export class UserService {
     private userRepository: Repository<User>,
     private roleService: RoleService,
     private translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -97,7 +103,10 @@ export class UserService {
     createUserDto: CreateUserDto,
     userId?: string,
   ): Promise<UserResponseDto> {
-    const user = this.userRepository.create(createUserDto);
+    const user = this.userRepository.create({
+      ...createUserDto,
+      organization_id: this.organizationId,
+    });
 
     if (createUserDto.password) {
       user.password = await this.hashPassword(createUserDto.password);
@@ -122,6 +131,7 @@ export class UserService {
     const skip = (page - 1) * limit;
 
     const [users, total] = await this.userRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       relations: [
         'roles',
         'roles.rolePermissions',
@@ -148,7 +158,7 @@ export class UserService {
 
   async findOne(id: string, userId?: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'roles',
         'roles.rolePermissions',
@@ -175,7 +185,7 @@ export class UserService {
     userId?: string,
   ): Promise<UserWithPermissionDescriptionsDto> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'roles',
         'roles.rolePermissions',
@@ -203,7 +213,7 @@ export class UserService {
     userId?: string,
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'roles',
         'roles.rolePermissions',
@@ -241,7 +251,7 @@ export class UserService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
 

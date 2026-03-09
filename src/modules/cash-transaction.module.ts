@@ -5,11 +5,13 @@ import { CashRegister } from '../models/cash-register.entity';
 import { CashTransactionController } from '../controllers/cash-transaction.controller';
 import { CashTransactionService } from '../services/cash-transaction.service';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CashTransaction, CashRegister]),
     LanguageModule,
+    OrganizationModule,
   ],
   controllers: [CashTransactionController],
   providers: [CashTransactionService],

@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { Repository, Brackets, In } from 'typeorm';
 import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
@@ -51,7 +51,15 @@ export class ClientService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required');
+    }
+    return orgId;
+  }
 
   async create(
     createClientDto: CreateClientDto,
@@ -88,7 +96,10 @@ export class ClientService {
       .leftJoinAndSelect('client.addresses', 'address')
       .leftJoinAndSelect('client.taxData', 'taxData')
       .leftJoinAndSelect('client.credit', 'credit')
-      .where('client.deleted_at IS NULL');
+      .where('client.deleted_at IS NULL')
+      .andWhere('client.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      });
 
     if (is_active !== undefined) {
       const isActiveBool = String(is_active) === 'true';
@@ -138,7 +149,7 @@ export class ClientService {
 
   async findOne(id: string, userId?: string): Promise<ClientResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['addresses', 'taxData', 'credit'],
       withDeleted: false,
     });
@@ -159,7 +170,7 @@ export class ClientService {
     userId?: string,
   ): Promise<ClientWithPackStatusResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['addresses', 'taxData', 'credit'],
       withDeleted: false,
     });
@@ -222,7 +233,7 @@ export class ClientService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const client = await this.clientRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!client) {
@@ -277,7 +288,10 @@ export class ClientService {
   }
 
   async removeMany(ids: string[]): Promise<void> {
-    await this.clientRepository.softDelete(ids);
+    await this.clientRepository.softDelete({
+      id: In(ids),
+      organization_id: this.organizationId,
+    });
   }
 
   async updateBalance(
@@ -288,7 +302,9 @@ export class ClientService {
     const repo = manager
       ? manager.getRepository(Client)
       : this.clientRepository;
-    const client = await repo.findOneBy({ id });
+    const client = await repo.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
     if (client) {
       client.balance = Number(client.balance || 0) + Number(amount);
       await repo.save(client, { reload: false });

@@ -24,6 +24,7 @@ import { CreatePurchaseOrderDetailDto } from '../dtos/purchase-order-detail/crea
 import { UpdatePurchaseOrderDetailDto } from '../dtos/purchase-order-detail/update-purchase-order-detail.dto';
 import { PurchaseOrderDetailQueryDto } from '../dtos/purchase-order-detail/purchase-order-detail-query.dto';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -42,7 +43,12 @@ export class PurchaseOrderService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapDetailToResponseDto(
     detail: PurchaseOrderDetail,
@@ -86,7 +92,7 @@ export class PurchaseOrderService {
     newAmount: number,
   ): Promise<void> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
     if (purchaseOrder) {
       purchaseOrder.amount = Math.round(newAmount * 100) / 100;
@@ -102,7 +108,7 @@ export class PurchaseOrderService {
 
     // Verificar que el proveedor existe
     const provider = await this.providerRepository.findOne({
-      where: { id: provider_id },
+      where: { id: provider_id, organization_id: this.organizationId },
     });
     if (!provider) {
       throw new NotFoundException('Provider not found');
@@ -110,7 +116,7 @@ export class PurchaseOrderService {
 
     // Verificar que el almacén existe
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: warehouse_id },
+      where: { id: warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
       throw new NotFoundException('Warehouse not found');
@@ -118,7 +124,7 @@ export class PurchaseOrderService {
 
     // Verificar que el código es único
     const existingPurchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { code: createPurchaseOrderDto.code },
+      where: { code: createPurchaseOrderDto.code, organization_id: this.organizationId },
     });
     if (existingPurchaseOrder) {
       throw new BadRequestException('Purchase order code already exists');
@@ -129,6 +135,7 @@ export class PurchaseOrderService {
       provider,
       warehouse,
       status: rest.status || 'PENDING',
+      organization_id: this.organizationId,
     });
 
     const savedPurchaseOrder =
@@ -145,6 +152,7 @@ export class PurchaseOrderService {
 
     const [purchaseOrders, total] =
       await this.purchaseOrderRepository.findAndCount({
+        where: { organization_id: this.organizationId },
         relations: ['provider', 'warehouse'],
         skip,
         take: limit,
@@ -171,7 +179,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<PurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['provider', 'warehouse'],
     });
 
@@ -188,7 +196,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<PurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['provider', 'warehouse'],
     });
 
@@ -202,7 +210,7 @@ export class PurchaseOrderService {
       updatePurchaseOrderDto.code !== purchaseOrder.code
     ) {
       const existingPurchaseOrder = await this.purchaseOrderRepository.findOne({
-        where: { code: updatePurchaseOrderDto.code },
+        where: { code: updatePurchaseOrderDto.code, organization_id: this.organizationId },
       });
       if (existingPurchaseOrder) {
         throw new BadRequestException('Purchase order code already exists');
@@ -212,7 +220,7 @@ export class PurchaseOrderService {
     // Verificar proveedor si se está actualizando
     if (updatePurchaseOrderDto.provider_id) {
       const provider = await this.providerRepository.findOne({
-        where: { id: updatePurchaseOrderDto.provider_id },
+        where: { id: updatePurchaseOrderDto.provider_id, organization_id: this.organizationId },
       });
       if (!provider) {
         throw new NotFoundException('Provider not found');
@@ -223,7 +231,7 @@ export class PurchaseOrderService {
     // Verificar almacén si se está actualizando
     if (updatePurchaseOrderDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updatePurchaseOrderDto.warehouse_id },
+        where: { id: updatePurchaseOrderDto.warehouse_id, organization_id: this.organizationId },
       });
       if (!warehouse) {
         throw new NotFoundException('Warehouse not found');
@@ -239,7 +247,7 @@ export class PurchaseOrderService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId }
     });
 
     if (!purchaseOrder) {
@@ -248,7 +256,9 @@ export class PurchaseOrderService {
 
     // Verificar que no tenga detalles antes de eliminar
     const details = await this.purchaseOrderDetailRepository.find({
-      where: { purchaseOrder: { id } },
+      where: {
+        purchaseOrder: { id, organization_id: this.organizationId },
+      },
     });
 
     if (details.length > 0) {
@@ -257,7 +267,10 @@ export class PurchaseOrderService {
       );
     }
 
-    await this.purchaseOrderRepository.softDelete(id);
+    await this.purchaseOrderRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   async createDetail(
@@ -266,7 +279,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<PurchaseOrderDetailResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {
@@ -275,7 +288,7 @@ export class PurchaseOrderService {
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id },
+      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
     });
     if (!product) {
       throw new NotFoundException('Product not found');
@@ -284,8 +297,8 @@ export class PurchaseOrderService {
     // Verificar que no existe ya un detalle para este producto
     const existingDetail = await this.purchaseOrderDetailRepository.findOne({
       where: {
-        purchaseOrder: { id: purchaseOrderId },
-        product: { id: createDetailDto.product_id },
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        product: { id: createDetailDto.product_id, organization_id: this.organizationId },
       },
     });
 
@@ -326,7 +339,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<PaginatedResponseDto<PurchaseOrderDetailResponseDto>> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {
@@ -340,7 +353,8 @@ export class PurchaseOrderService {
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
       .leftJoinAndSelect('product.prices', 'prices')
-      .where('detail.purchaseOrder.id = :purchaseOrderId', { purchaseOrderId });
+      .where('detail.purchaseOrder.id = :purchaseOrderId', { purchaseOrderId })
+      .andWhere('detail.purchaseOrder.organization_id = :orgId', { orgId: this.organizationId });
 
     if (queryDto.product_id) {
       queryBuilder.andWhere('detail.product.id = :productId', {
@@ -373,7 +387,7 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId },
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
       },
       relations: [
         'product',
@@ -400,7 +414,7 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId },
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
       },
       relations: ['product'],
     });
@@ -423,7 +437,9 @@ export class PurchaseOrderService {
 
     // Actualizar el monto total de la orden de compra
     const allDetails = await this.purchaseOrderDetailRepository.find({
-      where: { purchaseOrder: { id: purchaseOrderId } },
+      where: {
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+      },
     });
 
     const totalAmount = allDetails.reduce(
@@ -445,7 +461,7 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId },
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
       },
     });
 
@@ -457,7 +473,9 @@ export class PurchaseOrderService {
 
     // Actualizar el monto total de la orden de compra
     const allDetails = await this.purchaseOrderDetailRepository.find({
-      where: { purchaseOrder: { id: purchaseOrderId } },
+      where: {
+        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+      },
     });
 
     const totalAmount = allDetails.reduce(
@@ -474,7 +492,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<ApprovePurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {
@@ -487,7 +505,7 @@ export class PurchaseOrderService {
 
     // Verificar que tenga detalles
     const details = await this.purchaseOrderDetailRepository.find({
-      where: { purchaseOrder: { id: purchaseOrderId } },
+      where: { purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId } },
     });
 
     if (details.length === 0) {
@@ -511,7 +529,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<ApprovePurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {
@@ -537,7 +555,7 @@ export class PurchaseOrderService {
     userId?: string,
   ): Promise<ApprovePurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id: purchaseOrderId },
+      where: { id: purchaseOrderId, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {

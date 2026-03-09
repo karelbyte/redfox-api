@@ -26,7 +26,7 @@ export class TaxService {
     private readonly taxMapper: TaxMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -74,12 +74,12 @@ export class TaxService {
     };
     const whereConditions: FindManyOptions<Tax> = term
       ? {
-          ...baseConditions,
-          where: [
-            { code: Like(`%${term}%`), organization_id: this.organizationId },
-            { name: Like(`%${term}%`), organization_id: this.organizationId },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`), organization_id: this.organizationId },
+          { name: Like(`%${term}%`), organization_id: this.organizationId },
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -125,7 +125,7 @@ export class TaxService {
 
   async findOne(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
-      where: { id, isActive: true },
+      where: { id, isActive: true, organization_id: this.organizationId },
     });
     if (!tax) {
       const message = await this.translationService.translate(
@@ -145,7 +145,7 @@ export class TaxService {
   ): Promise<TaxResponseDto> {
     try {
       const tax = await this.taxRepository.findOne({
-        where: { id, isActive: true },
+        where: { id, isActive: true, organization_id: this.organizationId },
       });
       if (!tax) {
         const message = await this.translationService.translate(
@@ -178,7 +178,7 @@ export class TaxService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const tax = await this.taxRepository.findOne({
-      where: { id, isActive: true },
+      where: { id, isActive: true, organization_id: this.organizationId },
     });
     if (!tax) {
       const message = await this.translationService.translate(
@@ -191,7 +191,10 @@ export class TaxService {
 
     // Verificar si el tax está siendo usado en productos
     const productsUsingTax = await this.productRepository.count({
-      where: { tax: { id } },
+      where: {
+        tax: { id },
+        organization_id: this.organizationId,
+      },
       withDeleted: false,
     });
 
@@ -207,12 +210,15 @@ export class TaxService {
       throw new BadRequestException(message);
     }
 
-    await this.taxRepository.softDelete(id);
+    await this.taxRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   async activate(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: true,
     });
     if (!tax) {
@@ -231,7 +237,7 @@ export class TaxService {
 
   async deactivate(id: string, userId?: string): Promise<TaxResponseDto> {
     const tax = await this.taxRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: true,
     });
     if (!tax) {
@@ -253,7 +259,7 @@ export class TaxService {
     userId?: string,
   ): Promise<{ tax: TaxResponseDto; productsCount: number; products: any[] }> {
     const tax = await this.taxRepository.findOne({
-      where: { id, isActive: true },
+      where: { id, isActive: true, organization_id: this.organizationId },
     });
     if (!tax) {
       const message = await this.translationService.translate(
@@ -265,7 +271,10 @@ export class TaxService {
     }
 
     const products = await this.productRepository.find({
-      where: { tax: { id } },
+      where: {
+        tax: { id },
+        organization_id: this.organizationId,
+      },
       select: ['id', 'name', 'sku'],
       withDeleted: false,
     });

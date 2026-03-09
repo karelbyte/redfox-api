@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WarehouseAdjustmentService } from '../services/warehouse-adjustment.service';
 import { CreateWarehouseAdjustmentDto } from '../dtos/warehouse-adjustment/create-warehouse-adjustment.dto';
@@ -22,9 +23,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('warehouse-adjustments')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class WarehouseAdjustmentController {
   constructor(
     private readonly warehouseAdjustmentService: WarehouseAdjustmentService,

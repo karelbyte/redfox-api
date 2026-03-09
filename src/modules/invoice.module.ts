@@ -20,6 +20,7 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 import { InvoiceMapper } from '../services/mappers/invoice.mapper';
 import { InvoiceDetailMapper } from '../services/mappers/invoice-detail.mapper';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { LanguageModule } from './language.module';
     ProductModule,
     LanguageModule,
     CertificationPackModule,
+    OrganizationModule,
   ],
   controllers: [InvoiceController],
   providers: [

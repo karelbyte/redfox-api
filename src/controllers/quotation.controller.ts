@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { QuotationService } from '../services/quotation.service';
 import { CreateQuotationDto } from '../dtos/quotation/create-quotation.dto';
@@ -23,9 +24,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('quotations')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class QuotationController {
   constructor(private readonly quotationService: QuotationService) {}
 

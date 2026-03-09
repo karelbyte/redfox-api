@@ -25,7 +25,7 @@ export class BrandService {
     private readonly productRepository: Repository<Product>,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -235,7 +235,10 @@ export class BrandService {
     }
 
     const products = await this.productRepository.find({
-      where: { brand: { id } },
+      where: {
+        brand: { id },
+        organization_id: this.organizationId,
+      },
       select: ['id', 'name', 'sku'],
       withDeleted: false,
     });

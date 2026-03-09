@@ -22,6 +22,7 @@ import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
 import { PosPackSyncService } from '../services/pos-pack-sync.service';
 import { AccountReceivableModule } from './account-receivable.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AccountReceivableModule } from './account-receivable.module';
     LanguageModule,
     CertificationPackModule,
     AccountReceivableModule,
+    OrganizationModule,
   ],
   controllers: [WithdrawalController],
   providers: [

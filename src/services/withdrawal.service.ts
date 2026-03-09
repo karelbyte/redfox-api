@@ -52,6 +52,7 @@ import { CloseWithdrawalResponseDto } from '../dtos/withdrawal/close-withdrawal-
 import { TranslationService } from './translation.service';
 import { PosPackSyncService } from './pos-pack-sync.service';
 import { AccountReceivableService } from './account-receivable.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class WithdrawalService {
@@ -75,7 +76,12 @@ export class WithdrawalService {
     private readonly translationService: TranslationService,
     private readonly posPackSyncService: PosPackSyncService,
     private readonly accountReceivableService: AccountReceivableService,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapDetailToResponseDto(
     detail: WithdrawalDetail,
@@ -142,7 +148,7 @@ export class WithdrawalService {
     newAmount: number,
   ): Promise<void> {
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
     });
     if (withdrawal) {
       withdrawal.amount = Math.round(newAmount * 100) / 100;
@@ -155,7 +161,7 @@ export class WithdrawalService {
     userId?: string,
   ): Promise<WithdrawalResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id: createWithdrawalDto.client_id },
+      where: { id: createWithdrawalDto.client_id, organization_id: this.organizationId },
       relations: ['credit'],
     });
     if (!client) {
@@ -184,6 +190,7 @@ export class WithdrawalService {
       status: WithdrawalStatus.OPEN,
       paymentMethod:
         createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
+      organization_id: this.organizationId,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
@@ -198,7 +205,7 @@ export class WithdrawalService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { organization_id: this.organizationId };
     if (clientId) {
       where.client = { id: clientId };
     }
@@ -237,7 +244,7 @@ export class WithdrawalService {
 
   async findOne(id: string, userId?: string): Promise<WithdrawalResponseDto> {
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'client',
         'invoice',
@@ -270,7 +277,7 @@ export class WithdrawalService {
     userId?: string,
   ): Promise<WithdrawalResponseDto> {
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'client',
         'cashTransaction',
@@ -294,7 +301,7 @@ export class WithdrawalService {
 
     if (updateWithdrawalDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateWithdrawalDto.client_id },
+        where: { id: updateWithdrawalDto.client_id, organization_id: this.organizationId },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -333,7 +340,7 @@ export class WithdrawalService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!withdrawal) {
@@ -356,7 +363,7 @@ export class WithdrawalService {
   ): Promise<WithdrawalDetailResponseDto> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
     });
     if (!withdrawal) {
       const message = await this.translationService.translate(
@@ -374,7 +381,7 @@ export class WithdrawalService {
 
     // Verificar que el warehouse existe
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: createDetailDto.warehouse_id },
+      where: { id: createDetailDto.warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
       const message = await this.translationService.translate(
@@ -388,7 +395,7 @@ export class WithdrawalService {
     // Verificar si ya existe un detalle con este producto en la withdrawal
     const existingDetail = await this.withdrawalDetailRepository.findOne({
       where: {
-        withdrawal: { id: withdrawalId },
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
         product: { id: createDetailDto.product_id },
       },
       relations: [
@@ -504,7 +511,7 @@ export class WithdrawalService {
 
     const [details, total] = await this.withdrawalDetailRepository.findAndCount(
       {
-        where: { withdrawal: { id: withdrawalId } },
+        where: { withdrawal: { id: withdrawalId, organization_id: this.organizationId } },
         relations: [
           'product',
           'product.brand',
@@ -554,7 +561,10 @@ export class WithdrawalService {
     }
 
     const detail = await this.withdrawalDetailRepository.findOne({
-      where: { id: detailId, withdrawal: { id: withdrawalId } },
+      where: {
+        id: detailId,
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -582,7 +592,7 @@ export class WithdrawalService {
   ): Promise<WithdrawalDetailResponseDto> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
     });
     if (!withdrawal) {
       throw new NotFoundException(
@@ -591,7 +601,10 @@ export class WithdrawalService {
     }
 
     const detail = await this.withdrawalDetailRepository.findOne({
-      where: { id: detailId, withdrawal: { id: withdrawalId } },
+      where: {
+        id: detailId,
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -621,7 +634,7 @@ export class WithdrawalService {
 
     if (updateDetailDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updateDetailDto.warehouse_id },
+        where: { id: updateDetailDto.warehouse_id, organization_id: this.organizationId },
       });
       if (!warehouse) {
         throw new NotFoundException(
@@ -656,7 +669,7 @@ export class WithdrawalService {
   async removeDetail(withdrawalId: string, detailId: string): Promise<void> {
     // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
     });
     if (!withdrawal) {
       throw new NotFoundException(
@@ -665,7 +678,10 @@ export class WithdrawalService {
     }
 
     const detail = await this.withdrawalDetailRepository.findOne({
-      where: { id: detailId, withdrawal: { id: withdrawalId } },
+      where: {
+        id: detailId,
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
+      },
     });
 
     if (!detail) {
@@ -692,7 +708,7 @@ export class WithdrawalService {
   ): Promise<CloseWithdrawalResponseDto> {
     // Verificar que la withdrawal existe y está abierta
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
       relations: ['client', 'details', 'details.product', 'details.warehouse'],
     });
 
@@ -715,7 +731,7 @@ export class WithdrawalService {
 
     // Obtener todos los detalles de la withdrawal
     const withdrawalDetails = await this.withdrawalDetailRepository.find({
-      where: { withdrawal: { id: withdrawalId } },
+      where: { withdrawal: { id: withdrawalId, organization_id: this.organizationId } },
       relations: ['product', 'warehouse'],
     });
 
@@ -739,6 +755,7 @@ export class WithdrawalService {
           product: { id: detail.product.id },
           warehouse: { id: detail.warehouse.id },
           quantity: MoreThan(0),
+          organization_id: this.organizationId,
         },
         order: {
           created_at: 'ASC',
@@ -792,6 +809,7 @@ export class WithdrawalService {
           current_stock: Number(finalLot.quantity),
           batch_number: lot.batch_number,
           expiration_date: lot.expiration_date,
+          organization_id: this.organizationId,
         });
 
         await this.productHistoryRepository.save(productHistory);
@@ -869,7 +887,7 @@ export class WithdrawalService {
 
     try {
       const withdrawal = await queryRunner.manager.findOne(Withdrawal, {
-        where: { id: withdrawalId },
+        where: { id: withdrawalId, organization_id: this.organizationId },
         relations: [
           'client',
           'details',

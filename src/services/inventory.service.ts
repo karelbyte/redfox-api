@@ -14,6 +14,7 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class InventoryService {
@@ -26,7 +27,12 @@ export class InventoryService {
     private readonly warehouseMapper: WarehouseMapper,
     private translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private async mapToResponseDto(
     inventory: Inventory,
@@ -74,6 +80,7 @@ export class InventoryService {
       product: { id: createInventoryDto.productId },
       quantity: createInventoryDto.quantity,
       price: createInventoryDto.price,
+      organization_id: this.organizationId,
     });
     const savedInventory = await this.inventoryRepository.save(inventory);
 
@@ -93,7 +100,9 @@ export class InventoryService {
     const { page = 1, limit = 10, warehouse_id, term } = queryDto;
     const skip = (page - 1) * limit;
 
-    const whereConditions: FindOptionsWhere<Inventory> = {};
+    const whereConditions: FindOptionsWhere<Inventory> = {
+      organization_id: this.organizationId,
+    };
     if (warehouse_id) {
       whereConditions.warehouse = { id: warehouse_id };
     }
@@ -146,7 +155,7 @@ export class InventoryService {
 
   async findOne(id: string, userId?: string): Promise<InventoryResponseDto> {
     const inventory = await this.inventoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['product'],
       withDeleted: false,
     });
@@ -167,7 +176,7 @@ export class InventoryService {
     userId?: string,
   ): Promise<InventoryResponseDto> {
     const inventory = await this.inventoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['product'],
       withDeleted: false,
     });
@@ -203,7 +212,7 @@ export class InventoryService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const inventory = await this.inventoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['product'],
       withDeleted: false,
     });
@@ -241,7 +250,7 @@ export class InventoryService {
     pack_sync_error?: string;
   }> {
     const inventory = await this.inventoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['product', 'product.measurement_unit', 'warehouse'],
       withDeleted: false,
     });
@@ -273,8 +282,9 @@ export class InventoryService {
     const { page = 1, limit = 10, warehouse_id, term } = queryDto;
     const skip = (page - 1) * limit;
 
-    // Construir condiciones de búsqueda
-    const whereConditions: any = {};
+    const whereConditions: any = {
+      organization_id: this.organizationId,
+    };
 
     if (warehouse_id) {
       whereConditions.warehouse = { id: warehouse_id };

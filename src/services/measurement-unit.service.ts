@@ -29,7 +29,7 @@ export class MeasurementUnitService {
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -94,15 +94,15 @@ export class MeasurementUnitService {
     };
     const whereConditions = term
       ? {
-          ...baseConditions,
-          where: [
-            { code: Like(`%${term}%`), organization_id: this.organizationId },
-            {
-              description: Like(`%${term}%`),
-              organization_id: this.organizationId,
-            },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          { code: Like(`%${term}%`), organization_id: this.organizationId },
+          {
+            description: Like(`%${term}%`),
+            organization_id: this.organizationId,
+          },
+        ],
+      }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -195,7 +195,10 @@ export class MeasurementUnitService {
         updateMeasurementUnitDto.code !== measurementUnit.code
       ) {
         const existingUnit = await this.measurementUnitRepository.findOne({
-          where: { code: updateMeasurementUnitDto.code },
+          where: {
+            code: updateMeasurementUnitDto.code,
+            organization_id: this.organizationId,
+          },
           withDeleted: false,
         });
 
@@ -249,7 +252,10 @@ export class MeasurementUnitService {
 
     // Verificar si la unidad de medida está siendo usada en productos
     const productsUsingUnit = await this.productRepository.count({
-      where: { measurement_unit: { id } },
+      where: {
+        measurement_unit: { id },
+        organization_id: this.organizationId,
+      },
       withDeleted: false,
     });
 
@@ -290,7 +296,10 @@ export class MeasurementUnitService {
     }
 
     const products = await this.productRepository.find({
-      where: { measurement_unit: { id } },
+      where: {
+        measurement_unit: { id },
+        organization_id: this.organizationId,
+      },
       select: ['id', 'name', 'sku'],
       withDeleted: false,
     });

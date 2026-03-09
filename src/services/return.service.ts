@@ -28,6 +28,7 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { ProviderMapper } from './mappers/provider.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class ReturnService {
@@ -51,7 +52,12 @@ export class ReturnService {
     private productMapper: ProductMapper,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
-  ) {}
+    private tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async create(
     createDto: CreateReturnDto,
@@ -59,7 +65,7 @@ export class ReturnService {
   ): Promise<ReturnResponseDto> {
     // Validar que el almacén exista y esté abierto
     const sourceWarehouse = await this.warehouseRepository.findOne({
-      where: { id: createDto.sourceWarehouseId, isOpen: false },
+      where: { id: createDto.sourceWarehouseId, isOpen: false, organization_id: this.organizationId },
     });
     if (!sourceWarehouse) {
       throw new NotFoundException(
@@ -72,7 +78,7 @@ export class ReturnService {
 
     // Validar que el proveedor exista
     const targetProvider = await this.providerRepository.findOne({
-      where: { id: createDto.targetProviderId },
+      where: { id: createDto.targetProviderId, organization_id: this.organizationId },
     });
     if (!targetProvider) {
       throw new NotFoundException(
@@ -93,6 +99,7 @@ export class ReturnService {
       date: new Date(createDto.date),
       description: createDto.description,
       status: false,
+      organization_id: this.organizationId,
     });
 
     const savedReturn = await this.returnRepository.save(return_);
@@ -108,7 +115,7 @@ export class ReturnService {
   ): Promise<ReturnDetailResponseDto> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
-      where: { id: returnId },
+      where: { id: returnId, organization_id: this.organizationId },
     });
     if (!return_) {
       throw new NotFoundException(
@@ -120,7 +127,7 @@ export class ReturnService {
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.productId },
+      where: { id: createDetailDto.productId, organization_id: this.organizationId },
     });
     if (!product) {
       throw new NotFoundException(
@@ -133,8 +140,8 @@ export class ReturnService {
     // Verificar si ya existe un detalle con este producto en la devolución
     const existingDetail = await this.returnDetailRepository.findOne({
       where: {
-        return: { id: returnId },
-        product: { id: createDetailDto.productId },
+        return: { id: returnId, organization_id: this.organizationId },
+        product: { id: createDetailDto.productId, organization_id: this.organizationId },
       },
       relations: [
         'product',
@@ -212,7 +219,7 @@ export class ReturnService {
   ): Promise<PaginatedResponse<ReturnDetailResponseDto>> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
-      where: { id: returnId },
+      where: { id: returnId, organization_id: this.organizationId },
     });
     if (!return_) {
       throw new NotFoundException(
@@ -277,7 +284,10 @@ export class ReturnService {
     }
 
     const detail = await this.returnDetailRepository.findOne({
-      where: { id: detailId, return: { id: returnId } },
+      where: {
+        id: detailId,
+        return: { id: returnId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -308,7 +318,7 @@ export class ReturnService {
   ): Promise<ReturnDetailResponseDto> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
-      where: { id: returnId },
+      where: { id: returnId, organization_id: this.organizationId },
     });
     if (!return_) {
       throw new NotFoundException(
@@ -319,7 +329,10 @@ export class ReturnService {
     }
 
     const detail = await this.returnDetailRepository.findOne({
-      where: { id: detailId, return: { id: returnId } },
+      where: {
+        id: detailId,
+        return: { id: returnId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -359,7 +372,7 @@ export class ReturnService {
   ): Promise<void> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
-      where: { id: returnId },
+      where: { id: returnId, organization_id: this.organizationId },
     });
     if (!return_) {
       throw new NotFoundException(
@@ -370,7 +383,10 @@ export class ReturnService {
     }
 
     const detail = await this.returnDetailRepository.findOne({
-      where: { id: detailId, return: { id: returnId } },
+      where: {
+        id: detailId,
+        return: { id: returnId, organization_id: this.organizationId },
+      },
     });
 
     if (!detail) {
@@ -396,7 +412,7 @@ export class ReturnService {
     try {
       // Verificar que la devolución existe y no ha sido procesada
       const return_ = await this.returnRepository.findOne({
-        where: { id: returnId },
+        where: { id: returnId, organization_id: this.organizationId },
         relations: ['details', 'sourceWarehouse', 'targetProvider'],
       });
 
@@ -430,6 +446,7 @@ export class ReturnService {
           where: {
             product_id: detail.productId,
             warehouse: { id: return_.sourceWarehouseId },
+            organization_id: this.organizationId,
           },
         });
 
@@ -465,6 +482,7 @@ export class ReturnService {
           quantity: detail.quantity,
           current_stock:
             Number(sourceInventory.quantity) - Number(detail.quantity),
+          organization_id: this.organizationId,
         });
 
         await queryRunner.manager.save(sourceHistory);
@@ -503,6 +521,7 @@ export class ReturnService {
       .leftJoinAndSelect('return.targetProvider', 'targetProvider')
       .leftJoinAndSelect('return.details', 'details')
       .leftJoinAndSelect('details.product', 'product')
+      .where('return.organization_id = :orgId', { orgId: this.organizationId })
       .orderBy('return.created_at', 'DESC');
 
     if (queryDto?.sourceWarehouseId) {
@@ -551,7 +570,7 @@ export class ReturnService {
 
   async findOne(id: string, userId: string): Promise<ReturnResponseDto> {
     const return_ = await this.returnRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'sourceWarehouse',
         'targetProvider',
@@ -571,7 +590,7 @@ export class ReturnService {
 
   async remove(id: string, userId: string): Promise<void> {
     const return_ = await this.returnRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['details'],
     });
 
@@ -591,7 +610,10 @@ export class ReturnService {
       );
     }
 
-    await this.returnRepository.softDelete(id);
+    await this.returnRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   private async generateUniqueCode(): Promise<string> {

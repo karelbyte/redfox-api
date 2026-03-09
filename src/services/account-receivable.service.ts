@@ -15,6 +15,7 @@ import { UpdateAccountReceivableDto } from '../dtos/account-receivable/update-ac
 import { CreateAccountReceivablePaymentDto } from '../dtos/account-receivable/create-payment.dto';
 import { ClientService } from './client.service';
 import { Inject, forwardRef } from '@nestjs/common';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class AccountReceivableService {
@@ -25,13 +26,29 @@ export class AccountReceivableService {
     private paymentRepository: Repository<AccountReceivablePayment>,
     @Inject(forwardRef(() => ClientService))
     private readonly clientService: ClientService,
+    private readonly tenantContext: TenantContext,
   ) { }
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required');
+    }
+    return orgId;
+  }
 
   async create(
     createAccountReceivableDto: CreateAccountReceivableDto,
   ): Promise<AccountReceivable> {
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) {
+      throw new BadRequestException('Organization context is missing');
+    }
     const existingAccount = await this.accountReceivableRepository.findOne({
-      where: { referenceNumber: createAccountReceivableDto.referenceNumber },
+      where: {
+        referenceNumber: createAccountReceivableDto.referenceNumber,
+        organization_id: organizationId
+      },
     });
 
     if (existingAccount) {
@@ -52,6 +69,7 @@ export class AccountReceivableService {
 
     const accountReceivable = new AccountReceivable();
     Object.assign(accountReceivable, createAccountReceivableDto);
+    accountReceivable.organization_id = organizationId;
     accountReceivable.totalAmount = totalAmount;
     accountReceivable.remainingAmount = remainingAmount;
     accountReceivable.paidAmount = paidAmount;
@@ -86,7 +104,10 @@ export class AccountReceivableService {
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.client', 'client')
       .leftJoinAndSelect('account.invoice', 'invoice')
-      .leftJoinAndSelect('account.payments', 'payments');
+      .leftJoinAndSelect('account.payments', 'payments')
+      .where('account.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      });
 
     if (search) {
       queryBuilder.andWhere(
@@ -131,7 +152,7 @@ export class AccountReceivableService {
 
   async findOne(id: string): Promise<AccountReceivable> {
     const account = await this.accountReceivableRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['client', 'invoice', 'payments', 'payments.createdByUser'],
     });
 
@@ -168,8 +189,11 @@ export class AccountReceivableService {
       );
     }
 
+    const organizationId = this.organizationId;
+
     // Usar insert en lugar de create + save para evitar problemas con TypeORM
     const insertResult = await this.paymentRepository.insert({
+      organization_id: organizationId,
       amount: createPaymentDto.amount,
       paymentDate: createPaymentDto.paymentDate,
       paymentMethod: createPaymentDto.paymentMethod,
@@ -227,7 +251,9 @@ export class AccountReceivableService {
     overdueAmount: number;
     overdueCount: number;
   }> {
-    const accounts = await this.accountReceivableRepository.find();
+    const accounts = await this.accountReceivableRepository.find({
+      where: { organization_id: this.organizationId },
+    });
     const today = new Date();
 
     const summary = accounts.reduce(
@@ -267,6 +293,7 @@ export class AccountReceivableService {
       where: {
         dueDate: LessThan(today),
         status: AccountReceivableStatus.PENDING,
+        organization_id: this.organizationId,
       },
       relations: ['client'],
       order: { dueDate: 'ASC' },
@@ -281,6 +308,9 @@ export class AccountReceivableService {
       .update(AccountReceivable)
       .set({ status: AccountReceivableStatus.OVERDUE })
       .where('dueDate < :today', { today })
+      .andWhere('organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      })
       .andWhere('status IN (:...statuses)', {
         statuses: [
           AccountReceivableStatus.PENDING,
@@ -310,7 +340,7 @@ export class AccountReceivableService {
     }>;
   }> {
     const accounts = await this.accountReceivableRepository.find({
-      where: { clientId },
+      where: { clientId, organization_id: this.organizationId },
       relations: ['client', 'client.credit', 'client.credit.currency'],
       order: { dueDate: 'ASC' },
     });

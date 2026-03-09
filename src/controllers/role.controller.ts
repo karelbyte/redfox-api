@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { RoleService } from '../services/role.service';
 import { CreateRoleDto } from '../dtos/role/create-role.dto';
@@ -18,9 +19,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('roles')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

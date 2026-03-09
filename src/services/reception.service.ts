@@ -32,6 +32,8 @@ import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { ProviderMapper } from './mappers/provider.mapper';
 
+import { TenantContext } from './tenant-context.service';
+
 @Injectable()
 export class ReceptionService {
   constructor(
@@ -55,7 +57,12 @@ export class ReceptionService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly providerMapper: ProviderMapper,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapDetailToResponseDto(
     detail: ReceptionDetail,
@@ -94,7 +101,7 @@ export class ReceptionService {
     newAmount: number,
   ): Promise<void> {
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (reception) {
       reception.amount = Math.round(newAmount * 100) / 100;
@@ -108,7 +115,7 @@ export class ReceptionService {
   ): Promise<ReceptionResponseDto> {
     // Verificar que el provider existe
     const provider = await this.providerRepository.findOne({
-      where: { id: createReceptionDto.provider_id },
+      where: { id: createReceptionDto.provider_id, organization_id: this.organizationId },
     });
     if (!provider) {
       const message = await this.translationService.translate(
@@ -121,7 +128,7 @@ export class ReceptionService {
 
     // Verificar que el warehouse existe
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: createReceptionDto.warehouse_id },
+      where: { id: createReceptionDto.warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
       const message = await this.translationService.translate(
@@ -139,13 +146,14 @@ export class ReceptionService {
       warehouse: warehouse,
       document: createReceptionDto.document,
       amount: createReceptionDto.amount,
+      organization_id: this.organizationId,
     });
 
     const savedReception = await this.receptionRepository.save(reception);
 
     // Recargar con relaciones para la respuesta
     const receptionWithRelations = await this.receptionRepository.findOne({
-      where: { id: savedReception.id },
+      where: { id: savedReception.id, organization_id: this.organizationId },
       relations: ['provider', 'warehouse'],
     });
 
@@ -169,6 +177,7 @@ export class ReceptionService {
     const skip = (page - 1) * limit;
 
     const [receptions, total] = await this.receptionRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       relations: ['provider', 'warehouse'],
       skip,
       take: limit,
@@ -192,7 +201,7 @@ export class ReceptionService {
 
   async findOne(id: string, userId?: string): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
@@ -214,7 +223,7 @@ export class ReceptionService {
     userId?: string,
   ): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
@@ -229,7 +238,7 @@ export class ReceptionService {
 
     if (updateReceptionDto.provider_id) {
       const provider = await this.providerRepository.findOne({
-        where: { id: updateReceptionDto.provider_id },
+        where: { id: updateReceptionDto.provider_id, organization_id: this.organizationId },
       });
       if (!provider) {
         const message = await this.translationService.translate(
@@ -255,7 +264,7 @@ export class ReceptionService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
-    const reception = await this.receptionRepository.findOne({ where: { id } });
+    const reception = await this.receptionRepository.findOne({ where: { id, organization_id: this.organizationId } });
     if (!reception) {
       const message = await this.translationService.translate(
         'reception.not_found',
@@ -265,7 +274,10 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    await this.receptionRepository.softDelete(id);
+    await this.receptionRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   async createDetail(
@@ -274,7 +286,7 @@ export class ReceptionService {
     userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -286,7 +298,7 @@ export class ReceptionService {
     }
 
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id },
+      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
     });
     if (!product) {
       const message = await this.translationService.translate(
@@ -352,7 +364,7 @@ export class ReceptionService {
     // Verificar que la recepción existe
     console.log('receptionId', receptionId);
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -367,7 +379,9 @@ export class ReceptionService {
     const skip = (page - 1) * limit;
 
     const [details, total] = await this.receptionDetailRepository.findAndCount({
-      where: { reception: { id: receptionId } },
+      where: {
+        reception: { id: receptionId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -403,7 +417,7 @@ export class ReceptionService {
   ): Promise<ReceptionDetailResponseDto> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -415,7 +429,10 @@ export class ReceptionService {
     }
 
     const detail = await this.receptionDetailRepository.findOne({
-      where: { id: detailId, reception: { id: receptionId } },
+      where: {
+        id: detailId,
+        reception: { id: receptionId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -446,7 +463,7 @@ export class ReceptionService {
   ): Promise<ReceptionDetailResponseDto> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -458,7 +475,10 @@ export class ReceptionService {
     }
 
     const detail = await this.receptionDetailRepository.findOne({
-      where: { id: detailId, reception: { id: receptionId } },
+      where: {
+        id: detailId,
+        reception: { id: receptionId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -483,7 +503,7 @@ export class ReceptionService {
 
     if (updateDetailDto.product_id) {
       const product = await this.productRepository.findOne({
-        where: { id: updateDetailDto.product_id },
+        where: { id: updateDetailDto.product_id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
       if (!product) {
@@ -526,7 +546,7 @@ export class ReceptionService {
   ): Promise<void> {
     // Verificar que la recepción existe
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -538,7 +558,10 @@ export class ReceptionService {
     }
 
     const detail = await this.receptionDetailRepository.findOne({
-      where: { id: detailId, reception: { id: receptionId } },
+      where: {
+        id: detailId,
+        reception: { id: receptionId, organization_id: this.organizationId },
+      },
     });
 
     if (!detail) {
@@ -567,7 +590,7 @@ export class ReceptionService {
     userId?: string,
   ): Promise<CloseReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId },
+      where: { id: receptionId, organization_id: this.organizationId },
       relations: ['warehouse', 'details', 'details.product'],
     });
 
@@ -589,7 +612,9 @@ export class ReceptionService {
     }
 
     const receptionDetails = await this.receptionDetailRepository.find({
-      where: { reception: { id: receptionId } },
+      where: {
+        reception: { id: receptionId, organization_id: this.organizationId },
+      },
       relations: ['product', 'product.measurement_unit'],
     });
 
@@ -613,6 +638,7 @@ export class ReceptionService {
         batch_number: detail.batch_number,
         expiration_date: detail.expiration_date,
         entry_id: reception.id,
+        organization_id: this.organizationId,
       });
 
       const finalInventory = await this.inventoryRepository.save(newInventory);
@@ -626,6 +652,7 @@ export class ReceptionService {
         current_stock: Number(finalInventory.quantity),
         batch_number: detail.batch_number,
         expiration_date: detail.expiration_date,
+        organization_id: this.organizationId,
       });
 
       await this.productHistoryRepository.save(productHistory);
@@ -649,14 +676,14 @@ export class ReceptionService {
     const message =
       transferredProducts > 0
         ? await this.translationService.translate(
-            'reception.closed_successfully',
-            userId,
-            { transferredProducts },
-          )
+          'reception.closed_successfully',
+          userId,
+          { transferredProducts },
+        )
         : await this.translationService.translate(
-            'reception.closed_no_products',
-            userId,
-          );
+          'reception.closed_no_products',
+          userId,
+        );
 
     return {
       receptionId: reception.id,

@@ -25,6 +25,7 @@ import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class QuotationService {
@@ -46,7 +47,12 @@ export class QuotationService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapDetailToResponseDto(
     detail: QuotationDetail,
@@ -95,7 +101,7 @@ export class QuotationService {
 
   private async updateQuotationTotals(quotationId: string): Promise<void> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
       relations: ['details', 'details.product', 'details.product.tax'],
     });
 
@@ -126,7 +132,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id: createQuotationDto.client_id },
+      where: { id: createQuotationDto.client_id, organization_id: this.organizationId },
     });
     if (!client) {
       const message = await this.translationService.translate(
@@ -138,7 +144,7 @@ export class QuotationService {
     }
 
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: createQuotationDto.warehouse_id },
+      where: { id: createQuotationDto.warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
       const message = await this.translationService.translate(
@@ -160,12 +166,13 @@ export class QuotationService {
       tax: 0,
       total: 0,
       status: QuotationStatus.DRAFT,
+      organization_id: this.organizationId,
     });
 
     const savedQuotation = await this.quotationRepository.save(quotation);
 
     const quotationWithRelations = await this.quotationRepository.findOne({
-      where: { id: savedQuotation.id },
+      where: { id: savedQuotation.id, organization_id: this.organizationId },
       relations: ['client', 'warehouse'],
     });
 
@@ -189,6 +196,7 @@ export class QuotationService {
     const skip = (page - 1) * limit;
 
     const [quotations, total] = await this.quotationRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       relations: ['client', 'warehouse'],
       skip,
       take: limit,
@@ -212,7 +220,7 @@ export class QuotationService {
 
   async findOne(id: string, userId?: string): Promise<QuotationResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['client', 'warehouse', 'details'],
     });
 
@@ -234,7 +242,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['client', 'warehouse'],
     });
 
@@ -249,7 +257,7 @@ export class QuotationService {
 
     if (updateQuotationDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateQuotationDto.client_id },
+        where: { id: updateQuotationDto.client_id, organization_id: this.organizationId },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -264,7 +272,7 @@ export class QuotationService {
 
     if (updateQuotationDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updateQuotationDto.warehouse_id },
+        where: { id: updateQuotationDto.warehouse_id, organization_id: this.organizationId },
       });
       if (!warehouse) {
         const message = await this.translationService.translate(
@@ -290,7 +298,9 @@ export class QuotationService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
-    const quotation = await this.quotationRepository.findOne({ where: { id } });
+    const quotation = await this.quotationRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
     if (!quotation) {
       const message = await this.translationService.translate(
         'quotation.not_found',
@@ -300,7 +310,10 @@ export class QuotationService {
       throw new NotFoundException(message);
     }
 
-    await this.quotationRepository.softDelete(id);
+    await this.quotationRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 
   async createDetail(
@@ -309,7 +322,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationDetailResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
     });
     if (!quotation) {
       const message = await this.translationService.translate(
@@ -321,7 +334,7 @@ export class QuotationService {
     }
 
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id },
+      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
       relations: ['brand', 'category', 'tax', 'measurement_unit'],
     });
     if (!product) {
@@ -335,8 +348,8 @@ export class QuotationService {
 
     const existingDetail = await this.quotationDetailRepository.findOne({
       where: {
-        quotation: { id: quotationId },
-        product: { id: createDetailDto.product_id },
+        quotation: { id: quotationId, organization_id: this.organizationId },
+        product: { id: createDetailDto.product_id, organization_id: this.organizationId },
       },
       relations: [
         'product',
@@ -398,7 +411,10 @@ export class QuotationService {
     await this.updateQuotationTotals(quotationId);
 
     const detailWithRelations = await this.quotationDetailRepository.findOne({
-      where: { id: savedDetail.id },
+      where: {
+        id: savedDetail.id,
+        quotation: { id: quotationId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -427,7 +443,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<PaginatedResponseDto<QuotationDetailResponseDto>> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
     });
     if (!quotation) {
       const message = await this.translationService.translate(
@@ -442,7 +458,9 @@ export class QuotationService {
     const skip = (page - 1) * limit;
 
     const [details, total] = await this.quotationDetailRepository.findAndCount({
-      where: { quotation: { id: quotationId } },
+      where: {
+        quotation: { id: quotationId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -477,7 +495,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationDetailResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
     });
     if (!quotation) {
       const message = await this.translationService.translate(
@@ -489,7 +507,10 @@ export class QuotationService {
     }
 
     const detail = await this.quotationDetailRepository.findOne({
-      where: { id: detailId, quotation: { id: quotationId } },
+      where: {
+        id: detailId,
+        quotation: { id: quotationId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -519,7 +540,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationDetailResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
     });
     if (!quotation) {
       const message = await this.translationService.translate(
@@ -531,7 +552,10 @@ export class QuotationService {
     }
 
     const detail = await this.quotationDetailRepository.findOne({
-      where: { id: detailId, quotation: { id: quotationId } },
+      where: {
+        id: detailId,
+        quotation: { id: quotationId, organization_id: this.organizationId },
+      },
       relations: [
         'product',
         'product.brand',
@@ -553,7 +577,7 @@ export class QuotationService {
 
     if (updateDetailDto.product_id) {
       const product = await this.productRepository.findOne({
-        where: { id: updateDetailDto.product_id },
+        where: { id: updateDetailDto.product_id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
       if (!product) {
@@ -599,7 +623,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<void> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
     });
     if (!quotation) {
       const message = await this.translationService.translate(
@@ -611,7 +635,10 @@ export class QuotationService {
     }
 
     const detail = await this.quotationDetailRepository.findOne({
-      where: { id: detailId, quotation: { id: quotationId } },
+      where: {
+        id: detailId,
+        quotation: { id: quotationId, organization_id: this.organizationId },
+      },
     });
 
     if (!detail) {
@@ -632,7 +659,7 @@ export class QuotationService {
     userId?: string,
   ): Promise<ConvertToSaleResponseDto> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id: quotationId },
+      where: { id: quotationId, organization_id: this.organizationId },
       relations: ['client', 'warehouse', 'details', 'details.product'],
     });
 
@@ -667,6 +694,7 @@ export class QuotationService {
       client: quotation.client,
       amount: quotation.total,
       status: WithdrawalStatus.OPEN,
+      organization_id: this.organizationId,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);

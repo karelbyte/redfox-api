@@ -18,6 +18,7 @@ import { CashRegisterResponseDto } from '../dtos/cash-register/cash-register-res
 import { CashRegisterBalanceResponseDto } from '../dtos/cash-register/cash-register-balance-response.dto';
 import { CashRegisterMapper } from './mappers/cash-register.mapper';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CashRegisterService {
@@ -27,13 +28,18 @@ export class CashRegisterService {
     @InjectRepository(CashTransaction)
     private readonly cashTransactionRepository: Repository<CashTransaction>,
     private readonly translationService: TranslationService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   async getCurrentCashRegister(
     userId?: string,
   ): Promise<CashRegisterResponseDto> {
     const currentCashRegister = await this.cashRegisterRepository.findOne({
-      where: { status: CashRegisterStatus.OPEN },
+      where: { status: CashRegisterStatus.OPEN, organization_id: this.organizationId },
       order: { created_at: 'DESC' },
     });
 
@@ -55,7 +61,7 @@ export class CashRegisterService {
     try {
       // Verificar si ya existe una caja con el mismo código
       const existingCashRegister = await this.cashRegisterRepository.findOne({
-        where: { code: createCashRegisterDto.code },
+        where: { code: createCashRegisterDto.code, organization_id: this.organizationId },
       });
 
       if (existingCashRegister) {
@@ -72,6 +78,7 @@ export class CashRegisterService {
         initialAmount: createCashRegisterDto.initial_amount,
         currentAmount: createCashRegisterDto.initial_amount,
         openedBy: userId,
+        organization_id: this.organizationId,
       });
 
       const savedCashRegister =
@@ -100,7 +107,7 @@ export class CashRegisterService {
   ): Promise<CashRegisterResponseDto> {
     // Verificar si ya hay una caja abierta
     const existingOpenCashRegister = await this.cashRegisterRepository.findOne({
-      where: { status: CashRegisterStatus.OPEN },
+      where: { status: CashRegisterStatus.OPEN, organization_id: this.organizationId },
     });
 
     if (existingOpenCashRegister) {
@@ -125,6 +132,7 @@ export class CashRegisterService {
       status: CashRegisterStatus.OPEN,
       openedAt: new Date(),
       openedBy: userId,
+      organization_id: this.organizationId,
     });
 
     const savedCashRegister =
@@ -137,7 +145,7 @@ export class CashRegisterService {
     userId?: string,
   ): Promise<CashRegisterResponseDto> {
     const cashRegister = await this.cashRegisterRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!cashRegister) {
@@ -173,7 +181,7 @@ export class CashRegisterService {
   ): Promise<CashRegisterResponseDto> {
     try {
       const cashRegister = await this.cashRegisterRepository.findOne({
-        where: { id },
+        where: { id, organization_id: this.organizationId },
       });
 
       if (!cashRegister) {
@@ -191,7 +199,7 @@ export class CashRegisterService {
         updateCashRegisterDto.code !== cashRegister.code
       ) {
         const existingCashRegister = await this.cashRegisterRepository.findOne({
-          where: { code: updateCashRegisterDto.code },
+          where: { code: updateCashRegisterDto.code, organization_id: this.organizationId },
         });
 
         if (existingCashRegister) {
@@ -239,7 +247,7 @@ export class CashRegisterService {
     userId?: string,
   ): Promise<CashRegisterBalanceResponseDto> {
     const cashRegister = await this.cashRegisterRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!cashRegister) {
@@ -272,7 +280,7 @@ export class CashRegisterService {
 
   async findOne(id: string, userId?: string): Promise<CashRegisterResponseDto> {
     const cashRegister = await this.cashRegisterRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!cashRegister) {
@@ -289,7 +297,7 @@ export class CashRegisterService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const cashRegister = await this.cashRegisterRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!cashRegister) {
@@ -301,6 +309,9 @@ export class CashRegisterService {
       throw new NotFoundException(message);
     }
 
-    await this.cashRegisterRepository.softDelete(id);
+    await this.cashRegisterRepository.softDelete({
+      id,
+      organization_id: this.organizationId,
+    });
   }
 }

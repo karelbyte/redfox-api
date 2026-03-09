@@ -8,6 +8,7 @@ import {
   Query,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ReturnService } from '../services/return.service';
 import { CreateReturnDto } from '../dtos/return/create-return.dto';
@@ -22,9 +23,11 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { Public } from '../decorators/public.decorator';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('returns')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ReturnController {
   constructor(private readonly returnService: ReturnService) {}
 

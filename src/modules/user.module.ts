@@ -7,9 +7,14 @@ import { RoleModule } from './role.module';
 import { TranslationService } from '../services/translation.service';
 import { UserContextService } from '../services/user-context.service';
 import { Language } from '../models/language.entity';
+import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Language]), RoleModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Language]),
+    RoleModule,
+    OrganizationModule,
+  ],
   controllers: [UserController],
   providers: [UserService, TranslationService, UserContextService],
   exports: [UserService],

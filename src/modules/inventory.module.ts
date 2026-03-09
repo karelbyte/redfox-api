@@ -14,6 +14,7 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LanguageModule } from './language.module';
     WarehouseModule,
     InventoryPackSyncModule,
     LanguageModule,
+    OrganizationModule,
   ],
   controllers: [InventoryController],
   providers: [

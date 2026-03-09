@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { AccountReceivable } from './account-receivable.entity';
 import { User } from './user.entity';
+import { Organization } from './organization.entity';
 
 export enum PaymentMethod {
   CASH = 'cash',
@@ -23,6 +24,13 @@ export enum PaymentMethod {
 export class AccountReceivablePayment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;

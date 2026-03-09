@@ -30,13 +30,18 @@ export class AccountPayableService {
     private readonly tenantContext: TenantContext,
   ) { }
 
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required');
+    }
+    return orgId;
+  }
+
   async create(
     createAccountPayableDto: CreateAccountPayableDto,
   ): Promise<AccountPayable> {
-    const organizationId = this.tenantContext.getOrganizationId();
-    if (!organizationId) {
-      throw new BadRequestException('Organization context is missing');
-    }
+    const organizationId = this.organizationId;
     const totalAmount = Number(createAccountPayableDto.totalAmount);
     const remainingAmount = Number(createAccountPayableDto.remainingAmount);
     const paidAmount = totalAmount - remainingAmount;
@@ -93,7 +98,10 @@ export class AccountPayableService {
       .createQueryBuilder('accountPayable')
       .leftJoinAndSelect('accountPayable.provider', 'provider')
       .leftJoinAndSelect('accountPayable.purchaseOrder', 'purchaseOrder')
-      .leftJoinAndSelect('accountPayable.payments', 'payments');
+      .leftJoinAndSelect('accountPayable.payments', 'payments')
+      .where('accountPayable.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      });
 
     if (search) {
       queryBuilder.andWhere(
@@ -140,7 +148,7 @@ export class AccountPayableService {
 
   async findOne(id: string): Promise<AccountPayable> {
     const accountPayable = await this.accountPayableRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['provider', 'purchaseOrder', 'payments', 'payments.createdByUser'],
     });
 
@@ -177,7 +185,10 @@ export class AccountPayableService {
     pendingAmount: number;
   }> {
     const queryBuilder =
-      this.accountPayableRepository.createQueryBuilder('accountPayable');
+      this.accountPayableRepository.createQueryBuilder('accountPayable')
+        .where('accountPayable.organization_id = :organizationId', {
+          organizationId: this.organizationId,
+        });
 
     if (startDate && endDate) {
       queryBuilder.where(
@@ -231,10 +242,7 @@ export class AccountPayableService {
       );
     }
 
-    const organizationId = this.tenantContext.getOrganizationId();
-    if (!organizationId) {
-      throw new BadRequestException('Organization context is missing');
-    }
+    const organizationId = this.organizationId;
 
     const insertResult = await this.paymentRepository.insert({
       organization_id: organizationId,

@@ -23,6 +23,11 @@ export class CreateAccountReceivablePaymentsTable1716400000360
             default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
+            name: 'organization_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+          },
+          {
             name: 'amount',
             type: 'decimal',
             precision: 10,
@@ -81,6 +86,16 @@ export class CreateAccountReceivablePaymentsTable1716400000360
         ],
       }),
       true,
+    );
+
+    await queryRunner.createForeignKey(
+      'account_receivable_payments',
+      new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
     );
 
     await queryRunner.createForeignKey(

@@ -18,6 +18,7 @@ import { MeasurementUnitModule } from './measurement-unit.module';
 import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ProductMapper } from '../services/mappers/product.mapper';
     TaxModule,
     MeasurementUnitModule,
     LanguageModule,
+    OrganizationModule,
   ],
   controllers: [WarehouseAdjustmentController],
   providers: [WarehouseAdjustmentService, WarehouseMapper, ProductMapper],

@@ -29,6 +29,7 @@ import { ClientMapper } from './mappers/client.mapper';
 import { WithdrawalMapper } from './mappers/withdrawal.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class InvoiceService {
@@ -51,7 +52,12 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) {}
+    private readonly tenantContext: TenantContext,
+  ) { }
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
@@ -137,7 +143,7 @@ export class InvoiceService {
     const { client_id, withdrawal_id, details, ...rest } = createInvoiceDto;
 
     const client = await this.clientRepository.findOne({
-      where: { id: client_id },
+      where: { id: client_id, organization_id: this.organizationId },
     });
     if (!client) {
       const message = await this.translationService.translate(
@@ -151,7 +157,7 @@ export class InvoiceService {
     let withdrawal: Withdrawal | undefined = undefined;
     if (withdrawal_id) {
       const foundWithdrawal = await this.withdrawalRepository.findOne({
-        where: { id: withdrawal_id },
+        where: { id: withdrawal_id, organization_id: this.organizationId },
       });
       if (!foundWithdrawal) {
         const message = await this.translationService.translate(
@@ -165,7 +171,7 @@ export class InvoiceService {
     }
 
     const existingInvoice = await this.invoiceRepository.findOne({
-      where: { code: createInvoiceDto.code },
+      where: { code: createInvoiceDto.code, organization_id: this.organizationId },
     });
     if (existingInvoice) {
       const message = await this.translationService.translate(
@@ -190,6 +196,7 @@ export class InvoiceService {
       payment_method: rest.payment_method,
       payment_conditions: rest.payment_conditions,
       notes: rest.notes,
+      organization_id: this.organizationId,
     });
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
@@ -243,6 +250,7 @@ export class InvoiceService {
     const skip = (page - 1) * limit;
 
     const [invoices, total] = await this.invoiceRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       relations: [
         'client',
         'withdrawal',
@@ -271,7 +279,7 @@ export class InvoiceService {
 
   async findOne(id: string, userId?: string): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: [
         'client',
         'withdrawal',
@@ -302,7 +310,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['client', 'withdrawal', 'details'],
     });
 
@@ -317,7 +325,7 @@ export class InvoiceService {
 
     if (updateInvoiceDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateInvoiceDto.client_id },
+        where: { id: updateInvoiceDto.client_id, organization_id: this.organizationId },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -352,7 +360,7 @@ export class InvoiceService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!invoice) {
@@ -373,7 +381,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceResponseDto> {
     const withdrawal = await this.withdrawalRepository.findOne({
-      where: { id: withdrawalId },
+      where: { id: withdrawalId, organization_id: this.organizationId },
       relations: [
         'client',
         'details',
@@ -402,7 +410,10 @@ export class InvoiceService {
 
     // Idempotencia: si ya existe factura para este withdrawal, devolverla
     const existingByWithdrawal = await this.invoiceRepository.findOne({
-      where: { withdrawal: { id: withdrawalId } },
+      where: {
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
+        organization_id: this.organizationId,
+      },
       relations: [
         'client',
         'withdrawal',
@@ -419,7 +430,7 @@ export class InvoiceService {
     }
 
     const existingByCode = await this.invoiceRepository.findOne({
-      where: { code: invoiceCode },
+      where: { code: invoiceCode, organization_id: this.organizationId },
     });
     if (existingByCode) {
       const message = await this.translationService.translate(
@@ -450,6 +461,7 @@ export class InvoiceService {
       tax_amount: amounts.tax_amount,
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
+      organization_id: this.organizationId,
     });
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
@@ -515,7 +527,10 @@ export class InvoiceService {
     let withdrawals: Withdrawal[];
     if (dto.withdrawal_ids?.length) {
       withdrawals = await this.withdrawalRepository.find({
-        where: dto.withdrawal_ids.map((id) => ({ id })),
+        where: dto.withdrawal_ids.map((id) => ({ 
+          id, 
+          organization_id: this.organizationId 
+        })),
         relations: ['client'],
       });
     } else if (dto.from && dto.to) {
@@ -523,7 +538,8 @@ export class InvoiceService {
       const toDate = new Date(dto.to);
       withdrawals = await this.withdrawalRepository
         .createQueryBuilder('w')
-        .where('w.created_at >= :from', { from: fromDate })
+        .where('w.organization_id = :organizationId', { organizationId: this.organizationId })
+        .andWhere('w.created_at >= :from', { from: fromDate })
         .andWhere('w.created_at <= :to', { to: toDate })
         .andWhere('w.pack_receipt_id IS NOT NULL')
         .andWhere('w.invoice_id IS NULL')
@@ -577,7 +593,7 @@ export class InvoiceService {
     });
 
     const firstClient = await this.clientRepository.findOne({
-      where: {},
+      where: { organization_id: this.organizationId },
       order: { id: 'ASC' },
     });
     if (!firstClient) {
@@ -588,7 +604,7 @@ export class InvoiceService {
 
     const globalCode = `GLOBAL-${(to ?? new Date().toISOString().split('T')[0]).replace(/-/g, '')}`;
     const existingCode = await this.invoiceRepository.findOne({
-      where: { code: globalCode },
+      where: { code: globalCode, organization_id: this.organizationId },
     });
     const code = existingCode ? `${globalCode}-${Date.now()}` : globalCode;
 
@@ -609,6 +625,7 @@ export class InvoiceService {
         id: cfdiResult.id,
       },
       payment_method: 'cash' as any,
+      organization_id: this.organizationId,
     });
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
@@ -629,7 +646,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
       relations: [
         'client',
         'details',
@@ -698,7 +715,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
 
     if (!invoice) {
@@ -753,7 +770,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceDetailResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
     if (!invoice) {
       const message = await this.translationService.translate(
@@ -819,7 +836,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<PaginatedResponseDto<InvoiceDetailResponseDto>> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
     if (!invoice) {
       const message = await this.translationService.translate(
@@ -867,6 +884,18 @@ export class InvoiceService {
     detailId: string,
     userId?: string,
   ): Promise<InvoiceDetailResponseDto> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId, organization_id: this.organizationId },
+    });
+    if (!invoice) {
+      const message = await this.translationService.translate(
+        'invoice.not_found',
+        userId,
+        { id: invoiceId },
+      );
+      throw new NotFoundException(message);
+    }
+
     const detail = await this.invoiceDetailRepository.findOne({
       where: {
         id: detailId,
@@ -896,7 +925,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<InvoiceDetailResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
     if (!invoice) {
       const message = await this.translationService.translate(
@@ -984,7 +1013,7 @@ export class InvoiceService {
     userId?: string,
   ): Promise<void> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
     if (!invoice) {
       const message = await this.translationService.translate(
@@ -1023,7 +1052,7 @@ export class InvoiceService {
 
   async downloadPDF(invoiceId: string, userId?: string): Promise<Buffer> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
 
     if (!invoice) {
@@ -1047,7 +1076,7 @@ export class InvoiceService {
 
   async downloadXML(invoiceId: string, userId?: string): Promise<string> {
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+      where: { id: invoiceId, organization_id: this.organizationId },
     });
 
     if (!invoice) {

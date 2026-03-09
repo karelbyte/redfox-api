@@ -30,7 +30,7 @@ export class CategoryService {
     private readonly categoryMapper: CategoryMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -64,7 +64,7 @@ export class CategoryService {
       visited.add(currentParentId);
 
       const parent = await this.categoryRepository.findOne({
-        where: { id: currentParentId },
+        where: { id: currentParentId, organization_id: this.organizationId },
         select: ['id', 'parentId'],
       });
 
@@ -86,6 +86,9 @@ export class CategoryService {
         .createQueryBuilder('category')
         .where('category.parentId = :categoryId', { categoryId })
         .andWhere('category.isActive = :isActive', { isActive: true })
+        .andWhere('category.organization_id = :orgId', {
+          orgId: this.organizationId,
+        })
         .getExists();
 
       if (hasActiveChildren) {
@@ -117,7 +120,10 @@ export class CategoryService {
   ): Promise<CategoryResponseDto> {
     if (createCategoryDto.parentId) {
       const parentCategory = await this.categoryRepository.findOne({
-        where: { id: createCategoryDto.parentId },
+        where: {
+          id: createCategoryDto.parentId,
+          organization_id: this.organizationId,
+        },
       });
 
       if (!parentCategory) {
@@ -131,7 +137,10 @@ export class CategoryService {
     }
 
     const existingCategory = await this.categoryRepository.findOne({
-      where: { slug: createCategoryDto.slug },
+      where: {
+        slug: createCategoryDto.slug,
+        organization_id: this.organizationId,
+      },
     });
 
     if (existingCategory) {
@@ -159,7 +168,7 @@ export class CategoryService {
     // Construir las condiciones de búsqueda
     const baseConditions: FindManyOptions<Category> = {
       relations: ['children'],
-      where: { parentId: IsNull() },
+      where: { parentId: IsNull(), organization_id: this.organizationId },
       withDeleted: false,
       order: {
         position: 'ASC' as const,
@@ -169,13 +178,25 @@ export class CategoryService {
 
     const whereConditions: FindManyOptions<Category> = term
       ? {
-          ...baseConditions,
-          where: [
-            { name: Like(`%${term}%`) },
-            { slug: Like(`%${term}%`) },
-            { description: Like(`%${term}%`) },
-          ],
-        }
+        ...baseConditions,
+        where: [
+          {
+            name: Like(`%${term}%`),
+            organization_id: this.organizationId,
+            parentId: IsNull(),
+          },
+          {
+            slug: Like(`%${term}%`),
+            organization_id: this.organizationId,
+            parentId: IsNull(),
+          },
+          {
+            description: Like(`%${term}%`),
+            organization_id: this.organizationId,
+            parentId: IsNull(),
+          },
+        ],
+      }
       : baseConditions;
 
     if (!page && !limit) {
@@ -223,7 +244,7 @@ export class CategoryService {
 
   async findOne(id: string, userId?: string): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['children'],
       withDeleted: false,
     });
@@ -249,7 +270,7 @@ export class CategoryService {
 
     try {
       const category = await queryRunner.manager.findOne(Category, {
-        where: { id },
+        where: { id, organization_id: this.organizationId },
         relations: ['children'],
         withDeleted: false,
       });
@@ -273,7 +294,10 @@ export class CategoryService {
         }
 
         const parentCategory = await queryRunner.manager.findOne(Category, {
-          where: { id: updateCategoryDto.parentId },
+          where: {
+            id: updateCategoryDto.parentId,
+            organization_id: this.organizationId,
+          },
         });
 
         if (!parentCategory) {
@@ -302,7 +326,10 @@ export class CategoryService {
 
       if (updateCategoryDto.slug && updateCategoryDto.slug !== category.slug) {
         const existingCategory = await queryRunner.manager.findOne(Category, {
-          where: { slug: updateCategoryDto.slug },
+          where: {
+            slug: updateCategoryDto.slug,
+            organization_id: this.organizationId,
+          },
         });
 
         if (existingCategory) {
@@ -332,10 +359,14 @@ export class CategoryService {
         position: category.position,
       };
 
-      await queryRunner.manager.update(Category, id, updateCategoryDto);
+      await queryRunner.manager.update(
+        Category,
+        { id, organization_id: this.organizationId },
+        updateCategoryDto,
+      );
 
       const updatedCategory = await queryRunner.manager.findOne(Category, {
-        where: { id },
+        where: { id, organization_id: this.organizationId },
         relations: ['children'],
         withDeleted: false,
       });
@@ -363,7 +394,7 @@ export class CategoryService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const category = await this.categoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!category) {
@@ -376,7 +407,10 @@ export class CategoryService {
     }
 
     const productsUsingCategory = await this.productRepository.count({
-      where: { category: { id } },
+      where: {
+        category: { id },
+        organization_id: this.organizationId,
+      },
       withDeleted: false,
     });
 
@@ -390,7 +424,10 @@ export class CategoryService {
     }
 
     const hasChildren = await this.categoryRepository.count({
-      where: { parentId: id },
+      where: {
+        parentId: id,
+        organization_id: this.organizationId,
+      },
       withDeleted: false,
     });
 
@@ -411,7 +448,7 @@ export class CategoryService {
     userId?: string,
   ): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOne({
-      where: { slug },
+      where: { slug, organization_id: this.organizationId },
       relations: ['children'],
       withDeleted: false,
     });
@@ -436,7 +473,7 @@ export class CategoryService {
 
     // Verificar que el parent existe
     const parent = await this.categoryRepository.findOne({
-      where: { id: parentId },
+      where: { id: parentId, organization_id: this.organizationId },
       withDeleted: false,
     });
 
@@ -450,7 +487,7 @@ export class CategoryService {
     }
 
     const [categories, total] = await this.categoryRepository.findAndCount({
-      where: { parentId },
+      where: { parentId, organization_id: this.organizationId },
       relations: ['children'],
       withDeleted: false,
       skip,
@@ -483,7 +520,7 @@ export class CategoryService {
     childrenCount: number;
   }> {
     const category = await this.categoryRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!category) {
@@ -491,13 +528,19 @@ export class CategoryService {
     }
 
     const products = await this.productRepository.find({
-      where: { category: { id } },
+      where: {
+        category: { id },
+        organization_id: this.organizationId,
+      },
       select: ['id', 'name', 'sku'],
       withDeleted: false,
     });
 
     const childrenCount = await this.categoryRepository.count({
-      where: { parentId: id },
+      where: {
+        parentId: id,
+        organization_id: this.organizationId,
+      },
       withDeleted: false,
     });
 

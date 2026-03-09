@@ -6,6 +6,7 @@ import {
   Query,
   Param,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProductHistoryService } from '../services/product-history.service';
 import { CreateProductHistoryDto } from '../dtos/product-history/create-product-history.dto';
@@ -13,9 +14,11 @@ import { ProductHistoryResponseDto } from '../dtos/product-history/product-histo
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('product-history')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ProductHistoryController {
   constructor(private readonly productHistoryService: ProductHistoryService) {}
 

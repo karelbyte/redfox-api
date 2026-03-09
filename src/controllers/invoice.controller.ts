@@ -11,6 +11,7 @@ import {
   Put,
   Res,
   Header,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { InvoiceService } from '../services/invoice.service';
@@ -31,9 +32,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('invoices')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 

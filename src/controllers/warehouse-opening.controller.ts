@@ -9,6 +9,7 @@ import {
   Put,
   Delete,
   ParseUUIDPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WarehouseOpeningService } from '../services/warehouse-opening.service';
 import { CreateWarehouseOpeningDto } from '../dtos/warehouse-opening/create-warehouse-opening.dto';
@@ -18,9 +19,11 @@ import { UpdateWarehouseOpeningDto } from '../dtos/warehouse-opening/update-ware
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('warehouse-openings')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class WarehouseOpeningController {
   constructor(
     private readonly warehouseOpeningService: WarehouseOpeningService,

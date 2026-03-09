@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ClientService } from '../services/client.service';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
@@ -21,9 +22,11 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('clients')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 

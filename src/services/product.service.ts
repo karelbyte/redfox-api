@@ -480,7 +480,10 @@ export class ProductService {
   }
 
   async removeMany(ids: string[]): Promise<void> {
-    await this.productRepository.softDelete(ids);
+    await this.productRepository.softDelete({
+      id: ids as any,
+      organization_id: this.organizationId,
+    });
   }
 
   async getProductUsage(
