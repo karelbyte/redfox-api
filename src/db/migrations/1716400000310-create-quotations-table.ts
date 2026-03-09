@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateQuotationsTable1716400000310 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -75,7 +81,14 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
           {
             name: 'status',
             type: 'enum',
-            enum: ['draft', 'sent', 'accepted', 'rejected', 'expired', 'converted'],
+            enum: [
+              'draft',
+              'sent',
+              'accepted',
+              'rejected',
+              'expired',
+              'converted',
+            ],
             default: "'draft'",
           },
           {
@@ -271,7 +284,6 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
         columnNames: ['quotation_id'],
       }),
     );
-
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -279,18 +291,22 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
     await queryRunner.dropIndex('quotations', 'IDX_QUOTATIONS_CODE');
     await queryRunner.dropIndex('quotations', 'IDX_QUOTATIONS_CLIENT_ID');
     await queryRunner.dropIndex('quotations', 'IDX_QUOTATIONS_STATUS');
-    await queryRunner.dropIndex('quotation_details', 'IDX_QUOTATION_DETAILS_QUOTATION_ID');
+    await queryRunner.dropIndex(
+      'quotation_details',
+      'IDX_QUOTATION_DETAILS_QUOTATION_ID',
+    );
 
     // Drop foreign keys
     const quotationsTable = await queryRunner.getTable('quotations');
-    const quotationDetailsTable = await queryRunner.getTable('quotation_details');
+    const quotationDetailsTable =
+      await queryRunner.getTable('quotation_details');
 
     if (quotationsTable) {
       const clientForeignKey = quotationsTable.foreignKeys.find(
-        fk => fk.columnNames.indexOf('client_id') !== -1,
+        (fk) => fk.columnNames.indexOf('client_id') !== -1,
       );
       const warehouseForeignKey = quotationsTable.foreignKeys.find(
-        fk => fk.columnNames.indexOf('warehouse_id') !== -1,
+        (fk) => fk.columnNames.indexOf('warehouse_id') !== -1,
       );
 
       if (clientForeignKey) {
@@ -303,17 +319,23 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
 
     if (quotationDetailsTable) {
       const quotationForeignKey = quotationDetailsTable.foreignKeys.find(
-        fk => fk.columnNames.indexOf('quotation_id') !== -1,
+        (fk) => fk.columnNames.indexOf('quotation_id') !== -1,
       );
       const productForeignKey = quotationDetailsTable.foreignKeys.find(
-        fk => fk.columnNames.indexOf('product_id') !== -1,
+        (fk) => fk.columnNames.indexOf('product_id') !== -1,
       );
 
       if (quotationForeignKey) {
-        await queryRunner.dropForeignKey('quotation_details', quotationForeignKey);
+        await queryRunner.dropForeignKey(
+          'quotation_details',
+          quotationForeignKey,
+        );
       }
       if (productForeignKey) {
-        await queryRunner.dropForeignKey('quotation_details', productForeignKey);
+        await queryRunner.dropForeignKey(
+          'quotation_details',
+          productForeignKey,
+        );
       }
     }
 

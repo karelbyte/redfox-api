@@ -21,7 +21,9 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 @Controller('cash-transactions')
 @UseGuards(AuthGuard)
 export class CashTransactionController {
-  constructor(private readonly cashTransactionService: CashTransactionService) {}
+  constructor(
+    private readonly cashTransactionService: CashTransactionService,
+  ) {}
 
   @Post()
   create(
@@ -37,7 +39,11 @@ export class CashTransactionController {
     @Query() queryDto: CashTransactionQueryDto,
     @UserId() userId: string,
   ): Promise<PaginatedResponse<CashTransactionResponseDto>> {
-    return this.cashTransactionService.getCashTransactions(cashRegisterId, queryDto, userId);
+    return this.cashTransactionService.getCashTransactions(
+      cashRegisterId,
+      queryDto,
+      userId,
+    );
   }
 
   @Get('cash-registers/:cashRegisterId/report')
@@ -46,7 +52,11 @@ export class CashTransactionController {
     @Query() queryDto: CashReportQueryDto,
     @UserId() userId: string,
   ): Promise<CashReportResponseDto> {
-    return this.cashTransactionService.getCashReport(cashRegisterId, queryDto, userId);
+    return this.cashTransactionService.getCashReport(
+      cashRegisterId,
+      queryDto,
+      userId,
+    );
   }
 
   @Get(':id')
@@ -56,4 +66,4 @@ export class CashTransactionController {
   ): Promise<CashTransactionResponseDto> {
     return this.cashTransactionService.findOne(id, userId);
   }
-} 
+}

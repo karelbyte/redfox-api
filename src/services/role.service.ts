@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../models/role.entity';
@@ -15,7 +19,7 @@ export class RoleService {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   private mapToResponseDto(role: Role): RoleResponseDto {
     const { id, code, description, status, created_at } = role;

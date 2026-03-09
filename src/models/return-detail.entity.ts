@@ -44,4 +44,4 @@ export class ReturnDetail {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

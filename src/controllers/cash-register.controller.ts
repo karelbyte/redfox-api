@@ -93,4 +93,4 @@ export class CashRegisterController {
   ): Promise<void> {
     return this.cashRegisterService.remove(id, userId);
   }
-} 
+}

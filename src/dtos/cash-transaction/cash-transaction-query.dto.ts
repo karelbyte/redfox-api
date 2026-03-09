@@ -1,6 +1,9 @@
 import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { CashTransactionType, PaymentMethod } from '../../models/cash-transaction.entity';
+import {
+  CashTransactionType,
+  PaymentMethod,
+} from '../../models/cash-transaction.entity';
 
 export class CashTransactionQueryDto {
   @IsOptional()
@@ -28,4 +31,4 @@ export class CashTransactionQueryDto {
   @IsOptional()
   @IsString()
   end_date?: string;
-} 
+}

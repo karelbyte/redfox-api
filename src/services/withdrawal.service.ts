@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { Withdrawal, WithdrawalType, WithdrawalStatus, PaymentMethod as WithdrawalPaymentMethod } from '../models/withdrawal.entity';
+import {
+  Withdrawal,
+  WithdrawalType,
+  WithdrawalStatus,
+  PaymentMethod as WithdrawalPaymentMethod,
+} from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { Client } from '../models/client.entity';
 import { Warehouse } from '../models/warehouse.entity';
@@ -92,7 +97,9 @@ export class WithdrawalService {
     if (withdrawal.invoiceId && withdrawal.invoice) {
       const inv = withdrawal.invoice as any;
       pack_fiscal_status =
-        inv.withdrawal?.id === withdrawal.id ? 'INVOICED_DIRECT' : 'INVOICED_GLOBAL';
+        inv.withdrawal?.id === withdrawal.id
+          ? 'INVOICED_DIRECT'
+          : 'INVOICED_GLOBAL';
       invoice_code = inv.code ?? null;
       cfdi_uuid = inv.cfdi_uuid ?? null;
     }
@@ -175,7 +182,8 @@ export class WithdrawalService {
       type: createWithdrawalDto.type || WithdrawalType.WITHDRAWAL,
       cashTransactionId: createWithdrawalDto.cash_transaction_id,
       status: WithdrawalStatus.OPEN,
-      paymentMethod: createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
+      paymentMethod:
+        createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
@@ -721,10 +729,12 @@ export class WithdrawalService {
     let totalQuantity = 0;
 
     for (const detail of withdrawalDetails) {
-      const product = await this.productService.findOneEntity(detail.product.id);
+      const product = await this.productService.findOneEntity(
+        detail.product.id,
+      );
       const strategy = product.inventory_strategy || InventoryStrategy.AVERAGE;
 
-      let lots = await this.inventoryRepository.find({
+      const lots = await this.inventoryRepository.find({
         where: {
           product: { id: detail.product.id },
           warehouse: { id: detail.warehouse.id },
@@ -751,7 +761,10 @@ export class WithdrawalService {
         });
       }
 
-      const totalAvailable = lots.reduce((sum, lot) => sum + Number(lot.quantity), 0);
+      const totalAvailable = lots.reduce(
+        (sum, lot) => sum + Number(lot.quantity),
+        0,
+      );
       if (totalAvailable < Number(detail.quantity)) {
         throw new BadRequestException(
           `Insufficient stock for product ${detail.product.name}. Available: ${totalAvailable}, Requested: ${detail.quantity}`,
@@ -785,7 +798,10 @@ export class WithdrawalService {
       }
 
       // Update denormalized total_stock
-      await this.productService.updateStock(detail.product.id, -Number(detail.quantity));
+      await this.productService.updateStock(
+        detail.product.id,
+        -Number(detail.quantity),
+      );
 
       withdrawnProducts++;
       totalQuantity += Number(detail.quantity);
@@ -810,6 +826,7 @@ export class WithdrawalService {
         await this.accountReceivableService.create({
           referenceNumber: closedWithdrawal.code,
           totalAmount: Number(closedWithdrawal.amount),
+          remainingAmount: Number(closedWithdrawal.amount),
           issueDate: issueDate.toISOString().split('T')[0],
           dueDate: dueDate.toISOString().split('T')[0],
           clientId: client.id,
@@ -877,7 +894,9 @@ export class WithdrawalService {
       }
 
       if (withdrawal.status !== WithdrawalStatus.CLOSED) {
-        throw new BadRequestException('Only closed withdrawals can be returned');
+        throw new BadRequestException(
+          'Only closed withdrawals can be returned',
+        );
       }
 
       // 1. Restaurar Inventario y crear ProductHistory (Kardex)
@@ -890,7 +909,8 @@ export class WithdrawalService {
         });
 
         if (inventory) {
-          inventory.quantity = Number(inventory.quantity) + Number(detail.quantity);
+          inventory.quantity =
+            Number(inventory.quantity) + Number(detail.quantity);
           await queryRunner.manager.save(Inventory, inventory);
 
           const productHistory = this.productHistoryRepository.create({
@@ -906,7 +926,11 @@ export class WithdrawalService {
           await queryRunner.manager.save(ProductHistory, productHistory);
 
           // Update denormalized total_stock
-          await this.productService.updateStock(detail.product.id, Number(detail.quantity), queryRunner.manager);
+          await this.productService.updateStock(
+            detail.product.id,
+            Number(detail.quantity),
+            queryRunner.manager,
+          );
         }
       }
 
@@ -930,18 +954,25 @@ export class WithdrawalService {
         await queryRunner.manager.save(CashTransaction, refundTransaction);
 
         // Actualizar balance de la caja
-        cashRegister.currentAmount = Number(cashRegister.currentAmount) - refundAmount;
+        cashRegister.currentAmount =
+          Number(cashRegister.currentAmount) - refundAmount;
         await queryRunner.manager.save(CashRegister, cashRegister);
       }
 
       // 3. Cancelar recibo en PAC (Facturapi)
-      if (withdrawal.type === WithdrawalType.POS && withdrawal.pack_receipt_id) {
+      if (
+        withdrawal.type === WithdrawalType.POS &&
+        withdrawal.pack_receipt_id
+      ) {
         await this.posPackSyncService.cancelReceiptForWithdrawal(withdrawal.id);
       }
 
       // 4. Actualizar estado a RETURNED
       withdrawal.status = WithdrawalStatus.RETURNED;
-      const savedWithdrawal = await queryRunner.manager.save(Withdrawal, withdrawal);
+      const savedWithdrawal = await queryRunner.manager.save(
+        Withdrawal,
+        withdrawal,
+      );
 
       await queryRunner.commitTransaction();
       return this.mapToResponseDto(savedWithdrawal);

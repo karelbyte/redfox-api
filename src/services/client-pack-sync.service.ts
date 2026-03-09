@@ -14,11 +14,13 @@ export class ClientPackSyncService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) { }
+  ) {}
 
   private extractCustomerData(client: Client): CustomerData {
-    const mainTax = (client.taxData || []).find(t => t.is_main) || client.taxData?.[0];
-    const mainAddress = (client.addresses || []).find(a => a.is_main) || client.addresses?.[0];
+    const mainTax =
+      (client.taxData || []).find((t) => t.is_main) || client.taxData?.[0];
+    const mainAddress =
+      (client.addresses || []).find((a) => a.is_main) || client.addresses?.[0];
 
     return {
       legal_name: mainTax?.tax_name || client.name,
@@ -27,23 +29,23 @@ export class ClientPackSyncService {
       email: client.email || undefined,
       phone: client.phone || undefined,
       default_invoice_use: mainTax?.default_invoice_use || undefined,
-      address: mainAddress ? {
-        street: mainAddress.street || undefined,
-        exterior: mainAddress.exterior_number || undefined,
-        interior: mainAddress.interior_number || undefined,
-        neighborhood: mainAddress.neighborhood || undefined,
-        city: mainAddress.city || undefined,
-        municipality: mainAddress.municipality || undefined,
-        zip: mainAddress.zip_code || undefined,
-        state: mainAddress.state || undefined,
-        country: mainAddress.country || undefined,
-      } : undefined,
+      address: mainAddress
+        ? {
+            street: mainAddress.street || undefined,
+            exterior: mainAddress.exterior_number || undefined,
+            interior: mainAddress.interior_number || undefined,
+            neighborhood: mainAddress.neighborhood || undefined,
+            city: mainAddress.city || undefined,
+            municipality: mainAddress.municipality || undefined,
+            zip: mainAddress.zip_code || undefined,
+            state: mainAddress.state || undefined,
+            country: mainAddress.country || undefined,
+          }
+        : undefined,
     };
   }
 
-  async syncOnCreate(
-    client: Client,
-  ): Promise<{
+  async syncOnCreate(client: Client): Promise<{
     client: Client;
     packSyncSuccess: boolean;
     packErrorMessage?: string;

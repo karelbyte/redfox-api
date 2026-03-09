@@ -1,4 +1,13 @@
-import { IsNumber, IsDateString, IsOptional, IsEnum, IsPositive, IsString, Length } from 'class-validator';
+import {
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsPositive,
+  IsString,
+  Length,
+  IsUUID,
+} from 'class-validator';
 import { PaymentMethod } from '../../models/account-receivable-payment.entity';
 
 export class CreateAccountReceivablePaymentDto {
@@ -21,7 +30,6 @@ export class CreateAccountReceivablePaymentDto {
   @IsString()
   notes?: string;
 
-  @IsNumber()
-  @IsPositive()
-  accountReceivableId: number;
+  @IsUUID()
+  accountReceivableId: string;
 }

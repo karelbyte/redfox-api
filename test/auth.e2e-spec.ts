@@ -20,15 +20,19 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
-    roleRepository = moduleFixture.get<Repository<Role>>(getRepositoryToken(Role));
-    
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
+    roleRepository = moduleFixture.get<Repository<Role>>(
+      getRepositoryToken(Role),
+    );
+
     await app.init();
   });
 
   beforeEach(async () => {
     await clearDatabase([userRepository, roleRepository]);
-    
+
     // Crear rol por defecto
     const adminRole = roleRepository.create({
       name: 'admin',
@@ -47,7 +51,7 @@ describe('AuthController (e2e)', () => {
       const password = 'testPassword123';
       const hashedPassword = await bcrypt.hash(password, 10);
       const userData = createTestUser({ password: hashedPassword });
-      
+
       const user = userRepository.create(userData);
       await userRepository.save(user);
 
@@ -117,11 +121,11 @@ describe('AuthController (e2e)', () => {
       // Arrange
       const password = 'testPassword123';
       const hashedPassword = await bcrypt.hash(password, 10);
-      const userData = createTestUser({ 
+      const userData = createTestUser({
         password: hashedPassword,
-        isActive: false 
+        isActive: false,
       });
-      
+
       const user = userRepository.create(userData);
       await userRepository.save(user);
 
@@ -160,7 +164,9 @@ describe('AuthController (e2e)', () => {
       expect(response.body.user).not.toHaveProperty('password');
 
       // Verificar que el usuario fue creado en la base de datos
-      const createdUser = await userRepository.findOneBy({ email: registerDto.email });
+      const createdUser = await userRepository.findOneBy({
+        email: registerDto.email,
+      });
       expect(createdUser).toBeDefined();
       expect(createdUser.firstName).toBe(registerDto.firstName);
     });
@@ -202,7 +208,9 @@ describe('AuthController (e2e)', () => {
         .send(registerDto)
         .expect(400);
 
-      expect(response.body.message).toContain('password must be longer than or equal to 6 characters');
+      expect(response.body.message).toContain(
+        'password must be longer than or equal to 6 characters',
+      );
     });
   });
 
@@ -212,7 +220,7 @@ describe('AuthController (e2e)', () => {
       const password = 'testPassword123';
       const hashedPassword = await bcrypt.hash(password, 10);
       const userData = createTestUser({ password: hashedPassword });
-      
+
       const user = userRepository.create(userData);
       await userRepository.save(user);
 
@@ -239,9 +247,7 @@ describe('AuthController (e2e)', () => {
 
     it('should return 401 for unauthenticated request', async () => {
       // Act & Assert
-      await request(app.getHttpServer())
-        .get('/auth/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
 
     it('should return 401 for invalid token', async () => {

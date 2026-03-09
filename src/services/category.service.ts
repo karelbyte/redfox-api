@@ -30,7 +30,7 @@ export class CategoryService {
     private readonly categoryMapper: CategoryMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -169,13 +169,13 @@ export class CategoryService {
 
     const whereConditions: FindManyOptions<Category> = term
       ? {
-        ...baseConditions,
-        where: [
-          { name: Like(`%${term}%`) },
-          { slug: Like(`%${term}%`) },
-          { description: Like(`%${term}%`) },
-        ],
-      }
+          ...baseConditions,
+          where: [
+            { name: Like(`%${term}%`) },
+            { slug: Like(`%${term}%`) },
+            { description: Like(`%${term}%`) },
+          ],
+        }
       : baseConditions;
 
     if (!page && !limit) {

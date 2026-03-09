@@ -26,7 +26,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class ProviderController {
-  constructor(private readonly providerService: ProviderService) { }
+  constructor(private readonly providerService: ProviderService) {}
 
   @Post()
   create(

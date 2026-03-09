@@ -32,14 +32,15 @@ export const getDatabaseConfig = (
     database,
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     synchronize: false,
-    logging:  false,
+    logging: false,
     migrations: [__dirname + '/../db/migrations/*{.ts,.js}'],
     migrationsRun: true,
-    ssl: process.env.NODE_ENV === 'production'
-      ? {
-          rejectUnauthorized: false,
-          ca: process.env.PG_CA_CERT ? [process.env.PG_CA_CERT] : undefined,
-        }
-      : false,
+    ssl:
+      process.env.NODE_ENV === 'production'
+        ? {
+            rejectUnauthorized: false,
+            ca: process.env.PG_CA_CERT ? [process.env.PG_CA_CERT] : undefined,
+          }
+        : false,
   };
 };

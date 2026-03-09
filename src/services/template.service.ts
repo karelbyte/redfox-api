@@ -45,7 +45,10 @@ export class TemplateService {
     return this.templateRepository.findOne({ where: { id } });
   }
 
-  async findDefault(userId: string, entityType: string): Promise<Template | null> {
+  async findDefault(
+    userId: string,
+    entityType: string,
+  ): Promise<Template | null> {
     return this.templateRepository.findOne({
       where: { userId, entityType, isDefault: true },
     });
@@ -61,7 +64,11 @@ export class TemplateService {
     return this.templateRepository.findOne({ where: { id } });
   }
 
-  async setAsDefault(userId: string, id: string, entityType: string): Promise<void> {
+  async setAsDefault(
+    userId: string,
+    id: string,
+    entityType: string,
+  ): Promise<void> {
     await this.templateRepository.update(
       { userId, entityType, isDefault: true },
       { isDefault: false },

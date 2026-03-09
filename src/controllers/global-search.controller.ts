@@ -8,14 +8,8 @@ export class GlobalSearchController {
   constructor(private readonly globalSearchService: GlobalSearchService) {}
 
   @Get()
-  search(
-    @Query('q') query: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.globalSearchService.search(
-      query,
-      limit ? parseInt(limit) : 20,
-    );
+  search(@Query('q') query: string, @Query('limit') limit?: string) {
+    return this.globalSearchService.search(query, limit ? parseInt(limit) : 20);
   }
 
   @Get('barcode')

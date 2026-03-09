@@ -1,4 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  Index,
+} from 'typeorm';
 import { Provider } from './provider.entity';
 import { PurchaseOrder } from './purchase-order.entity';
 import { AccountPayablePayment } from './account-payable-payment.entity';
@@ -9,14 +19,14 @@ export enum AccountPayableStatus {
   PARTIAL = 'partial',
   PAID = 'paid',
   OVERDUE = 'overdue',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 @Entity('accounts_payable')
 @Index(['organization_id', 'referenceNumber'], { unique: true })
 export class AccountPayable {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
   organization_id: string;
@@ -46,7 +56,7 @@ export class AccountPayable {
   @Column({
     type: 'enum',
     enum: AccountPayableStatus,
-    default: AccountPayableStatus.PENDING
+    default: AccountPayableStatus.PENDING,
   })
   status: AccountPayableStatus;
 
@@ -67,7 +77,7 @@ export class AccountPayable {
   @Column({ nullable: true })
   purchaseOrderId: string;
 
-  @OneToMany(() => AccountPayablePayment, payment => payment.accountPayable)
+  @OneToMany(() => AccountPayablePayment, (payment) => payment.accountPayable)
   payments: AccountPayablePayment[];
 
   @CreateDateColumn()

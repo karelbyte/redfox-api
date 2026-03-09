@@ -12,4 +12,4 @@ export class ReturnResponseDto {
   status: boolean;
   details: ReturnDetailResponseDto[];
   created_at: Date;
-} 
+}

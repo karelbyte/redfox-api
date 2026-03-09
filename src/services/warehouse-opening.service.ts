@@ -21,7 +21,7 @@ export class WarehouseOpeningService {
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly translationService: TranslationService,
     private readonly productMapper: ProductMapper,
-  ) { }
+  ) {}
 
   async create(
     createWarehouseOpeningDto: CreateWarehouseOpeningDto,

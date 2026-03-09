@@ -77,4 +77,4 @@ export class CashTransaction {
   @ManyToOne(() => CashRegister, (cashRegister) => cashRegister.transactions)
   @JoinColumn({ name: 'cash_register_id' })
   cashRegister: CashRegister;
-} 
+}

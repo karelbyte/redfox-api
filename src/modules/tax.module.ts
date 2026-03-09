@@ -9,9 +9,13 @@ import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tax, Product]), LanguageModule, OrganizationModule],
+  imports: [
+    TypeOrmModule.forFeature([Tax, Product]),
+    LanguageModule,
+    OrganizationModule,
+  ],
   controllers: [TaxController],
   providers: [TaxService, TaxMapper],
   exports: [TaxService, TaxMapper],
 })
-export class TaxModule { }
+export class TaxModule {}

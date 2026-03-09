@@ -171,4 +171,4 @@ export class CreateCashTransactionsTable1716400000106
 
     await queryRunner.dropTable('cash_transactions');
   }
-} 
+}

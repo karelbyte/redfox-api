@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AccountReceivableService } from '../services/account-receivable.service';
 import { CreateAccountReceivableDto } from '../dtos/account-receivable/create-account-receivable.dto';
 import { UpdateAccountReceivableDto } from '../dtos/account-receivable/update-account-receivable.dto';
@@ -11,7 +21,9 @@ import { AccountReceivableStatus } from '../models/account-receivable.entity';
 @Controller('accounts-receivable')
 @UseGuards(AuthGuard)
 export class AccountReceivableController {
-  constructor(private readonly accountReceivableService: AccountReceivableService) {}
+  constructor(
+    private readonly accountReceivableService: AccountReceivableService,
+  ) { }
 
   @Post()
   create(@Body() createAccountReceivableDto: CreateAccountReceivableDto) {
@@ -32,7 +44,7 @@ export class AccountReceivableController {
       limit ? parseInt(limit) : 10,
       search,
       status,
-      clientId ? parseInt(clientId) : undefined,
+      clientId,
       overdue === 'true',
     );
   }
@@ -59,17 +71,23 @@ export class AccountReceivableController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.accountReceivableService.findOne(+id);
+    return this.accountReceivableService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAccountReceivableDto: UpdateAccountReceivableDto) {
-    return this.accountReceivableService.update(+id, updateAccountReceivableDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateAccountReceivableDto: UpdateAccountReceivableDto,
+  ) {
+    return this.accountReceivableService.update(
+      id,
+      updateAccountReceivableDto,
+    );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.accountReceivableService.remove(+id);
+    return this.accountReceivableService.remove(id);
   }
 
   @Post(':id/payments')
@@ -81,7 +99,7 @@ export class AccountReceivableController {
     // Crear el DTO completo con el accountReceivableId
     const createPaymentDto: CreateAccountReceivablePaymentDto = {
       ...addPaymentDto,
-      accountReceivableId: +id,
+      accountReceivableId: id,
     };
     return this.accountReceivableService.addPayment(createPaymentDto, userId);
   }

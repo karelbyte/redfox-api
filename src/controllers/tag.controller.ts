@@ -53,10 +53,7 @@ export class TagController {
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateTagDto: UpdateTagDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateTagDto: UpdateTagDto) {
     return this.tagService.update(id, updateTagDto.name, updateTagDto.color);
   }
 

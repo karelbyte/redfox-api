@@ -20,4 +20,4 @@ import { OrganizationModule } from './organization.module';
   providers: [MeasurementUnitService, MeasurementUnitMapper],
   exports: [MeasurementUnitService, MeasurementUnitMapper],
 })
-export class MeasurementUnitModule { }
+export class MeasurementUnitModule {}

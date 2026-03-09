@@ -6,9 +6,9 @@ import { BackupConfig } from '../models/backup-config.entity';
 import { BackupLog } from '../models/backup-log.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([BackupConfig, BackupLog])],
-    controllers: [BackupController],
-    providers: [BackupService],
-    exports: [BackupService],
+  imports: [TypeOrmModule.forFeature([BackupConfig, BackupLog])],
+  controllers: [BackupController],
+  providers: [BackupService],
+  exports: [BackupService],
 })
-export class BackupModule { }
+export class BackupModule {}

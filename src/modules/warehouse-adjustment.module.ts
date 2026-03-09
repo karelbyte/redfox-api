@@ -42,4 +42,4 @@ import { ProductMapper } from '../services/mappers/product.mapper';
   providers: [WarehouseAdjustmentService, WarehouseMapper, ProductMapper],
   exports: [WarehouseAdjustmentService],
 })
-export class WarehouseAdjustmentModule {} 
+export class WarehouseAdjustmentModule {}

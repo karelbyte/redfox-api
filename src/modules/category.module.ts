@@ -10,9 +10,13 @@ import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Category, Product]), LanguageModule, OrganizationModule],
+  imports: [
+    TypeOrmModule.forFeature([Category, Product]),
+    LanguageModule,
+    OrganizationModule,
+  ],
   controllers: [CategoryController],
   providers: [CategoryService, FileUploadService, CategoryMapper],
   exports: [CategoryService, CategoryMapper],
 })
-export class CategoryModule { }
+export class CategoryModule {}

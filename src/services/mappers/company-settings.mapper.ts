@@ -14,7 +14,10 @@ export class CompanySettingsMapper {
 
     let logoUrl: string | null = settings.logoUrl ?? null;
     // Normalizar: los estáticos se sirven en /api/uploads (no /uploads) para no chocar con el prefijo global
-    if (logoUrl?.startsWith('/uploads/') && !logoUrl.startsWith('/api/uploads/')) {
+    if (
+      logoUrl?.startsWith('/uploads/') &&
+      !logoUrl.startsWith('/api/uploads/')
+    ) {
       logoUrl = `/api${logoUrl}`;
     }
     const publicUrl = this.configService.get<string>('APP_PUBLIC_URL');

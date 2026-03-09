@@ -1,8 +1,4 @@
-import {
-  IsUUID,
-  IsPositive,
-  IsNumber,
-} from 'class-validator';
+import { IsUUID, IsPositive, IsNumber } from 'class-validator';
 
 export class CreateReturnDetailDto {
   @IsUUID()
@@ -15,4 +11,4 @@ export class CreateReturnDetailDto {
   @IsNumber()
   @IsPositive()
   price: number;
-} 
+}

@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog, AuditAction } from '../models/audit-log.entity';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class AuditLogService {
+  private readonly logger = new Logger(AuditLogService.name);
+
   constructor(
     @InjectRepository(AuditLog)
     private auditLogRepository: Repository<AuditLog>,
+    private readonly tenantContext: TenantContext,
   ) {}
 
   async log(
@@ -21,7 +25,17 @@ export class AuditLogService {
     ipAddress?: string,
   ): Promise<AuditLog | null> {
     try {
+      const organizationId = this.tenantContext.getOrganizationId();
+
+      if (!organizationId) {
+        this.logger.warn(
+          `Skipping audit log for ${action} ${entityType}: No organization context.`,
+        );
+        return null;
+      }
+
       const log = this.auditLogRepository.create({
+        organization_id: organizationId,
         userId,
         entityType,
         entityId,
@@ -35,7 +49,9 @@ export class AuditLogService {
     } catch (error) {
       // Si falla por foreign key (usuario no existe), solo logueamos el warning
       if (error.code === '23503') {
-        console.warn(`[AuditLogService] User ${userId} not found, skipping audit log`);
+        console.warn(
+          `[AuditLogService] User ${userId} not found, skipping audit log`,
+        );
         return null;
       }
       // Para otros errores, los re-lanzamos

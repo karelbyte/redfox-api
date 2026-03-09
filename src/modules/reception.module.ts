@@ -50,4 +50,4 @@ import { ProviderModule } from './provider.module';
   ],
   exports: [ReceptionService],
 })
-export class ReceptionModule { }
+export class ReceptionModule {}

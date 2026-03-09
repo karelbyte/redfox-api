@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'async_hooks';
 
 interface TenantStore {
-    organizationId: string | null;
-    tenantSlug: string | null;
-    pacConfig?: Record<string, any> | null;
+  organizationId: string | null;
+  tenantSlug: string | null;
+  pacConfig?: Record<string, any> | null;
 }
 
 /**
@@ -13,50 +13,50 @@ interface TenantStore {
  */
 @Injectable()
 export class TenantContext {
-    private static readonly storage = new AsyncLocalStorage<TenantStore>();
+  private static readonly storage = new AsyncLocalStorage<TenantStore>();
 
-    run(store: TenantStore, callback: () => any) {
-        return TenantContext.storage.run(store, callback);
-    }
+  run(store: TenantStore, callback: () => any) {
+    return TenantContext.storage.run(store, callback);
+  }
 
-    setOrganizationId(id: string) {
-        const store = TenantContext.storage.getStore();
-        if (store) {
-            store.organizationId = id;
-        }
+  setOrganizationId(id: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.organizationId = id;
     }
+  }
 
-    getOrganizationId(): string | null {
-        return TenantContext.storage.getStore()?.organizationId || null;
-    }
+  getOrganizationId(): string | null {
+    return TenantContext.storage.getStore()?.organizationId || null;
+  }
 
-    setTenantSlug(slug: string) {
-        const store = TenantContext.storage.getStore();
-        if (store) {
-            store.tenantSlug = slug;
-        }
+  setTenantSlug(slug: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.tenantSlug = slug;
     }
+  }
 
-    getTenantSlug(): string | null {
-        return TenantContext.storage.getStore()?.tenantSlug || null;
-    }
+  getTenantSlug(): string | null {
+    return TenantContext.storage.getStore()?.tenantSlug || null;
+  }
 
-    setPacConfig(config: Record<string, any>) {
-        const store = TenantContext.storage.getStore();
-        if (store) {
-            store.pacConfig = config;
-        }
+  setPacConfig(config: Record<string, any>) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.pacConfig = config;
     }
+  }
 
-    getPacConfig(): Record<string, any> | null {
-        return TenantContext.storage.getStore()?.pacConfig || null;
-    }
+  getPacConfig(): Record<string, any> | null {
+    return TenantContext.storage.getStore()?.pacConfig || null;
+  }
 
-    clear() {
-        const store = TenantContext.storage.getStore();
-        if (store) {
-            store.organizationId = null;
-            store.tenantSlug = null;
-        }
+  clear() {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.organizationId = null;
+      store.tenantSlug = null;
     }
+  }
 }

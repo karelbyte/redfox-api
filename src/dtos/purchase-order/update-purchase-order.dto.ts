@@ -1,9 +1,18 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePurchaseOrderDto } from './create-purchase-order.dto';
-import { IsOptional, IsEnum, IsDate, IsString, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsDate,
+  IsString,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class UpdatePurchaseOrderDto extends PartialType(CreatePurchaseOrderDto) {
+export class UpdatePurchaseOrderDto extends PartialType(
+  CreatePurchaseOrderDto,
+) {
   @IsOptional()
   @IsString()
   code?: string;
@@ -34,4 +43,4 @@ export class UpdatePurchaseOrderDto extends PartialType(CreatePurchaseOrderDto) 
   @IsOptional()
   @IsEnum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'])
   status?: string;
-} 
+}

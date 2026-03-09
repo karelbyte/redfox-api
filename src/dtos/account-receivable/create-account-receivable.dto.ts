@@ -1,4 +1,12 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsEnum, IsPositive, Length } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsPositive,
+  Length,
+} from 'class-validator';
 import { AccountReceivableStatus } from '../../models/account-receivable.entity';
 
 export class CreateAccountReceivableDto {
@@ -9,6 +17,10 @@ export class CreateAccountReceivableDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   totalAmount: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  remainingAmount: number;
 
   @IsDateString()
   issueDate: string;

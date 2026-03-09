@@ -15,4 +15,4 @@ import { LanguageModule } from './language.module';
   providers: [CashTransactionService],
   exports: [CashTransactionService],
 })
-export class CashTransactionModule {} 
+export class CashTransactionModule {}

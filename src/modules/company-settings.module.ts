@@ -17,4 +17,4 @@ import { OrganizationModule } from './organization.module';
   providers: [CompanySettingsService, CompanySettingsMapper],
   exports: [CompanySettingsService, CompanySettingsMapper],
 })
-export class CompanySettingsModule { }
+export class CompanySettingsModule {}

@@ -25,7 +25,8 @@ const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
 };
 
-const getUploadsCompanyDir = (): string => join(process.cwd(), 'uploads', 'company');
+const getUploadsCompanyDir = (): string =>
+  join(process.cwd(), 'uploads', 'company');
 
 @Controller('company-settings')
 @UseGuards(AuthGuard)
@@ -33,7 +34,7 @@ const getUploadsCompanyDir = (): string => join(process.cwd(), 'uploads', 'compa
 export class CompanySettingsController {
   constructor(
     private readonly companySettingsService: CompanySettingsService,
-  ) { }
+  ) {}
 
   @Get()
   get(): Promise<CompanySettingsResponseDto> {

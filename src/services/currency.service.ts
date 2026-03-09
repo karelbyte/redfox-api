@@ -24,12 +24,14 @@ export class CurrencyService {
     private readonly currencyMapper: CurrencyMapper,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Currencies');
+      throw new BadRequestException(
+        'Organization context is required for Currencies',
+      );
     }
     return orgId;
   }
@@ -41,7 +43,10 @@ export class CurrencyService {
     try {
       // Verificar si ya existe una moneda con el mismo código
       const existingCurrency = await this.currencyRepository.findOne({
-        where: { code: createCurrencyDto.code.toUpperCase(), organization_id: this.organizationId },
+        where: {
+          code: createCurrencyDto.code.toUpperCase(),
+          organization_id: this.organizationId,
+        },
       });
 
       if (existingCurrency) {
@@ -93,12 +98,12 @@ export class CurrencyService {
     };
     const whereConditions: FindManyOptions<Currency> = term
       ? {
-        ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`), organization_id: this.organizationId },
-          { name: Like(`%${term}%`), organization_id: this.organizationId }
-        ],
-      }
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`), organization_id: this.organizationId },
+            { name: Like(`%${term}%`), organization_id: this.organizationId },
+          ],
+        }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -208,7 +213,10 @@ export class CurrencyService {
         updateCurrencyDto.code.toUpperCase() !== currency.code
       ) {
         const existingCurrency = await this.currencyRepository.findOne({
-          where: { code: updateCurrencyDto.code.toUpperCase(), organization_id: this.organizationId },
+          where: {
+            code: updateCurrencyDto.code.toUpperCase(),
+            organization_id: this.organizationId,
+          },
         });
 
         if (existingCurrency) {

@@ -1,7 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { EmailConfig } from '../models/email-config.entity';
 import { CreateEmailConfigDto } from '../dtos/email-config/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dtos/email-config/update-email-config.dto';
@@ -24,12 +30,15 @@ export class EmailService {
     @InjectRepository(EmailConfig)
     private emailConfigRepository: Repository<EmailConfig>,
     private readonly tenantContext: TenantContext,
-  ) { }
+    private readonly configService: ConfigService,
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Email Configuration');
+      throw new BadRequestException(
+        'Organization context is required for Email Configuration',
+      );
     }
     return orgId;
   }
@@ -40,19 +49,26 @@ export class EmailService {
     });
 
     if (!config) {
-      throw new BadRequestException('Email configuration not found. Please configure your email settings.');
+      throw new BadRequestException(
+        'Email configuration not found. Please configure your email settings.',
+      );
     }
 
     return this.mapToResponseDto(config);
   }
 
-  async createConfig(userId: string, createEmailConfigDto: CreateEmailConfigDto): Promise<EmailConfigResponseDto> {
+  async createConfig(
+    userId: string,
+    createEmailConfigDto: CreateEmailConfigDto,
+  ): Promise<EmailConfigResponseDto> {
     const existingConfig = await this.emailConfigRepository.findOne({
       where: { userId, organization_id: this.organizationId },
     });
 
     if (existingConfig) {
-      throw new BadRequestException('Email configuration already exists. Please update it instead.');
+      throw new BadRequestException(
+        'Email configuration already exists. Please update it instead.',
+      );
     }
 
     const config = this.emailConfigRepository.create({
@@ -66,7 +82,10 @@ export class EmailService {
     return this.mapToResponseDto(savedConfig);
   }
 
-  async updateConfig(userId: string, updateEmailConfigDto: UpdateEmailConfigDto): Promise<EmailConfigResponseDto> {
+  async updateConfig(
+    userId: string,
+    updateEmailConfigDto: UpdateEmailConfigDto,
+  ): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepository.findOne({
       where: { userId, organization_id: this.organizationId },
     });
@@ -81,7 +100,9 @@ export class EmailService {
     return this.mapToResponseDto(updatedConfig);
   }
 
-  async testConnection(userId: string): Promise<{ success: boolean; message: string }> {
+  async testConnection(
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const config = await this.emailConfigRepository.findOne({
       where: { userId, organization_id: this.organizationId },
     });
@@ -98,17 +119,24 @@ export class EmailService {
         message: 'Email configuration is valid and connection successful.',
       };
     } catch (error) {
-      throw new BadRequestException(`Email configuration test failed: ${error.message}`);
+      throw new BadRequestException(
+        `Email configuration test failed: ${error.message}`,
+      );
     }
   }
 
-  async sendEmail(userId: string, emailOptions: EmailOptions): Promise<{ success: boolean; messageId: string }> {
+  async sendEmail(
+    userId: string,
+    emailOptions: EmailOptions,
+  ): Promise<{ success: boolean; messageId: string }> {
     const config = await this.emailConfigRepository.findOne({
       where: { userId, organization_id: this.organizationId, isActive: true },
     });
 
     if (!config) {
-      throw new BadRequestException('Email configuration not found. Please configure your email settings.');
+      throw new BadRequestException(
+        'Email configuration not found. Please configure your email settings.',
+      );
     }
 
     try {
@@ -148,29 +176,69 @@ export class EmailService {
     });
   }
 
-  async sendSystemEmail(to: string | string[], subject: string, html: string): Promise<boolean> {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+  async sendSystemEmail(
+    to: string | string[],
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
+    const provider =
+      this.configService.get<string>('EMAIL_PROVIDER') || 'resend';
 
-      const mailOptions = {
-        from: process.env.SMTP_FROM,
-        to,
+    if (provider === 'smtp') {
+      try {
+        const smtpConfig = {
+          host: this.configService.get<string>('SMTP_HOST'),
+          port: this.configService.get<number>('SMTP_PORT'),
+          secure: this.configService.get<boolean>('SMTP_SECURE') || false,
+          auth: {
+            user: this.configService.get<string>('SMTP_USER'),
+            pass: this.configService.get<string>('SMTP_PASS'),
+          },
+        };
+
+        const transporter = nodemailer.createTransport(smtpConfig);
+        const fromEmail = this.configService.get<string>('SMTP_USER');
+
+        await transporter.sendMail({
+          from: `"Nitro" <${fromEmail}>`,
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html,
+        });
+
+        return true;
+      } catch (error) {
+        console.error('Error enviando email de sistema con SMTP:', error);
+        return false;
+      }
+    }
+
+    // Default to Resend
+    try {
+      const resend = new Resend(
+        this.configService.get<string>('RESEND_API_KEY'),
+      );
+      const fromEmail =
+        this.configService.get<string>('EMAIL_FROM') || 'onboarding@resend.dev';
+
+      const { data, error } = await resend.emails.send({
+        from: `Nitro <${fromEmail}>`,
+        to: Array.isArray(to) ? to : [to],
         subject,
         html,
-      };
+      });
 
-      await transporter.sendMail(mailOptions);
+      if (error) {
+        console.error('Error enviando email con Resend:', error);
+        return false;
+      }
+
       return true;
     } catch (error) {
-      console.error('Error sending system email:', error);
+      console.error(
+        'Error crítico al enviar email de sistema con Resend:',
+        error,
+      );
       return false;
     }
   }
@@ -186,8 +254,14 @@ export class EmailService {
       secure: config.secure,
       isActive: config.isActive,
       organization_id: config.organization_id,
-      createdAt: typeof config.createdAt === 'string' ? config.createdAt : (config.createdAt as Date).toISOString(),
-      updatedAt: typeof config.updatedAt === 'string' ? config.updatedAt : (config.updatedAt as Date).toISOString(),
+      createdAt:
+        typeof config.createdAt === 'string'
+          ? config.createdAt
+          : config.createdAt.toISOString(),
+      updatedAt:
+        typeof config.updatedAt === 'string'
+          ? config.updatedAt
+          : config.updatedAt.toISOString(),
     };
   }
 }

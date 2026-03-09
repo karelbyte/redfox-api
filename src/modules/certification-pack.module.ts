@@ -20,9 +20,6 @@ import { OrganizationModule } from './organization.module';
     CertificationPackFactoryService,
     FacturaAPIService,
   ],
-  exports: [
-    CertificationPackService,
-    CertificationPackFactoryService,
-  ],
+  exports: [CertificationPackService, CertificationPackFactoryService],
 })
-export class CertificationPackModule { }
+export class CertificationPackModule {}

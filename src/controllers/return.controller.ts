@@ -70,7 +70,12 @@ export class ReturnController {
     @Body() updateDetailDto: UpdateReturnDetailDto,
     @UserId() userId: string,
   ): Promise<ReturnDetailResponseDto> {
-    return this.returnService.updateDetail(id, detailId, updateDetailDto, userId);
+    return this.returnService.updateDetail(
+      id,
+      detailId,
+      updateDetailDto,
+      userId,
+    );
   }
 
   @Delete(':id/details/:detailId')
@@ -114,4 +119,4 @@ export class ReturnController {
   ): Promise<void> {
     return this.returnService.remove(id, userId);
   }
-} 
+}

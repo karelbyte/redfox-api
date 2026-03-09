@@ -70,7 +70,9 @@ describe('UserService', () => {
       userRepository.findOneBy.mockResolvedValue({ id: 1 } as User);
 
       // Act & Assert
-      await expect(service.create(userData as any)).rejects.toThrow('Email already exists');
+      await expect(service.create(userData as any)).rejects.toThrow(
+        'Email already exists',
+      );
     });
   });
 
@@ -116,7 +118,10 @@ describe('UserService', () => {
       const result = await service.validatePassword(password, hashedPassword);
 
       // Assert
-      expect(mockedBcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith(
+        password,
+        hashedPassword,
+      );
       expect(result).toBe(true);
     });
 
@@ -142,7 +147,7 @@ describe('UserService', () => {
         { id: 2, ...createTestUser({ email: 'user2@example.com' }) },
       ];
       const total = 2;
-      
+
       userRepository.createQueryBuilder.mockReturnValue({
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -193,7 +198,9 @@ describe('UserService', () => {
       userRepository.findOneBy.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.update(userId, updateData)).rejects.toThrow('User not found');
+      await expect(service.update(userId, updateData)).rejects.toThrow(
+        'User not found',
+      );
     });
   });
 

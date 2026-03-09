@@ -2,7 +2,9 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreatePurchaseOrderDetailDto } from './create-purchase-order-detail.dto';
 import { IsOptional, IsNumber, Min } from 'class-validator';
 
-export class UpdatePurchaseOrderDetailDto extends PartialType(CreatePurchaseOrderDetailDto) {
+export class UpdatePurchaseOrderDetailDto extends PartialType(
+  CreatePurchaseOrderDetailDto,
+) {
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -17,4 +19,4 @@ export class UpdatePurchaseOrderDetailDto extends PartialType(CreatePurchaseOrde
   @IsNumber()
   @Min(0)
   received_quantity?: number;
-} 
+}

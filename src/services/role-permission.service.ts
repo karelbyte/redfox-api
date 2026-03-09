@@ -186,7 +186,10 @@ export class RolePermissionService {
     return RolePermissionMapper.toResponseDtoList(rolePermissions);
   }
 
-  async findOne(id: string, userId?: string): Promise<RolePermissionResponseDto> {
+  async findOne(
+    id: string,
+    userId?: string,
+  ): Promise<RolePermissionResponseDto> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { id },
       relations: ['role', 'permission'],

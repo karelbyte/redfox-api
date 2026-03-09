@@ -1,4 +1,4 @@
-import { Brand } from 'src/models/brand.entity';
+import { Brand } from '../../models/brand.entity';
 import { DataSource } from 'typeorm';
 
 export class BrandsSeed {

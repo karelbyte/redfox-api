@@ -30,23 +30,19 @@ export class NotificationController {
   }
 
   @Get()
-  findAll(
-    @Query() query: NotificationQueryDto,
-    @UserId() userId: string,
-  ) {
+  findAll(@Query() query: NotificationQueryDto, @UserId() userId: string) {
     return this.notificationService.findAll(query, userId);
   }
 
   @Get('unread-count')
   getUnreadCount(@UserId() userId: string) {
-    return this.notificationService.getUnreadCount(userId).then(count => ({ count }));
+    return this.notificationService
+      .getUnreadCount(userId)
+      .then((count) => ({ count }));
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @UserId() userId: string,
-  ) {
+  findOne(@Param('id') id: string, @UserId() userId: string) {
     return this.notificationService.findOne(id, userId);
   }
 
@@ -70,10 +66,7 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @UserId() userId: string,
-  ) {
+  remove(@Param('id') id: string, @UserId() userId: string) {
     return this.notificationService.remove(id, userId);
   }
 }

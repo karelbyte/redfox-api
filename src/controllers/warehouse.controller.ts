@@ -20,7 +20,7 @@ import { WarehouseSimpleResponseDto } from '../dtos/warehouse/warehouse-simple-r
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
-import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
+import { UpdateWarehouseStatusDto } from '../dtos/warehouse/update-warehouse-status.dto';
 import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
 import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
@@ -29,7 +29,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class WarehouseController {
-  constructor(private readonly warehouseService: WarehouseService) { }
+  constructor(private readonly warehouseService: WarehouseService) {}
 
   @Post()
   create(

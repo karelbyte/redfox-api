@@ -51,7 +51,7 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) { }
+  ) {}
 
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
@@ -504,7 +504,12 @@ export class InvoiceService {
    * con invoice_id apuntando a la nueva factura global.
    */
   async createGlobalInvoice(
-    dto: { from?: string; to?: string; periodicity: string; withdrawal_ids?: string[] },
+    dto: {
+      from?: string;
+      to?: string;
+      periodicity: string;
+      withdrawal_ids?: string[];
+    },
     userId?: string,
   ): Promise<InvoiceResponseDto> {
     let withdrawals: Withdrawal[];
@@ -529,9 +534,7 @@ export class InvoiceService {
       );
     }
 
-    withdrawals = withdrawals.filter(
-      (w) => w.pack_receipt_id && !w.invoiceId,
-    );
+    withdrawals = withdrawals.filter((w) => w.pack_receipt_id && !w.invoiceId);
     if (!withdrawals.length) {
       throw new BadRequestException(
         'No hay ventas con nota (recibo) sin facturar en el periodo o lista indicada',
@@ -540,11 +543,10 @@ export class InvoiceService {
 
     const packService = await this.certificationPackFactory.getPackService();
     const createGlobal =
-      (packService as any).createGlobalInvoice ?? packService.createGlobalInvoice;
+      (packService as any).createGlobalInvoice ??
+      packService.createGlobalInvoice;
     if (!createGlobal) {
-      throw new BadRequestException(
-        'El PAC activo no soporta factura global',
-      );
+      throw new BadRequestException('El PAC activo no soporta factura global');
     }
 
     const receiptIds = withdrawals.map((w) => w.pack_receipt_id!);
@@ -553,7 +555,7 @@ export class InvoiceService {
       withdrawals.reduce(
         (min, w) =>
           !min || new Date(w.created_at) < new Date(min)
-            ? (w.created_at as Date).toISOString().split('T')[0]
+            ? w.created_at.toISOString().split('T')[0]
             : min,
         null as string | null,
       );
@@ -562,7 +564,7 @@ export class InvoiceService {
       withdrawals.reduce(
         (max, w) =>
           !max || new Date(w.created_at) > new Date(max)
-            ? (w.created_at as Date).toISOString().split('T')[0]
+            ? w.created_at.toISOString().split('T')[0]
             : max,
         null as string | null,
       );
@@ -617,12 +619,7 @@ export class InvoiceService {
 
     const invoiceWithDetails = await this.invoiceRepository.findOne({
       where: { id: savedInvoice.id },
-      relations: [
-        'client',
-        'withdrawal',
-        'details',
-        'details.product',
-      ],
+      relations: ['client', 'withdrawal', 'details', 'details.product'],
     });
     return this.mapToResponseDto(invoiceWithDetails!);
   }

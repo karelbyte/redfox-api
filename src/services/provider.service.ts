@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In } from 'typeorm';
 import { Provider } from '../models/provider.entity';
@@ -30,12 +34,14 @@ export class ProviderService {
     private translationService: TranslationService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Providers');
+      throw new BadRequestException(
+        'Organization context is required for Providers',
+      );
     }
     return orgId;
   }
@@ -51,7 +57,10 @@ export class ProviderService {
     const savedProvider = await this.providerRepository.save(provider);
 
     // Incrementar el contador si el código coincide con el sugerido
-    await this.surrogateService.useCodeIfMatches('provider', createProviderDto.code);
+    await this.surrogateService.useCodeIfMatches(
+      'provider',
+      createProviderDto.code,
+    );
 
     return this.providerMapper.mapToResponseDto(savedProvider);
   }
@@ -73,15 +82,15 @@ export class ProviderService {
 
     const whereConditions = term
       ? {
-        ...baseConditions,
-        where: [
-          { ...baseWhere, code: Like(`%${term}%`) },
-          { ...baseWhere, description: Like(`%${term}%`) },
-          { ...baseWhere, name: Like(`%${term}%`) },
-          { ...baseWhere, phone: Like(`%${term}%`) },
-          { ...baseWhere, email: Like(`%${term}%`) },
-        ],
-      }
+          ...baseConditions,
+          where: [
+            { ...baseWhere, code: Like(`%${term}%`) },
+            { ...baseWhere, description: Like(`%${term}%`) },
+            { ...baseWhere, name: Like(`%${term}%`) },
+            { ...baseWhere, phone: Like(`%${term}%`) },
+            { ...baseWhere, email: Like(`%${term}%`) },
+          ],
+        }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -142,7 +151,7 @@ export class ProviderService {
   async findOne(id: string, userId?: string): Promise<ProviderResponseDto> {
     const provider = await this.providerRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['addresses', 'taxData', 'credit']
+      relations: ['addresses', 'taxData', 'credit'],
     });
     if (!provider) {
       const message = await this.translationService.translate(
@@ -175,26 +184,41 @@ export class ProviderService {
       throw new NotFoundException(message);
     }
 
-    const { delete_addresses, delete_tax_data, credit, taxData, addresses, ...baseData } = updateProviderDto;
+    const {
+      delete_addresses,
+      delete_tax_data,
+      credit,
+      taxData,
+      addresses,
+      ...baseData
+    } = updateProviderDto;
     Object.assign(provider, baseData);
 
     if (taxData) {
-      provider.taxData = taxData.map(dtoTax => {
-        const existingTax = provider.taxData?.find(t => t.id === dtoTax.id);
+      provider.taxData = taxData.map((dtoTax) => {
+        const existingTax = provider.taxData?.find((t) => t.id === dtoTax.id);
         if (existingTax) {
           return Object.assign(existingTax, dtoTax);
         }
-        return this.providerTaxDataRepository.create({ ...dtoTax, provider_id: id });
+        return this.providerTaxDataRepository.create({
+          ...dtoTax,
+          provider_id: id,
+        });
       });
     }
 
     if (addresses) {
-      provider.addresses = addresses.map(dtoAddr => {
-        const existingAddr = provider.addresses?.find(a => a.id === dtoAddr.id);
+      provider.addresses = addresses.map((dtoAddr) => {
+        const existingAddr = provider.addresses?.find(
+          (a) => a.id === dtoAddr.id,
+        );
         if (existingAddr) {
           return Object.assign(existingAddr, dtoAddr);
         }
-        return this.providerAddressRepository.create({ ...dtoAddr, provider_id: id });
+        return this.providerAddressRepository.create({
+          ...dtoAddr,
+          provider_id: id,
+        });
       });
     }
 
@@ -214,13 +238,17 @@ export class ProviderService {
     if (delete_addresses && delete_addresses.length > 0) {
       await this.providerAddressRepository.delete(delete_addresses);
       if (provider.addresses) {
-        provider.addresses = provider.addresses.filter(a => !delete_addresses.includes(a.id));
+        provider.addresses = provider.addresses.filter(
+          (a) => !delete_addresses.includes(a.id),
+        );
       }
     }
     if (delete_tax_data && delete_tax_data.length > 0) {
       await this.providerTaxDataRepository.delete(delete_tax_data);
       if (provider.taxData) {
-        provider.taxData = provider.taxData.filter(t => !delete_tax_data.includes(t.id));
+        provider.taxData = provider.taxData.filter(
+          (t) => !delete_tax_data.includes(t.id),
+        );
       }
     }
 
@@ -229,7 +257,9 @@ export class ProviderService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
-    const provider = await this.providerRepository.findOne({ where: { id, organization_id: this.organizationId } });
+    const provider = await this.providerRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
     if (!provider) {
       const message = await this.translationService.translate(
         'provider.not_found',
@@ -248,8 +278,14 @@ export class ProviderService {
     });
   }
 
-  async updateBalance(id: string, amount: number, manager?: any): Promise<void> {
-    const repo = manager ? manager.getRepository(Provider) : this.providerRepository;
+  async updateBalance(
+    id: string,
+    amount: number,
+    manager?: any,
+  ): Promise<void> {
+    const repo = manager
+      ? manager.getRepository(Provider)
+      : this.providerRepository;
     const provider = await repo.findOneBy({ id });
     if (provider) {
       provider.balance = Number(provider.balance || 0) + Number(amount);

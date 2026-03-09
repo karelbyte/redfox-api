@@ -1,6 +1,7 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateExpenseCategoriesTable1716400000330 implements MigrationInterface {
+export class CreateExpenseCategoriesTable1716400000330
+  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
     await queryRunner.createTable(
@@ -9,10 +10,11 @@ export class CreateExpenseCategoriesTable1716400000330 implements MigrationInter
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'organization_id',
@@ -69,7 +71,7 @@ export class CreateExpenseCategoriesTable1716400000330 implements MigrationInter
           },
         ],
       }),
-      true
+      true,
     );
   }
 

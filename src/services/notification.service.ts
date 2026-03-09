@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../models/notification.entity';
@@ -14,17 +18,24 @@ export class NotificationService {
     private notificationRepository: Repository<Notification>,
   ) {}
 
-  async create(createNotificationDto: CreateNotificationDto, currentUserId?: string): Promise<NotificationResponseDto> {
+  async create(
+    createNotificationDto: CreateNotificationDto,
+    currentUserId?: string,
+  ): Promise<NotificationResponseDto> {
     const notification = this.notificationRepository.create({
       ...createNotificationDto,
       userId: createNotificationDto.userId || currentUserId,
     });
 
-    const savedNotification = await this.notificationRepository.save(notification);
+    const savedNotification =
+      await this.notificationRepository.save(notification);
     return this.mapToResponseDto(savedNotification);
   }
 
-  async findAll(query: NotificationQueryDto, userId: string): Promise<{
+  async findAll(
+    query: NotificationQueryDto,
+    userId: string,
+  ): Promise<{
     data: NotificationResponseDto[];
     meta: {
       total: number;
@@ -43,11 +54,15 @@ export class NotificationService {
     }
 
     if (query.priority) {
-      queryBuilder.andWhere('notification.priority = :priority', { priority: query.priority });
+      queryBuilder.andWhere('notification.priority = :priority', {
+        priority: query.priority,
+      });
     }
 
     if (query.isRead !== undefined) {
-      queryBuilder.andWhere('notification.isRead = :isRead', { isRead: query.isRead });
+      queryBuilder.andWhere('notification.isRead = :isRead', {
+        isRead: query.isRead,
+      });
     }
 
     // Get total count
@@ -71,7 +86,9 @@ export class NotificationService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: notifications.map(notification => this.mapToResponseDto(notification)),
+      data: notifications.map((notification) =>
+        this.mapToResponseDto(notification),
+      ),
       meta: {
         total,
         unreadCount,
@@ -93,7 +110,11 @@ export class NotificationService {
     return this.mapToResponseDto(notification);
   }
 
-  async update(id: string, updateNotificationDto: UpdateNotificationDto, userId: string): Promise<NotificationResponseDto> {
+  async update(
+    id: string,
+    updateNotificationDto: UpdateNotificationDto,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     const notification = await this.notificationRepository.findOne({
       where: { id, userId },
     });
@@ -103,7 +124,8 @@ export class NotificationService {
     }
 
     Object.assign(notification, updateNotificationDto);
-    const updatedNotification = await this.notificationRepository.save(notification);
+    const updatedNotification =
+      await this.notificationRepository.save(notification);
 
     return this.mapToResponseDto(updatedNotification);
   }
@@ -123,7 +145,7 @@ export class NotificationService {
   async markAllAsRead(userId: string): Promise<void> {
     await this.notificationRepository.update(
       { userId, isRead: false },
-      { isRead: true }
+      { isRead: true },
     );
   }
 
@@ -141,7 +163,11 @@ export class NotificationService {
   }
 
   // Utility methods for creating specific notification types
-  async createSystemNotification(title: string, message: string, userId?: string): Promise<NotificationResponseDto> {
+  async createSystemNotification(
+    title: string,
+    message: string,
+    userId?: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -151,7 +177,12 @@ export class NotificationService {
     });
   }
 
-  async createOrderNotification(title: string, message: string, orderId: string, userId: string): Promise<NotificationResponseDto> {
+  async createOrderNotification(
+    title: string,
+    message: string,
+    orderId: string,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -164,7 +195,12 @@ export class NotificationService {
     });
   }
 
-  async createInventoryNotification(title: string, message: string, productId: string, userId: string): Promise<NotificationResponseDto> {
+  async createInventoryNotification(
+    title: string,
+    message: string,
+    productId: string,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -177,7 +213,12 @@ export class NotificationService {
     });
   }
 
-  async createSaleNotification(title: string, message: string, saleId: string, userId: string): Promise<NotificationResponseDto> {
+  async createSaleNotification(
+    title: string,
+    message: string,
+    saleId: string,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -190,7 +231,12 @@ export class NotificationService {
     });
   }
 
-  async createQuotationNotification(title: string, message: string, quotationId: string, userId: string): Promise<NotificationResponseDto> {
+  async createQuotationNotification(
+    title: string,
+    message: string,
+    quotationId: string,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -203,7 +249,12 @@ export class NotificationService {
     });
   }
 
-  async createInvoiceNotification(title: string, message: string, invoiceId: string, userId: string): Promise<NotificationResponseDto> {
+  async createInvoiceNotification(
+    title: string,
+    message: string,
+    invoiceId: string,
+    userId: string,
+  ): Promise<NotificationResponseDto> {
     return this.create({
       title,
       message,
@@ -216,7 +267,9 @@ export class NotificationService {
     });
   }
 
-  private mapToResponseDto(notification: Notification): NotificationResponseDto {
+  private mapToResponseDto(
+    notification: Notification,
+  ): NotificationResponseDto {
     return {
       id: notification.id,
       title: notification.title,
@@ -228,8 +281,14 @@ export class NotificationService {
       actionLabel: notification.actionLabel,
       metadata: notification.metadata,
       userId: notification.userId,
-      createdAt: typeof notification.createdAt === 'string' ? notification.createdAt : (notification.createdAt as Date).toISOString(),
-      updatedAt: typeof notification.updatedAt === 'string' ? notification.updatedAt : (notification.updatedAt as Date).toISOString(),
+      createdAt:
+        typeof notification.createdAt === 'string'
+          ? notification.createdAt
+          : notification.createdAt.toISOString(),
+      updatedAt:
+        typeof notification.updatedAt === 'string'
+          ? notification.updatedAt
+          : notification.updatedAt.toISOString(),
     };
   }
 }

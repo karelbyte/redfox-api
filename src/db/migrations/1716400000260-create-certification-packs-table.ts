@@ -6,7 +6,8 @@ import {
 } from 'typeorm';
 
 export class CreateCertificationPacksTable1716400000260
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   name = 'CreateCertificationPacksTable1716400000260';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -65,16 +66,12 @@ export class CreateCertificationPacksTable1716400000260
           {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
-            default: isPostgres
-              ? 'CURRENT_TIMESTAMP'
-              : 'CURRENT_TIMESTAMP',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
             type: isPostgres ? 'timestamp' : 'datetime',
-            default: isPostgres
-              ? 'CURRENT_TIMESTAMP'
-              : 'CURRENT_TIMESTAMP',
+            default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
             onUpdate: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
           },
           {

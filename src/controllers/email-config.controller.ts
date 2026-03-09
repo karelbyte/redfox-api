@@ -19,7 +19,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class EmailConfigController {
-  constructor(private readonly emailService: EmailService) { }
+  constructor(private readonly emailService: EmailService) {}
 
   @Get()
   getConfig(@UserId() userId: string): Promise<EmailConfigResponseDto> {
@@ -43,7 +43,9 @@ export class EmailConfigController {
   }
 
   @Post('test')
-  testConnection(@UserId() userId: string): Promise<{ success: boolean; message: string }> {
+  testConnection(
+    @UserId() userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     return this.emailService.testConnection(userId);
   }
 }

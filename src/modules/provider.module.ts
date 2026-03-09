@@ -17,7 +17,7 @@ import { OrganizationModule } from './organization.module';
       Provider,
       ProviderAddress,
       ProviderTaxData,
-      ProviderCredit
+      ProviderCredit,
     ]),
     LanguageModule,
     SurrogateModule,
@@ -27,4 +27,4 @@ import { OrganizationModule } from './organization.module';
   providers: [ProviderService, ProviderMapper],
   exports: [ProviderService, ProviderMapper],
 })
-export class ProviderModule { }
+export class ProviderModule {}

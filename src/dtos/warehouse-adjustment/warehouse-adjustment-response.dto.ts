@@ -11,4 +11,4 @@ export class WarehouseAdjustmentResponseDto {
   status: boolean;
   details: WarehouseAdjustmentDetailResponseDto[];
   created_at: Date;
-} 
+}

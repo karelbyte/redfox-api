@@ -1,4 +1,13 @@
-import { IsOptional, IsString, Length, IsEmail, IsBoolean, IsArray, ValidateNested, IsObject } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  Length,
+  IsEmail,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateClientAddressDto } from './create-client-address.dto';
 import { CreateClientTaxDataDto } from './create-client-tax-data.dto';

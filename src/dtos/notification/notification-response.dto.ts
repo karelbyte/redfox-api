@@ -1,4 +1,7 @@
-import { NotificationType, NotificationPriority } from '../../models/notification.entity';
+import {
+  NotificationType,
+  NotificationPriority,
+} from '../../models/notification.entity';
 
 export class NotificationResponseDto {
   id: string;

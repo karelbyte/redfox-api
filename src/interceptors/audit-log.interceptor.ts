@@ -67,7 +67,9 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    console.log(`[AuditLogInterceptor] User found: ${userId}, proceeding with audit log`);
+    console.log(
+      `[AuditLogInterceptor] User found: ${userId}, proceeding with audit log`,
+    );
 
     // Determine action based on HTTP method
     let action: AuditAction;
@@ -87,12 +89,14 @@ export class AuditLogInterceptor implements NestInterceptor {
     }
 
     // Extract entity type from URL
-    const urlParts = url.split('/').filter((part: string) => part && part !== 'api');
+    const urlParts = url
+      .split('/')
+      .filter((part: string) => part && part !== 'api');
     const entityType = urlParts[0] || 'unknown';
-    
+
     // Get entity ID from params or body
     let entityId = params?.id || body?.id;
-    
+
     // If no ID yet (POST), we'll get it from response
     const needsIdFromResponse = !entityId && method === 'POST';
 
@@ -105,7 +109,8 @@ export class AuditLogInterceptor implements NestInterceptor {
           // For POST requests, get ID from response
           if (needsIdFromResponse) {
             // Try different possible locations for the ID
-            entityId = response?.id || response?.client?.id || response?.data?.id;
+            entityId =
+              response?.id || response?.client?.id || response?.data?.id;
           }
 
           // Skip if still no entity ID
@@ -119,14 +124,18 @@ export class AuditLogInterceptor implements NestInterceptor {
 
           // Prepare values for logging (limit size to avoid huge logs)
           let newValues = method === 'POST' ? response : body;
-          
+
           // Limit the size of newValues to prevent huge logs
           const newValuesStr = JSON.stringify(newValues);
           if (newValuesStr.length > 5000) {
             newValues = { _truncated: true, _size: newValuesStr.length };
           }
 
-          const description = this.generateDescription(action, entityType, entityId);
+          const description = this.generateDescription(
+            action,
+            entityType,
+            entityId,
+          );
 
           // Log the action
           await this.auditLogService.log(
@@ -140,7 +149,9 @@ export class AuditLogInterceptor implements NestInterceptor {
             ipAddress,
           );
 
-          console.log(`[AuditLogInterceptor] ✅ Audit log created: ${description}`);
+          console.log(
+            `[AuditLogInterceptor] ✅ Audit log created: ${description}`,
+          );
         } catch (error) {
           // Don't fail the request if logging fails
           console.error('[AuditLogInterceptor] ❌ Failed to log audit:', error);

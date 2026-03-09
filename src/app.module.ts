@@ -56,6 +56,8 @@ import { HomeController } from './controllers/home.controller';
 import { TenantMiddleware } from './middlewares/tenant.middleware';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
+import { UnverifiedAccountCleanupService } from './services/unverified-account-cleanup.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -127,12 +129,11 @@ import { NestModule, MiddlewareConsumer } from '@nestjs/common';
       useClass: TenantInterceptor,
     },
     TenantContext,
+    UnverifiedAccountCleanupService,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(TenantMiddleware)
-      .forRoutes('*');
+    consumer.apply(TenantMiddleware).forRoutes('*');
   }
 }

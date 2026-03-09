@@ -13,7 +13,14 @@ export interface SearchResult {
   id: string;
   title: string;
   subtitle?: string;
-  type: 'product' | 'client' | 'provider' | 'invoice' | 'purchase_order' | 'expense' | 'account_receivable';
+  type:
+    | 'product'
+    | 'client'
+    | 'provider'
+    | 'invoice'
+    | 'purchase_order'
+    | 'expense'
+    | 'account_receivable';
   url: string;
   metadata?: any;
 }
@@ -64,24 +71,38 @@ export class GlobalSearchService {
       this.searchAccountsReceivable(searchTerm, 5),
     ]);
 
-    results.push(...products, ...clients, ...providers, ...invoices, ...purchaseOrders, ...expenses, ...accountsReceivable);
+    results.push(
+      ...products,
+      ...clients,
+      ...providers,
+      ...invoices,
+      ...purchaseOrders,
+      ...expenses,
+      ...accountsReceivable,
+    );
 
     return results.slice(0, limit);
   }
 
-  private async searchProducts(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchProducts(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.brand', 'brand')
-      .where('product.name LIKE :search OR product.description LIKE :search OR product.barcode LIKE :search', {
-        search: searchTerm,
-      })
+      .where(
+        'product.name LIKE :search OR product.description LIKE :search OR product.barcode LIKE :search',
+        {
+          search: searchTerm,
+        },
+      )
       .andWhere('product.is_active = :isActive', { isActive: true })
       .limit(limit)
       .getMany();
 
-    return products.map(product => ({
+    return products.map((product) => ({
       id: product.id,
       title: product.name,
       subtitle: `${product.category?.name || ''} - SKU: ${product.sku}`,
@@ -95,17 +116,23 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchClients(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchClients(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const clients = await this.clientRepository
       .createQueryBuilder('client')
-      .where('client.name LIKE :search OR client.email LIKE :search OR client.phone LIKE :search', {
-        search: searchTerm,
-      })
+      .where(
+        'client.name LIKE :search OR client.email LIKE :search OR client.phone LIKE :search',
+        {
+          search: searchTerm,
+        },
+      )
       .andWhere('client.status = :status', { status: true })
       .limit(limit)
       .getMany();
 
-    return clients.map(client => ({
+    return clients.map((client) => ({
       id: client.id,
       title: client.name,
       subtitle: client.email || client.phone,
@@ -118,17 +145,23 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchProviders(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchProviders(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const providers = await this.providerRepository
       .createQueryBuilder('provider')
-      .where('provider.name LIKE :search OR provider.email LIKE :search OR provider.phone LIKE :search', {
-        search: searchTerm,
-      })
+      .where(
+        'provider.name LIKE :search OR provider.email LIKE :search OR provider.phone LIKE :search',
+        {
+          search: searchTerm,
+        },
+      )
       .andWhere('provider.status = :status', { status: true })
       .limit(limit)
       .getMany();
 
-    return providers.map(provider => ({
+    return providers.map((provider) => ({
       id: provider.id,
       title: provider.name,
       subtitle: provider.email || provider.phone,
@@ -141,7 +174,10 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchInvoices(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchInvoices(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const invoices = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.client', 'client')
@@ -151,7 +187,7 @@ export class GlobalSearchService {
       .limit(limit)
       .getMany();
 
-    return invoices.map(invoice => ({
+    return invoices.map((invoice) => ({
       id: invoice.id,
       title: `Invoice ${invoice.code}`,
       subtitle: `${invoice.client?.name || ''} - $${invoice.total_amount}`,
@@ -165,7 +201,10 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchPurchaseOrders(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchPurchaseOrders(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const purchaseOrders = await this.purchaseOrderRepository
       .createQueryBuilder('po')
       .leftJoinAndSelect('po.provider', 'provider')
@@ -175,7 +214,7 @@ export class GlobalSearchService {
       .limit(limit)
       .getMany();
 
-    return purchaseOrders.map(po => ({
+    return purchaseOrders.map((po) => ({
       id: po.id,
       title: `PO ${po.code}`,
       subtitle: `${po.provider?.name || ''} - $${po.amount}`,
@@ -189,17 +228,23 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchExpenses(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchExpenses(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const expenses = await this.expenseRepository
       .createQueryBuilder('expense')
       .leftJoinAndSelect('expense.category', 'category')
-      .where('expense.description LIKE :search OR expense.vendor LIKE :search OR expense.reference LIKE :search', {
-        search: searchTerm,
-      })
+      .where(
+        'expense.description LIKE :search OR expense.vendor LIKE :search OR expense.reference LIKE :search',
+        {
+          search: searchTerm,
+        },
+      )
       .limit(limit)
       .getMany();
 
-    return expenses.map(expense => ({
+    return expenses.map((expense) => ({
       id: expense.id.toString(),
       title: expense.description,
       subtitle: `${expense.category?.name || ''} - $${expense.amount}`,
@@ -213,17 +258,23 @@ export class GlobalSearchService {
     }));
   }
 
-  private async searchAccountsReceivable(searchTerm: string, limit: number): Promise<SearchResult[]> {
+  private async searchAccountsReceivable(
+    searchTerm: string,
+    limit: number,
+  ): Promise<SearchResult[]> {
     const accounts = await this.accountReceivableRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.client', 'client')
-      .where('account.referenceNumber LIKE :search OR client.name LIKE :search', {
-        search: searchTerm,
-      })
+      .where(
+        'account.referenceNumber LIKE :search OR client.name LIKE :search',
+        {
+          search: searchTerm,
+        },
+      )
       .limit(limit)
       .getMany();
 
-    return accounts.map(account => ({
+    return accounts.map((account) => ({
       id: account.id.toString(),
       title: `AR ${account.referenceNumber}`,
       subtitle: `${account.client?.name || ''} - $${account.remainingAmount} pending`,
@@ -245,7 +296,7 @@ export class GlobalSearchService {
       take: 5,
     });
 
-    return products.map(product => ({
+    return products.map((product) => ({
       id: product.id,
       title: product.name,
       subtitle: `${product.category?.name || ''} - SKU: ${product.sku}`,

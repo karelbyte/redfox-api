@@ -19,12 +19,14 @@ export class CertificationPackService {
     @InjectRepository(CertificationPack)
     private readonly certificationPackRepository: Repository<CertificationPack>,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Certification Packs');
+      throw new BadRequestException(
+        'Organization context is required for Certification Packs',
+      );
     }
     return orgId;
   }
@@ -107,9 +109,7 @@ export class CertificationPackService {
     const pack = await this.findOne(id);
 
     if (!pack.is_active) {
-      throw new BadRequestException(
-        'Cannot set inactive pack as default',
-      );
+      throw new BadRequestException('Cannot set inactive pack as default');
     }
 
     await this.unsetDefaultPacks();

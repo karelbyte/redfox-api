@@ -1,8 +1,16 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateInternalNotesTable1716400000400 implements MigrationInterface {
+export class CreateInternalNotesTable1716400000400
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const isPostgres = queryRunner.connection.driver.options.type === 'postgres';
+    const isPostgres =
+      queryRunner.connection.driver.options.type === 'postgres';
 
     await queryRunner.createTable(
       new Table({

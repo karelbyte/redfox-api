@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Surrogate } from '../models/surrogate.entity';
@@ -18,7 +22,9 @@ export class SurrogateService {
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Surrogates');
+      throw new BadRequestException(
+        'Organization context is required for Surrogates',
+      );
     }
     return orgId;
   }
@@ -32,7 +38,7 @@ export class SurrogateService {
       order: { code: 'ASC' },
     });
 
-    return surrogates.map(surrogate => ({
+    return surrogates.map((surrogate) => ({
       ...surrogate,
       next_code: surrogate.generateNext(),
     }));
@@ -58,24 +64,104 @@ export class SurrogateService {
   // Define defaults for common surrogate codes
   private async lazyInitializeSurrogate(code: string): Promise<Surrogate> {
     const defaults: Record<string, Partial<Surrogate>> = {
-      'client': { prefix: 'CLI', padding: 4, include_year: false, description: 'Códigos para clientes' },
-      'product': { prefix: 'PROD', padding: 4, include_year: false, description: 'Códigos para productos' },
-      'invoice': { prefix: 'INV', padding: 6, include_year: false, description: 'Códigos para facturas' },
-      'purchase_order': { prefix: 'PO', padding: 4, include_year: true, description: 'Códigos para órdenes de compra' },
-      'sale': { prefix: 'VTA', padding: 6, include_year: false, description: 'Códigos para ventas' },
-      'provider': { prefix: 'PROV', padding: 4, include_year: false, description: 'Códigos para proveedores' },
-      'warehouse': { prefix: 'ALM', padding: 3, include_year: false, description: 'Códigos para almacenes' },
-      'brand': { prefix: 'MRC', padding: 3, include_year: false, description: 'Códigos para marcas' },
-      'category': { prefix: 'CAT', padding: 3, include_year: false, description: 'Códigos para categorías' },
-      'reception': { prefix: 'REC', padding: 4, include_year: true, description: 'Códigos para recepciones' },
-      'withdrawal': { prefix: 'RET', padding: 4, include_year: false, description: 'Códigos para retiros' },
-      'return': { prefix: 'DEV', padding: 4, include_year: false, description: 'Códigos para devoluciones' }
+      client: {
+        prefix: 'CLI',
+        padding: 4,
+        include_year: false,
+        description: 'Códigos para clientes',
+      },
+      product: {
+        prefix: 'PROD',
+        padding: 4,
+        include_year: false,
+        description: 'Códigos para productos',
+      },
+      invoice: {
+        prefix: 'INV',
+        padding: 6,
+        include_year: false,
+        description: 'Códigos para facturas',
+      },
+      purchase_order: {
+        prefix: 'PO',
+        padding: 4,
+        include_year: true,
+        description: 'Códigos para órdenes de compra',
+      },
+      sale: {
+        prefix: 'VTA',
+        padding: 6,
+        include_year: false,
+        description: 'Códigos para ventas',
+      },
+      provider: {
+        prefix: 'PROV',
+        padding: 4,
+        include_year: false,
+        description: 'Códigos para proveedores',
+      },
+      warehouse: {
+        prefix: 'ALM',
+        padding: 3,
+        include_year: false,
+        description: 'Códigos para almacenes',
+      },
+      brand: {
+        prefix: 'MRC',
+        padding: 3,
+        include_year: false,
+        description: 'Códigos para marcas',
+      },
+      category: {
+        prefix: 'CAT',
+        padding: 3,
+        include_year: false,
+        description: 'Códigos para categorías',
+      },
+      reception: {
+        prefix: 'REC',
+        padding: 4,
+        include_year: true,
+        description: 'Códigos para recepciones',
+      },
+      withdrawal: {
+        prefix: 'RET',
+        padding: 4,
+        include_year: false,
+        description: 'Códigos para retiros',
+      },
+      return: {
+        prefix: 'DEV',
+        padding: 4,
+        include_year: false,
+        description: 'Códigos para devoluciones',
+      },
+      quotation: {
+        prefix: 'COT',
+        padding: 6,
+        include_year: true,
+        description: 'Códigos para cotizaciones',
+      },
+      remission: {
+        prefix: 'REM',
+        padding: 6,
+        include_year: true,
+        description: 'Códigos para remisiones',
+      },
+      inventory_adjustment: {
+        prefix: 'AJU',
+        padding: 4,
+        include_year: true,
+        description: 'Códigos para ajustes de inventario',
+      },
     };
 
     const config = defaults[code];
 
     if (!config) {
-      throw new NotFoundException(`Valid default configuration not found for surrogate code '${code}'`);
+      throw new NotFoundException(
+        `Valid default configuration not found for surrogate code '${code}'`,
+      );
     }
 
     const newSurrogate = this.surrogateRepository.create({
@@ -88,7 +174,23 @@ export class SurrogateService {
       year_separator: '-',
     });
 
-    return await this.surrogateRepository.save(newSurrogate);
+    try {
+      return await this.surrogateRepository.save(newSurrogate);
+    } catch (error) {
+      // Handle PostgreSQL unique constraint violation (race condition)
+      if (error.code === '23505') {
+        const existing = await this.surrogateRepository.findOne({
+          where: {
+            code,
+            organization_id: this.organizationId,
+          },
+        });
+        if (existing) {
+          return existing;
+        }
+      }
+      throw error;
+    }
   }
 
   async getNextCode(code: string): Promise<NextCodeResponseDto> {
@@ -120,13 +222,19 @@ export class SurrogateService {
     };
   }
 
-  async update(code: string, updateData: UpdateSurrogateDto): Promise<SurrogateResponseDto> {
+  async update(
+    code: string,
+    updateData: UpdateSurrogateDto,
+  ): Promise<SurrogateResponseDto> {
     const surrogate = await this.findByCode(code);
 
     // Validar que el nuevo next_number sea mayor al actual si se está actualizando
-    if (updateData.next_number && updateData.next_number < surrogate.next_number) {
+    if (
+      updateData.next_number &&
+      updateData.next_number < surrogate.next_number
+    ) {
       throw new BadRequestException(
-        `Next number cannot be less than current value (${surrogate.next_number})`
+        `Next number cannot be less than current value (${surrogate.next_number})`,
       );
     }
 
@@ -140,7 +248,10 @@ export class SurrogateService {
     };
   }
 
-  async reset(code: string, startNumber: number = 1): Promise<SurrogateResponseDto> {
+  async reset(
+    code: string,
+    startNumber: number = 1,
+  ): Promise<SurrogateResponseDto> {
     if (startNumber < 1) {
       throw new BadRequestException('Start number must be greater than 0');
     }
@@ -185,7 +296,9 @@ export class SurrogateService {
       attempts++;
     }
 
-    throw new BadRequestException('Could not find available code after maximum attempts');
+    throw new BadRequestException(
+      'Could not find available code after maximum attempts',
+    );
   }
 
   async useCodeIfMatches(code: string, value: string): Promise<void> {

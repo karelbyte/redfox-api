@@ -8,4 +8,4 @@ export class CashReportQueryDto {
   @IsString()
   @IsNotEmpty()
   end_date: string;
-} 
+}

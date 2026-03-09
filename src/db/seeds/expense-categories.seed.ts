@@ -2,18 +2,22 @@ import { DataSource } from 'typeorm';
 import { ExpenseCategory } from '../../models/expense-category.entity';
 import { Organization } from '../../models/organization.entity';
 
-export async function seedExpenseCategories(dataSource: DataSource): Promise<void> {
+export async function seedExpenseCategories(
+  dataSource: DataSource,
+): Promise<void> {
   const expenseCategoryRepository = dataSource.getRepository(ExpenseCategory);
   const organizationRepository = dataSource.getRepository(Organization);
 
-  const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+  const organization = await organizationRepository.findOneBy({
+    slug: 'landlord',
+  });
 
   if (!organization) {
     throw new Error('Landlord organization not found for seeding');
   }
 
   const existingCategories = await expenseCategoryRepository.count({
-    where: { organization_id: organization.id }
+    where: { organization_id: organization.id },
   });
   if (existingCategories > 0) {
     console.log('Expense categories already exist, skipping seed');

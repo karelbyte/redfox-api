@@ -1,10 +1,8 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableForeignKey,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, TableForeignKey } from 'typeorm';
 
-export class CreateCircularForeignKeys1716400000200 implements MigrationInterface {
+export class CreateCircularForeignKeys1716400000200
+  implements MigrationInterface
+{
   name = 'CreateCircularForeignKeys1716400000200';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -35,9 +33,11 @@ export class CreateCircularForeignKeys1716400000200 implements MigrationInterfac
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop foreign key: cash_transactions.sale_id -> withdrawals.id
-    const cashTransactionsTable = await queryRunner.getTable('cash_transactions');
-    const cashTransactionsForeignKeys = cashTransactionsTable?.foreignKeys || [];
-    
+    const cashTransactionsTable =
+      await queryRunner.getTable('cash_transactions');
+    const cashTransactionsForeignKeys =
+      cashTransactionsTable?.foreignKeys || [];
+
     for (const foreignKey of cashTransactionsForeignKeys) {
       if (foreignKey.columnNames.includes('sale_id')) {
         await queryRunner.dropForeignKey('cash_transactions', foreignKey);
@@ -47,11 +47,11 @@ export class CreateCircularForeignKeys1716400000200 implements MigrationInterfac
     // Drop foreign key: withdrawals.cash_transaction_id -> cash_transactions.id
     const withdrawalsTable = await queryRunner.getTable('withdrawals');
     const withdrawalsForeignKeys = withdrawalsTable?.foreignKeys || [];
-    
+
     for (const foreignKey of withdrawalsForeignKeys) {
       if (foreignKey.columnNames.includes('cash_transaction_id')) {
         await queryRunner.dropForeignKey('withdrawals', foreignKey);
       }
     }
   }
-} 
+}

@@ -27,7 +27,7 @@ import { UserId } from '../decorators/user-id.decorator';
 @Controller('withdrawals')
 @UseGuards(AuthGuard)
 export class WithdrawalController {
-  constructor(private readonly withdrawalService: WithdrawalService) { }
+  constructor(private readonly withdrawalService: WithdrawalService) {}
 
   @Post()
   create(

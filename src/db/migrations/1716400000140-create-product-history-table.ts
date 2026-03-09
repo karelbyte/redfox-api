@@ -6,7 +6,8 @@ import {
 } from 'typeorm';
 
 export class CreateProductHistoryTable1716400000140
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   name = 'CreateProductHistoryTable1716400000140';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

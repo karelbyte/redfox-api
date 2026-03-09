@@ -19,7 +19,9 @@ export class QueueModule {
       try {
         const bullModuleName = '@nestjs/bull';
         const { BullModule } = await import(bullModuleName);
-        const { EmailProcessor } = await import('../processors/email.processor');
+        const { EmailProcessor } = await import(
+          '../processors/email.processor'
+        );
 
         imports.push(
           BullModule.forRootAsync({

@@ -1,4 +1,13 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsEnum, IsPositive, Length, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsPositive,
+  Length,
+  IsUUID,
+} from 'class-validator';
 import { ExpenseStatus, ExpenseRecurrence } from '../../models/expense.entity';
 
 export class CreateExpenseDto {
@@ -38,7 +47,6 @@ export class CreateExpenseDto {
   @Length(1, 50)
   reference?: string;
 
-  @IsNumber()
-  @IsPositive()
-  categoryId: number;
+  @IsUUID()
+  categoryId: string;
 }

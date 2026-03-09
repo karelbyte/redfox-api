@@ -10,4 +10,4 @@ export class CashTransactionResponseDto {
   created_by: string;
   created_at: Date;
   updated_at: Date;
-} 
+}

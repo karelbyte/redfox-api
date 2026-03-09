@@ -171,7 +171,10 @@ export interface ICertificationPackService {
   searchMeasurementUnits(term: string): Promise<MeasurementUnitSuggestion[]>;
   searchProductKeys(term: string): Promise<ProductKeySuggestion[]>;
   createCustomer(customerData: CustomerData): Promise<CustomerResponse>;
-  updateCustomer(customerId: string, customerData: Partial<CustomerData>): Promise<CustomerResponse>;
+  updateCustomer(
+    customerId: string,
+    customerData: Partial<CustomerData>,
+  ): Promise<CustomerResponse>;
   /**
    * Lista clientes (customers) del pack activo.
    * Opcional: no todos los packs soportan listar clientes.
@@ -185,7 +188,10 @@ export interface ICertificationPackService {
   deleteCustomer?: (customerId: string) => Promise<void>;
   createProduct(productData: ProductData): Promise<ProductResponse>;
   findProductBySku(sku: string): Promise<ProductResponse | null>;
-  updateProduct(productId: string, productData: Partial<ProductData>): Promise<ProductResponse>;
+  updateProduct(
+    productId: string,
+    productData: Partial<ProductData>,
+  ): Promise<ProductResponse>;
   createReceipt(data: ReceiptData): Promise<ReceiptResponse>;
   cancelReceipt(receiptId: string): Promise<void>;
   /**

@@ -26,7 +26,7 @@ export class InventoryService {
     private readonly warehouseMapper: WarehouseMapper,
     private translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
-  ) { }
+  ) {}
 
   private async mapToResponseDto(
     inventory: Inventory,
@@ -253,9 +253,8 @@ export class InventoryService {
       );
       throw new NotFoundException(message);
     }
-    const result = await this.inventoryPackSyncService.syncForInventory(
-      inventory,
-    );
+    const result =
+      await this.inventoryPackSyncService.syncForInventory(inventory);
     return {
       inventory: this.mapToListResponseDto(result.inventory),
       pack_sync_success: result.packSyncSuccess,

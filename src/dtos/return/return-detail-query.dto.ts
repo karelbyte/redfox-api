@@ -17,4 +17,4 @@ export class ReturnDetailQueryDto {
   @IsNumber()
   @Min(1)
   limit?: number;
-} 
+}

@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { AccountReceivable, AccountReceivableStatus } from '../models/account-receivable.entity';
+import {
+  AccountReceivable,
+  AccountReceivableStatus,
+} from '../models/account-receivable.entity';
 import { AccountReceivablePayment } from '../models/account-receivable-payment.entity';
 import { CreateAccountReceivableDto } from '../dtos/account-receivable/create-account-receivable.dto';
 import { UpdateAccountReceivableDto } from '../dtos/account-receivable/update-account-receivable.dto';
@@ -20,7 +27,9 @@ export class AccountReceivableService {
     private readonly clientService: ClientService,
   ) { }
 
-  async create(createAccountReceivableDto: CreateAccountReceivableDto): Promise<AccountReceivable> {
+  async create(
+    createAccountReceivableDto: CreateAccountReceivableDto,
+  ): Promise<AccountReceivable> {
     const existingAccount = await this.accountReceivableRepository.findOne({
       where: { referenceNumber: createAccountReceivableDto.referenceNumber },
     });
@@ -29,15 +38,32 @@ export class AccountReceivableService {
       throw new BadRequestException('Reference number already exists');
     }
 
-    const accountReceivable = this.accountReceivableRepository.create({
-      ...createAccountReceivableDto,
-      remainingAmount: createAccountReceivableDto.totalAmount,
-    });
+    const totalAmount = Number(createAccountReceivableDto.totalAmount);
+    const remainingAmount = Number(createAccountReceivableDto.remainingAmount);
+    const paidAmount = totalAmount - remainingAmount;
+
+    let status =
+      createAccountReceivableDto.status || AccountReceivableStatus.PENDING;
+    if (remainingAmount === 0) {
+      status = AccountReceivableStatus.PAID;
+    } else if (paidAmount > 0) {
+      status = AccountReceivableStatus.PARTIAL;
+    }
+
+    const accountReceivable = new AccountReceivable();
+    Object.assign(accountReceivable, createAccountReceivableDto);
+    accountReceivable.totalAmount = totalAmount;
+    accountReceivable.remainingAmount = remainingAmount;
+    accountReceivable.paidAmount = paidAmount;
+    accountReceivable.status = status;
 
     const savedAccount = await this.accountReceivableRepository.save(accountReceivable);
 
     // Update denormalized client balance (increase debt)
-    await this.clientService.updateBalance(createAccountReceivableDto.clientId, createAccountReceivableDto.totalAmount);
+    await this.clientService.updateBalance(
+      createAccountReceivableDto.clientId,
+      remainingAmount,
+    );
 
     return savedAccount;
   }
@@ -47,8 +73,8 @@ export class AccountReceivableService {
     limit: number = 10,
     search?: string,
     status?: AccountReceivableStatus,
-    clientId?: number,
-    overdue?: boolean
+    clientId?: string,
+    overdue?: boolean,
   ): Promise<{
     data: AccountReceivable[];
     total: number;
@@ -65,7 +91,7 @@ export class AccountReceivableService {
     if (search) {
       queryBuilder.andWhere(
         '(account.referenceNumber LIKE :search OR client.name LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -78,10 +104,13 @@ export class AccountReceivableService {
     }
 
     if (overdue) {
-      queryBuilder.andWhere('account.dueDate < :today AND account.status != :paidStatus', {
-        today: new Date().toISOString().split('T')[0],
-        paidStatus: AccountReceivableStatus.PAID,
-      });
+      queryBuilder.andWhere(
+        'account.dueDate < :today AND account.status != :paidStatus',
+        {
+          today: new Date().toISOString().split('T')[0],
+          paidStatus: AccountReceivableStatus.PAID,
+        },
+      );
     }
 
     const total = await queryBuilder.getCount();
@@ -100,7 +129,7 @@ export class AccountReceivableService {
     };
   }
 
-  async findOne(id: number): Promise<AccountReceivable> {
+  async findOne(id: string): Promise<AccountReceivable> {
     const account = await this.accountReceivableRepository.findOne({
       where: { id },
       relations: ['client', 'invoice', 'payments', 'payments.createdByUser'],
@@ -113,22 +142,30 @@ export class AccountReceivableService {
     return account;
   }
 
-  async update(id: number, updateAccountReceivableDto: UpdateAccountReceivableDto): Promise<AccountReceivable> {
+  async update(
+    id: string,
+    updateAccountReceivableDto: UpdateAccountReceivableDto,
+  ): Promise<AccountReceivable> {
     const account = await this.findOne(id);
     Object.assign(account, updateAccountReceivableDto);
     return await this.accountReceivableRepository.save(account);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const account = await this.findOne(id);
     await this.accountReceivableRepository.remove(account);
   }
 
-  async addPayment(createPaymentDto: CreateAccountReceivablePaymentDto, userId: string): Promise<AccountReceivablePayment> {
+  async addPayment(
+    createPaymentDto: CreateAccountReceivablePaymentDto,
+    userId: string,
+  ): Promise<AccountReceivablePayment> {
     const account = await this.findOne(createPaymentDto.accountReceivableId);
 
     if (createPaymentDto.amount > account.remainingAmount) {
-      throw new BadRequestException('Payment amount cannot exceed remaining amount');
+      throw new BadRequestException(
+        'Payment amount cannot exceed remaining amount',
+      );
     }
 
     // Usar insert en lugar de create + save para evitar problemas con TypeORM
@@ -152,8 +189,14 @@ export class AccountReceivableService {
       throw new NotFoundException('Payment could not be created');
     }
 
-    account.paidAmount = Number(account.paidAmount) + Number(createPaymentDto.amount);
-    account.remainingAmount = Number(account.totalAmount) - Number(account.paidAmount);
+    const currentPaidAmount = Number(account.paidAmount);
+    const currentRemainingAmount = Number(account.remainingAmount);
+    const paymentAmount = Number(createPaymentDto.amount);
+
+    account.paidAmount = Number((currentPaidAmount + paymentAmount).toFixed(2));
+    account.remainingAmount = Number(
+      (currentRemainingAmount - paymentAmount).toFixed(2),
+    );
 
     if (account.remainingAmount === 0) {
       account.status = AccountReceivableStatus.PAID;
@@ -161,10 +204,17 @@ export class AccountReceivableService {
       account.status = AccountReceivableStatus.PARTIAL;
     }
 
-    await this.accountReceivableRepository.save(account);
+    await this.accountReceivableRepository.update(account.id, {
+      paidAmount: account.paidAmount,
+      remainingAmount: account.remainingAmount,
+      status: account.status,
+    });
 
     // Update denormalized client balance (decrease debt)
-    await this.clientService.updateBalance(account.clientId, -Number(createPaymentDto.amount));
+    await this.clientService.updateBalance(
+      account.clientId,
+      -Number(createPaymentDto.amount),
+    );
 
     return savedPayment;
   }
@@ -187,7 +237,10 @@ export class AccountReceivableService {
         acc.paidAmount += Number(account.paidAmount);
         acc.pendingAmount += Number(account.remainingAmount);
 
-        if (new Date(account.dueDate) < today && account.status !== AccountReceivableStatus.PAID) {
+        if (
+          new Date(account.dueDate) < today &&
+          account.status !== AccountReceivableStatus.PAID
+        ) {
           acc.overdueAmount += Number(account.remainingAmount);
           acc.overdueCount++;
         }
@@ -201,7 +254,7 @@ export class AccountReceivableService {
         pendingAmount: 0,
         overdueAmount: 0,
         overdueCount: 0,
-      }
+      },
     );
 
     return summary;
@@ -229,7 +282,10 @@ export class AccountReceivableService {
       .set({ status: AccountReceivableStatus.OVERDUE })
       .where('dueDate < :today', { today })
       .andWhere('status IN (:...statuses)', {
-        statuses: [AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL]
+        statuses: [
+          AccountReceivableStatus.PENDING,
+          AccountReceivableStatus.PARTIAL,
+        ],
       })
       .execute();
   }
@@ -241,7 +297,7 @@ export class AccountReceivableService {
     overdueBalance: number;
     currentBalance: number;
     accounts: Array<{
-      id: number;
+      id: string;
       referenceNumber: string;
       issueDate: Date;
       dueDate: Date;
@@ -266,14 +322,17 @@ export class AccountReceivableService {
     let overdueBalance = 0;
     let currentBalance = 0;
 
-    const accountsWithAging = accounts.map(account => {
+    const accountsWithAging = accounts.map((account) => {
       const remainingAmount = Number(account.remainingAmount);
       usedCredit += remainingAmount;
 
       const dueDate = new Date(account.dueDate);
-      const daysOverdue = account.status !== AccountReceivableStatus.PAID && dueDate < today
-        ? Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
+      const daysOverdue =
+        account.status !== AccountReceivableStatus.PAID && dueDate < today
+          ? Math.floor(
+            (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+          )
+          : 0;
 
       if (daysOverdue > 0) {
         overdueBalance += remainingAmount;

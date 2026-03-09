@@ -4,17 +4,27 @@ import { Repository, Between } from 'typeorm';
 import { Expense, ExpenseStatus } from '../models/expense.entity';
 import { CreateExpenseDto } from '../dtos/expense/create-expense.dto';
 import { UpdateExpenseDto } from '../dtos/expense/update-expense.dto';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class ExpenseService {
   constructor(
     @InjectRepository(Expense)
     private expenseRepository: Repository<Expense>,
+    private readonly tenantContext: TenantContext,
   ) { }
 
-  async create(createExpenseDto: CreateExpenseDto, userId: string): Promise<Expense> {
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
+
+  async create(
+    createExpenseDto: CreateExpenseDto,
+    userId: string,
+  ): Promise<Expense> {
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
+      organization_id: this.organizationId,
       createdBy: userId,
     });
     return await this.expenseRepository.save(expense);
@@ -25,9 +35,9 @@ export class ExpenseService {
     limit: number = 10,
     search?: string,
     status?: ExpenseStatus,
-    categoryId?: number,
+    categoryId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<{
     data: Expense[];
     total: number;
@@ -41,10 +51,14 @@ export class ExpenseService {
       .leftJoinAndSelect('expense.provider', 'provider')
       .leftJoinAndSelect('expense.createdByUser', 'user');
 
+    queryBuilder.where('expense.organization_id = :organizationId', {
+      organizationId: this.organizationId,
+    });
+
     if (search) {
       queryBuilder.andWhere(
-        '(expense.description LIKE :search OR COALESCE(provider.name, \'\') LIKE :search OR expense.reference LIKE :search)',
-        { search: `%${search}%` }
+        "(expense.description LIKE :search OR COALESCE(provider.name, '') LIKE :search OR expense.reference LIKE :search)",
+        { search: `%${search}%` },
       );
     }
 
@@ -57,10 +71,13 @@ export class ExpenseService {
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('expense.expenseDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'expense.expenseDate BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     const total = await queryBuilder.getCount();
@@ -79,9 +96,9 @@ export class ExpenseService {
     };
   }
 
-  async findOne(id: number): Promise<Expense> {
+  async findOne(id: string): Promise<Expense> {
     const expense = await this.expenseRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       relations: ['category', 'provider', 'createdByUser'],
     });
 
@@ -92,22 +109,36 @@ export class ExpenseService {
     return expense;
   }
 
-  async update(id: number, updateExpenseDto: UpdateExpenseDto): Promise<Expense> {
+  async update(
+    id: string,
+    updateExpenseDto: UpdateExpenseDto,
+  ): Promise<Expense> {
     const expense = await this.findOne(id);
     Object.assign(expense, updateExpenseDto);
     return await this.expenseRepository.save(expense);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const expense = await this.findOne(id);
     await this.expenseRepository.remove(expense);
   }
 
-  async removeMany(ids: number[]): Promise<void> {
-    await this.expenseRepository.delete(ids);
+  async removeMany(ids: string[]): Promise<void> {
+    await this.expenseRepository
+      .createQueryBuilder()
+      .delete()
+      .from(Expense)
+      .where('id IN (:...ids)', { ids })
+      .andWhere('organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      })
+      .execute();
   }
 
-  async getExpensesSummary(startDate?: string, endDate?: string): Promise<{
+  async getExpensesSummary(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{
     totalExpenses: number;
     paidExpenses: number;
     pendingExpenses: number;
@@ -117,11 +148,18 @@ export class ExpenseService {
   }> {
     const queryBuilder = this.expenseRepository.createQueryBuilder('expense');
 
+    queryBuilder.where('expense.organization_id = :organizationId', {
+      organizationId: this.organizationId,
+    });
+
     if (startDate && endDate) {
-      queryBuilder.where('expense.expenseDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'expense.expenseDate BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     const expenses = await queryBuilder.getMany();
@@ -148,7 +186,7 @@ export class ExpenseService {
         totalAmount: 0,
         paidAmount: 0,
         pendingAmount: 0,
-      }
+      },
     );
 
     return summary;
@@ -160,15 +198,21 @@ export class ExpenseService {
       .select([
         'MONTH(expense.expenseDate) as month',
         'SUM(expense.amount) as totalAmount',
-        'COUNT(expense.id) as expenseCount'
+        'COUNT(expense.id) as expenseCount',
       ])
       .where('YEAR(expense.expenseDate) = :year', { year })
+      .andWhere('expense.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      })
       .groupBy('MONTH(expense.expenseDate)')
       .orderBy('month', 'ASC')
       .getRawMany();
   }
 
-  async getExpensesByCategory(startDate?: string, endDate?: string): Promise<any[]> {
+  async getExpensesByCategory(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<any[]> {
     const queryBuilder = this.expenseRepository
       .createQueryBuilder('expense')
       .leftJoin('expense.category', 'category')
@@ -176,15 +220,21 @@ export class ExpenseService {
         'category.name as categoryName',
         'category.color as categoryColor',
         'SUM(expense.amount) as totalAmount',
-        'COUNT(expense.id) as expenseCount'
+        'COUNT(expense.id) as expenseCount',
       ])
+      .where('expense.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      })
       .groupBy('expense.categoryId');
 
     if (startDate && endDate) {
-      queryBuilder.where('expense.expenseDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'expense.expenseDate BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     return await queryBuilder.getRawMany();

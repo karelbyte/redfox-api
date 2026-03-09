@@ -12,7 +12,10 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
-import { WithdrawalType, WithdrawalStatus } from '../../models/withdrawal.entity';
+import {
+  WithdrawalType,
+  WithdrawalStatus,
+} from '../../models/withdrawal.entity';
 
 export class UpdateWithdrawalDto {
   @IsString()

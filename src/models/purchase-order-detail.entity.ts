@@ -41,4 +41,4 @@ export class PurchaseOrderDetail {
 
   @DeleteDateColumn()
   deleted_at: Date;
-} 
+}

@@ -59,7 +59,9 @@ export class Surrogate {
 
   // Método para generar el siguiente código
   generateNext(): string {
-    const paddedNumber = this.next_number.toString().padStart(this.padding, '0');
+    const paddedNumber = this.next_number
+      .toString()
+      .padStart(this.padding, '0');
 
     if (this.include_year) {
       const currentYear = new Date().getFullYear();

@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { Role } from 'src/models/role.entity';
-import { Organization } from 'src/models/organization.entity';
+import { Role } from '../../models/role.entity';
+import { Organization } from '../../models/organization.entity';
 
 export class RolesSeed {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -14,7 +14,9 @@ export class RolesSeed {
     });
 
     if (!landlordOrg) {
-      console.log('⚠️ Landlord organization not found. Be sure to run organizations seed first.');
+      console.log(
+        '⚠️ Landlord organization not found. Be sure to run organizations seed first.',
+      );
       return;
     }
 

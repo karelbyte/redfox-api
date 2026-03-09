@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Permission } from 'src/models/permission.entity';
+import { Permission } from '../../models/permission.entity';
 
 export class PermissionsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -997,17 +997,20 @@ export class PermissionsSeed {
       {
         code: 'quotation_update',
         module: 'quotations',
-        description: 'Allows updating quotations | Permite actualizar cotizaciones',
+        description:
+          'Allows updating quotations | Permite actualizar cotizaciones',
       },
       {
         code: 'quotation_delete',
         module: 'quotations',
-        description: 'Allows deleting quotations | Permite eliminar cotizaciones',
+        description:
+          'Allows deleting quotations | Permite eliminar cotizaciones',
       },
       {
         code: 'quotation_convert_to_sale',
         module: 'quotations',
-        description: 'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
+        description:
+          'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
       },
 
       // Notification Permissions
@@ -1020,27 +1023,32 @@ export class PermissionsSeed {
       {
         code: 'notification_create',
         module: 'notifications',
-        description: 'Allows creating notifications | Permite crear notificaciones',
+        description:
+          'Allows creating notifications | Permite crear notificaciones',
       },
       {
         code: 'notification_read',
         module: 'notifications',
-        description: 'Allows reading notifications | Permite leer notificaciones',
+        description:
+          'Allows reading notifications | Permite leer notificaciones',
       },
       {
         code: 'notification_update',
         module: 'notifications',
-        description: 'Allows updating notifications | Permite actualizar notificaciones',
+        description:
+          'Allows updating notifications | Permite actualizar notificaciones',
       },
       {
         code: 'notification_delete',
         module: 'notifications',
-        description: 'Allows deleting notifications | Permite eliminar notificaciones',
+        description:
+          'Allows deleting notifications | Permite eliminar notificaciones',
       },
       {
         code: 'notification_mark_read',
         module: 'notifications',
-        description: 'Allows marking notifications as read | Permite marcar notificaciones como leídas',
+        description:
+          'Allows marking notifications as read | Permite marcar notificaciones como leídas',
       },
 
       // Expense Permissions
@@ -1081,22 +1089,26 @@ export class PermissionsSeed {
       {
         code: 'account_receivable_create',
         module: 'accounts_receivable',
-        description: 'Allows creating accounts receivable | Permite crear cuentas por cobrar',
+        description:
+          'Allows creating accounts receivable | Permite crear cuentas por cobrar',
       },
       {
         code: 'account_receivable_read',
         module: 'accounts_receivable',
-        description: 'Allows reading accounts receivable | Permite leer cuentas por cobrar',
+        description:
+          'Allows reading accounts receivable | Permite leer cuentas por cobrar',
       },
       {
         code: 'account_receivable_update',
         module: 'accounts_receivable',
-        description: 'Allows updating accounts receivable | Permite actualizar cuentas por cobrar',
+        description:
+          'Allows updating accounts receivable | Permite actualizar cuentas por cobrar',
       },
       {
         code: 'account_receivable_delete',
         module: 'accounts_receivable',
-        description: 'Allows deleting accounts receivable | Permite eliminar cuentas por cobrar',
+        description:
+          'Allows deleting accounts receivable | Permite eliminar cuentas por cobrar',
       },
 
       // Account Payable Permissions
@@ -1109,22 +1121,26 @@ export class PermissionsSeed {
       {
         code: 'account_payable_create',
         module: 'accounts_payable',
-        description: 'Allows creating accounts payable | Permite crear cuentas por pagar',
+        description:
+          'Allows creating accounts payable | Permite crear cuentas por pagar',
       },
       {
         code: 'account_payable_read',
         module: 'accounts_payable',
-        description: 'Allows reading accounts payable | Permite leer cuentas por pagar',
+        description:
+          'Allows reading accounts payable | Permite leer cuentas por pagar',
       },
       {
         code: 'account_payable_update',
         module: 'accounts_payable',
-        description: 'Allows updating accounts payable | Permite actualizar cuentas por pagar',
+        description:
+          'Allows updating accounts payable | Permite actualizar cuentas por pagar',
       },
       {
         code: 'account_payable_delete',
         module: 'accounts_payable',
-        description: 'Allows deleting accounts payable | Permite eliminar cuentas por pagar',
+        description:
+          'Allows deleting accounts payable | Permite eliminar cuentas por pagar',
       },
 
       // Cash Flow Permissions
@@ -1137,7 +1153,8 @@ export class PermissionsSeed {
       {
         code: 'cash_flow_read',
         module: 'cash_flow',
-        description: 'Allows reading cash flow data | Permite leer datos de flujo de caja',
+        description:
+          'Allows reading cash flow data | Permite leer datos de flujo de caja',
       },
 
       // Audit Log Permissions
@@ -1150,12 +1167,14 @@ export class PermissionsSeed {
       {
         code: 'audit_log_read',
         module: 'audit_logs',
-        description: 'Allows reading audit logs | Permite leer logs de auditoría',
+        description:
+          'Allows reading audit logs | Permite leer logs de auditoría',
       },
       {
         code: 'audit_log_export',
         module: 'audit_logs',
-        description: 'Allows exporting audit logs | Permite exportar logs de auditoría',
+        description:
+          'Allows exporting audit logs | Permite exportar logs de auditoría',
       },
 
       // Company Settings Permissions
@@ -1168,12 +1187,14 @@ export class PermissionsSeed {
       {
         code: 'company_settings_read',
         module: 'company_settings',
-        description: 'Allows reading company settings | Permite leer configuración de empresa',
+        description:
+          'Allows reading company settings | Permite leer configuración de empresa',
       },
       {
         code: 'company_settings_update',
         module: 'company_settings',
-        description: 'Allows updating company settings | Permite actualizar configuración de empresa',
+        description:
+          'Allows updating company settings | Permite actualizar configuración de empresa',
       },
 
       // Email Configuration Permissions
@@ -1186,17 +1207,20 @@ export class PermissionsSeed {
       {
         code: 'email_config_read',
         module: 'email_config',
-        description: 'Allows reading email configuration | Permite leer configuración de correo',
+        description:
+          'Allows reading email configuration | Permite leer configuración de correo',
       },
       {
         code: 'email_config_update',
         module: 'email_config',
-        description: 'Allows updating email configuration | Permite actualizar configuración de correo',
+        description:
+          'Allows updating email configuration | Permite actualizar configuración de correo',
       },
       {
         code: 'email_config_test',
         module: 'email_config',
-        description: 'Allows testing email configuration | Permite probar configuración de correo',
+        description:
+          'Allows testing email configuration | Permite probar configuración de correo',
       },
 
       // Payment Gateway Permissions
@@ -1209,12 +1233,14 @@ export class PermissionsSeed {
       {
         code: 'payment_gateway_read',
         module: 'payment_gateway',
-        description: 'Allows reading payment gateway configuration | Permite leer configuración de pasarela de pago',
+        description:
+          'Allows reading payment gateway configuration | Permite leer configuración de pasarela de pago',
       },
       {
         code: 'payment_gateway_update',
         module: 'payment_gateway',
-        description: 'Allows updating payment gateway configuration | Permite actualizar configuración de pasarela de pago',
+        description:
+          'Allows updating payment gateway configuration | Permite actualizar configuración de pasarela de pago',
       },
 
       // Certification Pack Permissions (SAT/CFDI)
@@ -1227,27 +1253,32 @@ export class PermissionsSeed {
       {
         code: 'certification_pack_read',
         module: 'certification_packs',
-        description: 'Allows reading certification packs | Permite leer paquetes de certificación',
+        description:
+          'Allows reading certification packs | Permite leer paquetes de certificación',
       },
       {
         code: 'certification_pack_create',
         module: 'certification_packs',
-        description: 'Allows creating certification packs | Permite crear paquetes de certificación',
+        description:
+          'Allows creating certification packs | Permite crear paquetes de certificación',
       },
       {
         code: 'certification_pack_update',
         module: 'certification_packs',
-        description: 'Allows updating certification packs | Permite actualizar paquetes de certificación',
+        description:
+          'Allows updating certification packs | Permite actualizar paquetes de certificación',
       },
       {
         code: 'certification_pack_delete',
         module: 'certification_packs',
-        description: 'Allows deleting certification packs | Permite eliminar paquetes de certificación',
+        description:
+          'Allows deleting certification packs | Permite eliminar paquetes de certificación',
       },
       {
         code: 'certification_pack_activate',
         module: 'certification_packs',
-        description: 'Allows activating certification packs | Permite activar paquetes de certificación',
+        description:
+          'Allows activating certification packs | Permite activar paquetes de certificación',
       },
     ];
 

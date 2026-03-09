@@ -83,10 +83,7 @@ export class RolePermissionController {
   }
 
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @UserId() userId: string,
-  ): Promise<void> {
+  remove(@Param('id') id: string, @UserId() userId: string): Promise<void> {
     return this.rolePermissionService.remove(id, userId);
   }
 

@@ -43,7 +43,9 @@ export class InvoiceMapper {
       code,
       date,
       client: this.clientMapper.mapToResponseDto(client),
-      withdrawal: withdrawal ? this.withdrawalMapper.mapToResponseDto(withdrawal) : null,
+      withdrawal: withdrawal
+        ? this.withdrawalMapper.mapToResponseDto(withdrawal)
+        : null,
       subtotal,
       tax_amount,
       total_amount,
@@ -54,7 +56,9 @@ export class InvoiceMapper {
       payment_method,
       payment_conditions,
       notes,
-      details: details?.map((detail) => this.invoiceDetailMapper.mapToResponseDto(detail)),
+      details: details?.map((detail) =>
+        this.invoiceDetailMapper.mapToResponseDto(detail),
+      ),
       created_at,
     };
   }

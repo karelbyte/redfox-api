@@ -2,7 +2,9 @@ import { CashTransaction } from '../../models/cash-transaction.entity';
 import { CashTransactionResponseDto } from '../../dtos/cash-transaction/cash-transaction-response.dto';
 
 export class CashTransactionMapper {
-  static mapToResponseDto(cashTransaction: CashTransaction): CashTransactionResponseDto {
+  static mapToResponseDto(
+    cashTransaction: CashTransaction,
+  ): CashTransactionResponseDto {
     if (!cashTransaction) {
       throw new Error('CashTransaction cannot be null');
     }
@@ -22,7 +24,11 @@ export class CashTransactionMapper {
     };
   }
 
-  static mapToResponseDtoList(cashTransactions: CashTransaction[]): CashTransactionResponseDto[] {
-    return cashTransactions.map((cashTransaction) => this.mapToResponseDto(cashTransaction));
+  static mapToResponseDtoList(
+    cashTransactions: CashTransaction[],
+  ): CashTransactionResponseDto[] {
+    return cashTransactions.map((cashTransaction) =>
+      this.mapToResponseDto(cashTransaction),
+    );
   }
-} 
+}

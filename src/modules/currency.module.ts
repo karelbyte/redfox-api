@@ -17,4 +17,4 @@ import { OrganizationModule } from './organization.module';
   providers: [CurrencyService, CurrencyMapper],
   exports: [CurrencyService, CurrencyMapper],
 })
-export class CurrencyModule { }
+export class CurrencyModule {}

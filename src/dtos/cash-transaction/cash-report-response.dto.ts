@@ -9,4 +9,4 @@ export class CashReportResponseDto {
   opening_balance: number;
   closing_balance: number;
   transactions: CashTransactionResponseDto[];
-} 
+}

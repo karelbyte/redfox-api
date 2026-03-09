@@ -5,4 +5,3 @@ export class ImportClientsFromPackResponseDto {
   linked: number;
   skipped: number;
 }
-

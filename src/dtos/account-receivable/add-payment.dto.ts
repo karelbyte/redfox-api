@@ -1,4 +1,12 @@
-import { IsNumber, IsDateString, IsOptional, IsEnum, IsPositive, IsString, Length } from 'class-validator';
+import {
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsPositive,
+  IsString,
+  Length,
+} from 'class-validator';
 import { PaymentMethod } from '../../models/account-receivable-payment.entity';
 
 export class AddPaymentDto {

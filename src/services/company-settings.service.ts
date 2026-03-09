@@ -14,12 +14,14 @@ export class CompanySettingsService {
     private readonly companySettingsRepository: Repository<CompanySettings>,
     private readonly companySettingsMapper: CompanySettingsMapper,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required for Company Settings');
+      throw new BadRequestException(
+        'Organization context is required for Company Settings',
+      );
     }
     return orgId;
   }

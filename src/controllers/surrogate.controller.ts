@@ -21,7 +21,7 @@ import { AuthGuard } from '../guards/auth.guard';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class SurrogateController {
-  constructor(private readonly surrogateService: SurrogateService) { }
+  constructor(private readonly surrogateService: SurrogateService) {}
 
   @Get()
   async findAll(): Promise<SurrogateResponseDto[]> {
@@ -43,7 +43,9 @@ export class SurrogateController {
   }
 
   @Get(':code/next-available')
-  async getNextAvailableCode(@Param('code') code: string): Promise<NextCodeResponseDto> {
+  async getNextAvailableCode(
+    @Param('code') code: string,
+  ): Promise<NextCodeResponseDto> {
     return this.surrogateService.getNextAvailableCode(code);
   }
 

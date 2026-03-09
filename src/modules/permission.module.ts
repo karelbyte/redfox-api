@@ -6,10 +6,7 @@ import { Permission } from '../models/permission.entity';
 import { LanguageModule } from './language.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Permission]),
-    LanguageModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Permission]), LanguageModule],
   controllers: [PermissionController],
   providers: [PermissionService],
   exports: [PermissionService],

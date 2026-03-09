@@ -1,12 +1,22 @@
-import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AccountPayable, AccountPayableStatus } from '../models/account-payable.entity';
+import {
+  AccountPayable,
+  AccountPayableStatus,
+} from '../models/account-payable.entity';
 import { CreateAccountPayableDto } from '../dtos/account-payable/create-account-payable.dto';
 import { UpdateAccountPayableDto } from '../dtos/account-payable/update-account-payable.dto';
 import { CreateAccountPayablePaymentDto } from '../dtos/account-payable/create-payment.dto';
 import { AccountPayablePayment } from '../models/account-payable-payment.entity';
 import { ProviderService } from './provider.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class AccountPayableService {
@@ -17,14 +27,49 @@ export class AccountPayableService {
     private paymentRepository: Repository<AccountPayablePayment>,
     @Inject(forwardRef(() => ProviderService))
     private readonly providerService: ProviderService,
+    private readonly tenantContext: TenantContext,
   ) { }
 
-  async create(createAccountPayableDto: CreateAccountPayableDto): Promise<AccountPayable> {
-    const accountPayable = this.accountPayableRepository.create(createAccountPayableDto);
+  async create(
+    createAccountPayableDto: CreateAccountPayableDto,
+  ): Promise<AccountPayable> {
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) {
+      throw new BadRequestException('Organization context is missing');
+    }
+    const totalAmount = Number(createAccountPayableDto.totalAmount);
+    const remainingAmount = Number(createAccountPayableDto.remainingAmount);
+    const paidAmount = totalAmount - remainingAmount;
+
+    let status = createAccountPayableDto.status || AccountPayableStatus.PENDING;
+    if (remainingAmount === 0) {
+      status = AccountPayableStatus.PAID;
+    } else if (paidAmount > 0) {
+      status = AccountPayableStatus.PARTIAL;
+    }
+
+    const accountPayable = new AccountPayable();
+    Object.assign(accountPayable, createAccountPayableDto);
+    accountPayable.organization_id = organizationId;
+    accountPayable.totalAmount = totalAmount;
+    accountPayable.remainingAmount = remainingAmount;
+    accountPayable.paidAmount = paidAmount;
+    accountPayable.status = status;
+
     const savedAccount = await this.accountPayableRepository.save(accountPayable);
 
+    console.log('Saved Account Result:', {
+      id: savedAccount.id,
+      paidAmount: savedAccount.paidAmount,
+      totalAmount: savedAccount.totalAmount,
+      remainingAmount: savedAccount.remainingAmount
+    });
+
     // Update denormalized provider balance (increase debt to provider)
-    await this.providerService.updateBalance(createAccountPayableDto.providerId, createAccountPayableDto.totalAmount);
+    await this.providerService.updateBalance(
+      createAccountPayableDto.providerId,
+      remainingAmount,
+    );
 
     return savedAccount;
   }
@@ -36,7 +81,7 @@ export class AccountPayableService {
     status?: AccountPayableStatus,
     providerId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<{
     data: AccountPayable[];
     total: number;
@@ -53,7 +98,7 @@ export class AccountPayableService {
     if (search) {
       queryBuilder.andWhere(
         '(accountPayable.referenceNumber LIKE :search OR provider.name LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -62,14 +107,19 @@ export class AccountPayableService {
     }
 
     if (providerId) {
-      queryBuilder.andWhere('accountPayable.providerId = :providerId', { providerId });
+      queryBuilder.andWhere('accountPayable.providerId = :providerId', {
+        providerId,
+      });
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('accountPayable.dueDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'accountPayable.dueDate BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     const total = await queryBuilder.getCount();
@@ -88,10 +138,10 @@ export class AccountPayableService {
     };
   }
 
-  async findOne(id: number): Promise<AccountPayable> {
+  async findOne(id: string): Promise<AccountPayable> {
     const accountPayable = await this.accountPayableRepository.findOne({
       where: { id },
-      relations: ['provider', 'purchaseOrder', 'payments'],
+      relations: ['provider', 'purchaseOrder', 'payments', 'payments.createdByUser'],
     });
 
     if (!accountPayable) {
@@ -101,18 +151,24 @@ export class AccountPayableService {
     return accountPayable;
   }
 
-  async update(id: number, updateAccountPayableDto: UpdateAccountPayableDto): Promise<AccountPayable> {
+  async update(
+    id: string,
+    updateAccountPayableDto: UpdateAccountPayableDto,
+  ): Promise<AccountPayable> {
     const accountPayable = await this.findOne(id);
     Object.assign(accountPayable, updateAccountPayableDto);
     return await this.accountPayableRepository.save(accountPayable);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const accountPayable = await this.findOne(id);
     await this.accountPayableRepository.remove(accountPayable);
   }
 
-  async getAccountsPayableSummary(startDate?: string, endDate?: string): Promise<{
+  async getAccountsPayableSummary(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{
     totalAccounts: number;
     paidAccounts: number;
     pendingAccounts: number;
@@ -120,13 +176,17 @@ export class AccountPayableService {
     paidAmount: number;
     pendingAmount: number;
   }> {
-    const queryBuilder = this.accountPayableRepository.createQueryBuilder('accountPayable');
+    const queryBuilder =
+      this.accountPayableRepository.createQueryBuilder('accountPayable');
 
     if (startDate && endDate) {
-      queryBuilder.where('accountPayable.dueDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.where(
+        'accountPayable.dueDate BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     const accountsPayable = await queryBuilder.getMany();
@@ -153,20 +213,31 @@ export class AccountPayableService {
         totalAmount: 0,
         paidAmount: 0,
         pendingAmount: 0,
-      }
+      },
     );
 
     return summary;
   }
 
-  async addPayment(createPaymentDto: CreateAccountPayablePaymentDto, userId: string): Promise<AccountPayablePayment> {
+  async addPayment(
+    createPaymentDto: CreateAccountPayablePaymentDto,
+    userId: string,
+  ): Promise<AccountPayablePayment> {
     const account = await this.findOne(createPaymentDto.accountPayableId);
 
     if (createPaymentDto.amount > account.remainingAmount) {
-      throw new BadRequestException('Payment amount cannot exceed remaining amount');
+      throw new BadRequestException(
+        'Payment amount cannot exceed remaining amount',
+      );
+    }
+
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) {
+      throw new BadRequestException('Organization context is missing');
     }
 
     const insertResult = await this.paymentRepository.insert({
+      organization_id: organizationId,
       amount: createPaymentDto.amount,
       paymentDate: createPaymentDto.paymentDate,
       paymentMethod: createPaymentDto.paymentMethod,
@@ -184,8 +255,14 @@ export class AccountPayableService {
       throw new NotFoundException('Payment could not be created');
     }
 
-    account.paidAmount = Number(account.paidAmount) + Number(createPaymentDto.amount);
-    account.remainingAmount = Number(account.totalAmount) - Number(account.paidAmount);
+    const currentPaidAmount = Number(account.paidAmount);
+    const currentRemainingAmount = Number(account.remainingAmount);
+    const paymentAmount = Number(createPaymentDto.amount);
+
+    account.paidAmount = Number((currentPaidAmount + paymentAmount).toFixed(2));
+    account.remainingAmount = Number(
+      (currentRemainingAmount - paymentAmount).toFixed(2),
+    );
 
     if (account.remainingAmount === 0) {
       account.status = AccountPayableStatus.PAID;
@@ -193,10 +270,17 @@ export class AccountPayableService {
       account.status = AccountPayableStatus.PARTIAL;
     }
 
-    await this.accountPayableRepository.save(account);
+    await this.accountPayableRepository.update(account.id, {
+      paidAmount: account.paidAmount,
+      remainingAmount: account.remainingAmount,
+      status: account.status,
+    });
 
     // Update denormalized provider balance (decrease debt to provider)
-    await this.providerService.updateBalance(account.providerId, -Number(createPaymentDto.amount));
+    await this.providerService.updateBalance(
+      account.providerId,
+      -Number(createPaymentDto.amount),
+    );
 
     return savedPayment;
   }

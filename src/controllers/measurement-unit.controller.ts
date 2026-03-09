@@ -27,7 +27,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 export class MeasurementUnitController {
   constructor(
     private readonly measurementUnitService: MeasurementUnitService,
-  ) { }
+  ) {}
 
   @Post()
   create(
@@ -67,7 +67,11 @@ export class MeasurementUnitController {
     @Body() updateMeasurementUnitDto: UpdateMeasurementUnitDto,
     @UserId() userId: string,
   ): Promise<MeasurementUnitResponseDto> {
-    return this.measurementUnitService.update(id, updateMeasurementUnitDto, userId);
+    return this.measurementUnitService.update(
+      id,
+      updateMeasurementUnitDto,
+      userId,
+    );
   }
 
   @Get(':id/usage')

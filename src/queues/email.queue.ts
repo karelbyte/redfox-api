@@ -34,7 +34,9 @@ export class EmailQueue {
     } else {
       this.logger.log('💾 Email queue strategy: IN-MEMORY');
       if (cacheType === 'redis' && !this.bullQueue) {
-        this.logger.warn('⚠️ CACHE_TYPE=redis but Bull queue is not available. Falling back to in-memory.');
+        this.logger.warn(
+          '⚠️ CACHE_TYPE=redis but Bull queue is not available. Falling back to in-memory.',
+        );
       }
     }
   }
@@ -54,7 +56,7 @@ export class EmailQueue {
 
   async addBulkEmailJobs(emails: EmailJob[]): Promise<void> {
     if (this.useRedis) {
-      const jobs = emails.map(email => ({
+      const jobs = emails.map((email) => ({
         name: 'send-email',
         data: email,
         opts: {

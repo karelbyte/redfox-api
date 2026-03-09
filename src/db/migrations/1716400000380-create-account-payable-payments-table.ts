@@ -1,6 +1,12 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateAccountPayablePaymentsTable1716400000380 implements MigrationInterface {
+export class CreateAccountPayablePaymentsTable1716400000380
+  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -10,10 +16,15 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
+          },
+          {
+            name: 'organization_id',
+            type: 'uuid',
           },
           {
             name: 'amount',
@@ -28,7 +39,14 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
           {
             name: 'paymentMethod',
             type: 'enum',
-            enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other'],
+            enum: [
+              'cash',
+              'credit_card',
+              'debit_card',
+              'bank_transfer',
+              'check',
+              'other',
+            ],
             default: "'cash'",
           },
           {
@@ -44,7 +62,8 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
           },
           {
             name: 'accountPayableId',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
           },
           {
             name: 'createdBy',
@@ -64,7 +83,7 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
           },
         ],
       }),
-      true
+      true,
     );
 
     await queryRunner.createForeignKey(
@@ -74,7 +93,7 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
         referencedColumnNames: ['id'],
         referencedTableName: 'accounts_payable',
         onDelete: 'CASCADE',
-      })
+      }),
     );
 
     await queryRunner.createForeignKey(
@@ -84,7 +103,17 @@ export class CreateAccountPayablePaymentsTable1716400000380 implements Migration
         referencedColumnNames: ['id'],
         referencedTableName: 'users',
         onDelete: 'RESTRICT',
-      })
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'account_payable_payments',
+      new TableForeignKey({
+        columnNames: ['organization_id'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'organizations',
+        onDelete: 'CASCADE',
+      }),
     );
   }
 

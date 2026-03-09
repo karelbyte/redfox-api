@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { User } from '../models/user.entity';
 import { CreateUserDto } from '../dtos/user/create-user.dto';
 import { UpdateUserDto } from '../dtos/user/update-user.dto';
-import { UserResponseDto, UserWithPermissionDescriptionsDto } from '../dtos/user/user-response.dto';
+import {
+  UserResponseDto,
+  UserWithPermissionDescriptionsDto,
+} from '../dtos/user/user-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { RoleService } from './role.service';
@@ -19,7 +22,7 @@ export class UserService {
     private userRepository: Repository<User>,
     private roleService: RoleService,
     private translationService: TranslationService,
-  ) { }
+  ) {}
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -27,7 +30,16 @@ export class UserService {
   }
 
   private mapToResponseDto(user: User): UserResponseDto {
-    const { id, name, email, roles, status, created_at, organization_id, organization } = user;
+    const {
+      id,
+      name,
+      email,
+      roles,
+      status,
+      created_at,
+      organization_id,
+      organization,
+    } = user;
     return {
       id,
       name,
@@ -51,7 +63,16 @@ export class UserService {
   private mapToResponseWithPermissionDescriptionsDto(
     user: User,
   ): UserWithPermissionDescriptionsDto {
-    const { id, name, email, roles, status, created_at, organization_id, organization } = user;
+    const {
+      id,
+      name,
+      email,
+      roles,
+      status,
+      created_at,
+      organization_id,
+      organization,
+    } = user;
     return {
       id,
       name,
@@ -408,5 +429,17 @@ export class UserService {
   ): Promise<boolean> {
     const user = await this.findOneWithPermissions(id, userId);
     return user.hasAllPermissions(permissionCodes);
+  }
+
+  async findUnverifiedOlderThan(date: Date): Promise<User[]> {
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.status = :status', { status: false })
+      .andWhere('user.created_at <= :date', { date })
+      .getMany();
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    await this.userRepository.delete(id);
   }
 }

@@ -7,4 +7,4 @@ export class PurchaseOrderDetailResponseDto {
   received_quantity: number;
   product: ProductResponseDto;
   created_at: Date;
-} 
+}

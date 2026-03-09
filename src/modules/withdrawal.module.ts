@@ -54,4 +54,4 @@ import { AccountReceivableModule } from './account-receivable.module';
   ],
   exports: [WithdrawalService],
 })
-export class WithdrawalModule { }
+export class WithdrawalModule {}

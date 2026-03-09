@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, Length, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  Length,
+  Matches,
+} from 'class-validator';
 
 export class CreateExpenseCategoryDto {
   @IsString()

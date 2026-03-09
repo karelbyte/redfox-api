@@ -35,7 +35,7 @@ const formatFileName = (fileName: string): string => {
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) { }
+  constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
   @UseInterceptors(

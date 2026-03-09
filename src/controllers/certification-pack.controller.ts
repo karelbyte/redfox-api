@@ -25,7 +25,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 export class CertificationPackController {
   constructor(
     private readonly certificationPackService: CertificationPackService,
-  ) { }
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

@@ -1,8 +1,8 @@
-import { IsArray, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsArray, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class BulkDeleteExpenseDto {
-    @IsArray()
-    @IsNotEmpty()
-    @IsNumber({}, { each: true })
-    ids: number[];
+  @IsArray()
+  @IsNotEmpty()
+  @IsUUID(undefined, { each: true })
+  ids: string[];
 }

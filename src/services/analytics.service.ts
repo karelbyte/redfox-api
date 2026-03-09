@@ -253,12 +253,10 @@ export class AnalyticsService {
       0,
     );
 
-    const pendingInvoices = invoicesByStatus.find(
-      (item) => item.status === 'DRAFT',
-    )?.count || 0;
-    const paidInvoices = invoicesByStatus.find(
-      (item) => item.status === 'PAID',
-    )?.count || 0;
+    const pendingInvoices =
+      invoicesByStatus.find((item) => item.status === 'DRAFT')?.count || 0;
+    const paidInvoices =
+      invoicesByStatus.find((item) => item.status === 'PAID')?.count || 0;
 
     // Monthly revenue (last 12 months)
     const monthlyRevenue = await this.getMonthlyRevenue();
@@ -340,10 +338,13 @@ export class AnalyticsService {
     const result = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .select('SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as totalRevenue')
-      .where('withdrawal.created_at >= :prevStart AND withdrawal.created_at <= :prevEnd', {
-        prevStart: prevStart.toISOString(),
-        prevEnd: prevEnd.toISOString(),
-      })
+      .where(
+        'withdrawal.created_at >= :prevStart AND withdrawal.created_at <= :prevEnd',
+        {
+          prevStart: prevStart.toISOString(),
+          prevEnd: prevEnd.toISOString(),
+        },
+      )
       .getRawOne();
 
     return parseFloat(result.totalRevenue || '0');
@@ -362,7 +363,7 @@ export class AnalyticsService {
         'COUNT(withdrawal.id) as sales',
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as revenue',
       ])
-      .where('withdrawal.created_at >= NOW() - INTERVAL \'12 months\'')
+      .where("withdrawal.created_at >= NOW() - INTERVAL '12 months'")
       .groupBy("TO_CHAR(withdrawal.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();
@@ -382,7 +383,7 @@ export class AnalyticsService {
         'COUNT(withdrawal.id) as sales',
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as revenue',
       ])
-      .where('withdrawal.created_at >= NOW() - INTERVAL \'30 days\'')
+      .where("withdrawal.created_at >= NOW() - INTERVAL '30 days'")
       .groupBy("TO_CHAR(withdrawal.created_at, 'YYYY-MM-DD')")
       .orderBy('date', 'ASC')
       .getRawMany();
@@ -446,10 +447,10 @@ export class AnalyticsService {
       .createQueryBuilder('invoice')
       .select([
         "TO_CHAR(invoice.created_at, 'YYYY-MM') as month",
-        'SUM(CASE WHEN invoice.status != \'CANCELLED\' THEN invoice.total_amount ELSE 0 END) as invoiced',
-        'SUM(CASE WHEN invoice.status = \'PAID\' THEN invoice.total_amount ELSE 0 END) as collected',
+        "SUM(CASE WHEN invoice.status != 'CANCELLED' THEN invoice.total_amount ELSE 0 END) as invoiced",
+        "SUM(CASE WHEN invoice.status = 'PAID' THEN invoice.total_amount ELSE 0 END) as collected",
       ])
-      .where('invoice.created_at >= NOW() - INTERVAL \'12 months\'')
+      .where("invoice.created_at >= NOW() - INTERVAL '12 months'")
       .groupBy("TO_CHAR(invoice.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();
@@ -469,7 +470,7 @@ export class AnalyticsService {
         'COUNT(reception.id) as count',
         'SUM(reception.amount) as totalAmount',
       ])
-      .where('reception.created_at >= NOW() - INTERVAL \'12 months\'')
+      .where("reception.created_at >= NOW() - INTERVAL '12 months'")
       .groupBy("TO_CHAR(reception.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();

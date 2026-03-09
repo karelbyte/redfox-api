@@ -15,4 +15,4 @@ import { ClientModule } from './client.module';
   providers: [AccountReceivableService],
   exports: [AccountReceivableService],
 })
-export class AccountReceivableModule { }
+export class AccountReceivableModule {}

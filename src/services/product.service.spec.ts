@@ -66,7 +66,9 @@ describe('ProductService', () => {
       productRepository.findOneBy.mockResolvedValue({ id: 1 } as Product);
 
       // Act & Assert
-      await expect(service.create(productData as any)).rejects.toThrow('Barcode already exists');
+      await expect(service.create(productData as any)).rejects.toThrow(
+        'Barcode already exists',
+      );
     });
   });
 
@@ -126,7 +128,7 @@ describe('ProductService', () => {
       // Assert
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
         '(product.name LIKE :search OR product.description LIKE :search OR product.barcode LIKE :search)',
-        { search: `%${searchTerm}%` }
+        { search: `%${searchTerm}%` },
       );
       expect(result.data).toEqual(products);
     });
@@ -169,7 +171,11 @@ describe('ProductService', () => {
       const productId = 1;
       const quantity = 5;
       const operation = 'add';
-      const existingProduct = { id: productId, stock: 10, ...createTestProduct() };
+      const existingProduct = {
+        id: productId,
+        stock: 10,
+        ...createTestProduct(),
+      };
       const updatedProduct = { ...existingProduct, stock: 15 };
 
       productRepository.findOneBy.mockResolvedValue(existingProduct as Product);
@@ -179,7 +185,9 @@ describe('ProductService', () => {
       const result = await service.updateStock(productId, quantity, operation);
 
       // Assert
-      expect(productRepository.findOneBy).toHaveBeenCalledWith({ id: productId });
+      expect(productRepository.findOneBy).toHaveBeenCalledWith({
+        id: productId,
+      });
       expect(productRepository.save).toHaveBeenCalledWith(updatedProduct);
       expect(result.stock).toBe(15);
     });
@@ -189,7 +197,11 @@ describe('ProductService', () => {
       const productId = 1;
       const quantity = 3;
       const operation = 'subtract';
-      const existingProduct = { id: productId, stock: 10, ...createTestProduct() };
+      const existingProduct = {
+        id: productId,
+        stock: 10,
+        ...createTestProduct(),
+      };
       const updatedProduct = { ...existingProduct, stock: 7 };
 
       productRepository.findOneBy.mockResolvedValue(existingProduct as Product);
@@ -207,13 +219,18 @@ describe('ProductService', () => {
       const productId = 1;
       const quantity = 15;
       const operation = 'subtract';
-      const existingProduct = { id: productId, stock: 10, ...createTestProduct() };
+      const existingProduct = {
+        id: productId,
+        stock: 10,
+        ...createTestProduct(),
+      };
 
       productRepository.findOneBy.mockResolvedValue(existingProduct as Product);
 
       // Act & Assert
-      await expect(service.updateStock(productId, quantity, operation))
-        .rejects.toThrow('Insufficient stock');
+      await expect(
+        service.updateStock(productId, quantity, operation),
+      ).rejects.toThrow('Insufficient stock');
     });
   });
 
@@ -222,7 +239,12 @@ describe('ProductService', () => {
       // Arrange
       const lowStockProducts = [
         { id: 1, stock: 2, minStock: 5, ...createTestProduct() },
-        { id: 2, stock: 1, minStock: 3, ...createTestProduct({ name: 'Product 2' }) },
+        {
+          id: 2,
+          stock: 1,
+          minStock: 3,
+          ...createTestProduct({ name: 'Product 2' }),
+        },
       ];
 
       const queryBuilder = {
@@ -238,7 +260,9 @@ describe('ProductService', () => {
       const result = await service.getLowStockProducts();
 
       // Assert
-      expect(queryBuilder.where).toHaveBeenCalledWith('product.stock <= product.minStock');
+      expect(queryBuilder.where).toHaveBeenCalledWith(
+        'product.stock <= product.minStock',
+      );
       expect(result).toEqual(lowStockProducts);
     });
   });
@@ -247,7 +271,7 @@ describe('ProductService', () => {
     it('should update product successfully', async () => {
       // Arrange
       const productId = 1;
-      const updateData = { name: 'Updated Product', price: 150.00 };
+      const updateData = { name: 'Updated Product', price: 150.0 };
       const existingProduct = { id: productId, ...createTestProduct() };
       const updatedProduct = { ...existingProduct, ...updateData };
 
@@ -258,7 +282,9 @@ describe('ProductService', () => {
       const result = await service.update(productId, updateData);
 
       // Assert
-      expect(productRepository.findOneBy).toHaveBeenCalledWith({ id: productId });
+      expect(productRepository.findOneBy).toHaveBeenCalledWith({
+        id: productId,
+      });
       expect(productRepository.save).toHaveBeenCalledWith(updatedProduct);
       expect(result).toEqual(updatedProduct);
     });
@@ -270,7 +296,9 @@ describe('ProductService', () => {
       productRepository.findOneBy.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.update(productId, updateData)).rejects.toThrow('Product not found');
+      await expect(service.update(productId, updateData)).rejects.toThrow(
+        'Product not found',
+      );
     });
   });
 
@@ -288,7 +316,9 @@ describe('ProductService', () => {
       const result = await service.delete(productId);
 
       // Assert
-      expect(productRepository.findOneBy).toHaveBeenCalledWith({ id: productId });
+      expect(productRepository.findOneBy).toHaveBeenCalledWith({
+        id: productId,
+      });
       expect(productRepository.save).toHaveBeenCalledWith(deletedProduct);
       expect(result.isActive).toBe(false);
     });

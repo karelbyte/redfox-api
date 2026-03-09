@@ -63,12 +63,16 @@ export class Provider {
   @OneToMany(() => Reception, (reception) => reception.provider)
   receptions: Reception[];
 
-  @OneToMany(() => ProviderAddress, (address) => address.provider, { cascade: true })
+  @OneToMany(() => ProviderAddress, (address) => address.provider, {
+    cascade: true,
+  })
   addresses: ProviderAddress[];
 
   @OneToMany(() => ProviderTaxData, (tax) => tax.provider, { cascade: true })
   taxData: ProviderTaxData[];
 
-  @OneToOne(() => ProviderCredit, (credit) => credit.provider, { cascade: true })
+  @OneToOne(() => ProviderCredit, (credit) => credit.provider, {
+    cascade: true,
+  })
   credit: ProviderCredit;
 }

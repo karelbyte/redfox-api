@@ -25,7 +25,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class CurrencyController {
-  constructor(private readonly currencyService: CurrencyService) { }
+  constructor(private readonly currencyService: CurrencyService) {}
 
   @Post()
   create(

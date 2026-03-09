@@ -6,4 +6,4 @@ export class WarehouseAdjustmentDetailResponseDto {
   quantity: number;
   price: number;
   created_at: Date;
-} 
+}

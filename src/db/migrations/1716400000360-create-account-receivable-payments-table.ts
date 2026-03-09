@@ -1,6 +1,12 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateAccountReceivablePaymentsTable1716400000360 implements MigrationInterface {
+export class CreateAccountReceivablePaymentsTable1716400000360
+  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -10,10 +16,11 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'amount',
@@ -28,7 +35,14 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
           {
             name: 'paymentMethod',
             type: 'enum',
-            enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other'],
+            enum: [
+              'cash',
+              'credit_card',
+              'debit_card',
+              'bank_transfer',
+              'check',
+              'other',
+            ],
             default: "'cash'",
           },
           {
@@ -44,7 +58,8 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
           },
           {
             name: 'accountReceivableId',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
           },
           {
             name: 'createdBy',
@@ -65,7 +80,7 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
           },
         ],
       }),
-      true
+      true,
     );
 
     await queryRunner.createForeignKey(
@@ -75,7 +90,7 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
         referencedColumnNames: ['id'],
         referencedTableName: 'accounts_receivable',
         onDelete: 'CASCADE',
-      })
+      }),
     );
 
     await queryRunner.createForeignKey(
@@ -85,7 +100,7 @@ export class CreateAccountReceivablePaymentsTable1716400000360 implements Migrat
         referencedColumnNames: ['id'],
         referencedTableName: 'users',
         onDelete: 'SET NULL',
-      })
+      }),
     );
   }
 

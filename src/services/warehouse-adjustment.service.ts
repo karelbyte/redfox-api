@@ -46,7 +46,7 @@ export class WarehouseAdjustmentService {
     private warehouseMapper: WarehouseMapper,
     private productMapper: ProductMapper,
     private translationService: TranslationService,
-  ) { }
+  ) {}
 
   async create(
     createDto: CreateWarehouseAdjustmentDto,

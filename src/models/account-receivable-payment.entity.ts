@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { AccountReceivable } from './account-receivable.entity';
 import { User } from './user.entity';
 
@@ -8,13 +16,13 @@ export enum PaymentMethod {
   DEBIT_CARD = 'debit_card',
   BANK_TRANSFER = 'bank_transfer',
   CHECK = 'check',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 @Entity('account_receivable_payments')
 export class AccountReceivablePayment {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
@@ -25,7 +33,7 @@ export class AccountReceivablePayment {
   @Column({
     type: 'enum',
     enum: PaymentMethod,
-    default: PaymentMethod.CASH
+    default: PaymentMethod.CASH,
   })
   paymentMethod: PaymentMethod;
 
@@ -35,12 +43,15 @@ export class AccountReceivablePayment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @ManyToOne(() => AccountReceivable, accountReceivable => accountReceivable.payments)
+  @ManyToOne(
+    () => AccountReceivable,
+    (accountReceivable) => accountReceivable.payments,
+  )
   @JoinColumn({ name: 'accountReceivableId' })
   accountReceivable: AccountReceivable;
 
-  @Column({ name: 'accountReceivableId' })
-  accountReceivableId: number;
+  @Column({ name: 'accountReceivableId', type: 'uuid' })
+  accountReceivableId: string;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })

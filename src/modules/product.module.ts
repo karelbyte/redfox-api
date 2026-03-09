@@ -18,7 +18,12 @@ import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, ProductPrice, Inventory, WarehouseOpening]),
+    TypeOrmModule.forFeature([
+      Product,
+      ProductPrice,
+      Inventory,
+      WarehouseOpening,
+    ]),
     MeasurementUnitModule,
     BrandModule,
     CategoryModule,
@@ -32,4 +37,4 @@ import { OrganizationModule } from './organization.module';
   providers: [ProductService, ProductMapper],
   exports: [ProductService, ProductMapper],
 })
-export class ProductModule { }
+export class ProductModule {}

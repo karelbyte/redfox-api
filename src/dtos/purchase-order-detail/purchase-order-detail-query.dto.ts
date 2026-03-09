@@ -4,4 +4,4 @@ export class PurchaseOrderDetailQueryDto {
   @IsOptional()
   @IsUUID()
   product_id?: string;
-} 
+}

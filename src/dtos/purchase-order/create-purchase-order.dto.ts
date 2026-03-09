@@ -1,4 +1,12 @@
-import { IsString, IsDate, IsUUID, IsNumber, Min, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsDate,
+  IsUUID,
+  IsNumber,
+  Min,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePurchaseOrderDto {
@@ -34,4 +42,4 @@ export class CreatePurchaseOrderDto {
   @IsOptional()
   @IsEnum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'])
   status?: string;
-} 
+}

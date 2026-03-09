@@ -1,4 +1,11 @@
-import { IsUUID, IsNumber, Min, IsString, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsUUID,
+  IsNumber,
+  Min,
+  IsString,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateReceptionDetailDto {
   @IsUUID()

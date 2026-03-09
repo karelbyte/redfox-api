@@ -24,7 +24,11 @@ export class CashRegisterMapper {
     };
   }
 
-  static mapToResponseDtoList(cashRegisters: CashRegister[]): CashRegisterResponseDto[] {
-    return cashRegisters.map((cashRegister) => this.mapToResponseDto(cashRegister));
+  static mapToResponseDtoList(
+    cashRegisters: CashRegister[],
+  ): CashRegisterResponseDto[] {
+    return cashRegisters.map((cashRegister) =>
+      this.mapToResponseDto(cashRegister),
+    );
   }
-} 
+}

@@ -17,7 +17,7 @@ export class ClientPackImportService {
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   private async generateUniqueCode(base: string): Promise<string> {
     const normalized = base.slice(0, 50);
@@ -42,15 +42,24 @@ export class ClientPackImportService {
           is_main: true,
           type: AddressType.FISCAL,
           street: (address as any).street || undefined,
-          exterior_number: (address as any).exterior !== undefined ? String((address as any).exterior) : undefined,
-          interior_number: (address as any).interior !== undefined ? String((address as any).interior) : undefined,
+          exterior_number:
+            (address as any).exterior !== undefined
+              ? String((address as any).exterior)
+              : undefined,
+          interior_number:
+            (address as any).interior !== undefined
+              ? String((address as any).interior)
+              : undefined,
           neighborhood: (address as any).neighborhood || undefined,
           city: (address as any).city || undefined,
           municipality: (address as any).municipality || undefined,
-          zip_code: (address as any).zip !== undefined ? String((address as any).zip) : undefined,
+          zip_code:
+            (address as any).zip !== undefined
+              ? String((address as any).zip)
+              : undefined,
           state: (address as any).state || undefined,
           country: (address as any).country || 'MEX',
-        }
+        },
       ],
       taxData: [
         {
@@ -58,8 +67,9 @@ export class ClientPackImportService {
           tax_document: customer.tax_id,
           tax_name: customer.legal_name,
           tax_system: (customer as any).tax_system || undefined,
-          default_invoice_use: (customer as any).default_invoice_use || undefined,
-        }
+          default_invoice_use:
+            (customer as any).default_invoice_use || undefined,
+        },
       ],
       pack_client_id: customer.id,
       pack_client_response: customer as unknown as Record<string, unknown>,
@@ -70,7 +80,9 @@ export class ClientPackImportService {
   /**
    * Importa todos los clientes desde el pack activo hacia nuestra DB (proceso inverso).
    */
-  async importAllFromPack(userId?: string): Promise<ImportClientsFromPackResponseDto> {
+  async importAllFromPack(
+    userId?: string,
+  ): Promise<ImportClientsFromPackResponseDto> {
     let packService: any;
     try {
       packService = await this.certificationPackFactory.getPackService();
@@ -82,7 +94,10 @@ export class ClientPackImportService {
       throw new BadRequestException(msg);
     }
 
-    if (!packService?.listCustomers || typeof packService.listCustomers !== 'function') {
+    if (
+      !packService?.listCustomers ||
+      typeof packService.listCustomers !== 'function'
+    ) {
       const msg = await this.translationService.translate(
         'client.pack_list_not_supported',
         userId,
@@ -98,7 +113,7 @@ export class ClientPackImportService {
 
     for (const customer of customers) {
       try {
-        let existing = await this.clientRepository.findOne({
+        const existing = await this.clientRepository.findOne({
           where: { pack_client_id: customer.id },
           relations: ['addresses', 'taxData'],
           withDeleted: false,

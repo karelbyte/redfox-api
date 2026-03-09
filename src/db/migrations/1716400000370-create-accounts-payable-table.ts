@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
-export class CreateAccountsPayableTable1716400000370 implements MigrationInterface {
+export class CreateAccountsPayableTable1716400000370
+  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -10,10 +17,11 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'organization_id',
@@ -89,7 +97,7 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
           },
         ],
       }),
-      true
+      true,
     );
 
     await queryRunner.createForeignKey(
@@ -109,7 +117,7 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
         referencedColumnNames: ['id'],
         referencedTableName: 'providers',
         onDelete: 'RESTRICT',
-      })
+      }),
     );
 
     await queryRunner.createForeignKey(
@@ -119,7 +127,7 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
         referencedColumnNames: ['id'],
         referencedTableName: 'purchase_orders',
         onDelete: 'SET NULL',
-      })
+      }),
     );
 
     await queryRunner.createIndex(
@@ -135,16 +143,16 @@ export class CreateAccountsPayableTable1716400000370 implements MigrationInterfa
       'accounts_payable',
       new TableIndex({
         name: 'IDX_accounts_payable_status',
-        columnNames: ['status']
-      })
+        columnNames: ['status'],
+      }),
     );
 
     await queryRunner.createIndex(
       'accounts_payable',
       new TableIndex({
         name: 'IDX_accounts_payable_due_date',
-        columnNames: ['dueDate']
-      })
+        columnNames: ['dueDate'],
+      }),
     );
   }
 

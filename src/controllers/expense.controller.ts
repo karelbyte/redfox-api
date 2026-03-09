@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ExpenseService } from '../services/expense.service';
 import { CreateExpenseDto } from '../dtos/expense/create-expense.dto';
 import { UpdateExpenseDto } from '../dtos/expense/update-expense.dto';
@@ -6,9 +17,11 @@ import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { ExpenseStatus } from '../models/expense.entity';
 import { BulkDeleteExpenseDto } from '../dtos/expense/bulk-delete-expense.dto';
+import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('expenses')
 @UseGuards(AuthGuard)
+@UseInterceptors(TenantInterceptor)
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) { }
 
@@ -32,7 +45,7 @@ export class ExpenseController {
       limit ? parseInt(limit) : 10,
       search,
       status,
-      categoryId ? parseInt(categoryId) : undefined,
+      categoryId,
       startDate,
       endDate,
     );
@@ -61,17 +74,17 @@ export class ExpenseController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.expenseService.findOne(+id);
+    return this.expenseService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
-    return this.expenseService.update(+id, updateExpenseDto);
+    return this.expenseService.update(id, updateExpenseDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.expenseService.remove(+id);
+    return this.expenseService.remove(id);
   }
 
   @Post('bulk-delete')

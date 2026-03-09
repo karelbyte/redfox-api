@@ -19,7 +19,7 @@ export class ProviderMapper {
       created_at: provider.created_at,
       phone: provider.phone,
       email: provider.email,
-      addresses: (provider.addresses || []).map(addr => ({
+      addresses: (provider.addresses || []).map((addr) => ({
         id: addr.id,
         type: addr.type,
         street: addr.street,
@@ -34,7 +34,7 @@ export class ProviderMapper {
         is_main: addr.is_main,
         created_at: addr.created_at,
       })),
-      taxData: (provider.taxData || []).map(tax => ({
+      taxData: (provider.taxData || []).map((tax) => ({
         id: tax.id,
         tax_document: tax.tax_document,
         tax_system: tax.tax_system,
@@ -43,14 +43,16 @@ export class ProviderMapper {
         is_main: tax.is_main,
         created_at: tax.created_at,
       })),
-      credit: provider.credit ? {
-        id: provider.credit.id,
-        credit_limit: provider.credit.credit_limit,
-        credit_days: provider.credit.credit_days,
-        is_active: provider.credit.is_active,
-        currency_id: provider.credit.currency_id,
-        created_at: provider.credit.created_at,
-      } : undefined,
+      credit: provider.credit
+        ? {
+            id: provider.credit.id,
+            credit_limit: provider.credit.credit_limit,
+            credit_days: provider.credit.credit_days,
+            is_active: provider.credit.is_active,
+            currency_id: provider.credit.currency_id,
+            created_at: provider.credit.created_at,
+          }
+        : undefined,
     };
   }
 }

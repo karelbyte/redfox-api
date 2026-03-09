@@ -1,9 +1,9 @@
-import { PurchaseOrder } from 'src/models/purchase-order.entity';
-import { PurchaseOrderDetail } from 'src/models/purchase-order-detail.entity';
-import { Provider } from 'src/models/provider.entity';
-import { Product } from 'src/models/product.entity';
-import { Warehouse } from 'src/models/warehouse.entity';
-import { Organization } from 'src/models/organization.entity';
+import { PurchaseOrder } from '../../models/purchase-order.entity';
+import { PurchaseOrderDetail } from '../../models/purchase-order-detail.entity';
+import { Provider } from '../../models/provider.entity';
+import { Product } from '../../models/product.entity';
+import { Warehouse } from '../../models/warehouse.entity';
+import { Organization } from '../../models/organization.entity';
 import { DataSource } from 'typeorm';
 
 export class PurchaseOrdersSeed {
@@ -16,7 +16,9 @@ export class PurchaseOrdersSeed {
     const warehouseRepository = dataSource.getRepository(Warehouse);
     const organizationRepository = dataSource.getRepository(Organization);
 
-    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+    const organization = await organizationRepository.findOneBy({
+      slug: 'landlord',
+    });
 
     if (!organization) {
       throw new Error('Landlord organization not found for seeding');

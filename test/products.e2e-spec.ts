@@ -9,7 +9,12 @@ import { User } from '../src/models/user.entity';
 import { Category } from '../src/models/category.entity';
 import { Brand } from '../src/models/brand.entity';
 import { MeasurementUnit } from '../src/models/measurement-unit.entity';
-import { createTestProduct, createTestUser, clearDatabase, generateTestToken } from './test-utils';
+import {
+  createTestProduct,
+  createTestUser,
+  clearDatabase,
+  generateTestToken,
+} from './test-utils';
 import * as bcrypt from 'bcrypt';
 
 describe('ProductController (e2e)', () => {
@@ -27,28 +32,47 @@ describe('ProductController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    productRepository = moduleFixture.get<Repository<Product>>(getRepositoryToken(Product));
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
-    categoryRepository = moduleFixture.get<Repository<Category>>(getRepositoryToken(Category));
-    brandRepository = moduleFixture.get<Repository<Brand>>(getRepositoryToken(Brand));
-    measurementUnitRepository = moduleFixture.get<Repository<MeasurementUnit>>(getRepositoryToken(MeasurementUnit));
-    
+    productRepository = moduleFixture.get<Repository<Product>>(
+      getRepositoryToken(Product),
+    );
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
+    categoryRepository = moduleFixture.get<Repository<Category>>(
+      getRepositoryToken(Category),
+    );
+    brandRepository = moduleFixture.get<Repository<Brand>>(
+      getRepositoryToken(Brand),
+    );
+    measurementUnitRepository = moduleFixture.get<Repository<MeasurementUnit>>(
+      getRepositoryToken(MeasurementUnit),
+    );
+
     await app.init();
   });
 
   beforeEach(async () => {
-    await clearDatabase([productRepository, userRepository, categoryRepository, brandRepository, measurementUnitRepository]);
-    
+    await clearDatabase([
+      productRepository,
+      userRepository,
+      categoryRepository,
+      brandRepository,
+      measurementUnitRepository,
+    ]);
+
     // Crear usuario de prueba y obtener token
     const password = 'testPassword123';
     const hashedPassword = await bcrypt.hash(password, 10);
     const userData = createTestUser({ password: hashedPassword });
-    
+
     const user = userRepository.create(userData);
     const savedUser = await userRepository.save(user);
 
     // Generar token JWT
-    authToken = generateTestToken({ sub: savedUser.id, email: savedUser.email });
+    authToken = generateTestToken({
+      sub: savedUser.id,
+      email: savedUser.email,
+    });
 
     // Crear datos de referencia
     const category = categoryRepository.create({
@@ -78,11 +102,13 @@ describe('ProductController (e2e)', () => {
     it('should return paginated products', async () => {
       // Arrange
       const product1 = productRepository.create(createTestProduct());
-      const product2 = productRepository.create(createTestProduct({ 
-        name: 'Product 2',
-        barcode: '0987654321' 
-      }));
-      
+      const product2 = productRepository.create(
+        createTestProduct({
+          name: 'Product 2',
+          barcode: '0987654321',
+        }),
+      );
+
       await productRepository.save([product1, product2]);
 
       // Act & Assert
@@ -101,12 +127,16 @@ describe('ProductController (e2e)', () => {
 
     it('should filter products by search term', async () => {
       // Arrange
-      const product1 = productRepository.create(createTestProduct({ name: 'Laptop Dell' }));
-      const product2 = productRepository.create(createTestProduct({ 
-        name: 'Mouse Logitech',
-        barcode: '0987654321' 
-      }));
-      
+      const product1 = productRepository.create(
+        createTestProduct({ name: 'Laptop Dell' }),
+      );
+      const product2 = productRepository.create(
+        createTestProduct({
+          name: 'Mouse Logitech',
+          barcode: '0987654321',
+        }),
+      );
+
       await productRepository.save([product1, product2]);
 
       // Act & Assert
@@ -121,9 +151,7 @@ describe('ProductController (e2e)', () => {
 
     it('should return 401 for unauthenticated request', async () => {
       // Act & Assert
-      await request(app.getHttpServer())
-        .get('/products')
-        .expect(401);
+      await request(app.getHttpServer()).get('/products').expect(401);
     });
   });
 
@@ -132,13 +160,15 @@ describe('ProductController (e2e)', () => {
       // Arrange
       const category = await categoryRepository.findOne({ where: {} });
       const brand = await brandRepository.findOne({ where: {} });
-      const measurementUnit = await measurementUnitRepository.findOne({ where: {} });
+      const measurementUnit = await measurementUnitRepository.findOne({
+        where: {},
+      });
 
       const createProductDto = {
         name: 'New Product',
         description: 'New product description',
-        price: 150.00,
-        cost: 75.00,
+        price: 150.0,
+        cost: 75.0,
         stock: 20,
         minStock: 5,
         barcode: '1111111111',
@@ -159,7 +189,9 @@ describe('ProductController (e2e)', () => {
       expect(response.body.barcode).toBe(createProductDto.barcode);
 
       // Verificar que el producto fue creado en la base de datos
-      const createdProduct = await productRepository.findOneBy({ barcode: createProductDto.barcode });
+      const createdProduct = await productRepository.findOneBy({
+        barcode: createProductDto.barcode,
+      });
       expect(createdProduct).toBeDefined();
     });
 
@@ -171,8 +203,8 @@ describe('ProductController (e2e)', () => {
       const createProductDto = {
         name: 'New Product',
         description: 'New product description',
-        price: 150.00,
-        cost: 75.00,
+        price: 150.0,
+        cost: 75.0,
         stock: 20,
         minStock: 5,
         barcode: existingProduct.barcode, // Mismo código de barras
@@ -239,7 +271,7 @@ describe('ProductController (e2e)', () => {
 
       const updateProductDto = {
         name: 'Updated Product Name',
-        price: 200.00,
+        price: 200.0,
       };
 
       // Act & Assert
@@ -253,7 +285,9 @@ describe('ProductController (e2e)', () => {
       expect(response.body.price).toBe(updateProductDto.price);
 
       // Verificar que el producto fue actualizado en la base de datos
-      const updatedProduct = await productRepository.findOneBy({ id: savedProduct.id });
+      const updatedProduct = await productRepository.findOneBy({
+        id: savedProduct.id,
+      });
       expect(updatedProduct.name).toBe(updateProductDto.name);
     });
 
@@ -275,7 +309,9 @@ describe('ProductController (e2e)', () => {
   describe('/products/:id/stock (PATCH)', () => {
     it('should update product stock successfully', async () => {
       // Arrange
-      const product = productRepository.create(createTestProduct({ stock: 10 }));
+      const product = productRepository.create(
+        createTestProduct({ stock: 10 }),
+      );
       const savedProduct = await productRepository.save(product);
 
       const updateStockDto = {
@@ -293,13 +329,17 @@ describe('ProductController (e2e)', () => {
       expect(response.body.stock).toBe(15); // 10 + 5
 
       // Verificar que el stock fue actualizado en la base de datos
-      const updatedProduct = await productRepository.findOneBy({ id: savedProduct.id });
+      const updatedProduct = await productRepository.findOneBy({
+        id: savedProduct.id,
+      });
       expect(updatedProduct.stock).toBe(15);
     });
 
     it('should subtract stock correctly', async () => {
       // Arrange
-      const product = productRepository.create(createTestProduct({ stock: 10 }));
+      const product = productRepository.create(
+        createTestProduct({ stock: 10 }),
+      );
       const savedProduct = await productRepository.save(product);
 
       const updateStockDto = {
@@ -351,7 +391,9 @@ describe('ProductController (e2e)', () => {
         .expect(200);
 
       // Verificar que el producto fue marcado como inactivo
-      const deletedProduct = await productRepository.findOneBy({ id: savedProduct.id });
+      const deletedProduct = await productRepository.findOneBy({
+        id: savedProduct.id,
+      });
       expect(deletedProduct.isActive).toBe(false);
     });
 
@@ -367,17 +409,21 @@ describe('ProductController (e2e)', () => {
   describe('/products/low-stock (GET)', () => {
     it('should return products with low stock', async () => {
       // Arrange
-      const lowStockProduct = productRepository.create(createTestProduct({ 
-        stock: 2, 
-        minStock: 5 
-      }));
-      const normalStockProduct = productRepository.create(createTestProduct({ 
-        name: 'Normal Stock Product',
-        barcode: '0987654321',
-        stock: 10, 
-        minStock: 5 
-      }));
-      
+      const lowStockProduct = productRepository.create(
+        createTestProduct({
+          stock: 2,
+          minStock: 5,
+        }),
+      );
+      const normalStockProduct = productRepository.create(
+        createTestProduct({
+          name: 'Normal Stock Product',
+          barcode: '0987654321',
+          stock: 10,
+          minStock: 5,
+        }),
+      );
+
       await productRepository.save([lowStockProduct, normalStockProduct]);
 
       // Act & Assert
@@ -387,7 +433,9 @@ describe('ProductController (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveLength(1);
-      expect(response.body[0].stock).toBeLessThanOrEqual(response.body[0].minStock);
+      expect(response.body[0].stock).toBeLessThanOrEqual(
+        response.body[0].minStock,
+      );
     });
   });
 });

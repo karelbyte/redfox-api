@@ -5,11 +5,8 @@ import { OrganizationService } from '../services/organization.service';
 import { TenantContext } from '../services/tenant-context.service';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Organization])],
-    providers: [
-        OrganizationService,
-        TenantContext,
-    ],
-    exports: [OrganizationService, TenantContext],
+  imports: [TypeOrmModule.forFeature([Organization])],
+  providers: [OrganizationService, TenantContext],
+  exports: [OrganizationService, TenantContext],
 })
-export class OrganizationModule { }
+export class OrganizationModule {}

@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsDateString, IsUUID, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsUUID,
+  IsEnum,
+} from 'class-validator';
 import { QuotationStatus } from '../../models/quotation.entity';
 
 export class UpdateQuotationDto {

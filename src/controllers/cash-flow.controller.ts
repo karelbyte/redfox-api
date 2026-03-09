@@ -30,6 +30,8 @@ export class CashFlowController {
 
   @Get('projection')
   getProjection(@Query('months') months?: string) {
-    return this.cashFlowService.getCashFlowProjection(months ? parseInt(months) : 3);
+    return this.cashFlowService.getCashFlowProjection(
+      months ? parseInt(months) : 3,
+    );
   }
 }

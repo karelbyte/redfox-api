@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsUUID, Length } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsUUID,
+  Length,
+} from 'class-validator';
 
 export class UpdateWarehouseDto {
   @IsString()

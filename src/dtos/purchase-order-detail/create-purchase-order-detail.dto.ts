@@ -11,4 +11,4 @@ export class CreatePurchaseOrderDetailDto {
   @IsNumber()
   @Min(0)
   price: number;
-} 
+}

@@ -11,4 +11,4 @@ import { OrganizationModule } from './organization.module';
   providers: [SurrogateService],
   exports: [SurrogateService], // Exportar para usar en otros módulos
 })
-export class SurrogateModule { }
+export class SurrogateModule {}

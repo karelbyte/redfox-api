@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
-import { Warehouse } from 'src/models/warehouse.entity';
-import { Currency } from 'src/models/currency.entity';
-import { Organization } from 'src/models/organization.entity';
+import { Warehouse } from '../../models/warehouse.entity';
+import { Currency } from '../../models/currency.entity';
+import { Organization } from '../../models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehousesSeed {
@@ -10,7 +10,9 @@ export class WarehousesSeed {
     const currencyRepository = dataSource.getRepository(Currency);
     const organizationRepository = dataSource.getRepository(Organization);
 
-    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+    const organization = await organizationRepository.findOneBy({
+      slug: 'landlord',
+    });
 
     if (!organization) {
       throw new Error('Landlord organization not found for seeding');

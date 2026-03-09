@@ -6,7 +6,8 @@ import {
 } from 'typeorm';
 
 export class CreateReceptionDetailsTable1716400000110
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   name = 'CreateReceptionDetailsTable1716400000110';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -119,4 +120,4 @@ export class CreateReceptionDetailsTable1716400000110
 
     await queryRunner.dropTable('reception_details');
   }
-} 
+}

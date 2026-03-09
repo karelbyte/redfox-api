@@ -51,7 +51,7 @@ export class ReturnService {
     private productMapper: ProductMapper,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
-  ) { }
+  ) {}
 
   async create(
     createDto: CreateReturnDto,
@@ -270,11 +270,9 @@ export class ReturnService {
     });
     if (!return_) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.not_found',
-          userId,
-          { id: returnId },
-        ),
+        this.translationService.translate('return.not_found', userId, {
+          id: returnId,
+        }),
       );
     }
 
@@ -292,11 +290,10 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.detail_not_found',
-          userId,
-          { detailId, returnId },
-        ),
+        this.translationService.translate('return.detail_not_found', userId, {
+          detailId,
+          returnId,
+        }),
       );
     }
 
@@ -315,11 +312,9 @@ export class ReturnService {
     });
     if (!return_) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.not_found',
-          userId,
-          { id: returnId },
-        ),
+        this.translationService.translate('return.not_found', userId, {
+          id: returnId,
+        }),
       );
     }
 
@@ -337,11 +332,10 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.detail_not_found',
-          userId,
-          { detailId, returnId },
-        ),
+        this.translationService.translate('return.detail_not_found', userId, {
+          detailId,
+          returnId,
+        }),
       );
     }
 
@@ -358,18 +352,20 @@ export class ReturnService {
     return this.mapDetailToResponseDto(updatedDetail);
   }
 
-  async removeDetail(returnId: string, detailId: string, userId: string): Promise<void> {
+  async removeDetail(
+    returnId: string,
+    detailId: string,
+    userId: string,
+  ): Promise<void> {
     // Verificar que la devolución existe
     const return_ = await this.returnRepository.findOne({
       where: { id: returnId },
     });
     if (!return_) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.not_found',
-          userId,
-          { id: returnId },
-        ),
+        this.translationService.translate('return.not_found', userId, {
+          id: returnId,
+        }),
       );
     }
 
@@ -379,18 +375,20 @@ export class ReturnService {
 
     if (!detail) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.detail_not_found',
-          userId,
-          { detailId, returnId },
-        ),
+        this.translationService.translate('return.detail_not_found', userId, {
+          detailId,
+          returnId,
+        }),
       );
     }
 
     await this.returnDetailRepository.remove(detail);
   }
 
-  async processReturn(returnId: string, userId: string): Promise<ReturnResponseDto> {
+  async processReturn(
+    returnId: string,
+    userId: string,
+  ): Promise<ReturnResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -404,20 +402,15 @@ export class ReturnService {
 
       if (!return_) {
         throw new NotFoundException(
-          this.translationService.translate(
-            'return.not_found',
-            userId,
-            { id: returnId },
-          ),
+          this.translationService.translate('return.not_found', userId, {
+            id: returnId,
+          }),
         );
       }
 
       if (return_.status) {
         throw new BadRequestException(
-          this.translationService.translate(
-            'return.already_processed',
-            userId,
-          ),
+          this.translationService.translate('return.already_processed', userId),
         );
       }
 
@@ -569,11 +562,7 @@ export class ReturnService {
 
     if (!return_) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.not_found',
-          userId,
-          { id },
-        ),
+        this.translationService.translate('return.not_found', userId, { id }),
       );
     }
 
@@ -588,11 +577,7 @@ export class ReturnService {
 
     if (!return_) {
       throw new NotFoundException(
-        this.translationService.translate(
-          'return.not_found',
-          userId,
-          { id },
-        ),
+        this.translationService.translate('return.not_found', userId, { id }),
       );
     }
 
@@ -666,4 +651,4 @@ export class ReturnService {
       created_at: return_.created_at,
     };
   }
-} 
+}

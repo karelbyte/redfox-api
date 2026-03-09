@@ -11,7 +11,12 @@ import {
   IsEnum,
   ValidateNested,
 } from 'class-validator';
-import { Type, Transform, TransformFnParams, plainToInstance } from 'class-transformer';
+import {
+  Type,
+  Transform,
+  TransformFnParams,
+  plainToInstance,
+} from 'class-transformer';
 import { ProductType, InventoryStrategy } from '../../models/product.entity';
 import { ProductPriceDto } from './product-price.dto';
 
@@ -41,7 +46,10 @@ const transformToArray = ({
     try {
       const parsed = JSON.parse(value);
       if (key === 'prices') {
-        const instances = plainToInstance(ProductPriceDto, parsed) as unknown as any[];
+        const instances = plainToInstance(
+          ProductPriceDto,
+          parsed,
+        ) as unknown as any[];
         return instances;
       }
       return parsed;

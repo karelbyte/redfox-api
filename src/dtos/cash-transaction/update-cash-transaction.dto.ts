@@ -1,5 +1,15 @@
-import { IsOptional, IsEnum, IsNumber, IsString, IsUUID, Min } from 'class-validator';
-import { CashTransactionType, PaymentMethod } from '../../models/cash-transaction.entity';
+import {
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
+import {
+  CashTransactionType,
+  PaymentMethod,
+} from '../../models/cash-transaction.entity';
 
 export class UpdateCashTransactionDto {
   @IsOptional()
@@ -26,4 +36,4 @@ export class UpdateCashTransactionDto {
   @IsOptional()
   @IsUUID()
   sale_id?: string;
-} 
+}

@@ -1,7 +1,8 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateMeasurementUnitsTable1716400000050
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   name = 'CreateMeasurementUnitsTable1716400000050';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

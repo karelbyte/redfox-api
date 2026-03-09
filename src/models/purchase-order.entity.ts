@@ -51,7 +51,7 @@ export class PurchaseOrder {
   @Column({
     type: 'enum',
     enum: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'],
-    default: 'PENDING'
+    default: 'PENDING',
   })
   status: string;
 

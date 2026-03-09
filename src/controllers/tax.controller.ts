@@ -15,7 +15,7 @@ import { TaxService } from '../services/tax.service';
 import { CreateTaxDto } from '../dtos/tax/create-tax.dto';
 import { UpdateTaxDto } from '../dtos/tax/update-tax.dto';
 import { TaxResponseDto } from '../dtos/tax/tax-response.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
+import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { PaginationDto } from '../dtos/common/pagination.dto';
@@ -25,7 +25,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class TaxController {
-  constructor(private readonly taxService: TaxService) { }
+  constructor(private readonly taxService: TaxService) {}
 
   @Post()
   create(
@@ -64,19 +64,13 @@ export class TaxController {
 
   @Get(':id/usage')
   @UseGuards(AuthGuard)
-  getTaxUsage(
-    @Param('id') id: string,
-    @UserId() userId: string,
-  ) {
+  getTaxUsage(@Param('id') id: string, @UserId() userId: string) {
     return this.taxService.getTaxUsage(id, userId);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  remove(
-    @Param('id') id: string,
-    @UserId() userId: string,
-  ): Promise<void> {
+  remove(@Param('id') id: string, @UserId() userId: string): Promise<void> {
     return this.taxService.remove(id, userId);
   }
 

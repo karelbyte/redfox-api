@@ -29,4 +29,4 @@ import { OrganizationModule } from './organization.module';
   providers: [WarehouseService, WarehouseMapper],
   exports: [WarehouseService],
 })
-export class WarehouseModule { }
+export class WarehouseModule {}

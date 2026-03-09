@@ -6,7 +6,8 @@ import {
 } from 'typeorm';
 
 export class CreateInvoiceDetailsTable1716400000250
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   name = 'CreateInvoiceDetailsTable1716400000250';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

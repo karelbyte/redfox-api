@@ -25,7 +25,7 @@ import { UserId } from '../decorators/user-id.decorator';
 @Controller('clients')
 @UseGuards(AuthGuard)
 export class ClientController {
-  constructor(private readonly clientService: ClientService) { }
+  constructor(private readonly clientService: ClientService) {}
 
   @Post()
   create(
@@ -78,9 +78,7 @@ export class ClientController {
   }
 
   @Post('bulk-delete')
-  removeMany(
-    @Body() bulkDeleteClientDto: BulkDeleteClientDto,
-  ): Promise<void> {
+  removeMany(@Body() bulkDeleteClientDto: BulkDeleteClientDto): Promise<void> {
     return this.clientService.removeMany(bulkDeleteClientDto.ids);
   }
 }

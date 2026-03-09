@@ -20,11 +20,9 @@ export class PosPackSyncService {
     @InjectRepository(WithdrawalDetail)
     private readonly withdrawalDetailRepository: Repository<WithdrawalDetail>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) { }
+  ) {}
 
-  private buildItems(
-    details: WithdrawalDetail[],
-  ): ReceiptItemData[] {
+  private buildItems(details: WithdrawalDetail[]): ReceiptItemData[] {
     return details.map((detail) => {
       const product: any = detail.product;
       const mu: any = product?.measurement_unit;
@@ -58,9 +56,7 @@ export class PosPackSyncService {
    * Crea un recibo en el PAC para una venta POS (WithdrawalType.POS).
    * Idempotente: usa withdrawal.id como idempotency_key.
    */
-  async createReceiptForWithdrawal(
-    withdrawalId: string,
-  ): Promise<{
+  async createReceiptForWithdrawal(withdrawalId: string): Promise<{
     withdrawal: Withdrawal;
     packSyncSuccess: boolean;
     packErrorMessage?: string;
@@ -104,11 +100,7 @@ export class PosPackSyncService {
 
       const details = await this.withdrawalDetailRepository.find({
         where: { withdrawal: { id: withdrawal.id } },
-        relations: [
-          'product',
-          'product.measurement_unit',
-          'warehouse',
-        ],
+        relations: ['product', 'product.measurement_unit', 'warehouse'],
       });
 
       if (!details.length) {
@@ -138,8 +130,10 @@ export class PosPackSyncService {
       const receipt = await packService.createReceipt(data);
 
       withdrawal.pack_receipt_id = receipt.id;
-      withdrawal.pack_receipt_response =
-        receipt as unknown as Record<string, unknown>;
+      withdrawal.pack_receipt_response = receipt as unknown as Record<
+        string,
+        unknown
+      >;
 
       const saved = await this.withdrawalRepository.save(withdrawal);
 
@@ -176,4 +170,3 @@ export class PosPackSyncService {
     await packService.cancelReceipt(withdrawal.pack_receipt_id);
   }
 }
-

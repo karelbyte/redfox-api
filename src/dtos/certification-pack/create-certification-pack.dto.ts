@@ -1,9 +1,4 @@
-import {
-  IsEnum,
-  IsOptional,
-  IsBoolean,
-  IsObject,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsBoolean, IsObject } from 'class-validator';
 import { CertificationPackType } from '../../constants/certification-packs.constant';
 
 export class CreateCertificationPackDto {

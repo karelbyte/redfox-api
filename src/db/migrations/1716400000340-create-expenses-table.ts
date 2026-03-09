@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, Index } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  Index,
+} from 'typeorm';
 
 export class CreateExpensesTable1716400000340 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -10,10 +16,11 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
+            default: isPostgres ? 'uuid_generate_v4()' : '(UUID())',
           },
           {
             name: 'organization_id',
@@ -77,7 +84,8 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
           },
           {
             name: 'categoryId',
-            type: 'int',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
           },
           {
             name: 'createdBy',
@@ -97,7 +105,7 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
           },
         ],
       }),
-      true
+      true,
     );
 
     await queryRunner.createForeignKey(
@@ -117,7 +125,7 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'expense_categories',
         onDelete: 'RESTRICT',
-      })
+      }),
     );
 
     await queryRunner.createForeignKey(
@@ -127,7 +135,7 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'providers',
         onDelete: 'SET NULL',
-      })
+      }),
     );
 
     await queryRunner.createForeignKey(
@@ -137,7 +145,7 @@ export class CreateExpensesTable1716400000340 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'users',
         onDelete: 'RESTRICT',
-      })
+      }),
     );
   }
 

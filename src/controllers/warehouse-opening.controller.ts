@@ -31,7 +31,10 @@ export class WarehouseOpeningController {
     @Body() createWarehouseOpeningDto: CreateWarehouseOpeningDto,
     @UserId() userId: string,
   ): Promise<WarehouseOpeningResponseDto> {
-    return this.warehouseOpeningService.create(createWarehouseOpeningDto, userId);
+    return this.warehouseOpeningService.create(
+      createWarehouseOpeningDto,
+      userId,
+    );
   }
 
   @Get()
@@ -56,7 +59,11 @@ export class WarehouseOpeningController {
     @Body() updateWarehouseOpeningDto: UpdateWarehouseOpeningDto,
     @UserId() userId: string,
   ): Promise<WarehouseOpeningResponseDto> {
-    return this.warehouseOpeningService.update(id, updateWarehouseOpeningDto, userId);
+    return this.warehouseOpeningService.update(
+      id,
+      updateWarehouseOpeningDto,
+      userId,
+    );
   }
 
   @Delete(':id')

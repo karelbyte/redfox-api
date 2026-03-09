@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from './user.service';
 import { LoginDto } from '../dtos/auth/login.dto';
@@ -22,7 +26,7 @@ export class AuthService {
     private roleService: RoleService,
     private emailQueue: EmailQueue,
     private organizationService: OrganizationService,
-  ) { }
+  ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.userService.findByEmailForAuth(email);
@@ -31,7 +35,9 @@ export class AuthService {
     }
 
     if (!user.status) {
-      throw new UnauthorizedException('User is not active. Please check your email to activate your account.');
+      throw new UnauthorizedException(
+        'User is not active. Please check your email to activate your account.',
+      );
     }
 
     const isPasswordValid: boolean = await compare(password, user.password);
@@ -64,6 +70,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         organization_id: user.organization_id,
+        organization_slug: user.organization?.slug,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -79,12 +86,16 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<void> {
-    const existingUser = await this.userService.findByEmailForAuth(registerDto.email);
+    const existingUser = await this.userService.findByEmailForAuth(
+      registerDto.email,
+    );
     if (existingUser) {
-      throw new BadRequestException('User already exists');
+      throw new BadRequestException('The email address is already in use.');
     }
 
-    const defaultRoleCode = this.configService.get<string>('DEFAULT_ROLE_ID_FOR_USER_REGISTER');
+    const defaultRoleCode = this.configService.get<string>(
+      'DEFAULT_ROLE_ID_FOR_USER_REGISTER',
+    );
     let roleIds: string[] = [];
 
     if (defaultRoleCode) {
@@ -96,6 +107,17 @@ export class AuthService {
       }
     }
 
+    const slug = registerDto.companyName
+      .toLowerCase()
+      .replace(/ /g, '-')
+      .replace(/[^\w-]+/g, '');
+    const existingOrg = await this.organizationService.findBySlug(slug);
+    if (existingOrg) {
+      throw new BadRequestException(
+        'The organization name already exists. Please choose another one.',
+      );
+    }
+
     const newUser = await this.userService.create({
       ...registerDto,
       role_ids: roleIds,
@@ -103,7 +125,8 @@ export class AuthService {
 
     const organization = await this.organizationService.create({
       name: registerDto.companyName,
-      slug: registerDto.companyName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+      slug,
+      status: false,
     });
 
     await this.userService.update(newUser.id, {
@@ -111,11 +134,11 @@ export class AuthService {
       organization_id: organization.id,
     } as any);
 
-
     const payload = { sub: newUser.id };
-    const token = this.jwtService.sign(payload, { expiresIn: '24h' });
+    const token = this.jwtService.sign(payload, { expiresIn: '72h' });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
     const activationLink = `${frontendUrl}/es/activate?token=${token}`;
 
@@ -128,97 +151,117 @@ export class AuthService {
         <title>Bienvenido a Nitro</title>
         <style>
           body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: #1a1a1a;
+            color: #E2E8F0;
             margin: 0;
             padding: 0;
-            background-color: #f8fafc;
+            background-color: #0F172A;
           }
           .container {
             max-width: 600px;
             margin: 40px auto;
-            background: #ffffff;
+            background: #1E293B;
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
           }
           .header {
-            background: #6b7c6b;
+            background: #2D3748;
             padding: 40px 20px;
             text-align: center;
+            border-bottom: 2px solid #EAB308;
           }
           .header h1 {
-            color: #ffffff;
+            color: #F8FAFC;
             margin: 0;
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
             letter-spacing: -0.025em;
+            text-transform: uppercase;
+          }
+          .header h1 span {
+            color: #EAB308;
           }
           .content {
             padding: 40px;
           }
           .footer {
-            background-color: #f1f5f9;
-            padding: 20px;
+            background-color: #0F172A;
+            padding: 24px;
             text-align: center;
-            font-size: 12px;
-            color: #64748b;
+            font-size: 13px;
+            color: #64748B;
+            border-top: 1px solid #334155;
           }
           .button {
             display: inline-block;
-            padding: 14px 32px;
-            background-color: #6b7c6b;
-            color: #ffffff !important;
+            padding: 16px 36px;
+            background-color: #EAB308;
+            color: #0F172A !important;
             text-decoration: none;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
             margin: 30px 0;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(234, 179, 8, 0.2);
+          }
+          .button:hover {
+            background-color: #FACC15;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(234, 179, 8, 0.3);
           }
           .welcome-text {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
-            color: #1e293b;
+            color: #F8FAFC;
             margin-bottom: 16px;
           }
           .instruction-text {
-            color: #475569;
+            color: #CBD5E1;
             margin-bottom: 24px;
+            font-size: 16px;
           }
           .expiry-notice {
             font-size: 13px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 20px;
-            margin-top: 20px;
+            color: #64748B;
+            border-top: 1px solid #334155;
+            padding-top: 24px;
+            margin-top: 24px;
+          }
+          .highlight {
+            color: #EAB308;
+            font-weight: 600;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Nitro</h1>
+            <h1>NITRO<span>.</span></h1>
           </div>
           <div class="content">
             <p class="welcome-text">¡Hola, ${newUser.name}!</p>
-            <p class="instruction-text">Te damos la bienvenida a Nitro. Estamos emocionados de tenerte con nosotros.</p>
+            <p class="instruction-text">Te damos la bienvenida a <span class="highlight">Nitro</span>. Estamos emocionados de tenerte con nosotros y ayudarte a potenciar tu negocio.</p>
             <p class="instruction-text">Para comenzar a explorar todas las funciones, por favor activa tu cuenta haciendo clic en el botón de abajo:</p>
             
             <div style="text-align: center;">
               <a href="${activationLink}" class="button">Activar mi cuenta</a>
             </div>
             
-            <p class="instruction-text">Si el botón no funciona, puedes copiar y pegar este enlace en tu navegador:</p>
-            <p style="word-break: break-all; font-size: 12px; color: #6366f1;">${activationLink}</p>
+            <p class="instruction-text">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #EAB308; background: #0F172A; padding: 12px; border-radius: 6px; border: 1px solid #334155;">${activationLink}</p>
             
             <div class="expiry-notice">
-              Este enlace de activación es válido por las próximas 24 horas.<br>
-              Si no solicitaste esta cuenta, puedes ignorar este correo.
+              ⚠️ Este enlace de activación es válido por las próximas <strong>72 horas</strong> (3 días).<br><br>
+              Si no solicitaste esta cuenta, puedes ignorar este correo sin ningún problema.
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Nitro. Todos los derechos reservados.
+            &copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>Todos los derechos reservados.
           </div>
         </div>
       </body>
@@ -232,7 +275,9 @@ export class AuthService {
     });
   }
 
-  async activate(token: string): Promise<void> {
+  async activate(
+    token: string,
+  ): Promise<{ message: string; alreadyActive: boolean }> {
     try {
       const payload = this.jwtService.verify(token);
       const userId = payload.sub;
@@ -241,10 +286,17 @@ export class AuthService {
       if (!user) throw new BadRequestException('User not found');
 
       if (user.status) {
-        return; // Already active
+        return { message: 'User is already active', alreadyActive: true };
       }
 
       await this.userService.update(user.id, { status: true } as any);
+      if (user.organization_id) {
+        await this.organizationService.update(user.organization_id, {
+          status: true,
+        });
+      }
+
+      return { message: 'User successfully activated', alreadyActive: false };
     } catch (e) {
       throw new BadRequestException('Invalid or expired activation token');
     }
@@ -260,7 +312,8 @@ export class AuthService {
     const payload = { sub: user.id, type: 'password-reset' };
     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetLink = `${frontendUrl}/es/reset-password?token=${token}`;
 
     const html = `

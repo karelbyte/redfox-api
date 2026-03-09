@@ -46,7 +46,7 @@ export class QuotationService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   private mapDetailToResponseDto(
     detail: QuotationDetail,
@@ -108,7 +108,8 @@ export class QuotationService {
       subtotal += Number(detail.subtotal);
 
       if (detail.product.tax) {
-        const taxAmount = (Number(detail.subtotal) * Number(detail.product.tax.value)) / 100;
+        const taxAmount =
+          (Number(detail.subtotal) * Number(detail.product.tax.value)) / 100;
         totalTax += taxAmount;
       }
     }
@@ -354,14 +355,15 @@ export class QuotationService {
       const newQuantity = Number(createDetailDto.quantity);
       const totalQuantity = oldQuantity + newQuantity;
 
-      const averagePrice = (
-        (oldQuantity * Number(existingDetail.price)) +
-        (newQuantity * Number(createDetailDto.price))
-      ) / totalQuantity;
+      const averagePrice =
+        (oldQuantity * Number(existingDetail.price) +
+          newQuantity * Number(createDetailDto.price)) /
+        totalQuantity;
 
       existingDetail.quantity = totalQuantity;
       existingDetail.price = averagePrice;
-      existingDetail.discount_percentage = createDetailDto.discount_percentage || 0;
+      existingDetail.discount_percentage =
+        createDetailDto.discount_percentage || 0;
       existingDetail.discount_amount = createDetailDto.discount_amount || 0;
       existingDetail.subtotal = this.calculateDetailSubtotal(
         totalQuantity,

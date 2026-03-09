@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { Inventory } from '../models/inventory.entity';
 import { Product } from '../models/product.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
-import { ProductData, ProductResponse } from '../interfaces/certification-pack.interface';
+import {
+  ProductData,
+  ProductResponse,
+} from '../interfaces/certification-pack.interface';
 
 @Injectable()
 export class InventoryPackSyncService {
@@ -14,17 +17,20 @@ export class InventoryPackSyncService {
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-  ) { }
+  ) {}
 
   /**
    * Construye ProductData desde producto + precio (del inventario).
    * Se llama al aplicar recepción o cierre de almacén, cuando ya existe producto y precio.
    */
   private buildProductData(product: Product, price: number): ProductData {
-    const mu = product.measurement_unit as { code?: string; description?: string } | undefined;
+    const mu = product.measurement_unit as
+      | { code?: string; description?: string }
+      | undefined;
     const unitKey = mu?.code ?? 'H87';
     const unitName = mu?.description ?? 'Elemento';
-    const productKey = product.code?.replace(/\D/g, '').slice(0, 8) || '50161800';
+    const productKey =
+      product.code?.replace(/\D/g, '').slice(0, 8) || '50161800';
 
     return {
       description: product.description || product.name,
@@ -51,7 +57,7 @@ export class InventoryPackSyncService {
   }> {
     try {
       const packService = await this.certificationPackFactory.getPackService();
-      const product = inventory.product as Product;
+      const product = inventory.product;
       if (!product) {
         return {
           inventory,
@@ -75,7 +81,10 @@ export class InventoryPackSyncService {
           inventory.pack_product_id,
           patch,
         );
-        inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+        inventory.pack_product_response = packResponse as unknown as Record<
+          string,
+          unknown
+        >;
       } else {
         // Antes de crear, buscar por SKU si existe
         let existingProduct: ProductResponse | null = null;
@@ -84,9 +93,12 @@ export class InventoryPackSyncService {
         }
 
         if (existingProduct) {
-          this.logger.log(`Product found by SKU: ${productData.sku}. ID: ${existingProduct.id}`);
+          this.logger.log(
+            `Product found by SKU: ${productData.sku}. ID: ${existingProduct.id}`,
+          );
           inventory.pack_product_id = existingProduct.id;
-          inventory.pack_product_response = existingProduct as unknown as Record<string, unknown>;
+          inventory.pack_product_response =
+            existingProduct as unknown as Record<string, unknown>;
 
           // Opcionalmente actualizarlo para que tenga los datos más recientes (precio, etc)
           const patch: Partial<ProductData> = {
@@ -96,12 +108,22 @@ export class InventoryPackSyncService {
             unit_name: productData.unit_name,
             price,
           };
-          const packResponse = await packService.updateProduct(inventory.pack_product_id, patch);
-          inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+          const packResponse = await packService.updateProduct(
+            inventory.pack_product_id,
+            patch,
+          );
+          inventory.pack_product_response = packResponse as unknown as Record<
+            string,
+            unknown
+          >;
         } else {
-          const packResponse: ProductResponse = await packService.createProduct(productData);
+          const packResponse: ProductResponse =
+            await packService.createProduct(productData);
           inventory.pack_product_id = packResponse.id;
-          inventory.pack_product_response = packResponse as unknown as Record<string, unknown>;
+          inventory.pack_product_response = packResponse as unknown as Record<
+            string,
+            unknown
+          >;
         }
       }
 

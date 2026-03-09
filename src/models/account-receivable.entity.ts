@@ -1,4 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  Index,
+} from 'typeorm';
 import { Client } from './client.entity';
 import { Invoice } from './invoice.entity';
 import { AccountReceivablePayment } from './account-receivable-payment.entity';
@@ -9,14 +19,14 @@ export enum AccountReceivableStatus {
   PARTIAL = 'partial',
   PAID = 'paid',
   OVERDUE = 'overdue',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 @Entity('accounts_receivable')
 @Index(['organization_id', 'referenceNumber'], { unique: true })
 export class AccountReceivable {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
   organization_id: string;
@@ -46,7 +56,7 @@ export class AccountReceivable {
   @Column({
     type: 'enum',
     enum: AccountReceivableStatus,
-    default: AccountReceivableStatus.PENDING
+    default: AccountReceivableStatus.PENDING,
   })
   status: AccountReceivableStatus;
 
@@ -67,7 +77,10 @@ export class AccountReceivable {
   @Column({ nullable: true })
   invoiceId: string;
 
-  @OneToMany(() => AccountReceivablePayment, payment => payment.accountReceivable)
+  @OneToMany(
+    () => AccountReceivablePayment,
+    (payment) => payment.accountReceivable,
+  )
   payments: AccountReceivablePayment[];
 
   @CreateDateColumn()

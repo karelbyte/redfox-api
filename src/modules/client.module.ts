@@ -18,14 +18,26 @@ import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Client, Invoice, Withdrawal, ClientAddress, ClientTaxData, ClientCredit]),
+    TypeOrmModule.forFeature([
+      Client,
+      Invoice,
+      Withdrawal,
+      ClientAddress,
+      ClientTaxData,
+      ClientCredit,
+    ]),
     LanguageModule,
     CertificationPackModule,
     SurrogateModule,
     OrganizationModule,
   ],
   controllers: [ClientController],
-  providers: [ClientService, ClientMapper, ClientPackSyncService, ClientPackImportService],
+  providers: [
+    ClientService,
+    ClientMapper,
+    ClientPackSyncService,
+    ClientPackImportService,
+  ],
   exports: [ClientService],
 })
-export class ClientModule { }
+export class ClientModule {}

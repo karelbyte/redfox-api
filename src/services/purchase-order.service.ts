@@ -42,7 +42,7 @@ export class PurchaseOrderService {
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   private mapDetailToResponseDto(
     detail: PurchaseOrderDetail,
@@ -57,7 +57,9 @@ export class PurchaseOrderService {
     };
   }
 
-  private mapToResponseDto(purchaseOrder: PurchaseOrder): PurchaseOrderResponseDto {
+  private mapToResponseDto(
+    purchaseOrder: PurchaseOrder,
+  ): PurchaseOrderResponseDto {
     return {
       id: purchaseOrder.id,
       code: purchaseOrder.code,
@@ -129,7 +131,8 @@ export class PurchaseOrderService {
       status: rest.status || 'PENDING',
     });
 
-    const savedPurchaseOrder = await this.purchaseOrderRepository.save(purchaseOrder);
+    const savedPurchaseOrder =
+      await this.purchaseOrderRepository.save(purchaseOrder);
     return this.mapToResponseDto(savedPurchaseOrder);
   }
 
@@ -140,12 +143,13 @@ export class PurchaseOrderService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const [purchaseOrders, total] = await this.purchaseOrderRepository.findAndCount({
-      relations: ['provider', 'warehouse'],
-      skip,
-      take: limit,
-      order: { created_at: 'DESC' },
-    });
+    const [purchaseOrders, total] =
+      await this.purchaseOrderRepository.findAndCount({
+        relations: ['provider', 'warehouse'],
+        skip,
+        take: limit,
+        order: { created_at: 'DESC' },
+      });
 
     const mappedPurchaseOrders = purchaseOrders.map((purchaseOrder) =>
       this.mapToResponseDto(purchaseOrder),
@@ -162,7 +166,10 @@ export class PurchaseOrderService {
     };
   }
 
-  async findOne(id: string, userId?: string): Promise<PurchaseOrderResponseDto> {
+  async findOne(
+    id: string,
+    userId?: string,
+  ): Promise<PurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
       where: { id },
       relations: ['provider', 'warehouse'],
@@ -190,7 +197,10 @@ export class PurchaseOrderService {
     }
 
     // Verificar que el código es único si se está actualizando
-    if (updatePurchaseOrderDto.code && updatePurchaseOrderDto.code !== purchaseOrder.code) {
+    if (
+      updatePurchaseOrderDto.code &&
+      updatePurchaseOrderDto.code !== purchaseOrder.code
+    ) {
       const existingPurchaseOrder = await this.purchaseOrderRepository.findOne({
         where: { code: updatePurchaseOrderDto.code },
       });
@@ -222,7 +232,8 @@ export class PurchaseOrderService {
     }
 
     Object.assign(purchaseOrder, updatePurchaseOrderDto);
-    const updatedPurchaseOrder = await this.purchaseOrderRepository.save(purchaseOrder);
+    const updatedPurchaseOrder =
+      await this.purchaseOrderRepository.save(purchaseOrder);
     return this.mapToResponseDto(updatedPurchaseOrder);
   }
 
@@ -241,7 +252,9 @@ export class PurchaseOrderService {
     });
 
     if (details.length > 0) {
-      throw new BadRequestException('Cannot delete purchase order with details');
+      throw new BadRequestException(
+        'Cannot delete purchase order with details',
+      );
     }
 
     await this.purchaseOrderRepository.softDelete(id);
@@ -277,7 +290,9 @@ export class PurchaseOrderService {
     });
 
     if (existingDetail) {
-      throw new BadRequestException('Product already exists in this purchase order');
+      throw new BadRequestException(
+        'Product already exists in this purchase order',
+      );
     }
 
     const detail = this.purchaseOrderDetailRepository.create({
@@ -295,7 +310,8 @@ export class PurchaseOrderService {
     });
 
     const totalAmount = allDetails.reduce(
-      (sum, detail) => sum + this.calculateAmount(detail.quantity, detail.price),
+      (sum, detail) =>
+        sum + this.calculateAmount(detail.quantity, detail.price),
       0,
     );
 
@@ -334,7 +350,9 @@ export class PurchaseOrderService {
 
     const details = await queryBuilder.getMany();
 
-    const mappedDetails = details.map((detail) => this.mapDetailToResponseDto(detail));
+    const mappedDetails = details.map((detail) =>
+      this.mapDetailToResponseDto(detail),
+    );
 
     return {
       data: mappedDetails,
@@ -357,7 +375,13 @@ export class PurchaseOrderService {
         id: detailId,
         purchaseOrder: { id: purchaseOrderId },
       },
-      relations: ['product', 'product.brand', 'product.category', 'product.measurement_unit', 'product.prices'],
+      relations: [
+        'product',
+        'product.brand',
+        'product.category',
+        'product.measurement_unit',
+        'product.prices',
+      ],
     });
 
     if (!detail) {
@@ -388,7 +412,9 @@ export class PurchaseOrderService {
     // Verificar que la cantidad recibida no exceda la cantidad ordenada
     if (updateDetailDto.received_quantity !== undefined) {
       if (updateDetailDto.received_quantity > detail.quantity) {
-        throw new BadRequestException('Received quantity cannot exceed ordered quantity');
+        throw new BadRequestException(
+          'Received quantity cannot exceed ordered quantity',
+        );
       }
     }
 
@@ -401,7 +427,8 @@ export class PurchaseOrderService {
     });
 
     const totalAmount = allDetails.reduce(
-      (sum, detail) => sum + this.calculateAmount(detail.quantity, detail.price),
+      (sum, detail) =>
+        sum + this.calculateAmount(detail.quantity, detail.price),
       0,
     );
 
@@ -434,7 +461,8 @@ export class PurchaseOrderService {
     });
 
     const totalAmount = allDetails.reduce(
-      (sum, detail) => sum + this.calculateAmount(detail.quantity, detail.price),
+      (sum, detail) =>
+        sum + this.calculateAmount(detail.quantity, detail.price),
       0,
     );
 
@@ -463,7 +491,9 @@ export class PurchaseOrderService {
     });
 
     if (details.length === 0) {
-      throw new BadRequestException('Purchase order must have at least one detail');
+      throw new BadRequestException(
+        'Purchase order must have at least one detail',
+      );
     }
 
     purchaseOrder.status = 'APPROVED';
@@ -527,4 +557,4 @@ export class PurchaseOrderService {
       message: 'Purchase order cancelled successfully',
     };
   }
-} 
+}

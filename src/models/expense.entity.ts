@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { ExpenseCategory } from './expense-category.entity';
 import { User } from './user.entity';
 import { Provider } from './provider.entity';
@@ -9,20 +18,20 @@ export enum ExpenseStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
   PAID = 'paid',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export enum ExpenseRecurrence {
   NONE = 'none',
   MONTHLY = 'monthly',
   QUARTERLY = 'quarterly',
-  YEARLY = 'yearly'
+  YEARLY = 'yearly',
 }
 
 @Entity('expenses')
 export class Expense {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
   organization_id: string;
@@ -46,14 +55,14 @@ export class Expense {
   @Column({
     type: 'enum',
     enum: ExpenseStatus,
-    default: ExpenseStatus.PENDING
+    default: ExpenseStatus.PENDING,
   })
   status: ExpenseStatus;
 
   @Column({
     type: 'enum',
     enum: ExpenseRecurrence,
-    default: ExpenseRecurrence.NONE
+    default: ExpenseRecurrence.NONE,
   })
   recurrence: ExpenseRecurrence;
 
@@ -73,12 +82,12 @@ export class Expense {
   @Column({ length: 50, nullable: true })
   reference: string;
 
-  @ManyToOne(() => ExpenseCategory, category => category.expenses)
+  @ManyToOne(() => ExpenseCategory, (category) => category.expenses)
   @JoinColumn({ name: 'categoryId' })
   category: ExpenseCategory;
 
-  @Column()
-  categoryId: number;
+  @Column({ type: 'uuid' })
+  categoryId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdBy' })

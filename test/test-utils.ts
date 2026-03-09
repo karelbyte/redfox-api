@@ -23,7 +23,10 @@ export const getTestTypeOrmConfig = () => ({
 /**
  * Crear módulo de testing con configuración básica
  */
-export const createTestingModule = async (providers: any[] = [], imports: any[] = []) => {
+export const createTestingModule = async (
+  providers: any[] = [],
+  imports: any[] = [],
+) => {
   const module: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -46,7 +49,9 @@ export const createTestingModule = async (providers: any[] = [], imports: any[] 
 /**
  * Datos de prueba para usuarios
  */
-export const createTestUser = (overrides: Partial<User> = {}): Partial<User> => ({
+export const createTestUser = (
+  overrides: Partial<User> = {},
+): Partial<User> => ({
   email: 'test@example.com',
   password: 'hashedPassword123',
   firstName: 'Test',
@@ -58,11 +63,13 @@ export const createTestUser = (overrides: Partial<User> = {}): Partial<User> => 
 /**
  * Datos de prueba para productos
  */
-export const createTestProduct = (overrides: Partial<Product> = {}): Partial<Product> => ({
+export const createTestProduct = (
+  overrides: Partial<Product> = {},
+): Partial<Product> => ({
   name: 'Test Product',
   description: 'Test product description',
-  price: 100.00,
-  cost: 50.00,
+  price: 100.0,
+  cost: 50.0,
   stock: 10,
   minStock: 5,
   barcode: '1234567890',
@@ -73,7 +80,9 @@ export const createTestProduct = (overrides: Partial<Product> = {}): Partial<Pro
 /**
  * Datos de prueba para clientes
  */
-export const createTestClient = (overrides: Partial<Client> = {}): Partial<Client> => ({
+export const createTestClient = (
+  overrides: Partial<Client> = {},
+): Partial<Client> => ({
   name: 'Test Client',
   email: 'client@example.com',
   phone: '1234567890',
@@ -85,11 +94,13 @@ export const createTestClient = (overrides: Partial<Client> = {}): Partial<Clien
 /**
  * Datos de prueba para facturas
  */
-export const createTestInvoice = (overrides: Partial<Invoice> = {}): Partial<Invoice> => ({
+export const createTestInvoice = (
+  overrides: Partial<Invoice> = {},
+): Partial<Invoice> => ({
   invoiceNumber: 'INV-001',
-  subtotal: 100.00,
-  tax: 16.00,
-  total: 116.00,
+  subtotal: 100.0,
+  tax: 16.0,
+  total: 116.0,
   status: 'pending',
   issueDate: new Date(),
   ...overrides,
@@ -133,7 +144,9 @@ export const clearDatabase = async (repositories: Repository<any>[]) => {
 /**
  * Generar token JWT para testing
  */
-export const generateTestToken = (payload: any = { sub: 1, email: 'test@example.com' }) => {
+export const generateTestToken = (
+  payload: any = { sub: 1, email: 'test@example.com' },
+) => {
   const jwt = require('jsonwebtoken');
   return jwt.sign(payload, 'test-secret', { expiresIn: '1h' });
 };

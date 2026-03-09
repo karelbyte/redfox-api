@@ -16,4 +16,4 @@ export class ReturnQueryDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
-} 
+}

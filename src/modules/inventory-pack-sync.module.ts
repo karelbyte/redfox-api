@@ -5,10 +5,7 @@ import { InventoryPackSyncService } from '../services/inventory-pack-sync.servic
 import { CertificationPackModule } from './certification-pack.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Inventory]),
-    CertificationPackModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Inventory]), CertificationPackModule],
   providers: [InventoryPackSyncService],
   exports: [InventoryPackSyncService],
 })

@@ -1,4 +1,8 @@
-import { ProviderAddressResponseDto, ProviderCreditResponseDto, ProviderTaxDataResponseDto } from "./provider-related-response.dto";
+import {
+  ProviderAddressResponseDto,
+  ProviderCreditResponseDto,
+  ProviderTaxDataResponseDto,
+} from './provider-related-response.dto';
 
 export class ProviderResponseDto {
   id: string;

@@ -1,6 +1,14 @@
-import { MigrationInterface, QueryRunner, Table, Index, ForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  Index,
+  ForeignKey,
+} from 'typeorm';
 
-export class CreateNotificationsTable1716400000320 implements MigrationInterface {
+export class CreateNotificationsTable1716400000320
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -25,7 +33,18 @@ export class CreateNotificationsTable1716400000320 implements MigrationInterface
           {
             name: 'type',
             type: 'enum',
-            enum: ['info', 'success', 'warning', 'error', 'system', 'order', 'inventory', 'sale', 'quotation', 'invoice'],
+            enum: [
+              'info',
+              'success',
+              'warning',
+              'error',
+              'system',
+              'order',
+              'inventory',
+              'sale',
+              'quotation',
+              'invoice',
+            ],
             default: "'info'",
           },
           {

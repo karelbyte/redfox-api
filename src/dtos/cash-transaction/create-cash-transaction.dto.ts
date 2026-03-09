@@ -9,7 +9,10 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { CashTransactionType, PaymentMethod } from '../../models/cash-transaction.entity';
+import {
+  CashTransactionType,
+  PaymentMethod,
+} from '../../models/cash-transaction.entity';
 
 export class CreateCashTransactionDto {
   @IsUUID()
@@ -42,4 +45,4 @@ export class CreateCashTransactionDto {
   @IsUUID()
   @IsOptional()
   sale_id?: string;
-} 
+}

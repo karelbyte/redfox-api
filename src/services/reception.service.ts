@@ -55,7 +55,7 @@ export class ReceptionService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly providerMapper: ProviderMapper,
-  ) { }
+  ) {}
 
   private mapDetailToResponseDto(
     detail: ReceptionDetail,
@@ -344,7 +344,6 @@ export class ReceptionService {
     return this.mapDetailToResponseDto(detailWithRelations);
   }
 
-
   async findAllDetails(
     receptionId: string,
     queryDto: ReceptionDetailQueryDto,
@@ -632,7 +631,10 @@ export class ReceptionService {
       await this.productHistoryRepository.save(productHistory);
 
       // Update denormalized total_stock
-      await this.productService.updateStock(detail.product.id, Number(detail.quantity));
+      await this.productService.updateStock(
+        detail.product.id,
+        Number(detail.quantity),
+      );
 
       finalInventory.product = detail.product;
       await this.inventoryPackSyncService.syncForInventory(finalInventory);
@@ -644,16 +646,17 @@ export class ReceptionService {
     reception.status = false;
     await this.receptionRepository.save(reception);
 
-    const message = transferredProducts > 0
-      ? await this.translationService.translate(
-        'reception.closed_successfully',
-        userId,
-        { transferredProducts },
-      )
-      : await this.translationService.translate(
-        'reception.closed_no_products',
-        userId,
-      );
+    const message =
+      transferredProducts > 0
+        ? await this.translationService.translate(
+            'reception.closed_successfully',
+            userId,
+            { transferredProducts },
+          )
+        : await this.translationService.translate(
+            'reception.closed_no_products',
+            userId,
+          );
 
     return {
       receptionId: reception.id,

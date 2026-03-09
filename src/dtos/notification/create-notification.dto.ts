@@ -1,5 +1,14 @@
-import { IsString, IsEnum, IsOptional, IsObject, MaxLength } from 'class-validator';
-import { NotificationType, NotificationPriority } from '../../models/notification.entity';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsObject,
+  MaxLength,
+} from 'class-validator';
+import {
+  NotificationType,
+  NotificationPriority,
+} from '../../models/notification.entity';
 
 export class CreateNotificationDto {
   @IsString()

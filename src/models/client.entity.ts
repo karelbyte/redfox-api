@@ -56,10 +56,14 @@ export class Client {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   balance: number;
 
-  @OneToMany(() => ClientAddress, (address) => address.client, { cascade: true })
+  @OneToMany(() => ClientAddress, (address) => address.client, {
+    cascade: true,
+  })
   addresses: ClientAddress[];
 
-  @OneToMany(() => ClientTaxData, (taxData) => taxData.client, { cascade: true })
+  @OneToMany(() => ClientTaxData, (taxData) => taxData.client, {
+    cascade: true,
+  })
   taxData: ClientTaxData[];
 
   @OneToOne(() => ClientCredit, (credit) => credit.client, { cascade: true })

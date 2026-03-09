@@ -5,11 +5,8 @@ import { EmailConfig } from '../models/email-config.entity';
 import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([EmailConfig]),
-    OrganizationModule,
-  ],
+  imports: [TypeOrmModule.forFeature([EmailConfig]), OrganizationModule],
   providers: [EmailService],
   exports: [EmailService],
 })
-export class EmailModule { }
+export class EmailModule {}

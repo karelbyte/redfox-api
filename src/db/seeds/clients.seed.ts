@@ -1,13 +1,15 @@
 import { DataSource } from 'typeorm';
-import { Client } from 'src/models/client.entity';
-import { Organization } from 'src/models/organization.entity';
+import { Client } from '../../models/client.entity';
+import { Organization } from '../../models/organization.entity';
 
 export class ClientsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
     const clientRepository = dataSource.getRepository(Client);
     const organizationRepository = dataSource.getRepository(Organization);
 
-    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+    const organization = await organizationRepository.findOneBy({
+      slug: 'landlord',
+    });
 
     if (!organization) {
       throw new Error('Landlord organization not found for seeding');

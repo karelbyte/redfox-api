@@ -5,8 +5,7 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class CreateReturnsTable1716400000190
-  implements MigrationInterface {
+export class CreateReturnsTable1716400000190 implements MigrationInterface {
   name = 'CreateReturnsTable1716400000190';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -208,4 +207,4 @@ export class CreateReturnsTable1716400000190
     await queryRunner.dropTable('return_details');
     await queryRunner.dropTable('returns');
   }
-} 
+}

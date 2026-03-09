@@ -44,4 +44,4 @@ import { LanguageModule } from './language.module';
   ],
   exports: [PurchaseOrderService],
 })
-export class PurchaseOrderModule {} 
+export class PurchaseOrderModule {}

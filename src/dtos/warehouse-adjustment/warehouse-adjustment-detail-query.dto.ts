@@ -17,4 +17,4 @@ export class WarehouseAdjustmentDetailQueryDto {
   @IsNumber()
   @Min(1)
   limit?: number;
-} 
+}

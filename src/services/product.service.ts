@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Product, ProductType, InventoryStrategy } from '../models/product.entity';
+import {
+  Product,
+  ProductType,
+  InventoryStrategy,
+} from '../models/product.entity';
 import { ProductPrice } from '../models/product-price.entity';
 import { Inventory } from '../models/inventory.entity';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
@@ -59,7 +63,7 @@ export class ProductService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -72,10 +76,16 @@ export class ProductService {
     try {
       const [existingSlug, existingSku] = await Promise.all([
         this.productRepository.findOne({
-          where: { slug: createProductDto.slug, organization_id: this.organizationId },
+          where: {
+            slug: createProductDto.slug,
+            organization_id: this.organizationId,
+          },
         }),
         this.productRepository.findOne({
-          where: { sku: createProductDto.sku, organization_id: this.organizationId },
+          where: {
+            sku: createProductDto.sku,
+            organization_id: this.organizationId,
+          },
         }),
       ]);
 
@@ -120,7 +130,8 @@ export class ProductService {
         measurement_unit: { id: createProductDto.measurement_unit_id },
         is_active: createProductDto.is_active ?? true,
         type: createProductDto.type ?? ProductType.TANGIBLE,
-        inventory_strategy: createProductDto.inventory_strategy ?? InventoryStrategy.AVERAGE,
+        inventory_strategy:
+          createProductDto.inventory_strategy ?? InventoryStrategy.AVERAGE,
         base_price: createProductDto.base_price ?? 0,
         images: createProductDto.images
           ? JSON.stringify(createProductDto.images)
@@ -143,13 +154,18 @@ export class ProductService {
       });
 
       // Incrementar el contador si el código coincide con el sugerido
-      await this.surrogateService.useCodeIfMatches('product', createProductDto.code);
+      await this.surrogateService.useCodeIfMatches(
+        'product',
+        createProductDto.code,
+      );
 
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
-      return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
+      return this.productMapper.mapToResponseDto(
+        productWithRelations ?? savedProduct,
+      );
     } catch (error: unknown) {
       const dbError = error as { code?: string; message?: string };
       if (
@@ -362,13 +378,13 @@ export class ProductService {
       if (updateProductDto.prices !== undefined) {
         // Obtener los IDs de los precios que vienen en el DTO
         const incomingPriceIds = updateProductDto.prices
-          .filter(p => p.id)
-          .map(p => p.id);
+          .filter((p) => p.id)
+          .map((p) => p.id);
 
         // Eliminar precios que ya no están en la lista
         if (product.prices && product.prices.length > 0) {
-          updatedProduct.prices = product.prices.filter(existingPrice =>
-            incomingPriceIds.includes(existingPrice.id)
+          updatedProduct.prices = product.prices.filter((existingPrice) =>
+            incomingPriceIds.includes(existingPrice.id),
           );
         } else {
           updatedProduct.prices = [];
@@ -378,7 +394,9 @@ export class ProductService {
         for (const priceDto of updateProductDto.prices) {
           if (priceDto.id) {
             // Actualizar precio existente
-            const existingPrice = updatedProduct.prices.find(p => p.id === priceDto.id);
+            const existingPrice = updatedProduct.prices.find(
+              (p) => p.id === priceDto.id,
+            );
             if (existingPrice) {
               existingPrice.name = priceDto.name;
               existingPrice.price = priceDto.price;
@@ -400,7 +418,9 @@ export class ProductService {
         where: { id: savedProduct.id, organization_id: this.organizationId },
         relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
       });
-      return this.productMapper.mapToResponseDto(productWithRelations ?? savedProduct);
+      return this.productMapper.mapToResponseDto(
+        productWithRelations ?? savedProduct,
+      );
     } catch (error: unknown) {
       // Handle duplicate slug/SKU error in update
       const dbError = error as { code?: string; message?: string };
@@ -512,8 +532,14 @@ export class ProductService {
     };
   }
 
-  async updateStock(id: string, quantity: number, manager?: any): Promise<void> {
-    const repo = manager ? manager.getRepository(Product) : this.productRepository;
+  async updateStock(
+    id: string,
+    quantity: number,
+    manager?: any,
+  ): Promise<void> {
+    const repo = manager
+      ? manager.getRepository(Product)
+      : this.productRepository;
     const product = await repo.findOne({
       where: { id, organization_id: this.organizationId },
     });

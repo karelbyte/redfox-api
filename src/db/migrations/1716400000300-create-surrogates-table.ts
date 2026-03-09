@@ -105,7 +105,9 @@ export class CreateSurrogatesTable1716400000300 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "surrogates" DROP CONSTRAINT "FK_surrogates_organization_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "surrogates" DROP CONSTRAINT "FK_surrogates_organization_id"`,
+    );
     await queryRunner.dropIndex('surrogates', 'IDX_SURROGATES_CODE_ORG');
     await queryRunner.dropTable('surrogates');
   }

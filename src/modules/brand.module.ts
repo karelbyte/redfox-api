@@ -10,9 +10,13 @@ import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Brand, Product]), LanguageModule, OrganizationModule],
+  imports: [
+    TypeOrmModule.forFeature([Brand, Product]),
+    LanguageModule,
+    OrganizationModule,
+  ],
   controllers: [BrandController],
   providers: [BrandService, BrandMapper],
   exports: [BrandService, BrandMapper],
 })
-export class BrandModule { }
+export class BrandModule {}

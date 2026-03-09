@@ -1,12 +1,22 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { Expense } from './expense.entity';
 import { Organization } from './organization.entity';
 
 @Entity('expense_categories')
 @Index(['organization_id', 'name'], { unique: true })
 export class ExpenseCategory {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
   organization_id: string;
@@ -27,7 +37,7 @@ export class ExpenseCategory {
   @Column({ default: true })
   isActive: boolean;
 
-  @OneToMany(() => Expense, expense => expense.category)
+  @OneToMany(() => Expense, (expense) => expense.category)
   expenses: Expense[];
 
   @CreateDateColumn()

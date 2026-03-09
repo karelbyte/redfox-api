@@ -29,7 +29,7 @@ export class MeasurementUnitService {
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -41,7 +41,10 @@ export class MeasurementUnitService {
   ): Promise<MeasurementUnitResponseDto> {
     try {
       const existingUnit = await this.measurementUnitRepository.findOne({
-        where: { code: createMeasurementUnitDto.code, organization_id: this.organizationId },
+        where: {
+          code: createMeasurementUnitDto.code,
+          organization_id: this.organizationId,
+        },
         withDeleted: false,
       });
 
@@ -85,15 +88,21 @@ export class MeasurementUnitService {
     const { page, limit, term } = paginationDto || {};
 
     // Construir las condiciones de búsqueda
-    const baseConditions = { where: { organization_id: this.organizationId }, withDeleted: false };
+    const baseConditions = {
+      where: { organization_id: this.organizationId },
+      withDeleted: false,
+    };
     const whereConditions = term
       ? {
-        ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`), organization_id: this.organizationId },
-          { description: Like(`%${term}%`), organization_id: this.organizationId },
-        ],
-      }
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`), organization_id: this.organizationId },
+            {
+              description: Like(`%${term}%`),
+              organization_id: this.organizationId,
+            },
+          ],
+        }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -204,7 +213,9 @@ export class MeasurementUnitService {
         ...measurementUnit,
         ...updateMeasurementUnitDto,
       });
-      return this.measurementUnitMapper.mapToResponseDto(updatedMeasurementUnit);
+      return this.measurementUnitMapper.mapToResponseDto(
+        updatedMeasurementUnit,
+      );
     } catch (error: any) {
       // Handle duplicate code error in update
       if (

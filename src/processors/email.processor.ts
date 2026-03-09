@@ -11,14 +11,14 @@ interface EmailJob {
 /**
  * EmailProcessor for Bull/Redis queue.
  * Only used when CACHE_TYPE=redis and @nestjs/bull is installed.
- * 
+ *
  * Note: This file uses dynamic decorator application to avoid
  * compile-time dependency on @nestjs/bull.
  */
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
 
-  constructor(private readonly emailService: EmailService) { }
+  constructor(private readonly emailService: EmailService) {}
 
   async handleSendEmail(job: { id: number | string; data: EmailJob }) {
     this.logger.log(`Processing email job ${job.id} to ${job.data.to}`);

@@ -6,4 +6,4 @@ export class ReturnDetailResponseDto {
   quantity: number;
   price: number;
   created_at: Date;
-} 
+}

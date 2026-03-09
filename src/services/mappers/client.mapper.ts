@@ -9,7 +9,8 @@ export class ClientMapper {
       throw new Error('Client cannot be null');
     }
 
-    const primaryTaxData = (client.taxData || []).find(td => td.is_main) || client.taxData?.[0];
+    const primaryTaxData =
+      (client.taxData || []).find((td) => td.is_main) || client.taxData?.[0];
 
     return {
       id: client.id,
@@ -24,7 +25,7 @@ export class ClientMapper {
       status: client.status,
       balance: Number(client.balance || 0),
       created_at: client.created_at,
-      addresses: (client.addresses || []).map(addr => ({
+      addresses: (client.addresses || []).map((addr) => ({
         id: addr.id,
         type: addr.type,
         street: addr.street,
@@ -39,7 +40,7 @@ export class ClientMapper {
         is_main: addr.is_main,
         created_at: addr.created_at,
       })),
-      taxData: (client.taxData || []).map(tax => ({
+      taxData: (client.taxData || []).map((tax) => ({
         id: tax.id,
         tax_document: tax.tax_document,
         tax_system: tax.tax_system,
@@ -48,14 +49,16 @@ export class ClientMapper {
         is_main: tax.is_main,
         created_at: tax.created_at,
       })),
-      credit: client.credit ? {
-        id: client.credit.id,
-        credit_limit: client.credit.credit_limit,
-        credit_days: client.credit.credit_days,
-        is_active: client.credit.is_active,
-        currency_id: client.credit.currency_id,
-        created_at: client.credit.createdAt,
-      } : undefined,
+      credit: client.credit
+        ? {
+            id: client.credit.id,
+            credit_limit: client.credit.credit_limit,
+            credit_days: client.credit.credit_days,
+            is_active: client.credit.is_active,
+            currency_id: client.credit.currency_id,
+            created_at: client.credit.createdAt,
+          }
+        : undefined,
     };
   }
 }

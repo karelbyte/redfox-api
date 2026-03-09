@@ -51,7 +51,7 @@ export class ClientService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   async create(
     createClientDto: CreateClientDto,
@@ -63,11 +63,13 @@ export class ClientService {
     const savedClient = await this.clientRepository.save(client);
 
     // Incrementar el contador si el código coincide con el sugerido
-    await this.surrogateService.useCodeIfMatches('client', createClientDto.code);
-
-    const syncResult = await this.clientPackSyncService.syncOnCreate(
-      savedClient,
+    await this.surrogateService.useCodeIfMatches(
+      'client',
+      createClientDto.code,
     );
+
+    const syncResult =
+      await this.clientPackSyncService.syncOnCreate(savedClient);
 
     return {
       client: this.clientMapper.mapToResponseDto(syncResult.client),
@@ -81,7 +83,8 @@ export class ClientService {
   ): Promise<PaginatedResponse<ClientResponseDto>> {
     const { page, limit, term, is_active } = paginationDto || {};
 
-    const query = this.clientRepository.createQueryBuilder('client')
+    const query = this.clientRepository
+      .createQueryBuilder('client')
       .leftJoinAndSelect('client.addresses', 'address')
       .leftJoinAndSelect('client.taxData', 'taxData')
       .leftJoinAndSelect('client.credit', 'credit')
@@ -93,17 +96,19 @@ export class ClientService {
     }
 
     if (term) {
-      query.andWhere(new Brackets(qb => {
-        qb.where('client.code LIKE :term', { term: `%${term}%` })
-          .orWhere('client.name LIKE :term', { term: `%${term}%` })
-          .orWhere('client.description LIKE :term', { term: `%${term}%` })
-          .orWhere('client.phone LIKE :term', { term: `%${term}%` })
-          .orWhere('client.email LIKE :term', { term: `%${term}%` })
-          .orWhere('taxData.tax_document LIKE :term', { term: `%${term}%` })
-          .orWhere('taxData.tax_name LIKE :term', { term: `%${term}%` })
-          .orWhere('address.street LIKE :term', { term: `%${term}%` })
-          .orWhere('address.city LIKE :term', { term: `%${term}%` });
-      }));
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where('client.code LIKE :term', { term: `%${term}%` })
+            .orWhere('client.name LIKE :term', { term: `%${term}%` })
+            .orWhere('client.description LIKE :term', { term: `%${term}%` })
+            .orWhere('client.phone LIKE :term', { term: `%${term}%` })
+            .orWhere('client.email LIKE :term', { term: `%${term}%` })
+            .orWhere('taxData.tax_document LIKE :term', { term: `%${term}%` })
+            .orWhere('taxData.tax_name LIKE :term', { term: `%${term}%` })
+            .orWhere('address.street LIKE :term', { term: `%${term}%` })
+            .orWhere('address.city LIKE :term', { term: `%${term}%` });
+        }),
+      );
     }
 
     // Paginación
@@ -169,7 +174,8 @@ export class ClientService {
     }
 
     // Actualizar campos básicos
-    const { delete_addresses, delete_tax_data, credit, ...baseData } = updateClientDto;
+    const { delete_addresses, delete_tax_data, credit, ...baseData } =
+      updateClientDto;
     Object.assign(client, baseData);
 
     // Manejar crédito
@@ -230,15 +236,21 @@ export class ClientService {
 
     if (client.pack_client_id) {
       try {
-        const packService: any = await this.certificationPackFactory.getPackService();
-        if (packService?.deleteCustomer && typeof packService.deleteCustomer === 'function') {
+        const packService: any =
+          await this.certificationPackFactory.getPackService();
+        if (
+          packService?.deleteCustomer &&
+          typeof packService.deleteCustomer === 'function'
+        ) {
           await packService.deleteCustomer(client.pack_client_id);
         }
       } catch (error: any) {
         this.logger.warn(
           `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
         );
-        throw new BadRequestException(error?.message || 'Client cannot be deleted in the pack system.');
+        throw new BadRequestException(
+          error?.message || 'Client cannot be deleted in the pack system.',
+        );
       }
     }
 
@@ -268,8 +280,14 @@ export class ClientService {
     await this.clientRepository.softDelete(ids);
   }
 
-  async updateBalance(id: string, amount: number, manager?: any): Promise<void> {
-    const repo = manager ? manager.getRepository(Client) : this.clientRepository;
+  async updateBalance(
+    id: string,
+    amount: number,
+    manager?: any,
+  ): Promise<void> {
+    const repo = manager
+      ? manager.getRepository(Client)
+      : this.clientRepository;
     const client = await repo.findOneBy({ id });
     if (client) {
       client.balance = Number(client.balance || 0) + Number(amount);

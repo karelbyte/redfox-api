@@ -13,7 +13,7 @@ import { WarehouseResponseDto } from '../dtos/warehouse/warehouse-response.dto';
 import { WarehouseSimpleResponseDto } from '../dtos/warehouse/warehouse-simple-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
-import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
+import { UpdateWarehouseStatusDto } from '../dtos/warehouse/update-warehouse-status.dto';
 import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
 import { CurrencyMapper } from './mappers/currency.mapper';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
@@ -44,7 +44,7 @@ export class WarehouseService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -389,7 +389,7 @@ export class WarehouseService {
         // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
-          (Number(existingInventory.quantity) - Number(opening.quantity)) +
+            (Number(existingInventory.quantity) - Number(opening.quantity)) +
           Number(opening.price) * Number(opening.quantity);
         existingInventory.price =
           totalValue / Number(existingInventory.quantity);

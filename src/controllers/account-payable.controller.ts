@@ -1,10 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AccountPayableService } from '../services/account-payable.service';
 import { CreateAccountPayableDto } from '../dtos/account-payable/create-account-payable.dto';
 import { UpdateAccountPayableDto } from '../dtos/account-payable/update-account-payable.dto';
 import { CreateAccountPayablePaymentDto } from '../dtos/account-payable/create-payment.dto';
 import { AuthGuard } from '../guards/auth.guard';
+import { UserId } from '../decorators/user-id.decorator';
 import { AccountPayableStatus } from '../models/account-payable.entity';
+
+import { AddAccountPayablePaymentDto } from '../dtos/account-payable/add-payment.dto';
 
 @Controller('accounts-payable')
 @UseGuards(AuthGuard)
@@ -42,33 +55,42 @@ export class AccountPayableController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.accountPayableService.getAccountsPayableSummary(startDate, endDate);
+    return this.accountPayableService.getAccountsPayableSummary(
+      startDate,
+      endDate,
+    );
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.accountPayableService.findOne(+id);
+    return this.accountPayableService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAccountPayableDto: UpdateAccountPayableDto) {
-    return this.accountPayableService.update(+id, updateAccountPayableDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateAccountPayableDto: UpdateAccountPayableDto,
+  ) {
+    return this.accountPayableService.update(id, updateAccountPayableDto);
   }
 
   @Post(':id/payments')
   addPayment(
     @Param('id') id: string,
-    @Body() createPaymentDto: CreateAccountPayablePaymentDto,
-    @Query('userId') userId: string, // Temporary until Auth system is unified
+    @Body() addPaymentDto: AddAccountPayablePaymentDto,
+    @UserId() userId: string,
   ) {
-    return this.accountPayableService.addPayment({
-      ...createPaymentDto,
-      accountPayableId: +id,
-    }, userId);
+    return this.accountPayableService.addPayment(
+      {
+        ...addPaymentDto,
+        accountPayableId: id,
+      },
+      userId,
+    );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.accountPayableService.remove(+id);
+    return this.accountPayableService.remove(id);
   }
 }

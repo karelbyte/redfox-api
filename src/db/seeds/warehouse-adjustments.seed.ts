@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
-import { WarehouseAdjustment } from 'src/models/warehouse-adjustment.entity';
-import { WarehouseAdjustmentDetail } from 'src/models/warehouse-adjustment-detail.entity';
-import { Warehouse } from 'src/models/warehouse.entity';
-import { Product } from 'src/models/product.entity';
-import { Organization } from 'src/models/organization.entity';
+import { WarehouseAdjustment } from '../../models/warehouse-adjustment.entity';
+import { WarehouseAdjustmentDetail } from '../../models/warehouse-adjustment-detail.entity';
+import { Warehouse } from '../../models/warehouse.entity';
+import { Product } from '../../models/product.entity';
+import { Organization } from '../../models/organization.entity';
 import { DeepPartial } from 'typeorm';
 
 export class WarehouseAdjustmentsSeed {
@@ -17,7 +17,9 @@ export class WarehouseAdjustmentsSeed {
     const productRepository = dataSource.getRepository(Product);
     const organizationRepository = dataSource.getRepository(Organization);
 
-    const organization = await organizationRepository.findOneBy({ slug: 'landlord' });
+    const organization = await organizationRepository.findOneBy({
+      slug: 'landlord',
+    });
 
     if (!organization) {
       throw new Error('Landlord organization not found for seeding');

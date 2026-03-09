@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
-import { RolePermission } from 'src/models/role-permission.entity';
-import { Role } from 'src/models/role.entity';
-import { Permission } from 'src/models/permission.entity';
-import { Organization } from 'src/models/organization.entity';
+import { RolePermission } from '../../models/role-permission.entity';
+import { Role } from '../../models/role.entity';
+import { Permission } from '../../models/permission.entity';
+import { Organization } from '../../models/organization.entity';
 
 export class RolePermissionsSeed {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -18,7 +18,9 @@ export class RolePermissionsSeed {
     });
 
     if (!landlordOrg) {
-      console.log('⚠️ Landlord organization not found. Be sure to run organizations seed first.');
+      console.log(
+        '⚠️ Landlord organization not found. Be sure to run organizations seed first.',
+      );
       return;
     }
 
@@ -38,7 +40,9 @@ export class RolePermissionsSeed {
     });
 
     if (!adminRole || !sellerRole) {
-      console.log('⚠️ Not found roles for landslide organization. Be sure to run roles seed first.');
+      console.log(
+        '⚠️ Not found roles for landslide organization. Be sure to run roles seed first.',
+      );
       return;
     }
 

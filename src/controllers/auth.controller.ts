@@ -7,7 +7,7 @@ import { Public } from '../decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('login')
@@ -23,7 +23,9 @@ export class AuthController {
 
   @Public()
   @Post('activate')
-  async activate(@Body() body: { token: string }): Promise<void> {
+  async activate(
+    @Body() body: { token: string },
+  ): Promise<{ message: string; alreadyActive: boolean }> {
     return this.authService.activate(body.token);
   }
 
@@ -35,7 +37,9 @@ export class AuthController {
 
   @Public()
   @Post('reset-password')
-  async resetPassword(@Body() body: { token: string, password: string }): Promise<void> {
+  async resetPassword(
+    @Body() body: { token: string; password: string },
+  ): Promise<void> {
     return this.authService.resetPassword(body.token, body.password);
   }
 }

@@ -13,4 +13,4 @@ export class PurchaseOrderResponseDto {
   notes?: string;
   expected_delivery_date?: Date;
   created_at: Date;
-} 
+}

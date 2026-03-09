@@ -26,7 +26,7 @@ export class TaxService {
     private readonly taxMapper: TaxMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -74,9 +74,12 @@ export class TaxService {
     };
     const whereConditions: FindManyOptions<Tax> = term
       ? {
-        ...baseConditions,
-        where: [{ code: Like(`%${term}%`), organization_id: this.organizationId }, { name: Like(`%${term}%`), organization_id: this.organizationId }],
-      }
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`), organization_id: this.organizationId },
+            { name: Like(`%${term}%`), organization_id: this.organizationId },
+          ],
+        }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data

@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
-import { User } from 'src/models/user.entity';
-import { Role } from 'src/models/role.entity';
-import { Organization } from 'src/models/organization.entity';
+import { User } from '../../models/user.entity';
+import { Role } from '../../models/role.entity';
+import { Organization } from '../../models/organization.entity';
 import { hash } from 'bcrypt';
 
 export class UsersSeed {
@@ -26,7 +26,9 @@ export class UsersSeed {
     });
 
     if (!adminRole || !sellerRole || !landlordOrg) {
-      console.log('⚠️ Not found roles or landlord organization. Be sure to run permissions, roles and organizations seeds first.');
+      console.log(
+        '⚠️ Not found roles or landlord organization. Be sure to run permissions, roles and organizations seeds first.',
+      );
       return;
     }
 
