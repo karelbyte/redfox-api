@@ -52,6 +52,14 @@ export class ExpenseCategoryService {
   }
 
   private async seedDefaultCategories(organizationId: string): Promise<void> {
+    const existingCount = await this.expenseCategoryRepository.count({
+      where: { organization_id: organizationId },
+    });
+
+    if (existingCount > 0) {
+      return;
+    }
+
     const defaultCategories = [
       {
         name: 'Office Supplies',

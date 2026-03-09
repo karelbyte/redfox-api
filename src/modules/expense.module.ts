@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExpenseService } from '../services/expense.service';
 import { ExpenseController } from '../controllers/expense.controller';
 import { Expense } from '../models/expense.entity';
+import { ExpensePayment } from '../models/expense-payment.entity';
 import { ExpenseCategory } from '../models/expense-category.entity';
 import { ExpenseCategoryService } from '../services/expense-category.service';
 import { ExpenseCategoryController } from '../controllers/expense-category.controller';
@@ -10,7 +11,7 @@ import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Expense, ExpenseCategory]),
+    TypeOrmModule.forFeature([Expense, ExpensePayment, ExpenseCategory]),
     OrganizationModule,
   ],
   controllers: [ExpenseController, ExpenseCategoryController],

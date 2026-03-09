@@ -47,6 +47,7 @@ export class CreateExpenseDto {
   @Length(1, 50)
   reference?: string;
 
+  @IsOptional()
   @IsUUID()
-  categoryId: string;
+  categoryId?: string;
 }

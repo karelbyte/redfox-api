@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
@@ -12,6 +13,7 @@ import { ExpenseCategory } from './expense-category.entity';
 import { User } from './user.entity';
 import { Provider } from './provider.entity';
 import { Organization } from './organization.entity';
+import { ExpensePayment } from './expense-payment.entity';
 
 export enum ExpenseStatus {
   PENDING = 'pending',
@@ -45,6 +47,12 @@ export class Expense {
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  paidAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  remainingAmount: number;
 
   @Column({ type: 'date' })
   expenseDate: Date;
@@ -86,8 +94,11 @@ export class Expense {
   @JoinColumn({ name: 'categoryId' })
   category: ExpenseCategory;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   categoryId: string;
+
+  @OneToMany(() => ExpensePayment, (payment) => payment.expense)
+  payments: ExpensePayment[];
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdBy' })

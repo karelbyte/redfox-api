@@ -13,6 +13,7 @@ import {
 import { ExpenseService } from '../services/expense.service';
 import { CreateExpenseDto } from '../dtos/expense/create-expense.dto';
 import { UpdateExpenseDto } from '../dtos/expense/update-expense.dto';
+import { CreateExpensePaymentDto } from '../dtos/expense/create-expense-payment.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { ExpenseStatus } from '../models/expense.entity';
@@ -90,5 +91,20 @@ export class ExpenseController {
   @Post('bulk-delete')
   removeMany(@Body() bulkDeleteExpenseDto: BulkDeleteExpenseDto) {
     return this.expenseService.removeMany(bulkDeleteExpenseDto.ids);
+  }
+
+  @Post(':id/payments')
+  addPayment(
+    @Param('id') id: string,
+    @Body() createPaymentDto: CreateExpensePaymentDto,
+    @UserId() userId: string,
+  ) {
+    createPaymentDto.expenseId = id;
+    return this.expenseService.addPayment(createPaymentDto, userId);
+  }
+
+  @Get(':id/payments')
+  getPayments(@Param('id') id: string) {
+    return this.expenseService.getPayments(id);
   }
 }

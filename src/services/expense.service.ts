@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Expense, ExpenseStatus } from '../models/expense.entity';
+import { ExpensePayment } from '../models/expense-payment.entity';
 import { CreateExpenseDto } from '../dtos/expense/create-expense.dto';
 import { UpdateExpenseDto } from '../dtos/expense/update-expense.dto';
+import { CreateExpensePaymentDto } from '../dtos/expense/create-expense-payment.dto';
 import { TenantContext } from './tenant-context.service';
 
 @Injectable()
@@ -11,6 +13,8 @@ export class ExpenseService {
   constructor(
     @InjectRepository(Expense)
     private expenseRepository: Repository<Expense>,
+    @InjectRepository(ExpensePayment)
+    private paymentRepository: Repository<ExpensePayment>,
     private readonly tenantContext: TenantContext,
   ) { }
 
@@ -22,10 +26,14 @@ export class ExpenseService {
     createExpenseDto: CreateExpenseDto,
     userId: string,
   ): Promise<Expense> {
+    const totalAmount = Number(createExpenseDto.amount);
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
       organization_id: this.organizationId,
       createdBy: userId,
+      amount: totalAmount,
+      paidAmount: 0,
+      remainingAmount: totalAmount,
     });
     return await this.expenseRepository.save(expense);
   }
@@ -99,7 +107,7 @@ export class ExpenseService {
   async findOne(id: string): Promise<Expense> {
     const expense = await this.expenseRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['category', 'provider', 'createdByUser'],
+      relations: ['category', 'provider', 'createdByUser', 'payments', 'payments.createdByUser'],
     });
 
     if (!expense) {
@@ -238,5 +246,78 @@ export class ExpenseService {
     }
 
     return await queryBuilder.getRawMany();
+  }
+
+  async addPayment(
+    createPaymentDto: CreateExpensePaymentDto,
+    userId: string,
+  ): Promise<ExpensePayment> {
+    if (!createPaymentDto.expenseId) {
+      throw new BadRequestException('Expense ID is required');
+    }
+
+    const expense = await this.findOne(createPaymentDto.expenseId);
+
+    if (createPaymentDto.amount > expense.remainingAmount) {
+      throw new BadRequestException(
+        'Payment amount cannot exceed remaining amount',
+      );
+    }
+
+    const organizationId = this.organizationId;
+
+    const insertResult = await this.paymentRepository.insert({
+      organization_id: organizationId,
+      amount: createPaymentDto.amount,
+      paymentDate: createPaymentDto.paymentDate,
+      paymentMethod: createPaymentDto.paymentMethod,
+      reference: createPaymentDto.reference,
+      notes: createPaymentDto.notes,
+      expenseId: createPaymentDto.expenseId,
+      createdBy: userId,
+    });
+
+    const savedPayment = await this.paymentRepository.findOne({
+      where: { id: insertResult.identifiers[0].id },
+      relations: ['createdByUser'],
+    });
+
+    if (!savedPayment) {
+      throw new NotFoundException('Payment could not be created');
+    }
+
+    const currentPaidAmount = Number(expense.paidAmount);
+    const currentRemainingAmount = Number(expense.remainingAmount);
+    const paymentAmount = Number(createPaymentDto.amount);
+
+    expense.paidAmount = Number((currentPaidAmount + paymentAmount).toFixed(2));
+    expense.remainingAmount = Number(
+      (currentRemainingAmount - paymentAmount).toFixed(2),
+    );
+
+    if (expense.remainingAmount === 0) {
+      expense.status = ExpenseStatus.PAID;
+    }
+
+    await this.expenseRepository.update(expense.id, {
+      paidAmount: expense.paidAmount,
+      remainingAmount: expense.remainingAmount,
+      status: expense.status,
+    });
+
+    return savedPayment;
+  }
+
+  async getPayments(expenseId: string): Promise<ExpensePayment[]> {
+    const expense = await this.findOne(expenseId);
+    
+    return await this.paymentRepository.find({
+      where: { 
+        expenseId: expense.id,
+        organization_id: this.organizationId 
+      },
+      relations: ['createdByUser'],
+      order: { paymentDate: 'DESC' },
+    });
   }
 }
