@@ -107,7 +107,7 @@ export class GlobalSearchService {
       title: product.name,
       subtitle: `${product.category?.name || ''} - SKU: ${product.sku}`,
       type: 'product' as const,
-      url: `/dashboard/productos/lista-de-productos?search=${product.name}`,
+      url: `/dashboard/productos/lista-de-productos`,
       metadata: {
         sku: product.sku,
         barcode: product.barcode,
@@ -137,7 +137,7 @@ export class GlobalSearchService {
       title: client.name,
       subtitle: client.email || client.phone,
       type: 'client' as const,
-      url: `/dashboard/clientes?search=${client.name}`,
+      url: `/dashboard/clientes`,
       metadata: {
         email: client.email,
         phone: client.phone,
@@ -166,7 +166,7 @@ export class GlobalSearchService {
       title: provider.name,
       subtitle: provider.email || provider.phone,
       type: 'provider' as const,
-      url: `/dashboard/proveedores?search=${provider.name}`,
+      url: `/dashboard/proveedores`,
       metadata: {
         email: provider.email,
         phone: provider.phone,
@@ -192,7 +192,7 @@ export class GlobalSearchService {
       title: `Invoice ${invoice.code}`,
       subtitle: `${invoice.client?.name || ''} - $${invoice.total_amount}`,
       type: 'invoice' as const,
-      url: `/dashboard/facturas?search=${invoice.code}`,
+      url: `/dashboard/facturas`,
       metadata: {
         total: invoice.total_amount,
         status: invoice.status,
@@ -219,7 +219,7 @@ export class GlobalSearchService {
       title: `PO ${po.code}`,
       subtitle: `${po.provider?.name || ''} - $${po.amount}`,
       type: 'purchase_order' as const,
-      url: `/dashboard/ordenes-de-compra?search=${po.code}`,
+      url: `/dashboard/ordenes-de-compra`,
       metadata: {
         total: po.amount,
         status: po.status,
@@ -235,8 +235,9 @@ export class GlobalSearchService {
     const expenses = await this.expenseRepository
       .createQueryBuilder('expense')
       .leftJoinAndSelect('expense.category', 'category')
+      .leftJoinAndSelect('expense.provider', 'provider')
       .where(
-        'expense.description LIKE :search OR expense.vendor LIKE :search OR expense.reference LIKE :search',
+        'expense.description LIKE :search OR expense.reference LIKE :search OR provider.name LIKE :search',
         {
           search: searchTerm,
         },
@@ -249,7 +250,7 @@ export class GlobalSearchService {
       title: expense.description,
       subtitle: `${expense.category?.name || ''} - $${expense.amount}`,
       type: 'expense' as const,
-      url: `/dashboard/gastos?search=${expense.description}`,
+      url: `/dashboard/gastos`,
       metadata: {
         amount: expense.amount,
         status: expense.status,
@@ -279,7 +280,7 @@ export class GlobalSearchService {
       title: `AR ${account.referenceNumber}`,
       subtitle: `${account.client?.name || ''} - $${account.remainingAmount} pending`,
       type: 'account_receivable' as const,
-      url: `/dashboard/cuentas-por-cobrar?search=${account.referenceNumber}`,
+      url: `/dashboard/cuentas-por-cobrar`,
       metadata: {
         totalAmount: account.totalAmount,
         remainingAmount: account.remainingAmount,
@@ -301,7 +302,7 @@ export class GlobalSearchService {
       title: product.name,
       subtitle: `${product.category?.name || ''} - SKU: ${product.sku}`,
       type: 'product' as const,
-      url: `/dashboard/productos/lista-de-productos?search=${product.barcode}`,
+      url: `/dashboard/productos/lista-de-productos`,
       metadata: {
         sku: product.sku,
         code: product.code,
