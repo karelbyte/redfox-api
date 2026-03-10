@@ -5,6 +5,7 @@ import { CertificationPack } from '../models/certification-pack.entity';
 import { CertificationPackType } from '../constants/certification-packs.constant';
 import { ICertificationPackService } from '../interfaces/certification-pack.interface';
 import { FacturaAPIService } from './facturapi.service';
+import { FacturaGreenService } from './factura-green.service';
 import { TenantContext } from './tenant-context.service';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class CertificationPackFactoryService {
     @InjectRepository(CertificationPack)
     private readonly certificationPackRepository: Repository<CertificationPack>,
     private readonly facturaAPIService: FacturaAPIService,
+    private readonly facturaGreenService: FacturaGreenService,
     private readonly tenantContext: TenantContext,
   ) {
     this.initializePackServices();
@@ -24,6 +26,11 @@ export class CertificationPackFactoryService {
     this.packServices.set(
       CertificationPackType.FACTURAAPI,
       this.facturaAPIService,
+    );
+    
+    this.packServices.set(
+      CertificationPackType.FACTURA_GREEN,
+      this.facturaGreenService,
     );
   }
 

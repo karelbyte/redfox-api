@@ -553,16 +553,97 @@ export class ProductService {
   }
 
   async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {
+    console.log('='.repeat(80));
+    console.log('[Product Service] searchFromPack CALLED');
+    console.log('[Product Service] Search term:', term);
+    console.log('[Product Service] Term length:', term?.length);
+    console.log('[Product Service] Term type:', typeof term);
+    
     try {
-      const packService = await this.certificationPackFactory.getPackService();
-      return await packService.searchProductKeys(term);
-    } catch (error) {
-      // Si es un error de pack no encontrado, lanzarlo para que el frontend lo maneje
-      if (error instanceof NotFoundException) {
-        throw error;
+      // Usar API pública de factura123.mx (no requiere autenticación)
+      const url = `https://factura123.mx/api/v2/public/cat/prodclasses?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
+      console.log('[Product Service] Request URL:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+        },
+      });
+
+      console.log('[Product Service] factura123.mx response status:', response.status);
+      console.log('[Product Service] factura123.mx response statusText:', response.statusText);
+
+      if (!response.ok) {
+        console.log('[Product Service] factura123.mx request failed, using static fallback');
+        const staticResults = this.getStaticProductKeys(term);
+        console.log('[Product Service] Static fallback results count:', staticResults.length);
+        console.log('[Product Service] Static fallback results:', JSON.stringify(staticResults, null, 2));
+        console.log('='.repeat(80));
+        return staticResults;
       }
-      // Para otros errores, retornar array vacío
-      return [];
+
+      const data = await response.json();
+      console.log('[Product Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
+      
+      // Adaptar la respuesta de factura123.mx al formato esperado
+      // La API regresa { rows: [...], total: number }
+      const items = data.rows || data.data || data || [];
+      const results = items.map((item: any) => ({
+        key: item.clavesat || item.clave || item.code || item.key,
+        description: item.descripcion || item.description || item.name,
+        score: 0,
+      }));
+      
+      // Ordenar por longitud de descripción (más cortas primero)
+      results.sort((a, b) => {
+        const lengthA = a.description?.length || 0;
+        const lengthB = b.description?.length || 0;
+        return lengthA - lengthB;
+      });
+      
+      console.log('[Product Service] Processed results count:', results.length);
+      console.log('[Product Service] Sorted results (by description length):', JSON.stringify(results, null, 2));
+      console.log('='.repeat(80));
+      return results;
+    } catch (error) {
+      console.error('[Product Service] ERROR in searchFromPack:', error);
+      console.error('[Product Service] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      const staticResults = this.getStaticProductKeys(term);
+      console.log('[Product Service] Returning static fallback after error, count:', staticResults.length);
+      console.log('='.repeat(80));
+      return staticResults;
     }
+  }
+
+  private getStaticProductKeys(term: string): ProductKeySuggestion[] {
+    const products = [
+      { key: '01010101', description: 'No existe en el catálogo' },
+      { key: '80141600', description: 'Servicios de consultoría' },
+      { key: '80141601', description: 'Servicios de consultoría de negocios y administración corporativa' },
+      { key: '80141602', description: 'Servicios de consultoría de mercadotecnia' },
+      { key: '80141603', description: 'Servicios de consultoría de administración de recursos humanos' },
+      { key: '80141604', description: 'Servicios de consultoría de producción' },
+      { key: '80141605', description: 'Servicios de consultoría de administración de cadena de suministros' },
+      { key: '81112000', description: 'Servicios de desarrollo de software' },
+      { key: '81112001', description: 'Servicios de desarrollo de software de aplicación' },
+      { key: '81112002', description: 'Servicios de desarrollo de software de sistemas y aplicaciones de usuario' },
+      { key: '81161500', description: 'Servicios de diseño gráfico' },
+      { key: '43230000', description: 'Computadoras' },
+      { key: '43211500', description: 'Computadoras portátiles' },
+      { key: '84111506', description: 'Servicios de facturación' },
+      { key: '84101600', description: 'Financiación de ayudas' },
+    ];
+
+    if (!term) return products.slice(0, 10);
+
+    const lowerTerm = term.toLowerCase();
+    return products
+      .filter(
+        p =>
+          p.key.includes(term) ||
+          p.description.toLowerCase().includes(lowerTerm),
+      )
+      .slice(0, 20);
   }
 }

@@ -46,11 +46,17 @@ export class MeasurementUnitController {
   }
 
   @Get('search/from-pack')
-  searchFromPack(@Query('term') term: string) {
+  async searchFromPack(@Query('term') term: string) {
     if (!term || term.trim().length === 0) {
       return [];
     }
-    return this.measurementUnitService.searchFromPack(term.trim());
+    try {
+      return await this.measurementUnitService.searchFromPack(term.trim());
+    } catch (error: any) {
+      // Si no hay pack activo, retornar array vacío en lugar de error
+      console.error('Error searching measurement units from pack:', error.message);
+      return [];
+    }
   }
 
   @Get(':id')

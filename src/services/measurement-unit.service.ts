@@ -313,11 +313,111 @@ export class MeasurementUnitService {
   }
 
   async searchFromPack(term: string): Promise<MeasurementUnitSuggestion[]> {
+    console.log('='.repeat(80));
+    console.log('[MeasurementUnit Service] searchFromPack CALLED');
+    console.log('[MeasurementUnit Service] Search term:', term);
+    console.log('[MeasurementUnit Service] Term length:', term?.length);
+    console.log('[MeasurementUnit Service] Term type:', typeof term);
+    
     try {
-      const packService = await this.certificationPackFactory.getPackService();
-      return await packService.searchMeasurementUnits(term);
+      // Intentar usar API pública de factura123.mx (no requiere autenticación)
+      const url = `https://factura123.mx/api/v2/public/cat/units?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
+      console.log('[MeasurementUnit Service] Request URL:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+        },
+      });
+
+      console.log('[MeasurementUnit Service] factura123.mx response status:', response.status);
+      console.log('[MeasurementUnit Service] factura123.mx response statusText:', response.statusText);
+
+      if (!response.ok) {
+        console.log('[MeasurementUnit Service] factura123.mx request failed, using static fallback');
+        const staticResults = this.getStaticMeasurementUnits(term);
+        console.log('[MeasurementUnit Service] Static fallback results count:', staticResults.length);
+        console.log('[MeasurementUnit Service] Static fallback results:', JSON.stringify(staticResults, null, 2));
+        console.log('='.repeat(80));
+        return staticResults;
+      }
+
+      const data = await response.json();
+      console.log('[MeasurementUnit Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
+      
+      // Adaptar la respuesta de factura123.mx al formato esperado
+      // La API regresa { rows: [...], total: number }
+      const items = data.rows || data.data || data || [];
+      const results = items.map((item: any) => ({
+        key: item.clavesat || item.clave || item.code || item.key,
+        description: item.descripcion || item.description || item.name,
+      }));
+      
+      // Ordenar por longitud de descripción (más cortas primero)
+      results.sort((a, b) => {
+        const lengthA = a.description?.length || 0;
+        const lengthB = b.description?.length || 0;
+        return lengthA - lengthB;
+      });
+      
+      console.log('[MeasurementUnit Service] Processed results count:', results.length);
+      console.log('[MeasurementUnit Service] Sorted results (by description length):', JSON.stringify(results, null, 2));
+      console.log('='.repeat(80));
+      return results;
     } catch (error) {
-      return [];
+      console.error('[MeasurementUnit Service] ERROR in searchFromPack:', error);
+      console.error('[MeasurementUnit Service] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      const staticResults = this.getStaticMeasurementUnits(term);
+      console.log('[MeasurementUnit Service] Returning static fallback after error, count:', staticResults.length);
+      console.log('='.repeat(80));
+      return staticResults;
     }
+  }
+
+  private getStaticMeasurementUnits(term: string): MeasurementUnitSuggestion[] {
+    const units = [
+      { key: 'H87', description: 'Pieza' },
+      { key: 'EA', description: 'Elemento' },
+      { key: 'E48', description: 'Unidad de Servicio' },
+      { key: 'ACT', description: 'Actividad' },
+      { key: 'KGM', description: 'Kilogramo' },
+      { key: 'E51', description: 'Trabajo' },
+      { key: 'A9', description: 'Tarifa' },
+      { key: 'MTR', description: 'Metro' },
+      { key: 'AB', description: 'Paquete a granel' },
+      { key: 'BB', description: 'Caja base' },
+      { key: 'KT', description: 'Kit' },
+      { key: 'SET', description: 'Conjunto' },
+      { key: 'LTR', description: 'Litro' },
+      { key: 'XBX', description: 'Caja' },
+      { key: 'MON', description: 'Mes' },
+      { key: 'HUR', description: 'Hora' },
+      { key: 'MTK', description: 'Metro cuadrado' },
+      { key: '11', description: 'Equipos' },
+      { key: 'MGM', description: 'Miligramo' },
+      { key: 'XPK', description: 'Paquete' },
+      { key: 'XKI', description: 'Kit (Conjunto de piezas)' },
+      { key: 'AS', description: 'Variedad' },
+      { key: 'GRM', description: 'Gramo' },
+      { key: 'PR', description: 'Par' },
+      { key: 'DPC', description: 'Docenas de piezas' },
+      { key: 'xun', description: 'Unidad' },
+      { key: 'DAY', description: 'Día' },
+      { key: 'XLT', description: 'Lote' },
+      { key: '10', description: 'Grupos' },
+      { key: 'MLT', description: 'Mililitro' },
+      { key: 'E54', description: 'Viaje' },
+      { key: 'MTQ', description: 'Metro cúbico' },
+    ];
+
+    if (!term) return units;
+
+    const lowerTerm = term.toLowerCase();
+    return units.filter(
+      u =>
+        u.key.toLowerCase().includes(lowerTerm) ||
+        u.description.toLowerCase().includes(lowerTerm),
+    );
   }
 }
