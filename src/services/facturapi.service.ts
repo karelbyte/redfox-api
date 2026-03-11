@@ -234,11 +234,19 @@ export class FacturaAPIService implements ICertificationPackService {
   }
 
   private buildCustomerData(client: any): any {
+    // Obtener el tax_document del taxData (es un array, usar el primero o el marcado como main)
+    const taxData = client.taxData && client.taxData.length > 0 
+      ? client.taxData[0] 
+      : null;
+    
+    const taxDocument = taxData?.tax_document || client.tax_document || '';
+    const taxSystem = taxData?.tax_system || '616';
+
     return {
       legal_name: client.name,
-      tax_id: client.tax_document,
+      tax_id: taxDocument,
       email: client.email || '',
-      tax_system: '616',
+      tax_system: taxSystem,
       address: {
         zip: '85900',
         street: client.address || '',

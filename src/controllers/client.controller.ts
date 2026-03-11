@@ -84,4 +84,16 @@ export class ClientController {
   removeMany(@Body() bulkDeleteClientDto: BulkDeleteClientDto): Promise<void> {
     return this.clientService.removeMany(bulkDeleteClientDto.ids);
   }
+
+  /**
+   * Sincroniza manualmente un cliente existente con el pack activo.
+   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
+   */
+  @Post(':id/sync-with-pack')
+  syncWithPack(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ): Promise<ClientWithPackStatusResponseDto> {
+    return this.clientService.syncWithPack(id, userId);
+  }
 }

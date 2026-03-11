@@ -353,11 +353,11 @@ export class PurchaseOrderService {
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
       .leftJoinAndSelect('product.prices', 'prices')
-      .where('detail.purchaseOrder.id = :purchaseOrderId', { purchaseOrderId })
-      .andWhere('detail.purchaseOrder.organization_id = :orgId', { orgId: this.organizationId });
+      .where('detail.purchase_order_id = :purchaseOrderId', { purchaseOrderId })
+      .andWhere('detail.deleted_at IS NULL');
 
     if (queryDto.product_id) {
-      queryBuilder.andWhere('detail.product.id = :productId', {
+      queryBuilder.andWhere('detail.product_id = :productId', {
         productId: queryDto.product_id,
       });
     }

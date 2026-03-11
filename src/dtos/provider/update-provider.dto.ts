@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   IsObject,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateProviderAddressDto } from './create-provider-address.dto';
@@ -31,11 +32,13 @@ export class UpdateProviderDto {
 
   @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.phone && o.phone.length > 0)
   @Length(3, 20)
   phone?: string;
 
   @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.email && o.email.length > 0)
   @IsEmail()
   @Length(3, 100)
   email?: string;

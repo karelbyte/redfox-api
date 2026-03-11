@@ -13,6 +13,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
 import { ProductMapper } from './mappers/product.mapper';
+import { ProductService } from './product.service';
 
 import { TenantContext } from './tenant-context.service';
 
@@ -23,6 +24,7 @@ export class WarehouseOpeningService {
     private readonly warehouseOpeningRepository: Repository<WarehouseOpening>,
     private readonly translationService: TranslationService,
     private readonly productMapper: ProductMapper,
+    private readonly productService: ProductService,
     private readonly tenantContext: TenantContext,
   ) { }
 
@@ -63,6 +65,12 @@ export class WarehouseOpeningService {
         );
         throw new NotFoundException(message);
       }
+
+      // Update denormalized total_stock
+      await this.productService.updateStock(
+        createWarehouseOpeningDto.productId,
+        Number(createWarehouseOpeningDto.quantity),
+      );
 
       return this.mapToResponseDto(savedWithRelations);
     } catch (error: unknown) {

@@ -9,8 +9,8 @@ import {
   IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateClientAddressDto } from './create-client-address.dto';
-import { CreateClientTaxDataDto } from './create-client-tax-data.dto';
+import { UpdateClientAddressDto } from './update-client-address.dto';
+import { UpdateClientTaxDataDto } from './update-client-tax-data.dto';
 import { UpdateClientCreditDto } from './update-client-credit.dto';
 
 export class UpdateClientDto {
@@ -47,14 +47,14 @@ export class UpdateClientDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => CreateClientAddressDto)
-  addresses?: CreateClientAddressDto[];
+  @Type(() => UpdateClientAddressDto)
+  addresses?: UpdateClientAddressDto[];
 
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => CreateClientTaxDataDto)
-  taxData?: CreateClientTaxDataDto[];
+  @Type(() => UpdateClientTaxDataDto)
+  taxData?: UpdateClientTaxDataDto[];
 
   @IsArray()
   @IsOptional()

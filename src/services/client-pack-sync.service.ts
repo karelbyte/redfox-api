@@ -135,4 +135,50 @@ export class ClientPackSyncService {
       };
     }
   }
+
+  /**
+   * Sincroniza manualmente un cliente existente con el pack activo.
+   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
+   */
+  async syncManually(client: Client): Promise<{
+    client: Client;
+    packSyncSuccess: boolean;
+    packErrorMessage?: string;
+  }> {
+    try {
+      const packService = await this.certificationPackFactory.getPackService();
+
+      // Si el cliente ya existe en el pack, no hacer nada
+      if (client.pack_client_id) {
+        return {
+          client,
+          packSyncSuccess: true,
+          packErrorMessage: 'Client already synchronized with pack',
+        };
+      }
+
+      // Crear el cliente en el pack
+      const customerData = this.extractCustomerData(client);
+      const packResponse = await packService.createCustomer(customerData);
+
+      client.pack_client_id = packResponse.id;
+      client.pack_client_response = packResponse;
+
+      const savedClient = await this.clientRepository.save(client);
+
+      return {
+        client: savedClient,
+        packSyncSuccess: true,
+      };
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to manually sync client with certification pack: ${error?.message}`,
+      );
+      return {
+        client,
+        packSyncSuccess: false,
+        packErrorMessage: error?.message,
+      };
+    }
+  }
 }

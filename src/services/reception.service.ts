@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { Reception } from '../models/reception.entity';
 import { ReceptionDetail } from '../models/reception-detail.entity';
 import { Provider } from '../models/provider.entity';
-import { Product } from '../models/product.entity';
+import { Product, InventoryStrategy } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
 import { Inventory } from '../models/inventory.entity';
 import {
@@ -630,21 +630,74 @@ export class ReceptionService {
     let totalQuantity = 0;
 
     for (const detail of receptionDetails) {
-      const newInventory = this.inventoryRepository.create({
-        product: detail.product,
-        warehouse: reception.warehouse,
-        quantity: detail.quantity,
-        price: detail.price,
-        batch_number: detail.batch_number,
-        expiration_date: detail.expiration_date,
-        entry_id: reception.id,
-        organization_id: this.organizationId,
-      });
+      const product = detail.product;
+      const strategy = product.inventory_strategy || InventoryStrategy.AVERAGE;
 
-      const finalInventory = await this.inventoryRepository.save(newInventory);
+      let finalInventory: Inventory;
+
+      if (strategy === InventoryStrategy.AVERAGE) {
+        // Para AVERAGE: buscar si existe inventario del producto en el almacén
+        const existingInventory = await this.inventoryRepository.findOne({
+          where: {
+            product_id: product.id,
+            warehouse_id: reception.warehouse.id,
+            organization_id: this.organizationId,
+          },
+          relations: ['product', 'warehouse'],
+        });
+
+        if (existingInventory) {
+          // Calcular precio promedio ponderado
+          const oldQuantity = Number(existingInventory.quantity);
+          const newQuantity = Number(detail.quantity);
+          const oldPrice = Number(existingInventory.price);
+          const newPrice = Number(detail.price);
+
+          const weightedAveragePrice =
+            (oldQuantity * oldPrice + newQuantity * newPrice) /
+            (oldQuantity + newQuantity);
+
+          // Actualizar el inventario existente
+          existingInventory.quantity = oldQuantity + newQuantity;
+          existingInventory.price = Math.round(weightedAveragePrice * 100) / 100;
+          existingInventory.updated_at = new Date();
+
+          finalInventory = await this.inventoryRepository.save(
+            existingInventory,
+          );
+        } else {
+          // Crear nuevo inventario si no existe
+          const newInventory = this.inventoryRepository.create({
+            product,
+            warehouse: reception.warehouse,
+            quantity: detail.quantity,
+            price: detail.price,
+            batch_number: detail.batch_number,
+            expiration_date: detail.expiration_date,
+            entry_id: reception.id,
+            organization_id: this.organizationId,
+          });
+
+          finalInventory = await this.inventoryRepository.save(newInventory);
+        }
+      } else {
+        // Para FIFO/FEFO: crear nuevo item siempre
+        const newInventory = this.inventoryRepository.create({
+          product,
+          warehouse: reception.warehouse,
+          quantity: detail.quantity,
+          price: detail.price,
+          batch_number: detail.batch_number,
+          expiration_date: detail.expiration_date,
+          entry_id: reception.id,
+          organization_id: this.organizationId,
+        });
+
+        finalInventory = await this.inventoryRepository.save(newInventory);
+      }
 
       const productHistory = this.productHistoryRepository.create({
-        product: detail.product,
+        product,
         warehouse: reception.warehouse,
         operation_type: OperationType.RECEPTION,
         operation_id: reception.id,

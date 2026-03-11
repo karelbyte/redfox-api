@@ -212,14 +212,15 @@ export class InvoiceService {
       const detailTotal = detailSubtotal + detailTaxAmount;
 
       const detail = this.invoiceDetailRepository.create({
-        invoice: savedInvoice,
-        product,
+        invoice_id: savedInvoice.id,
+        product_id: product.id,
         quantity: detailDto.quantity,
         price: detailDto.price,
         subtotal: Math.round(detailSubtotal * 100) / 100,
         tax_rate: taxRate,
         tax_amount: Math.round(detailTaxAmount * 100) / 100,
         total: Math.round(detailTotal * 100) / 100,
+        organization_id: this.organizationId,
       });
 
       await this.invoiceDetailRepository.save(detail);
@@ -238,6 +239,21 @@ export class InvoiceService {
         'details.product.measurement_unit',
       ],
     });
+
+    // Cargar detalles explícitamente sin filtro de soft delete
+    if (invoiceWithDetails) {
+      invoiceWithDetails.details = await this.invoiceDetailRepository.find({
+        where: { invoice_id: invoiceWithDetails.id },
+        relations: [
+          'product',
+          'product.brand',
+          'product.category',
+          'product.tax',
+          'product.measurement_unit',
+        ],
+        withDeleted: false,
+      });
+    }
 
     return this.mapToResponseDto(invoiceWithDetails!);
   }
@@ -301,6 +317,27 @@ export class InvoiceService {
       throw new NotFoundException(message);
     }
 
+    // Cargar detalles sin filtro de soft delete
+    if (invoice.details) {
+      invoice.details = await this.invoiceDetailRepository.find({
+        where: { invoice_id: invoice.id },
+        relations: [
+          'product',
+          'product.brand',
+          'product.category',
+          'product.tax',
+          'product.measurement_unit',
+        ],
+        withDeleted: false,
+      });
+    }
+
+    console.log('🔍 Invoice findOne - Details loaded:', {
+      invoiceId: invoice.id,
+      detailsCount: invoice.details?.length || 0,
+      details: invoice.details,
+    });
+
     return this.mapToResponseDto(invoice);
   }
 
@@ -354,6 +391,21 @@ export class InvoiceService {
         'details.product.measurement_unit',
       ],
     });
+
+    // Cargar detalles explícitamente sin filtro de soft delete
+    if (invoiceWithDetails) {
+      invoiceWithDetails.details = await this.invoiceDetailRepository.find({
+        where: { invoice_id: invoiceWithDetails.id },
+        relations: [
+          'product',
+          'product.brand',
+          'product.category',
+          'product.tax',
+          'product.measurement_unit',
+        ],
+        withDeleted: false,
+      });
+    }
 
     return this.mapToResponseDto(invoiceWithDetails!);
   }
@@ -469,6 +521,12 @@ export class InvoiceService {
     withdrawal.invoiceId = savedInvoice.id;
     await this.withdrawalRepository.save(withdrawal);
 
+    console.log('🔍 convertWithdrawalToInvoice - Starting to save details:', {
+      invoiceId: savedInvoice.id,
+      detailsCount: details.length,
+      details: details,
+    });
+
     for (const detailDto of details) {
       const product = await this.productService.findOneEntity(
         detailDto.product_id,
@@ -480,14 +538,23 @@ export class InvoiceService {
       const detailTotal = detailSubtotal + detailTaxAmount;
 
       const detail = this.invoiceDetailRepository.create({
-        invoice: savedInvoice,
-        product,
+        invoice_id: savedInvoice.id,
+        product_id: product.id,
         quantity: detailDto.quantity,
         price: detailDto.price,
         subtotal: Math.round(detailSubtotal * 100) / 100,
         tax_rate: taxRate,
         tax_amount: Math.round(detailTaxAmount * 100) / 100,
         total: Math.round(detailTotal * 100) / 100,
+        organization_id: this.organizationId,
+      });
+
+      console.log('🔍 Saving invoice detail:', {
+        invoiceId: savedInvoice.id,
+        productId: detailDto.product_id,
+        quantity: detailDto.quantity,
+        price: detailDto.price,
+        taxRate: taxRate,
       });
 
       await this.invoiceDetailRepository.save(detail);
@@ -505,6 +572,27 @@ export class InvoiceService {
         'details.product.tax',
         'details.product.measurement_unit',
       ],
+    });
+
+    // Cargar detalles explícitamente sin filtro de soft delete
+    if (invoiceWithDetails) {
+      invoiceWithDetails.details = await this.invoiceDetailRepository.find({
+        where: { invoice_id: invoiceWithDetails.id },
+        relations: [
+          'product',
+          'product.brand',
+          'product.category',
+          'product.tax',
+          'product.measurement_unit',
+        ],
+        withDeleted: false,
+      });
+    }
+
+    console.log('🔍 convertWithdrawalToInvoice - Details saved:', {
+      invoiceId: invoiceWithDetails?.id,
+      detailsCount: invoiceWithDetails?.details?.length || 0,
+      details: invoiceWithDetails?.details,
     });
 
     return this.mapToResponseDto(invoiceWithDetails!);
@@ -649,6 +737,7 @@ export class InvoiceService {
       where: { id: invoiceId, organization_id: this.organizationId },
       relations: [
         'client',
+        'client.taxData',
         'details',
         'details.product',
         'details.product.tax',
@@ -701,6 +790,21 @@ export class InvoiceService {
           'details.product.measurement_unit',
         ],
       });
+
+      // Cargar detalles explícitamente sin filtro de soft delete
+      if (invoiceWithDetails) {
+        invoiceWithDetails.details = await this.invoiceDetailRepository.find({
+          where: { invoice_id: invoiceWithDetails.id },
+          relations: [
+            'product',
+            'product.brand',
+            'product.category',
+            'product.tax',
+            'product.measurement_unit',
+          ],
+          withDeleted: false,
+        });
+      }
 
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
@@ -757,6 +861,21 @@ export class InvoiceService {
         ],
       });
 
+      // Cargar detalles explícitamente sin filtro de soft delete
+      if (invoiceWithDetails) {
+        invoiceWithDetails.details = await this.invoiceDetailRepository.find({
+          where: { invoice_id: invoiceWithDetails.id },
+          relations: [
+            'product',
+            'product.brand',
+            'product.category',
+            'product.tax',
+            'product.measurement_unit',
+          ],
+          withDeleted: false,
+        });
+      }
+
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
       console.error('Error canceling CFDI:', error);
@@ -799,6 +918,7 @@ export class InvoiceService {
       tax_rate: taxRate,
       tax_amount: Math.round(detailTaxAmount * 100) / 100,
       total: Math.round(detailTotal * 100) / 100,
+      organization_id: this.organizationId,
     });
 
     const savedDetail = await this.invoiceDetailRepository.save(detail);

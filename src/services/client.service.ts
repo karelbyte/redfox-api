@@ -185,7 +185,7 @@ export class ClientService {
     }
 
     // Actualizar campos básicos
-    const { delete_addresses, delete_tax_data, credit, ...baseData } =
+    const { delete_addresses, delete_tax_data, credit, taxData, addresses, ...baseData } =
       updateClientDto;
     Object.assign(client, baseData);
 
@@ -209,8 +209,61 @@ export class ClientService {
       await this.clientTaxDataRepository.delete(delete_tax_data);
     }
 
-    // Si se envían direcciones, reemplazarlas o manejarlas
-    // Nota: TypeORM save con cascade: true reemplazará o actualizará según el id
+    // Manejar actualización de taxData - asegurar que client_id se preserve
+    if (taxData && taxData.length > 0) {
+      for (const taxDataItem of taxData) {
+        if (taxDataItem.id) {
+          // Actualizar existente
+          await this.clientTaxDataRepository.update(
+            { id: taxDataItem.id },
+            {
+              ...taxDataItem,
+              client_id: id, // Asegurar que client_id se preserve
+            }
+          );
+        } else {
+          // Crear nuevo
+          const newTaxData = this.clientTaxDataRepository.create({
+            ...taxDataItem,
+            client_id: id,
+          });
+          await this.clientTaxDataRepository.save(newTaxData);
+        }
+      }
+      // Recargar para obtener los datos actualizados
+      client.taxData = await this.clientTaxDataRepository.find({
+        where: { client_id: id },
+      });
+    }
+
+    // Manejar actualización de addresses - asegurar que client_id se preserve
+    if (addresses && addresses.length > 0) {
+      for (const addressItem of addresses) {
+        if (addressItem.id) {
+          // Actualizar existente
+          await this.clientAddressRepository.update(
+            { id: addressItem.id },
+            {
+              ...addressItem,
+              client_id: id, // Asegurar que client_id se preserve
+            }
+          );
+        } else {
+          // Crear nuevo
+          const newAddress = this.clientAddressRepository.create({
+            ...addressItem,
+            client_id: id,
+          });
+          await this.clientAddressRepository.save(newAddress);
+        }
+      }
+      // Recargar para obtener los datos actualizados
+      client.addresses = await this.clientAddressRepository.find({
+        where: { client_id: id },
+      });
+    }
+
+    // Guardar cliente sin cascade para evitar que TypeORM intente actualizar relaciones
     const savedClient = await this.clientRepository.save(client);
 
     const syncResult = await this.clientPackSyncService.syncOnUpdate(
@@ -309,5 +362,37 @@ export class ClientService {
       client.balance = Number(client.balance || 0) + Number(amount);
       await repo.save(client, { reload: false });
     }
+  }
+
+  /**
+   * Sincroniza manualmente un cliente existente con el pack activo.
+   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
+   */
+  async syncWithPack(
+    id: string,
+    userId?: string,
+  ): Promise<ClientWithPackStatusResponseDto> {
+    const client = await this.clientRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+      relations: ['addresses', 'taxData'],
+      withDeleted: false,
+    });
+
+    if (!client) {
+      const message = await this.translationService.translate(
+        'client.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+
+    const syncResult = await this.clientPackSyncService.syncManually(client);
+
+    return {
+      client: this.clientMapper.mapToResponseDto(syncResult.client),
+      pack_sync_success: syncResult.packSyncSuccess,
+      pack_sync_error: syncResult.packErrorMessage,
+    };
   }
 }
