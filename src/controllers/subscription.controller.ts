@@ -1,0 +1,58 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { SubscriptionService } from '../services/subscription.service';
+import { AuthGuard } from '../guards/auth.guard';
+import { ConvertTrialDto } from '../dtos/subscription/convert-trial.dto';
+import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
+
+@Controller('subscriptions')
+@UseGuards(AuthGuard)
+export class SubscriptionController {
+  constructor(private subscriptionService: SubscriptionService) {}
+
+  @Get('status')
+  async getSubscriptionStatus(@Req() request: any) {
+    const organizationId = request.user?.organizationId;
+    if (!organizationId) {
+      throw new Error('Organization ID not found');
+    }
+    return this.subscriptionService.getSubscriptionStatus(organizationId);
+  }
+
+  @Post('convert-trial')
+  async convertTrial(
+    @Req() request: any,
+    @Body() convertTrialDto: ConvertTrialDto,
+  ) {
+    const organizationId = request.user?.organizationId;
+    if (!organizationId) {
+      throw new Error('Organization ID not found');
+    }
+    return this.subscriptionService.convertTrialToSubscription(
+      organizationId,
+      convertTrialDto.paymentMethodId,
+      convertTrialDto.planId,
+    );
+  }
+
+  @Post('confirm-payment/:subscriptionId')
+  async confirmPayment(@Req() request: any, @Body() body: { subscriptionId: string }) {
+    return this.subscriptionService.confirmSubscriptionPayment(body.subscriptionId);
+  }
+
+  @Get('plans')
+  async getPlans() {
+    return this.subscriptionService.getAllPlans();
+  }
+
+  @Post('plans')
+  async createPlan(@Body() createPlanDto: CreatePlanDto) {
+    return this.subscriptionService.createPlan(createPlanDto);
+  }
+}

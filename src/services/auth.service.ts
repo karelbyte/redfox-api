@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { RoleService } from './role.service';
 import { EmailQueue } from '../queues/email.queue';
 import { OrganizationService } from './organization.service';
+import { SubscriptionService } from './subscription.service';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +27,7 @@ export class AuthService {
     private roleService: RoleService,
     private emailQueue: EmailQueue,
     private organizationService: OrganizationService,
+    private subscriptionService: SubscriptionService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -290,14 +292,262 @@ export class AuthService {
       }
 
       await this.userService.update(user.id, { status: true } as any);
+      
+      let subscription: any = null;
       if (user.organization_id) {
         await this.organizationService.update(user.organization_id, {
           status: true,
         });
+
+        try {
+          subscription = await this.subscriptionService.createTrialSubscription(
+            user.organization_id,
+            user.email,
+          );
+        } catch (subscriptionError) {
+          console.error('Failed to create trial subscription:', subscriptionError);
+        }
       }
+
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+      const trialEndDate = subscription?.trial_end_date 
+        ? new Date(subscription.trial_end_date).toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : 'N/A';
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>¡Bienvenido a Nitro!</title>
+          <style>
+            body {
+              font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #E2E8F0;
+              margin: 0;
+              padding: 0;
+              background-color: #0F172A;
+            }
+            .container {
+              max-width: 600px;
+              margin: 40px auto;
+              background: #1E293B;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+              border: 1px solid #334155;
+            }
+            .header {
+              background: #2D3748;
+              padding: 40px 20px;
+              text-align: center;
+              border-bottom: 2px solid #EAB308;
+            }
+            .header h1 {
+              color: #F8FAFC;
+              margin: 0;
+              font-size: 32px;
+              font-weight: 800;
+              letter-spacing: -0.025em;
+              text-transform: uppercase;
+            }
+            .header h1 span {
+              color: #EAB308;
+            }
+            .content {
+              padding: 40px;
+            }
+            .success-badge {
+              background: #10B981;
+              color: white;
+              padding: 12px 24px;
+              border-radius: 8px;
+              display: inline-block;
+              font-weight: 700;
+              margin-bottom: 24px;
+              font-size: 14px;
+            }
+            .trial-box {
+              background: #0F172A;
+              border: 2px solid #EAB308;
+              border-radius: 12px;
+              padding: 24px;
+              margin: 24px 0;
+            }
+            .trial-box h3 {
+              color: #EAB308;
+              margin-top: 0;
+              font-size: 20px;
+            }
+            .trial-info {
+              color: #CBD5E1;
+              margin: 12px 0;
+            }
+            .trial-info strong {
+              color: #F8FAFC;
+            }
+            .plan-box {
+              background: #334155;
+              border-radius: 12px;
+              padding: 24px;
+              margin: 24px 0;
+            }
+            .plan-box h3 {
+              color: #EAB308;
+              margin-top: 0;
+            }
+            .plan-features {
+              list-style: none;
+              padding: 0;
+              margin: 16px 0;
+            }
+            .plan-features li {
+              padding: 8px 0;
+              color: #CBD5E1;
+              padding-left: 24px;
+              position: relative;
+            }
+            .plan-features li:before {
+              content: "✓";
+              color: #10B981;
+              font-weight: bold;
+              position: absolute;
+              left: 0;
+            }
+            .price {
+              font-size: 36px;
+              font-weight: 800;
+              color: #EAB308;
+              margin: 16px 0;
+            }
+            .button {
+              display: inline-block;
+              padding: 16px 36px;
+              background-color: #EAB308;
+              color: #0F172A !important;
+              text-decoration: none;
+              border-radius: 8px;
+              font-weight: 700;
+              margin: 20px 0;
+              transition: all 0.2s;
+              text-transform: uppercase;
+              font-size: 14px;
+              box-shadow: 0 4px 6px rgba(234, 179, 8, 0.2);
+            }
+            .button:hover {
+              background-color: #FACC15;
+              transform: translateY(-2px);
+              box-shadow: 0 6px 12px rgba(234, 179, 8, 0.3);
+            }
+            .footer {
+              background-color: #0F172A;
+              padding: 24px;
+              text-align: center;
+              font-size: 13px;
+              color: #64748B;
+              border-top: 1px solid #334155;
+            }
+            .welcome-text {
+              font-size: 20px;
+              font-weight: 600;
+              color: #F8FAFC;
+              margin-bottom: 16px;
+            }
+            .instruction-text {
+              color: #CBD5E1;
+              margin-bottom: 16px;
+              font-size: 16px;
+            }
+            .highlight {
+              color: #EAB308;
+              font-weight: 600;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>NITRO<span>.</span></h1>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">✓ CUENTA ACTIVADA</span>
+              </div>
+              
+              <p class="welcome-text">¡Hola, ${user.name}!</p>
+              <p class="instruction-text">
+                Tu cuenta ha sido activada exitosamente. ¡Estamos emocionados de tenerte con nosotros!
+              </p>
+
+              <div class="trial-box">
+                <h3>🎉 Período de Prueba Activado</h3>
+                <p class="trial-info">
+                  <strong>Duración:</strong> 7 días gratis<br>
+                  <strong>Finaliza:</strong> ${trialEndDate}<br>
+                  <strong>Acceso:</strong> Todas las funcionalidades
+                </p>
+                <p class="instruction-text">
+                  Durante estos 7 días podrás explorar todas las características de Nitro sin ningún costo.
+                </p>
+              </div>
+
+              <div class="plan-box">
+                <h3>Plan Único - Todas las Características</h3>
+                <div class="price">$700 <span style="font-size: 18px; color: #CBD5E1;">MXN/mes</span></div>
+                
+                <ul class="plan-features">
+                  <li>Usuarios ilimitados</li>
+                  <li>Almacenes ilimitados</li>
+                  <li>Productos ilimitados</li>
+                  <li>Todas las estrategias de inventario (FIFO, AVERAGE, FEFO)</li>
+                  <li>Gestión de crédito a clientes</li>
+                  <li>Facturación electrónica (CFDI)</li>
+                  <li>Reportes avanzados y análisis</li>
+                  <li>API REST y Webhooks</li>
+                  <li>Soporte prioritario</li>
+                </ul>
+
+                <p class="instruction-text">
+                  Después del período de prueba, necesitarás activar tu suscripción para continuar usando Nitro.
+                </p>
+              </div>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${frontendUrl}" class="button">Comenzar a usar Nitro</a>
+              </div>
+
+              <p class="instruction-text" style="font-size: 14px; color: #64748B; text-align: center;">
+                💡 Tip: Te enviaremos recordatorios antes de que finalice tu período de prueba.
+              </p>
+            </div>
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>
+              Todos los derechos reservados.
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await this.emailQueue.addEmailJob({
+        to: user.email,
+        subject: '¡Bienvenido a Nitro! Tu cuenta está activa',
+        html,
+      });
 
       return { message: 'User successfully activated', alreadyActive: false };
     } catch (e) {
+      if (e instanceof BadRequestException) {
+        throw e;
+      }
       throw new BadRequestException('Invalid or expired activation token');
     }
   }

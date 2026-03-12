@@ -18,6 +18,7 @@ import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
 import { ReturnsSeed } from './returns.seed';
 import { PurchaseOrdersSeed } from './purchase-orders.seed';
 import { seedExpenseCategories } from './expense-categories.seed';
+import { PlansSeed } from './plans.seed';
 
 export class RunSeeds {
   public static async run(dataSource: DataSource): Promise<void> {
@@ -60,6 +61,9 @@ export class RunSeeds {
       // Authentication and permissions seeders
       await PermissionsSeed.run(dataSource);
       console.log('✅ Permissions created');
+
+      await PlansSeed.run(dataSource);
+      console.log('✅ Plans created');
 
       await OrganizationsSeed.run(dataSource);
       console.log('✅ Organizations created');

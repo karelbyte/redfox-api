@@ -6,8 +6,13 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Plan } from './plan.entity';
+import { Subscription } from './subscription.entity';
 
 @Entity('organizations')
 export class Organization {
@@ -23,8 +28,25 @@ export class Organization {
   @Column({ default: true })
   status: boolean;
 
+  @Column({ type: 'uuid', nullable: true })
+  plan_id: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  subscription_id: string;
+
   @OneToMany(() => User, (user) => user.organization)
   users: User[];
+
+  @ManyToOne(() => Plan, { nullable: true })
+  @JoinColumn({ name: 'plan_id' })
+  plan: Plan;
+
+  @OneToOne(() => Subscription, { nullable: true })
+  @JoinColumn({ name: 'subscription_id' })
+  subscription: Subscription;
+
+  @OneToMany(() => Subscription, (subscription) => subscription.organization)
+  subscriptions: Subscription[];
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;

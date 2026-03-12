@@ -1,18 +1,12 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateOrganizationsTable1716399999999
-  implements MigrationInterface
-{
+export class CreatePlansTable1716400000500 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
-    if (isPostgres) {
-      await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
-    }
-
     await queryRunner.createTable(
       new Table({
-        name: 'organizations',
+        name: 'plans',
         columns: [
           {
             name: 'id',
@@ -27,31 +21,55 @@ export class CreateOrganizationsTable1716399999999
             type: 'varchar',
             length: '255',
             isNullable: false,
-            isUnique: true,
           },
           {
-            name: 'slug',
+            name: 'version',
+            type: 'varchar',
+            length: '50',
+            isNullable: false,
+          },
+          {
+            name: 'price',
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            isNullable: false,
+          },
+          {
+            name: 'currency',
+            type: 'varchar',
+            length: '3',
+            default: "'MXN'",
+          },
+          {
+            name: 'billing_period',
+            type: 'varchar',
+            length: '50',
+            isNullable: false,
+          },
+          {
+            name: 'stripe_product_id',
             type: 'varchar',
             length: '255',
-            isNullable: false,
+            isNullable: true,
             isUnique: true,
           },
           {
-            name: 'status',
+            name: 'stripe_price_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+            isUnique: true,
+          },
+          {
+            name: 'description',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'is_active',
             type: 'boolean',
             default: true,
-          },
-          {
-            name: 'plan_id',
-            type: isPostgres ? 'uuid' : 'varchar',
-            length: isPostgres ? undefined : '36',
-            isNullable: true,
-          },
-          {
-            name: 'subscription_id',
-            type: isPostgres ? 'uuid' : 'varchar',
-            length: isPostgres ? undefined : '36',
-            isNullable: true,
           },
           {
             name: 'created_at',
@@ -76,6 +94,6 @@ export class CreateOrganizationsTable1716399999999
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('organizations');
+    await queryRunner.dropTable('plans');
   }
 }

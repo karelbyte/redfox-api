@@ -1,0 +1,35 @@
+import { IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
+
+export class CreatePlanDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  version: string;
+
+  @IsNumber()
+  price: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  billing_period: string;
+
+  @IsString()
+  @IsOptional()
+  stripe_product_id?: string;
+
+  @IsString()
+  @IsOptional()
+  stripe_price_id?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean;
+}

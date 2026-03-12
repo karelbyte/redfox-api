@@ -48,6 +48,7 @@ import { TagModule } from './modules/tag.module';
 import { TemplateModule } from './modules/template.module';
 import { OrganizationModule } from './modules/organization.module';
 import { AuditLogModule } from './modules/audit-log.module';
+import { SubscriptionModule } from './modules/subscription.module';
 import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
 import { TenantContext } from './services/tenant-context.service';
@@ -117,6 +118,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     TemplateModule,
     AuditLogModule,
     OrganizationModule,
+    SubscriptionModule,
   ],
   controllers: [HomeController],
   providers: [
