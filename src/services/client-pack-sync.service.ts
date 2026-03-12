@@ -138,7 +138,8 @@ export class ClientPackSyncService {
 
   /**
    * Sincroniza manualmente un cliente existente con el pack activo.
-   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
+   * - Si el cliente NO tiene pack_client_id: Lo crea en el pack
+   * - Si el cliente YA tiene pack_client_id: Actualiza sus datos en el pack
    */
   async syncManually(client: Client): Promise<{
     client: Client;
@@ -147,18 +148,25 @@ export class ClientPackSyncService {
   }> {
     try {
       const packService = await this.certificationPackFactory.getPackService();
+      const customerData = this.extractCustomerData(client);
 
-      // Si el cliente ya existe en el pack, no hacer nada
+      // Si el cliente ya existe en el pack, actualizarlo
       if (client.pack_client_id) {
+        const packResponse = await packService.updateCustomer(
+          client.pack_client_id,
+          customerData,
+        );
+
+        client.pack_client_response = packResponse;
+        const savedClient = await this.clientRepository.save(client);
+
         return {
-          client,
+          client: savedClient,
           packSyncSuccess: true,
-          packErrorMessage: 'Client already synchronized with pack',
         };
       }
 
-      // Crear el cliente en el pack
-      const customerData = this.extractCustomerData(client);
+      // Si no existe, crearlo en el pack
       const packResponse = await packService.createCustomer(customerData);
 
       client.pack_client_id = packResponse.id;

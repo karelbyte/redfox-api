@@ -19,7 +19,7 @@ export class CreateCertificationPacksTable1716400000260
         DROP TYPE IF EXISTS certification_pack_type_enum CASCADE;
       `);
       await queryRunner.query(`
-        CREATE TYPE certification_pack_type_enum AS ENUM ('FACTURAAPI', 'SAT');
+        CREATE TYPE certification_pack_type_enum AS ENUM ('FACTURAAPI', 'FACTURA_GREEN');
       `);
     }
 
@@ -39,7 +39,7 @@ export class CreateCertificationPacksTable1716400000260
             name: 'type',
             type: isPostgres ? 'certification_pack_type_enum' : 'enum',
             length: isPostgres ? undefined : undefined,
-            enum: isPostgres ? undefined : ['FACTURAAPI', 'SAT'],
+            enum: isPostgres ? undefined : ['FACTURAAPI', 'FACTURA_GREEN'],
             isNullable: false,
           },
           {

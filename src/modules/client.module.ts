@@ -5,6 +5,7 @@ import { ClientService } from '../services/client.service';
 import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
+import { Quotation } from '../models/quotation.entity';
 import { ClientAddress } from '../models/client-address.entity';
 import { ClientTaxData } from '../models/client-tax-data.entity';
 import { ClientCredit } from '../models/client-credit.entity';
@@ -22,6 +23,7 @@ import { OrganizationModule } from './organization.module';
       Client,
       Invoice,
       Withdrawal,
+      Quotation,
       ClientAddress,
       ClientTaxData,
       ClientCredit,

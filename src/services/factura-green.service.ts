@@ -35,13 +35,19 @@ export class FacturaGreenService implements ICertificationPackService {
 
   private getHeaders() {
     const config = this.getConfig();
+    const pacConfig = this.tenantContext.getPacConfig();
     
     if (!config.businessUuid) {
       throw new BadRequestException('Factura Green business UUID not configured');
     }
 
+    if (!pacConfig?.api_key) {
+      throw new BadRequestException('Factura Green API key not configured');
+    }
+
     return {
       'Content-Type': 'application/json',
+      'x-application-key': pacConfig.api_key,
       'x-application-business-uuid': config.businessUuid,
       'x-application-account-uuid': config.accountUuid,
     };
@@ -49,7 +55,13 @@ export class FacturaGreenService implements ICertificationPackService {
 
   private getBaseUrl(): string {
     const config = this.getConfig();
-    return `https://${config.tenantId}`;
+    // Si tenant_id ya incluye el protocolo (https://), usarlo directamente
+    // Si no, agregarlo
+    const tenantId = config.tenantId;
+    if (tenantId.startsWith('http://') || tenantId.startsWith('https://')) {
+      return tenantId;
+    }
+    return `https://${tenantId}`;
   }
 
   async generateCFDI(invoice: Invoice): Promise<CFDIResponse> {
@@ -114,7 +126,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         const message = data.error?.message || 'Error generating CFDI with Factura Green';
         throw new BadRequestException(message);
       }
@@ -153,7 +165,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         const message = data.error?.message || 'Error canceling CFDI with Factura Green';
         throw new BadRequestException(message);
       }
@@ -440,32 +452,48 @@ export class FacturaGreenService implements ICertificationPackService {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
+      const url = `${baseUrl}/interop/customer/add`;
 
       const payload = {
         customer: {
           name: customerData.legal_name,
-          taxId: customerData.tax_id,
+          taxid: customerData.tax_id,
           email: customerData.email || '',
-          zipCode: customerData.address?.zip?.toString() || '',
-          taxRegime: {
+          taxregime: {
             k: customerData.tax_system || '601',
           },
-          cfdiUse: {
+          invoiceuse: {
             k: customerData.default_invoice_use || 'G03',
+          },
+          address: {
+            main: {
+              zip: customerData.address?.zip?.toString() || '',
+              street: customerData.address?.street || undefined,
+            },
           },
         },
       };
 
-      const response = await fetch(`${baseUrl}/interop/customer/add`, {
+      console.log('[FacturaGreen] createCustomer - Request Details:');
+      console.log('  URL:', url);
+      console.log('  Headers:', JSON.stringify(headers, null, 2));
+      console.log('  Payload:', JSON.stringify(payload, null, 2));
+      console.log('  Original customerData:', JSON.stringify(customerData, null, 2));
+
+      const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      console.log('[FacturaGreen] createCustomer - Response Status:', response.status);
+      console.log('[FacturaGreen] createCustomer - Response OK:', response.ok);
 
-      if (!response.ok || !data.success) {
-        const message = data.error?.message || 'Error creating customer in Factura Green';
+      const data = await response.json();
+      console.log('[FacturaGreen] createCustomer - Response Data:', JSON.stringify(data, null, 2));
+
+      if (!response.ok || data.response !== 'success') {
+        const message = data.message || 'Error creating customer in Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -482,7 +510,7 @@ export class FacturaGreenService implements ICertificationPackService {
         address: customerData.address,
       };
     } catch (error: any) {
-      console.error('Factura Green Create Customer Error:', error);
+      console.error('[FacturaGreen] createCustomer - Error:', error);
       const message = error?.message ?? 'Error creating customer in Factura Green';
       throw new BadRequestException(message);
     }
@@ -495,29 +523,47 @@ export class FacturaGreenService implements ICertificationPackService {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
+      const url = `${baseUrl}/interop/customer/update`;
 
-      const payload: any = {
+      // Factura Green requiere TODOS los campos en el update, no es parcial
+      const payload = {
         customer: {
           uuid: customerId,
+          name: customerData.legal_name || '',
+          email: customerData.email || '',
+          phone: customerData.phone || undefined,
+          taxregime: {
+            k: customerData.tax_system || '601',
+          },
+          invoiceuse: {
+            k: customerData.default_invoice_use || 'G03',
+          },
+          address: {
+            main: {
+              zip: customerData.address?.zip?.toString() || '',
+              street: customerData.address?.street || undefined,
+            },
+          },
         },
       };
 
-      if (customerData.legal_name) payload.customer.name = customerData.legal_name;
-      if (customerData.email) payload.customer.email = customerData.email;
-      if (customerData.address?.zip) payload.customer.zipCode = customerData.address.zip.toString();
-      if (customerData.tax_system) payload.customer.taxRegime = { k: customerData.tax_system };
-      if (customerData.default_invoice_use) payload.customer.cfdiUse = { k: customerData.default_invoice_use };
+      console.log('[FacturaGreen] updateCustomer - Request Details:');
+      console.log('  URL:', url);
+      console.log('  Payload:', JSON.stringify(payload, null, 2));
 
-      const response = await fetch(`${baseUrl}/interop/customer/update`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      console.log('[FacturaGreen] updateCustomer - Response Status:', response.status);
 
-      if (!response.ok || !data.success) {
-        const message = data.error?.message || 'Error updating customer in Factura Green';
+      const data = await response.json();
+      console.log('[FacturaGreen] updateCustomer - Response Data:', JSON.stringify(data, null, 2));
+
+      if (!response.ok || data.response !== 'success') {
+        const message = data.message || 'Error updating customer in Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -534,7 +580,7 @@ export class FacturaGreenService implements ICertificationPackService {
         address: customerData.address,
       };
     } catch (error: any) {
-      console.error('Factura Green Update Customer Error:', error);
+      console.error('[FacturaGreen] updateCustomer - Error:', error);
       const message = error?.message ?? 'Error updating customer in Factura Green';
       throw new BadRequestException(message);
     }
@@ -544,33 +590,50 @@ export class FacturaGreenService implements ICertificationPackService {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
+      const url = `${baseUrl}/interop/customer/all`;
 
-      const response = await fetch(`${baseUrl}/interop/customer/all`, {
+      console.log('[FacturaGreen] listCustomers - Request Details:');
+      console.log('  URL:', url);
+      console.log('  Headers:', JSON.stringify(headers, null, 2));
+      console.log('  Body:', JSON.stringify({}));
+
+      const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify({}),
       });
 
-      const data = await response.json();
+      console.log('[FacturaGreen] listCustomers - Response Status:', response.status);
+      console.log('[FacturaGreen] listCustomers - Response OK:', response.ok);
 
-      if (!response.ok || !data.success) {
+      const data = await response.json();
+      console.log('[FacturaGreen] listCustomers - Response Data:', JSON.stringify(data, null, 2));
+
+      // Factura Green usa "response": "success" en lugar de "success": true
+      if (!response.ok || data.response !== 'success') {
+        console.warn('[FacturaGreen] listCustomers - Request failed or not successful');
         return [];
       }
 
-      return (data.data || []).map((customer: any) => ({
+      // Los clientes están en data.data.customers, no en data.data directamente
+      const customersArray = data.data?.customers || [];
+      const customers = customersArray.map((customer: any) => ({
         id: customer.uuid,
-        created_at: customer.createdAt || new Date().toISOString(),
+        created_at: new Date(customer.cd).toISOString(),
         livemode: true,
         legal_name: customer.name,
-        tax_id: customer.taxId,
-        tax_system: customer.taxRegime?.k,
+        tax_id: customer.taxid,
+        tax_system: customer.taxregime?.k,
         email: customer.email,
         phone: customer.phone,
-        default_invoice_use: customer.cfdiUse?.k,
+        default_invoice_use: customer.invoiceuse?.k,
         address: {
           zip: customer.zipCode,
         },
       }));
+
+      console.log('[FacturaGreen] listCustomers - Mapped customers count:', customers.length);
+      return customers;
     } catch (error: any) {
       console.error('Factura Green List Customers Error:', error);
       return [];
@@ -596,7 +659,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         const message = data.error?.message || 'Error deleting customer in Factura Green';
         throw new BadRequestException(message);
       }
@@ -646,7 +709,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         const message = data.error?.message || 'Error creating product in Factura Green';
         throw new BadRequestException(message);
       }
@@ -691,7 +754,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         return null;
       }
 
@@ -754,7 +817,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.response !== 'success') {
         const message = data.error?.message || 'Error updating product in Factura Green';
         throw new BadRequestException(message);
       }

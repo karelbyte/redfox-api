@@ -7,6 +7,7 @@ import { CustomerResponse } from '../interfaces/certification-pack.interface';
 import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
 import { TranslationService } from './translation.service';
 import { AddressType } from '../models/client-address.entity';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class ClientPackImportService {
@@ -17,7 +18,16 @@ export class ClientPackImportService {
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly translationService: TranslationService,
+    private readonly tenantContext: TenantContext,
   ) {}
+
+  private get organizationId(): string {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('Organization context is required');
+    }
+    return orgId;
+  }
 
   private async generateUniqueCode(base: string): Promise<string> {
     const normalized = base.slice(0, 50);
@@ -34,6 +44,7 @@ export class ClientPackImportService {
   private mapPackCustomerToClientData(customer: CustomerResponse): any {
     const address = customer.address || {};
     return {
+      organization_id: this.organizationId,
       name: customer.legal_name,
       email: customer.email || undefined,
       phone: customer.phone || undefined,

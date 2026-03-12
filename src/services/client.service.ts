@@ -9,6 +9,7 @@ import { Repository, Brackets, In } from 'typeorm';
 import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
+import { Quotation } from '../models/quotation.entity';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
 import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
@@ -44,6 +45,8 @@ export class ClientService {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(Withdrawal)
     private readonly withdrawalRepository: Repository<Withdrawal>,
+    @InjectRepository(Quotation)
+    private readonly quotationRepository: Repository<Quotation>,
     private clientMapper: ClientMapper,
     private readonly translationService: TranslationService,
     private readonly clientPackSyncService: ClientPackSyncService,
@@ -328,11 +331,16 @@ export class ClientService {
       .where('withdrawal.client_id = :id', { id })
       .getCount();
 
-    if (invoiceCount > 0 || withdrawalCount > 0) {
+    const quotationCount = await this.quotationRepository
+      .createQueryBuilder('quotation')
+      .where('quotation.client_id = :id', { id })
+      .getCount();
+
+    if (invoiceCount > 0 || withdrawalCount > 0 || quotationCount > 0) {
       const message = await this.translationService.translate(
         'client.cannot_delete_in_use',
         userId,
-        { invoiceCount, withdrawalCount },
+        { invoiceCount, withdrawalCount, quotationCount },
       );
       throw new BadRequestException(message);
     }
