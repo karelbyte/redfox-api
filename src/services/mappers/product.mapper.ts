@@ -35,6 +35,7 @@ export class ProductMapper {
       brand,
       category,
       tax,
+      taxes,
       measurement_unit,
       is_active,
       type,
@@ -63,6 +64,9 @@ export class ProductMapper {
         ? this.categoryMapper.mapToResponseDto(category)
         : null,
       tax: tax ? this.taxMapper.mapToResponseDto(tax) : null,
+      taxes: taxes && taxes.length > 0
+        ? taxes.map((t) => this.taxMapper.mapToResponseDto(t))
+        : [],
       measurement_unit: measurement_unit
         ? this.measurementUnitMapper.mapToResponseDto(measurement_unit)
         : null,

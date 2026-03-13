@@ -47,7 +47,7 @@ export class FacturaAPIService implements ICertificationPackService {
     return apiKey;
   }
 
-  async generateCFDI(invoice: Invoice): Promise<CFDIResponse> {
+  async generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse> {
     try {
       const client = this.getClient();
       const cfdiData = this.buildCFDIData(invoice);

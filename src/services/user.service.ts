@@ -452,4 +452,13 @@ export class UserService {
   async hardDelete(id: string): Promise<void> {
     await this.userRepository.delete(id);
   }
+
+  async completeOnboarding(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { onboarding_completed: true });
+  }
+
+  async getOnboardingStatus(userId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    return user?.onboarding_completed || false;
+  }
 }

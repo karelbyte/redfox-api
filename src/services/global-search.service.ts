@@ -88,14 +88,15 @@ export class GlobalSearchService {
     searchTerm: string,
     limit: number,
   ): Promise<SearchResult[]> {
+    const lowerSearch = searchTerm.toLowerCase();
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.brand', 'brand')
       .where(
-        'product.name LIKE :search OR product.description LIKE :search OR product.barcode LIKE :search',
+        'LOWER(product.name) LIKE :search OR LOWER(product.description) LIKE :search OR LOWER(product.barcode) LIKE :search',
         {
-          search: searchTerm,
+          search: `%${lowerSearch}%`,
         },
       )
       .andWhere('product.is_active = :isActive', { isActive: true })
@@ -120,12 +121,13 @@ export class GlobalSearchService {
     searchTerm: string,
     limit: number,
   ): Promise<SearchResult[]> {
+    const lowerSearch = searchTerm.toLowerCase();
     const clients = await this.clientRepository
       .createQueryBuilder('client')
       .where(
-        'client.name LIKE :search OR client.email LIKE :search OR client.phone LIKE :search',
+        'LOWER(client.name) LIKE :search OR LOWER(client.email) LIKE :search OR LOWER(client.phone) LIKE :search',
         {
-          search: searchTerm,
+          search: `%${lowerSearch}%`,
         },
       )
       .andWhere('client.status = :status', { status: true })
@@ -149,12 +151,13 @@ export class GlobalSearchService {
     searchTerm: string,
     limit: number,
   ): Promise<SearchResult[]> {
+    const lowerSearch = searchTerm.toLowerCase();
     const providers = await this.providerRepository
       .createQueryBuilder('provider')
       .where(
-        'provider.name LIKE :search OR provider.email LIKE :search OR provider.phone LIKE :search',
+        'LOWER(provider.name) LIKE :search OR LOWER(provider.email) LIKE :search OR LOWER(provider.phone) LIKE :search',
         {
-          search: searchTerm,
+          search: `%${lowerSearch}%`,
         },
       )
       .andWhere('provider.status = :status', { status: true })
@@ -263,13 +266,14 @@ export class GlobalSearchService {
     searchTerm: string,
     limit: number,
   ): Promise<SearchResult[]> {
+    const lowerSearch = searchTerm.toLowerCase();
     const accounts = await this.accountReceivableRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.client', 'client')
       .where(
-        'account.referenceNumber LIKE :search OR client.name LIKE :search',
+        'LOWER(account.referenceNumber) LIKE :search OR LOWER(client.name) LIKE :search',
         {
-          search: searchTerm,
+          search: `%${lowerSearch}%`,
         },
       )
       .limit(limit)

@@ -50,6 +50,10 @@ export class ProductResponseDto {
   tax?: TaxResponseDto | null;
 
   @Expose()
+  @Type(() => TaxResponseDto)
+  taxes?: TaxResponseDto[];
+
+  @Expose()
   measurement_unit?: MeasurementUnitResponseDto | null;
 
   @Expose()

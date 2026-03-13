@@ -52,6 +52,11 @@ export class CreateUsersTable1716400000000 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'onboarding_completed',
+            type: 'boolean',
+            default: false,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

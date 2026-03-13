@@ -82,6 +82,7 @@ export interface ProductData {
   taxes?: Array<{ type: string; rate: number }>;
   unit_name?: string;
   sku?: string;
+  type?: string; // S = Servicio, P = Producto
 }
 
 export interface ProductResponse {
@@ -156,7 +157,7 @@ export interface ReceiptResponse {
 }
 
 export interface ICertificationPackService {
-  generateCFDI(invoice: Invoice): Promise<CFDIResponse>;
+  generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
   getCFDIStatus(uuid: string): Promise<any>;
   /** @param packInvoiceId ID interno del comprobante en el PAC (ej. Facturapi id), no el UUID del SAT */
@@ -186,6 +187,12 @@ export interface ICertificationPackService {
    * Opcional: no todos los packs soportan eliminación.
    */
   deleteCustomer?: (customerId: string) => Promise<void>;
+  /**
+   * Lista productos del pack activo.
+   * Opcional: no todos los packs soportan listar productos.
+   * Se usa para importación "inversa" (pack -> nuestra DB).
+   */
+  listProducts?: () => Promise<ProductResponse[]>;
   createProduct(productData: ProductData): Promise<ProductResponse>;
   findProductBySku(sku: string): Promise<ProductResponse | null>;
   updateProduct(

@@ -68,9 +68,17 @@ export class AuditLogService {
     startDate?: Date,
     endDate?: Date,
   ): Promise<{ data: AuditLog[]; meta: any }> {
+    const organizationId = this.tenantContext.getOrganizationId();
+
+    if (!organizationId) {
+      this.logger.warn('No organization context for findAll audit logs');
+      return { data: [], meta: { currentPage: page, totalPages: 0, totalItems: 0, itemsPerPage: limit } };
+    }
+
     const query = this.auditLogRepository
       .createQueryBuilder('log')
-      .leftJoinAndSelect('log.user', 'user');
+      .leftJoinAndSelect('log.user', 'user')
+      .where('log.organization_id = :organizationId', { organizationId });
 
     if (entityType) {
       query.andWhere('log.entityType = :entityType', { entityType });
@@ -114,10 +122,18 @@ export class AuditLogService {
     entityId: string,
     limit: number = 50,
   ): Promise<AuditLog[]> {
+    const organizationId = this.tenantContext.getOrganizationId();
+
+    if (!organizationId) {
+      this.logger.warn('No organization context for findByEntity audit logs');
+      return [];
+    }
+
     return this.auditLogRepository
       .createQueryBuilder('log')
       .leftJoinAndSelect('log.user', 'user')
-      .where('log.entityType = :entityType', { entityType })
+      .where('log.organization_id = :organizationId', { organizationId })
+      .andWhere('log.entityType = :entityType', { entityType })
       .andWhere('log.entityId = :entityId', { entityId })
       .orderBy('log.created_at', 'DESC')
       .take(limit)
@@ -125,9 +141,17 @@ export class AuditLogService {
   }
 
   async findByUser(userId: string, limit: number = 100): Promise<AuditLog[]> {
+    const organizationId = this.tenantContext.getOrganizationId();
+
+    if (!organizationId) {
+      this.logger.warn('No organization context for findByUser audit logs');
+      return [];
+    }
+
     return this.auditLogRepository
       .createQueryBuilder('log')
-      .where('log.userId = :userId', { userId })
+      .where('log.organization_id = :organizationId', { organizationId })
+      .andWhere('log.userId = :userId', { userId })
       .orderBy('log.created_at', 'DESC')
       .take(limit)
       .getMany();

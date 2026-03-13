@@ -732,6 +732,7 @@ export class InvoiceService {
   async generateCFDI(
     invoiceId: string,
     userId?: string,
+    options?: any,
   ): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
@@ -763,7 +764,9 @@ export class InvoiceService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
-      const cfdiResult = await packService.generateCFDI(invoice);
+      
+      // Pasar opciones especiales al servicio de pack (solo Factura Green las usa)
+      const cfdiResult = await packService.generateCFDI(invoice, options);
 
       invoice.cfdi_uuid = cfdiResult.uuid;
       invoice.pack_invoice_id = cfdiResult.id;

@@ -22,6 +22,7 @@ export class InventoryPackSyncService {
   /**
    * Construye ProductData desde producto + precio (del inventario).
    * Se llama al aplicar recepción o cierre de almacén, cuando ya existe producto y precio.
+   * Usa los impuestos reales del producto, no hardcodeados.
    */
   private buildProductData(product: Product, price: number): ProductData {
     const mu = product.measurement_unit as
@@ -32,6 +33,12 @@ export class InventoryPackSyncService {
     const productKey =
       product.code?.replace(/\D/g, '').slice(0, 8) || '50161800';
 
+    // Mapear los impuestos reales del producto
+    const taxes = product.taxes?.map((tax) => ({
+      type: tax.name,
+      rate: Number(tax.value) / 100, // Convertir de porcentaje a decimal
+    })) || [{ type: 'IVA', rate: 0.16 }]; // Fallback a IVA 16%
+
     return {
       description: product.description || product.name,
       product_key: productKey,
@@ -39,7 +46,7 @@ export class InventoryPackSyncService {
       price: Number(price),
       tax_included: true,
       taxability: '02',
-      taxes: [{ type: 'IVA', rate: 0.16 }],
+      taxes,
       unit_name: unitName,
       sku: product.sku ?? undefined,
     };

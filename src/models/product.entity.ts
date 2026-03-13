@@ -8,6 +8,8 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
   Index,
 } from 'typeorm';
 import { Brand } from './brand.entity';
@@ -15,6 +17,7 @@ import { Category } from './category.entity';
 import { Tax } from './tax.entity';
 import { MeasurementUnit } from './measurement-unit.entity';
 import { ProductPrice } from './product-price.entity';
+import { ProductTax } from './product-tax.entity';
 import { Organization } from './organization.entity';
 
 export enum ProductType {
@@ -81,9 +84,26 @@ export class Product {
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
+  // Relación legacy con un solo impuesto (mantener por compatibilidad)
   @ManyToOne(() => Tax, { nullable: true })
   @JoinColumn({ name: 'tax_id' })
   tax: Tax;
+
+  // Nueva relación muchos a muchos con impuestos
+  @OneToMany(() => ProductTax, (productTax) => productTax.product, {
+    cascade: true,
+    eager: true,
+  })
+  productTaxes: ProductTax[];
+
+  // Relación directa a los impuestos (virtual, calculada desde productTaxes)
+  @ManyToMany(() => Tax, { cascade: true })
+  @JoinTable({
+    name: 'product_taxes',
+    joinColumn: { name: 'product_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tax_id', referencedColumnName: 'id' },
+  })
+  taxes: Tax[];
 
   @ManyToOne(() => MeasurementUnit, { nullable: false })
   @JoinColumn({ name: 'measurement_unit_id' })
@@ -117,6 +137,9 @@ export class Product {
 
   @Column({ type: 'text', nullable: true })
   images: string;
+
+  @Column({ length: 255, nullable: true })
+  product_pack_id: string;
 
   @CreateDateColumn()
   created_at: Date;

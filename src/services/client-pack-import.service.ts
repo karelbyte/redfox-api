@@ -8,6 +8,7 @@ import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-
 import { TranslationService } from './translation.service';
 import { AddressType } from '../models/client-address.entity';
 import { TenantContext } from './tenant-context.service';
+import { SurrogateService } from './surrogate.service';
 
 @Injectable()
 export class ClientPackImportService {
@@ -19,6 +20,7 @@ export class ClientPackImportService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly surrogateService: SurrogateService,
   ) {}
 
   private get organizationId(): string {
@@ -32,7 +34,7 @@ export class ClientPackImportService {
   private async generateUniqueCode(base: string): Promise<string> {
     const normalized = base.slice(0, 50);
     const existing = await this.clientRepository.findOne({
-      where: { code: normalized },
+      where: { code: normalized, organization_id: this.organizationId },
       withDeleted: true,
     });
     if (!existing) return normalized;
@@ -142,11 +144,10 @@ export class ClientPackImportService {
           continue;
         }
 
-        // Crear nuevo
-        const codeBase = `PACK-${customer.id}`;
-        const code = await this.generateUniqueCode(codeBase);
+        // Crear nuevo cliente con código generado por surrogate
+        const codeResponse = await this.surrogateService.useNextCode('client');
         const client = this.clientRepository.create({
-          code,
+          code: codeResponse.next_code,
           description: 'Importado del pack',
           ...data,
         });

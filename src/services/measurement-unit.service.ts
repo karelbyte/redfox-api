@@ -344,7 +344,7 @@ export class MeasurementUnitService {
       }
 
       const data = await response.json();
-      console.log('[MeasurementUnit Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
+      //console.log('[MeasurementUnit Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
       
       // Adaptar la respuesta de factura123.mx al formato esperado
       // La API regresa { rows: [...], total: number }

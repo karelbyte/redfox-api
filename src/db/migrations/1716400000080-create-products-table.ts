@@ -155,6 +155,12 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'product_pack_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
@@ -211,6 +217,10 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             name: 'IDX_PRODUCT_ORGANIZATION_SKU',
             columnNames: ['organization_id', 'sku'],
             isUnique: true,
+          },
+          {
+            name: 'IDX_PRODUCT_PACK_ID',
+            columnNames: ['product_pack_id', 'organization_id'],
           },
         ],
       }),

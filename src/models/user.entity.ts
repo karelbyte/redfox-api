@@ -51,6 +51,9 @@ export class User {
   @Column({ default: true })
   status: boolean;
 
+  @Column({ default: false })
+  onboarding_completed: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

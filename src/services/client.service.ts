@@ -110,17 +110,18 @@ export class ClientService {
     }
 
     if (term) {
+      const lowerTerm = term.toLowerCase();
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('client.code LIKE :term', { term: `%${term}%` })
-            .orWhere('client.name LIKE :term', { term: `%${term}%` })
-            .orWhere('client.description LIKE :term', { term: `%${term}%` })
-            .orWhere('client.phone LIKE :term', { term: `%${term}%` })
-            .orWhere('client.email LIKE :term', { term: `%${term}%` })
-            .orWhere('taxData.tax_document LIKE :term', { term: `%${term}%` })
-            .orWhere('taxData.tax_name LIKE :term', { term: `%${term}%` })
-            .orWhere('address.street LIKE :term', { term: `%${term}%` })
-            .orWhere('address.city LIKE :term', { term: `%${term}%` });
+          qb.where('LOWER(client.code) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(client.name) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(client.description) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(client.phone) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(client.email) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(taxData.tax_document) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(taxData.tax_name) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(address.street) LIKE :term', { term: `%${lowerTerm}%` })
+            .orWhere('LOWER(address.city) LIKE :term', { term: `%${lowerTerm}%` });
         }),
       );
     }

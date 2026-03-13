@@ -13,6 +13,7 @@ import {
   MeasurementUnitSuggestion,
   ProductKeySuggestion,
 } from '../interfaces/certification-pack.interface';
+import { GenerateCFDIOptions } from '../interfaces/factura-green-options.interface';
 import { TenantContext } from './tenant-context.service';
 
 @Injectable()
@@ -64,7 +65,7 @@ export class FacturaGreenService implements ICertificationPackService {
     return `https://${tenantId}`;
   }
 
-  async generateCFDI(invoice: Invoice): Promise<CFDIResponse> {
+  async generateCFDI(invoice: Invoice, options?: GenerateCFDIOptions): Promise<CFDIResponse> {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
@@ -73,11 +74,8 @@ export class FacturaGreenService implements ICertificationPackService {
         throw new BadRequestException('Customer not synced with Factura Green');
       }
 
-      // Factura Green requiere que los productos estén previamente sincronizados
-      // y usa sus UUIDs. Por ahora, construimos items con datos del producto local
+      // Construir items con soporte para casos especiales
       const items = invoice.details.map(detail => {
-        // Si el producto tiene pack_client_id (sincronizado), usarlo
-        // Si no, necesitaremos sincronizar el producto primero
         const productPackId = (detail.product as any)?.pack_client_id;
         
         if (!productPackId) {
@@ -86,10 +84,48 @@ export class FacturaGreenService implements ICertificationPackService {
           );
         }
 
-        return {
+        const item: any = {
           uuid: productPackId,
           qty: detail.quantity,
         };
+
+        // CASO 1: Productos con precio dinámico
+        // Solo enviar precio si se especifica en las opciones o si el precio es diferente al del producto
+        // Factura Green: si el producto tiene price.type = 'dynamic', DEBE enviarse el precio
+        // Si el producto tiene price.type = 'fixed', NO se debe enviar (usa el precio del producto)
+        if (options?.itemPrices && options.itemPrices[detail.product_id] !== undefined) {
+          item.price = {
+            amount: options.itemPrices[detail.product_id],
+          };
+        }
+
+        // CASO 2: Descuentos (porcentaje o monto fijo)
+        // Los descuentos se pasan a través de las opciones por producto
+        if (options?.itemDiscounts && options.itemDiscounts[detail.product_id]) {
+          const discount = options.itemDiscounts[detail.product_id];
+          // Si el descuento es menor a 1, asumimos que es porcentaje (0.10 = 10%)
+          if (discount < 1) {
+            item.discount = `${(discount * 100).toFixed(2)}%`;
+          } else {
+            // Si es mayor o igual a 1, es monto fijo
+            item.discount = discount;
+          }
+        }
+
+        // CASO 3: Cambiar descripción del producto
+        if (options?.itemDescriptions && options.itemDescriptions[detail.product_id]) {
+          item.desc = options.itemDescriptions[detail.product_id];
+        }
+
+        // CASO 4: Productos IEDU (colegiaturas)
+        if (options?.ieduData && options.ieduData[detail.product_id]) {
+          item.extra = {
+            student_name: options.ieduData[detail.product_id].student_name,
+            student_popid: options.ieduData[detail.product_id].student_popid,
+          };
+        }
+
+        return item;
       });
 
       // Mapear payment_method a forma de pago SAT
@@ -100,7 +136,7 @@ export class FacturaGreenService implements ICertificationPackService {
         check: '02',     // Cheque nominativo
       };
 
-      const payload = {
+      const payload: any = {
         cfdi: {
           customer: {
             uuid: invoice.client.pack_client_id,
@@ -110,13 +146,79 @@ export class FacturaGreenService implements ICertificationPackService {
               k: paymentFormMap[invoice.payment_method] || '99',
             },
             method: {
-              k: 'PUE', // Pago en Una Exhibición (por defecto)
+              k: options?.paymentMethod || 'PUE', // Pago en Una Exhibición (por defecto)
             },
           },
           items,
           observations: invoice.notes || '',
         },
       };
+
+      // CASO 5: Cambiar dirección del emisor (sucursales)
+      if (options?.businessAddress) {
+        payload.cfdi.business = {
+          address: {
+            street: options.businessAddress.street,
+            zip: options.businessAddress.zip,
+          },
+        };
+      }
+
+      // CASO 6: Condiciones de pago personalizadas
+      if (options?.paymentConditions) {
+        payload.cfdi.paymentConditions = options.paymentConditions;
+      }
+
+      // CASO 7: Complemento de donatarias
+      if (options?.donatarias) {
+        payload.cfdi.accessories = {
+          '#donat11': {
+            auth_number: options.donatarias.auth_number,
+            auth_date: options.donatarias.auth_date,
+            legend: options.donatarias.legend,
+          },
+        };
+      }
+
+      // CASO 8: Facturas globales (Público en General)
+      if (options?.global) {
+        payload.cfdi.global = {
+          period: {
+            k: options.global.period,
+          },
+          periodicity: {
+            k: options.global.periodicity,
+          },
+          year: {
+            k: options.global.year,
+          },
+        };
+      }
+
+      // CASO 9: Configuraciones especiales
+      const config: any = {};
+
+      // Modificar fecha de emisión (hasta 72 horas atrás)
+      if (options?.emmitDateOffset) {
+        config['override.emmitDateOffset'] = options.emmitDateOffset;
+      }
+
+      // Override de condiciones de pago
+      if (options?.paymentConditions) {
+        config['override.paymentConditions'] = true;
+      }
+
+      // Configuración para facturas globales
+      if (options?.global && options.global.enforceGlobal === false) {
+        config['enforce.cfdiGlobal'] = false;
+      }
+
+      // Agregar config si tiene valores
+      if (Object.keys(config).length > 0) {
+        payload['@config'] = config;
+      }
+
+      console.log('[FacturaGreen] generateCFDI - Payload:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
@@ -127,13 +229,13 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error generating CFDI with Factura Green';
+        const message = data.message || data.error?.message || 'Error generating CFDI with Factura Green';
         throw new BadRequestException(message);
       }
 
       return {
         id: data.data.uuid,
-        uuid: data.data.folio_tax,
+        uuid: data.data.cfdi?.folio_tax || data.data.folio_tax,
         status: 'valid',
         pdf_url: data.data.pdf_url,
         xml_url: data.data.xml_url,
@@ -141,7 +243,7 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Error:', error);
-      throw new BadRequestException('Error generating CFDI with Factura Green');
+      throw new BadRequestException(error.message || 'Error generating CFDI with Factura Green');
     }
   }
 
@@ -675,31 +777,58 @@ export class FacturaGreenService implements ICertificationPackService {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
 
-      const taxes = {
-        transferred: productData.taxes?.map(tax => ({
-          type: tax.type === 'IVA' ? '002' : tax.type,
-          rate: tax.rate,
-          factor: 'Tasa',
-        })) || [],
+      // Construir objeto de impuestos en formato Factura Green
+      const taxes: any = {
+        iva_ta: false,
+        iva_ra: false,
+        isr_ra: false,
+        ieps_ta: false,
+        ieps_ra: false,
       };
+
+      // Mapear impuestos de nuestro formato al formato de Factura Green
+      for (const tax of productData.taxes || []) {
+        const rate = (tax.rate * 100).toFixed(2); // Convertir a porcentaje string
+        
+        if (tax.type === 'IVA' && !tax.type.includes('RET')) {
+          taxes.iva_ta = true;
+          taxes.iva_tr = rate;
+        } else if (tax.type === 'IVA_RET' || (tax.type === 'IVA' && tax.type.includes('RET'))) {
+          taxes.iva_ra = true;
+          taxes.iva_rr = rate;
+        } else if (tax.type === 'ISR' || tax.type.includes('ISR')) {
+          taxes.isr_ra = true;
+          taxes.isr_rr = rate;
+        } else if (tax.type === 'IEPS' && !tax.type.includes('RET')) {
+          taxes.ieps_ta = true;
+          taxes.ieps_tr = rate;
+        } else if (tax.type === 'IEPS_RET' || (tax.type === 'IEPS' && tax.type.includes('RET'))) {
+          taxes.ieps_ra = true;
+          taxes.ieps_rr = rate;
+        }
+      }
 
       const payload = {
         product: {
           id: productData.sku || `PROD-${Date.now()}`,
-          name: productData.description,
-          satKey: {
-            k: productData.product_key.toString(),
+          sku: productData.sku || `PROD-${Date.now()}`,
+          type: productData.type || 'S', // S = Servicio, P = Producto
+          desc: productData.description,
+          sat_class: {
+            k: productData.product_key.toString(), // Enviar como string
           },
-          unit: {
+          sat_unit: {
             k: productData.unit_key || 'E48',
           },
           price: {
-            type: 'fixed',
+            type: 'dynamic',
             amount: productData.price,
           },
           taxes,
         },
       };
+
+      console.log('[FacturaGreen] createProduct - Payload:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(`${baseUrl}/interop/product/add`, {
         method: 'POST',
@@ -707,16 +836,19 @@ export class FacturaGreenService implements ICertificationPackService {
         body: JSON.stringify(payload),
       });
 
+      console.log('[FacturaGreen] createProduct - Response Status:', response.status);
+
       const data = await response.json();
+      console.log('[FacturaGreen] createProduct - Response Data:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error creating product in Factura Green';
+        const message = data.message || data.error?.message || 'Error creating product in Factura Green';
         throw new BadRequestException(message);
       }
 
       return {
         id: data.data.uuid,
-        created_at: data.data.createdAt || new Date().toISOString(),
+        created_at: data.data.cd || new Date().toISOString(),
         livemode: true,
         description: productData.description,
         product_key: productData.product_key,
@@ -729,7 +861,7 @@ export class FacturaGreenService implements ICertificationPackService {
         sku: productData.sku,
       };
     } catch (error: any) {
-      console.error('Factura Green Create Product Error:', error);
+      console.error('[FacturaGreen] createProduct - Error:', error);
       const message = error?.message ?? 'Error creating product in Factura Green';
       throw new BadRequestException(message);
     }
@@ -850,4 +982,120 @@ export class FacturaGreenService implements ICertificationPackService {
   async cancelReceipt(receiptId: string): Promise<void> {
     throw new BadRequestException('Receipts not supported by Factura Green');
   }
+
+  async listProducts(): Promise<ProductResponse[]> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = this.getHeaders();
+      const url = `${baseUrl}/interop/product/all`;
+
+      console.log('[FacturaGreen] listProducts - Request Details:');
+      console.log('  URL:', url);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({}),
+      });
+
+      console.log('[FacturaGreen] listProducts - Response Status:', response.status);
+
+      const data = await response.json();
+
+      if (!response.ok || data.response !== 'success') {
+        const message = data.message || 'Error listing products from Factura Green';
+        throw new BadRequestException(message);
+      }
+
+      // Mapear los productos de Factura Green al formato ProductResponse
+      const products = data.data?.products || [];
+      console.log('[FacturaGreen] Total products from pack:', products.length);
+      
+      return products.map((product: any) => ({
+        id: product.uuid,
+        created_at: new Date().toISOString(),
+        livemode: true,
+        description: product.name || '',
+        product_key: product.s, // Clave SAT
+        unit_key: product.u, // Unidad de medida SAT
+        price: product.dp || 0, // dp es el precio dinámico
+        tax_included: false,
+        sku: product.sku || product.id || '', // Usar id si no hay sku
+        taxes: this.mapFacturaGreenTaxes(product.t),
+      }));
+    } catch (error: any) {
+      console.error('[FacturaGreen] listProducts - Error:', error);
+      const message = error?.message ?? 'Error listing products from Factura Green';
+      throw new BadRequestException(message);
+    }
+  }
+
+  private mapFacturaGreenTaxes(taxesObj: any): any[] {
+    if (!taxesObj) return [];
+    
+    const taxes: any[] = [];
+    
+    // IVA Trasladado (cobrado al cliente)
+    if (taxesObj.iva_ta && taxesObj.iva_tr && taxesObj.iva_tr.v) {
+      const rate = parseFloat(taxesObj.iva_tr.v);
+      if (!isNaN(rate) && rate > 0) {
+        taxes.push({
+          type: 'IVA',
+          rate: rate / 100, // Convertir de porcentaje a decimal (16 -> 0.16)
+          factor: 'Tasa',
+        });
+      }
+    }
+    
+    // IVA Retenido
+    if (taxesObj.iva_ra && taxesObj.iva_rr) {
+      const rate = parseFloat(taxesObj.iva_rr);
+      if (!isNaN(rate) && rate > 0) {
+        taxes.push({
+          type: 'IVA_RET',
+          rate: rate / 100,
+          factor: 'Tasa',
+        });
+      }
+    }
+    
+    // ISR Retenido
+    if (taxesObj.isr_ra && taxesObj.isr_rr) {
+      const rate = parseFloat(taxesObj.isr_rr);
+      if (!isNaN(rate) && rate > 0) {
+        taxes.push({
+          type: 'ISR',
+          rate: rate / 100,
+          factor: 'Tasa',
+        });
+      }
+    }
+    
+    // IEPS Trasladado
+    if (taxesObj.ieps_ta && taxesObj.ieps_tr) {
+      const rate = parseFloat(taxesObj.ieps_tr);
+      if (!isNaN(rate) && rate > 0) {
+        taxes.push({
+          type: 'IEPS',
+          rate: rate / 100,
+          factor: 'Tasa',
+        });
+      }
+    }
+    
+    // IEPS Retenido
+    if (taxesObj.ieps_ra && taxesObj.ieps_rr) {
+      const rate = parseFloat(taxesObj.ieps_rr);
+      if (!isNaN(rate) && rate > 0) {
+        taxes.push({
+          type: 'IEPS_RET',
+          rate: rate / 100,
+          factor: 'Tasa',
+        });
+      }
+    }
+    
+    return taxes;
+  }
 }
+

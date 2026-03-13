@@ -121,6 +121,12 @@ export class CreateProductDto {
   @IsOptional()
   tax_id?: string;
 
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  @Transform(transformToArray)
+  tax_ids?: string[];
+
   @IsUUID()
   measurement_unit_id: string;
 

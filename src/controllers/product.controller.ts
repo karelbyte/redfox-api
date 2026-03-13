@@ -176,4 +176,9 @@ export class ProductController {
   ): Promise<void> {
     return this.productService.removeMany(bulkDeleteProductDto.ids);
   }
+
+  @Post('import-from-pack')
+  importFromPack(@UserId() userId: string): Promise<any> {
+    return this.productService.importFromPack(userId);
+  }
 }

@@ -112,9 +112,10 @@ export class InvoiceController {
   @Post(':id/generate-cfdi')
   generateCFDI(
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() options: GenerateCFDIDto,
     @UserId() userId: string,
   ): Promise<InvoiceResponseDto> {
-    return this.invoiceService.generateCFDI(id, userId);
+    return this.invoiceService.generateCFDI(id, userId, options);
   }
 
   @Post(':id/cancel-cfdi')

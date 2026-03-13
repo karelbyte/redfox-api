@@ -25,6 +25,8 @@ import { CertificationPackFactoryService } from './certification-pack-factory.se
 import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
 import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
+import { ProductPackImportService } from './product-pack-import.service';
+import { ProductPackSyncService } from './product-pack-sync.service';
 
 interface SearchCondition {
   name?: any;
@@ -63,6 +65,8 @@ export class ProductService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
+    private readonly productPackImportService: ProductPackImportService,
+    private readonly productPackSyncService: ProductPackSyncService,
   ) {}
 
   private get organizationId(): string {
@@ -148,6 +152,11 @@ export class ProductService {
         });
       }
 
+      // Manejar múltiples impuestos si se proporcionan
+      if (createProductDto.tax_ids && createProductDto.tax_ids.length > 0) {
+        product.taxes = createProductDto.tax_ids.map((taxId) => ({ id: taxId } as any));
+      }
+
       const savedProduct = await this.productRepository.save({
         ...product,
         organization_id: this.organizationId,
@@ -161,8 +170,14 @@ export class ProductService {
 
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
       });
+
+      // Sincronizar con el pack de certificación (si está configurado)
+      if (productWithRelations) {
+        await this.productPackSyncService.syncProduct(productWithRelations);
+      }
+
       return this.productMapper.mapToResponseDto(
         productWithRelations ?? savedProduct,
       );
@@ -199,7 +214,7 @@ export class ProductService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
     };
 
     // Construir condiciones de búsqueda OR (para el término)
@@ -301,7 +316,7 @@ export class ProductService {
   async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
     });
 
     if (!product) {
@@ -319,7 +334,7 @@ export class ProductService {
   async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
     });
 
     if (!product) {
@@ -374,6 +389,11 @@ export class ProductService {
           : undefined,
       });
 
+      // Manejar actualización de múltiples impuestos
+      if (updateProductDto.tax_ids !== undefined) {
+        updatedProduct.taxes = updateProductDto.tax_ids.map((taxId) => ({ id: taxId } as any));
+      }
+
       // Manejar actualización de precios
       if (updateProductDto.prices !== undefined) {
         // Obtener los IDs de los precios que vienen en el DTO
@@ -416,8 +436,14 @@ export class ProductService {
       const savedProduct = await this.productRepository.save(updatedProduct);
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
       });
+
+      // Sincronizar con el pack de certificación (si está configurado)
+      if (productWithRelations) {
+        await this.productPackSyncService.syncProduct(productWithRelations);
+      }
+
       return this.productMapper.mapToResponseDto(
         productWithRelations ?? savedProduct,
       );
@@ -584,7 +610,7 @@ export class ProductService {
       }
 
       const data = await response.json();
-      console.log('[Product Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
+      //console.log('[Product Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
       
       // Adaptar la respuesta de factura123.mx al formato esperado
       // La API regresa { rows: [...], total: number }
@@ -645,5 +671,9 @@ export class ProductService {
           p.description.toLowerCase().includes(lowerTerm),
       )
       .slice(0, 20);
+  }
+
+  async importFromPack(userId?: string): Promise<any> {
+    return this.productPackImportService.importAllFromPack(userId);
   }
 }

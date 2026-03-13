@@ -102,4 +102,16 @@ export class UserController {
       userId,
     );
   }
+
+  @Post('onboarding/complete')
+  async completeOnboarding(@UserId() userId: string) {
+    await this.userService.completeOnboarding(userId);
+    return { message: 'Onboarding completed successfully' };
+  }
+
+  @Get('onboarding/status')
+  async getOnboardingStatus(@UserId() userId: string) {
+    const completed = await this.userService.getOnboardingStatus(userId);
+    return { onboarding_completed: completed };
+  }
 }

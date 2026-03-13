@@ -126,8 +126,8 @@ export class AuditLogInterceptor implements NestInterceptor {
           let newValues = method === 'POST' ? response : body;
 
           // Limit the size of newValues to prevent huge logs
-          const newValuesStr = JSON.stringify(newValues);
-          if (newValuesStr.length > 5000) {
+          const newValuesStr = JSON.stringify(newValues || {});
+          if (newValuesStr && newValuesStr.length > 5000) {
             newValues = { _truncated: true, _size: newValuesStr.length };
           }
 
