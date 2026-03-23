@@ -7,34 +7,17 @@ import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Inventory } from '../models/inventory.entity';
 import { Reception } from '../models/reception.entity';
+import { TenantContext } from './tenant-context.service';
 
 export interface SalesAnalytics {
   totalSales: number;
   totalRevenue: number;
   averageTicket: number;
   salesGrowth: number;
-  salesByMonth: Array<{
-    month: string;
-    sales: number;
-    revenue: number;
-  }>;
-  salesByDay: Array<{
-    date: string;
-    sales: number;
-    revenue: number;
-  }>;
-  topProducts: Array<{
-    productId: string;
-    productName: string;
-    totalSold: number;
-    revenue: number;
-  }>;
-  topClients: Array<{
-    clientId: string;
-    clientName: string;
-    totalPurchases: number;
-    totalSpent: number;
-  }>;
+  salesByMonth: Array<{ month: string; sales: number; revenue: number }>;
+  salesByDay: Array<{ date: string; sales: number; revenue: number }>;
+  topProducts: Array<{ productId: string; productName: string; totalSold: number; revenue: number }>;
+  topClients: Array<{ clientId: string; clientName: string; totalPurchases: number; totalSpent: number }>;
 }
 
 export interface InventoryAnalytics {
@@ -42,17 +25,8 @@ export interface InventoryAnalytics {
   lowStockProducts: number;
   outOfStockProducts: number;
   totalInventoryValue: number;
-  productsByCategory: Array<{
-    categoryName: string;
-    count: number;
-    value: number;
-  }>;
-  lowStockItems: Array<{
-    productId: string;
-    productName: string;
-    currentStock: number;
-    warehouseName: string;
-  }>;
+  productsByCategory: Array<{ categoryName: string; count: number; value: number }>;
+  lowStockItems: Array<{ productId: string; productName: string; currentStock: number; warehouseName: string }>;
 }
 
 export interface FinancialAnalytics {
@@ -60,27 +34,15 @@ export interface FinancialAnalytics {
   totalInvoiced: number;
   pendingInvoices: number;
   paidInvoices: number;
-  invoicesByStatus: Array<{
-    status: string;
-    count: number;
-    amount: number;
-  }>;
-  monthlyRevenue: Array<{
-    month: string;
-    invoiced: number;
-    collected: number;
-  }>;
+  invoicesByStatus: Array<{ status: string; count: number; amount: number }>;
+  monthlyRevenue: Array<{ month: string; invoiced: number; collected: number }>;
 }
 
 export interface OperationalAnalytics {
   pendingReceptions: number;
   completedReceptions: number;
   averageReceptionTime: number;
-  receptionsByMonth: Array<{
-    month: string;
-    count: number;
-    totalAmount: number;
-  }>;
+  receptionsByMonth: Array<{ month: string; count: number; totalAmount: number }>;
 }
 
 @Injectable()
@@ -98,15 +60,13 @@ export class AnalyticsService {
     private inventoryRepository: Repository<Inventory>,
     @InjectRepository(Reception)
     private receptionRepository: Repository<Reception>,
+    private readonly tenantContext: TenantContext,
   ) {}
 
-  async getSalesAnalytics(
-    startDate?: string,
-    endDate?: string,
-  ): Promise<SalesAnalytics> {
-    const whereClause = this.buildDateWhereClause(startDate, endDate);
+  async getSalesAnalytics(startDate?: string, endDate?: string): Promise<SalesAnalytics> {
+    const organizationId = this.tenantContext.getOrganizationId() ?? '';
+    const { where, params } = this.buildWhereClause(organizationId, startDate, endDate, 'withdrawal');
 
-    // Total sales and revenue
     const salesData = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .select([
@@ -114,30 +74,16 @@ export class AnalyticsService {
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as totalRevenue',
         'AVG(CAST(withdrawal.amount AS DECIMAL(10,2))) as averageTicket',
       ])
-      .where(whereClause.where, whereClause.params)
+      .where(where, params)
       .getRawOne();
 
-    // Sales growth (compare with previous period)
-    const previousPeriodData = await this.getPreviousPeriodSales(
-      startDate,
-      endDate,
-    );
-    const salesGrowth = this.calculateGrowth(
-      parseFloat(salesData.totalRevenue || '0'),
-      previousPeriodData,
-    );
+    const previousPeriodData = await this.getPreviousPeriodSales(organizationId, startDate, endDate);
+    const salesGrowth = this.calculateGrowth(parseFloat(salesData.totalRevenue || '0'), previousPeriodData);
 
-    // Sales by month (last 12 months)
-    const salesByMonth = await this.getSalesByMonth();
-
-    // Sales by day (last 30 days)
-    const salesByDay = await this.getSalesByDay();
-
-    // Top products
-    const topProducts = await this.getTopProducts(startDate, endDate);
-
-    // Top clients
-    const topClients = await this.getTopClients(startDate, endDate);
+    const salesByMonth = await this.getSalesByMonth(organizationId);
+    const salesByDay = await this.getSalesByDay(organizationId);
+    const topProducts = await this.getTopProducts(organizationId, startDate, endDate);
+    const topClients = await this.getTopClients(organizationId, startDate, endDate);
 
     return {
       totalSales: parseInt(salesData.totalSales || '0'),
@@ -152,34 +98,28 @@ export class AnalyticsService {
   }
 
   async getInventoryAnalytics(): Promise<InventoryAnalytics> {
-    // Total products
+    const organizationId = this.tenantContext.getOrganizationId() ?? '';
+
     const totalProducts = await this.productRepository.count({
-      where: { is_active: true },
+      where: { organization_id: organizationId, is_active: true },
     });
 
-    // Inventory with low stock (less than 10 units)
     const inventoryData = await this.inventoryRepository
       .createQueryBuilder('inventory')
       .leftJoinAndSelect('inventory.product', 'product')
       .leftJoinAndSelect('inventory.warehouse', 'warehouse')
       .leftJoinAndSelect('product.category', 'category')
-      .where('product.is_active = :isActive', { isActive: true })
+      .where('inventory.organization_id = :organizationId', { organizationId })
+      .andWhere('product.is_active = :isActive', { isActive: true })
       .getMany();
 
-    const lowStockProducts = inventoryData.filter(
-      (item) => item.quantity < 10,
-    ).length;
-    const outOfStockProducts = inventoryData.filter(
-      (item) => item.quantity === 0,
-    ).length;
-
-    // Total inventory value (quantity * price)
+    const lowStockProducts = inventoryData.filter((item) => item.quantity < 10).length;
+    const outOfStockProducts = inventoryData.filter((item) => item.quantity === 0).length;
     const totalInventoryValue = inventoryData.reduce(
       (sum, item) => sum + item.quantity * (item.price || 0),
       0,
     );
 
-    // Products by category
     const categoryMap = new Map<string, { count: number; value: number }>();
     inventoryData.forEach((item) => {
       const categoryName = item.product?.category?.name || 'Sin categoría';
@@ -190,18 +130,15 @@ export class AnalyticsService {
       });
     });
 
-    const productsByCategory = Array.from(categoryMap.entries()).map(
-      ([categoryName, data]) => ({
-        categoryName,
-        count: data.count,
-        value: data.value,
-      }),
-    );
+    const productsByCategory = Array.from(categoryMap.entries()).map(([categoryName, data]) => ({
+      categoryName,
+      count: data.count,
+      value: data.value,
+    }));
 
-    // Low stock items details
     const lowStockItems = inventoryData
       .filter((item) => item.quantity < 10)
-      .slice(0, 10) // Top 10 low stock items
+      .slice(0, 10)
       .map((item) => ({
         productId: item.product?.id || '',
         productName: item.product?.name || '',
@@ -209,34 +146,18 @@ export class AnalyticsService {
         warehouseName: item.warehouse?.name || '',
       }));
 
-    return {
-      totalProducts,
-      lowStockProducts,
-      outOfStockProducts,
-      totalInventoryValue,
-      productsByCategory,
-      lowStockItems,
-    };
+    return { totalProducts, lowStockProducts, outOfStockProducts, totalInventoryValue, productsByCategory, lowStockItems };
   }
 
-  async getFinancialAnalytics(
-    startDate?: string,
-    endDate?: string,
-  ): Promise<FinancialAnalytics> {
-    const whereClause = this.buildDateWhereClause(startDate, endDate);
+  async getFinancialAnalytics(startDate?: string, endDate?: string): Promise<FinancialAnalytics> {
+    const organizationId = this.tenantContext.getOrganizationId() ?? '';
+    const { where, params } = this.buildWhereClause(organizationId, startDate, endDate, 'invoice');
 
-    // Total invoices
-    let totalInvoices: number;
-    if (whereClause.where) {
-      totalInvoices = await this.invoiceRepository
-        .createQueryBuilder('invoice')
-        .where(whereClause.where, whereClause.params)
-        .getCount();
-    } else {
-      totalInvoices = await this.invoiceRepository.count();
-    }
+    const totalInvoices = await this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .where(where, params)
+      .getCount();
 
-    // Invoices by status
     const invoicesByStatus = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .select([
@@ -244,7 +165,7 @@ export class AnalyticsService {
         'COUNT(invoice.id) as count',
         'SUM(invoice.total_amount) as amount',
       ])
-      .where(whereClause.where, whereClause.params)
+      .where(where, params)
       .groupBy('invoice.status')
       .getRawMany();
 
@@ -253,13 +174,10 @@ export class AnalyticsService {
       0,
     );
 
-    const pendingInvoices =
-      invoicesByStatus.find((item) => item.status === 'DRAFT')?.count || 0;
-    const paidInvoices =
-      invoicesByStatus.find((item) => item.status === 'PAID')?.count || 0;
+    const pendingInvoices = invoicesByStatus.find((item) => item.status === 'DRAFT')?.count || 0;
+    const paidInvoices = invoicesByStatus.find((item) => item.status === 'PAID')?.count || 0;
 
-    // Monthly revenue (last 12 months)
-    const monthlyRevenue = await this.getMonthlyRevenue();
+    const monthlyRevenue = await this.getMonthlyRevenue(organizationId);
 
     return {
       totalInvoices,
@@ -276,58 +194,53 @@ export class AnalyticsService {
   }
 
   async getOperationalAnalytics(): Promise<OperationalAnalytics> {
-    // Receptions data
+    const organizationId = this.tenantContext.getOrganizationId() ?? '';
+
     const pendingReceptions = await this.receptionRepository.count({
-      where: { status: false },
+      where: { organization_id: organizationId, status: false },
     });
 
     const completedReceptions = await this.receptionRepository.count({
-      where: { status: true },
+      where: { organization_id: organizationId, status: true },
     });
 
-    // Average reception time (mock data for now)
     const averageReceptionTime = 2.5; // days
 
-    // Receptions by month
-    const receptionsByMonth = await this.getReceptionsByMonth();
+    const receptionsByMonth = await this.getReceptionsByMonth(organizationId);
 
-    return {
-      pendingReceptions,
-      completedReceptions,
-      averageReceptionTime,
-      receptionsByMonth,
-    };
+    return { pendingReceptions, completedReceptions, averageReceptionTime, receptionsByMonth };
   }
 
-  private buildDateWhereClause(startDate?: string, endDate?: string) {
-    if (!startDate && !endDate) {
-      return { where: '', params: {} };
-    }
-
-    const conditions: string[] = [];
-    const params: Record<string, string> = {};
+  /**
+   * Construye el WHERE base con organization_id + filtros de fecha opcionales.
+   * alias: alias de la entidad en el QueryBuilder (e.g. 'withdrawal', 'invoice')
+   */
+  private buildWhereClause(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+    alias: string = 'entity',
+  ): { where: string; params: Record<string, any> } {
+    const conditions: string[] = [`${alias}.organization_id = :organizationId`];
+    const params: Record<string, any> = { organizationId };
 
     if (startDate) {
-      conditions.push('created_at >= :startDate');
+      conditions.push(`${alias}.created_at >= :startDate`);
       params.startDate = startDate;
     }
-
     if (endDate) {
-      conditions.push('created_at <= :endDate');
+      conditions.push(`${alias}.created_at <= :endDate`);
       params.endDate = endDate;
     }
 
-    return {
-      where: conditions.join(' AND '),
-      params,
-    };
+    return { where: conditions.join(' AND '), params };
   }
 
   private async getPreviousPeriodSales(
+    organizationId: string,
     startDate?: string,
     endDate?: string,
   ): Promise<number> {
-    // Calculate previous period dates
     const start = startDate ? new Date(startDate) : new Date();
     const end = endDate ? new Date(endDate) : new Date();
     const periodLength = end.getTime() - start.getTime();
@@ -339,11 +252,8 @@ export class AnalyticsService {
       .createQueryBuilder('withdrawal')
       .select('SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as totalRevenue')
       .where(
-        'withdrawal.created_at >= :prevStart AND withdrawal.created_at <= :prevEnd',
-        {
-          prevStart: prevStart.toISOString(),
-          prevEnd: prevEnd.toISOString(),
-        },
+        'withdrawal.organization_id = :organizationId AND withdrawal.created_at >= :prevStart AND withdrawal.created_at <= :prevEnd',
+        { organizationId, prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() },
       )
       .getRawOne();
 
@@ -355,7 +265,7 @@ export class AnalyticsService {
     return ((current - previous) / previous) * 100;
   }
 
-  private async getSalesByMonth() {
+  private async getSalesByMonth(organizationId: string) {
     const result = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .select([
@@ -363,7 +273,10 @@ export class AnalyticsService {
         'COUNT(withdrawal.id) as sales',
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as revenue',
       ])
-      .where("withdrawal.created_at >= NOW() - INTERVAL '12 months'")
+      .where(
+        "withdrawal.organization_id = :organizationId AND withdrawal.created_at >= NOW() - INTERVAL '12 months'",
+        { organizationId },
+      )
       .groupBy("TO_CHAR(withdrawal.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();
@@ -375,7 +288,7 @@ export class AnalyticsService {
     }));
   }
 
-  private async getSalesByDay() {
+  private async getSalesByDay(organizationId: string) {
     const result = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .select([
@@ -383,7 +296,10 @@ export class AnalyticsService {
         'COUNT(withdrawal.id) as sales',
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as revenue',
       ])
-      .where("withdrawal.created_at >= NOW() - INTERVAL '30 days'")
+      .where(
+        "withdrawal.organization_id = :organizationId AND withdrawal.created_at >= NOW() - INTERVAL '30 days'",
+        { organizationId },
+      )
       .groupBy("TO_CHAR(withdrawal.created_at, 'YYYY-MM-DD')")
       .orderBy('date', 'ASC')
       .getRawMany();
@@ -395,40 +311,24 @@ export class AnalyticsService {
     }));
   }
 
-  private async getTopProducts(startDate?: string, endDate?: string) {
-    const whereClause = this.buildDateWhereClause(startDate, endDate);
-
-    // This would need to be implemented based on your sales details structure
-    // For now, returning mock data
-    return [
-      {
-        productId: '1',
-        productName: 'Producto A',
-        totalSold: 150,
-        revenue: 15000,
-      },
-      {
-        productId: '2',
-        productName: 'Producto B',
-        totalSold: 120,
-        revenue: 12000,
-      },
-    ];
+  private async getTopProducts(organizationId: string, startDate?: string, endDate?: string) {
+    // TODO: implementar con withdrawal_details cuando esté disponible la relación
+    return [];
   }
 
-  private async getTopClients(startDate?: string, endDate?: string) {
-    const whereClause = this.buildDateWhereClause(startDate, endDate);
+  private async getTopClients(organizationId: string, startDate?: string, endDate?: string) {
+    const { where, params } = this.buildWhereClause(organizationId, startDate, endDate, 'withdrawal');
 
     const result = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
-      .leftJoinAndSelect('withdrawal.client', 'client')
+      .leftJoin('withdrawal.client', 'client')
       .select([
         'client.id as clientId',
         'client.name as clientName',
         'COUNT(withdrawal.id) as totalPurchases',
         'SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as totalSpent',
       ])
-      .where(whereClause.where, whereClause.params)
+      .where(where, params)
       .groupBy('client.id, client.name')
       .orderBy('totalSpent', 'DESC')
       .limit(10)
@@ -442,7 +342,7 @@ export class AnalyticsService {
     }));
   }
 
-  private async getMonthlyRevenue() {
+  private async getMonthlyRevenue(organizationId: string) {
     const result = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .select([
@@ -450,7 +350,10 @@ export class AnalyticsService {
         "SUM(CASE WHEN invoice.status != 'CANCELLED' THEN invoice.total_amount ELSE 0 END) as invoiced",
         "SUM(CASE WHEN invoice.status = 'PAID' THEN invoice.total_amount ELSE 0 END) as collected",
       ])
-      .where("invoice.created_at >= NOW() - INTERVAL '12 months'")
+      .where(
+        "invoice.organization_id = :organizationId AND invoice.created_at >= NOW() - INTERVAL '12 months'",
+        { organizationId },
+      )
       .groupBy("TO_CHAR(invoice.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();
@@ -462,7 +365,7 @@ export class AnalyticsService {
     }));
   }
 
-  private async getReceptionsByMonth() {
+  private async getReceptionsByMonth(organizationId: string) {
     const result = await this.receptionRepository
       .createQueryBuilder('reception')
       .select([
@@ -470,7 +373,10 @@ export class AnalyticsService {
         'COUNT(reception.id) as count',
         'SUM(reception.amount) as totalAmount',
       ])
-      .where("reception.created_at >= NOW() - INTERVAL '12 months'")
+      .where(
+        "reception.organization_id = :organizationId AND reception.created_at >= NOW() - INTERVAL '12 months'",
+        { organizationId },
+      )
       .groupBy("TO_CHAR(reception.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();

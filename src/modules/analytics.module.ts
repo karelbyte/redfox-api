@@ -8,6 +8,7 @@ import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Inventory } from '../models/inventory.entity';
 import { Reception } from '../models/reception.entity';
+import { TenantContext } from '../services/tenant-context.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { Reception } from '../models/reception.entity';
     ]),
   ],
   controllers: [AnalyticsController],
-  providers: [AnalyticsService],
+  providers: [AnalyticsService, TenantContext],
   exports: [AnalyticsService],
 })
 export class AnalyticsModule {}

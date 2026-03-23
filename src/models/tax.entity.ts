@@ -17,7 +17,7 @@ export enum TaxType {
 }
 
 @Entity('taxes')
-@Index(['organization_id', 'code'], { unique: true })
+@Index(['organization_id', 'code', 'value'], { unique: true })
 export class Tax {
   @PrimaryGeneratedColumn('uuid')
   id: string;

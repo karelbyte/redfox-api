@@ -20,7 +20,9 @@ interface ImportProductsFromPackResponseDto {
 export class ProductPackImportService {
   private readonly logger = new Logger(ProductPackImportService.name);
   private taxCache: Map<string, Tax> = new Map();
-  private measurementUnitCache: string | null = null;
+  private measurementUnitCache: Map<string, string> = new Map();
+
+
 
   constructor(
     @InjectRepository(Product)
@@ -99,49 +101,51 @@ export class ProductPackImportService {
     return `${base.slice(0, maxBaseLength)}-${timestamp}`;
   }
 
-  private async getOrCreateDefaultMeasurementUnit(): Promise<string> {
-    // Usar caché si ya existe
-    if (this.measurementUnitCache) {
-      return this.measurementUnitCache;
+  /**
+   * Busca o crea una unidad de medida por su código SAT.
+   * Cada pack retorna unit_key/unit_name en ProductResponse — se usa directamente.
+   * Fallback: E48 (Unidad de servicio) si el pack no envía unit_key.
+   */
+  private async getOrCreateMeasurementUnit(
+    code: string = 'E48',
+    description: string = 'Unidad de servicio',
+  ): Promise<string> {
+    const cacheKey = `${this.organizationId}:${code}`;
+    if (this.measurementUnitCache.has(cacheKey)) {
+      return this.measurementUnitCache.get(cacheKey)!;
     }
 
-    // Buscar unidad de medida por defecto (E48 - Unidad de servicio)
     let unit = await this.measurementUnitRepository.findOne({
-      where: { code: 'E48', organization_id: this.organizationId },
+      where: { code, organization_id: this.organizationId },
     });
 
     if (!unit) {
-      // Crear unidad de medida por defecto
       unit = this.measurementUnitRepository.create({
-        code: 'E48',
-        description: 'Unidad de servicio',
+        code,
+        description,
         organization_id: this.organizationId,
       });
       await this.measurementUnitRepository.save(unit);
     }
 
-    this.measurementUnitCache = unit.id;
+    this.measurementUnitCache.set(cacheKey, unit.id);
     return unit.id;
   }
 
   private async getOrCreateDefaultTax(): Promise<Tax> {
     const cacheKey = 'IVA-16';
-    
-    // Usar caché si ya existe
     if (this.taxCache.has(cacheKey)) {
       return this.taxCache.get(cacheKey)!;
     }
 
-    // Buscar impuesto por defecto (IVA 16%)
     let tax = await this.taxRepository.findOne({
-      where: { name: 'IVA', value: 16, organization_id: this.organizationId },
+      where: { code: 'IVA', value: 16, organization_id: this.organizationId },
     });
 
     if (!tax) {
-      // Crear impuesto por defecto
       tax = this.taxRepository.create({
-        code: 'IVA16',
-        name: 'IVA',
+        code: 'IVA',
+        name: 'IVA 16%',
         value: 16,
         type: TaxType.PERCENTAGE,
         organization_id: this.organizationId,
@@ -154,7 +158,11 @@ export class ProductPackImportService {
   }
 
   /**
-   * Obtiene o crea impuestos basados en los datos del pack
+   * Obtiene o crea impuestos basados en los datos del pack.
+   * Estrategia:
+   * - Busca por (name, value, organization_id) — evita duplicados con impuestos ya existentes
+   * - Si no existe, usa el type del pack como code (ej. "IVA", "IEPS")
+   * - Solo agrega sufijo numérico si hay colisión de code con otro impuesto de distinto valor
    */
   private async getOrCreateTaxesFromPackData(packTaxes: any[]): Promise<Tax[]> {
     if (!packTaxes || packTaxes.length === 0) {
@@ -163,63 +171,49 @@ export class ProductPackImportService {
     }
 
     const taxes: Tax[] = [];
-    
+
     for (const packTax of packTaxes) {
-      // El rate viene como decimal (ej: 0.16 para 16%)
-      const taxValue = packTax.rate * 100;
-      
-      // Validar que el valor sea un número válido y mayor a 0
+      const taxValue = Math.round(packTax.rate * 100 * 100) / 100; // evitar floating point (0.16 -> 16.00)
+      const taxName = (packTax.type || 'IVA').toUpperCase();
+
       if (isNaN(taxValue) || taxValue <= 0) {
         this.logger.warn(`Skipping invalid tax: ${JSON.stringify(packTax)}`);
         continue;
       }
-      
-      const taxName = packTax.type || 'IVA';
+
       const cacheKey = `${taxName}-${taxValue}`;
-      
-      // Verificar caché primero
       if (this.taxCache.has(cacheKey)) {
         taxes.push(this.taxCache.get(cacheKey)!);
         continue;
       }
 
-      // Buscar impuesto existente por nombre y valor
+      // Buscar por code + value — si ya existe (creado manualmente o en import anterior), reutilizar
       let tax = await this.taxRepository.findOne({
-        where: {
-          name: taxName,
-          value: taxValue,
-          organization_id: this.organizationId,
-        },
+        where: { code: taxName, value: taxValue, organization_id: this.organizationId },
       });
 
       if (!tax) {
-        // Generar código único para el impuesto
-        const code = `${taxName}${Math.round(taxValue)}`;
-        
-        // Crear nuevo impuesto
+        // code = tipo SAT oficial (IVA, IEPS, ISR) — el índice único es (org, code, value)
+        // name = descripción legible generada automáticamente
+        const code = taxName;
+        const name = `${taxName} ${Math.round(taxValue)}%`;
+
         tax = this.taxRepository.create({
           code,
-          name: taxName,
+          name,
           value: taxValue,
           type: TaxType.PERCENTAGE,
           organization_id: this.organizationId,
         });
-        
+
         try {
           await this.taxRepository.save(tax);
         } catch (error: any) {
-          // Si falla por duplicado, intentar buscar de nuevo
-          if (error.code === '23505') { // Código de error de PostgreSQL para violación de unicidad
+          if (error.code === '23505' || error.code === 'ER_DUP_ENTRY') {
             tax = await this.taxRepository.findOne({
-              where: {
-                name: taxName,
-                value: taxValue,
-                organization_id: this.organizationId,
-              },
+              where: { code, value: taxValue, organization_id: this.organizationId },
             });
-            if (!tax) {
-              throw error; // Si aún no existe, lanzar el error original
-            }
+            if (!tax) throw error;
           } else {
             throw error;
           }
@@ -230,7 +224,6 @@ export class ProductPackImportService {
       taxes.push(tax);
     }
 
-    // Si no se encontró ningún impuesto válido, usar el default
     if (taxes.length === 0) {
       const defaultTax = await this.getOrCreateDefaultTax();
       return [defaultTax];
@@ -247,7 +240,7 @@ export class ProductPackImportService {
   ): Promise<ImportProductsFromPackResponseDto> {
     // Limpiar cachés al inicio de cada importación
     this.taxCache.clear();
-    this.measurementUnitCache = null;
+    this.measurementUnitCache = new Map();
 
     let packService: any;
     try {
@@ -273,17 +266,12 @@ export class ProductPackImportService {
 
     const products: ProductResponse[] = await packService.listProducts();
 
-    console.log(products.length)
-
     let created = 0;
     let updated = 0;
     let skipped = 0;
 
-    const defaultMeasurementUnitId = await this.getOrCreateDefaultMeasurementUnit();
-
     for (const packProduct of products) {
       try {
-        // Buscar por product_pack_id que es el identificador único del pack externo
         const existing = await this.productRepository.findOne({
           where: { 
             product_pack_id: packProduct.id,
@@ -293,11 +281,15 @@ export class ProductPackImportService {
           withDeleted: false,
         });
 
-        // Obtener o crear impuestos basados en los datos del pack
         const taxes = await this.getOrCreateTaxesFromPackData(packProduct.taxes || []);
 
+        // Resolver unidad de medida desde los datos del pack (unit_key / unit_name)
+        const measurementUnitId = await this.getOrCreateMeasurementUnit(
+          packProduct.unit_key || 'E48',
+          packProduct.unit_name || 'Unidad de servicio',
+        );
+
         if (existing) {
-          // Actualizar producto existente
           existing.name = this.truncate(packProduct.description, 100) || existing.name;
           existing.description = this.truncate(packProduct.description, 255) || existing.description;
           existing.code = this.truncate(String(packProduct.product_key || '01010101'), 20);
@@ -307,16 +299,15 @@ export class ProductPackImportService {
           if (packProduct.price) {
             existing.base_price = packProduct.price;
           }
-          // Actualizar impuestos
+          existing.measurement_unit = { id: measurementUnitId } as any;
           existing.taxes = taxes;
           await this.productRepository.save(existing);
           updated += 1;
           continue;
         }
 
-        // Crear nuevo producto
         const productKey = String(packProduct.product_key);
-        const code = productKey //await this.generateUniqueCode(productKey);
+        const code = productKey;
         const sku = await this.generateUniqueSku(packProduct.sku || `PACK-${productKey}`);
         const slug = await this.generateUniqueSlug(
           packProduct.description || `product-${productKey}`
@@ -329,7 +320,7 @@ export class ProductPackImportService {
           code,
           sku,
           product_pack_id: packProduct.id,
-          measurement_unit: { id: defaultMeasurementUnitId },
+          measurement_unit: { id: measurementUnitId },
           taxes,
           is_active: true,
           type: ProductType.SERVICE,
@@ -341,17 +332,9 @@ export class ProductPackImportService {
         await this.productRepository.save(product);
         created += 1;
       } catch (error: any) {
-        console.log(error) 
         skipped += 1;
         this.logger.error(
-          `Failed to import product: ${JSON.stringify({
-            id: packProduct?.id,
-            description: packProduct?.description,
-            product_key: packProduct?.product_key,
-            sku: packProduct?.sku,
-            error: error?.message,
-            stack: error?.stack,
-          }, null, 2)}`,
+          `Failed to import product ${packProduct?.id} (${packProduct?.description}): ${error?.message}`,
         );
       }
     }

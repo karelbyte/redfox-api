@@ -80,6 +80,11 @@ export class CreateNotificationsTable1716400000320
             type: 'uuid',
           },
           {
+            name: 'organization_id',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
             name: 'createdAt',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
@@ -100,6 +105,10 @@ export class CreateNotificationsTable1716400000320
             name: 'IDX_notifications_userId_createdAt',
             columnNames: ['userId', 'createdAt'],
           },
+          {
+            name: 'IDX_notifications_organization_id',
+            columnNames: ['organization_id'],
+          },
         ],
         foreignKeys: [
           {
@@ -107,6 +116,12 @@ export class CreateNotificationsTable1716400000320
             referencedColumnNames: ['id'],
             referencedTableName: 'users',
             onDelete: 'CASCADE',
+          },
+          {
+            columnNames: ['organization_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'organizations',
+            onDelete: 'SET NULL',
           },
         ],
       }),

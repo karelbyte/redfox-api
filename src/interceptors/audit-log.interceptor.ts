@@ -25,18 +25,13 @@ export class AuditLogInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const { method, url, body, params } = request;
 
-    // Log para debug - verificar que el interceptor se ejecuta
-    console.log(`[AuditLogInterceptor] ${method} ${url}`);
-
     // Skip audit log endpoints to avoid recursion
     if (url.includes('/audit-logs')) {
-      console.log('[AuditLogInterceptor] Skipping audit-logs endpoint');
       return next.handle();
     }
 
     // Skip GET requests (only log mutations)
     if (method === 'GET') {
-      console.log('[AuditLogInterceptor] Skipping GET request');
       return next.handle();
     }
 
@@ -49,27 +44,23 @@ export class AuditLogInterceptor implements NestInterceptor {
           secret: AppConfig().appKey,
         });
         userId = payload.id || payload.sub;
-        console.log(`[AuditLogInterceptor] User extracted from JWT: ${userId}`);
       }
     } catch (error) {
-      console.log('[AuditLogInterceptor] Could not extract user from JWT');
+      // token invalid or missing
     }
 
     // Also try to get user from request (if AuthGuard already ran)
     if (!userId && request.user) {
       userId = request.user.id || request.user.sub;
-      console.log(`[AuditLogInterceptor] User found in request: ${userId}`);
     }
+
+    // Extract organizationId from request.user as fallback (in case TenantContext isn't set yet)
+    const organizationIdFallback: string | undefined = request.user?.organizationId;
 
     // Skip if no user
     if (!userId) {
-      console.log(`[AuditLogInterceptor] No user found for ${method} ${url}`);
       return next.handle();
     }
-
-    console.log(
-      `[AuditLogInterceptor] User found: ${userId}, proceeding with audit log`,
-    );
 
     // Determine action based on HTTP method
     let action: AuditAction;
@@ -108,17 +99,11 @@ export class AuditLogInterceptor implements NestInterceptor {
         try {
           // For POST requests, get ID from response
           if (needsIdFromResponse) {
-            // Try different possible locations for the ID
-            entityId =
-              response?.id || response?.client?.id || response?.data?.id;
+            entityId = this.extractEntityId(response);
           }
 
-          // Skip if still no entity ID
+          // Skip silently if no entity ID — some endpoints return messages without IDs (e.g. onboarding)
           if (!entityId) {
-            console.warn(
-              `[AuditLogInterceptor] ⚠️  Could not extract entity ID for ${action} ${entityType}. Response structure:`,
-              JSON.stringify(response).substring(0, 200),
-            );
             return;
           }
 
@@ -143,18 +128,14 @@ export class AuditLogInterceptor implements NestInterceptor {
             entityType,
             entityId,
             action,
-            undefined, // oldValues - would need to fetch before update
+            undefined,
             newValues,
             description,
             ipAddress,
-          );
-
-          console.log(
-            `[AuditLogInterceptor] ✅ Audit log created: ${description}`,
+            organizationIdFallback,
           );
         } catch (error) {
-          // Don't fail the request if logging fails
-          console.error('[AuditLogInterceptor] ❌ Failed to log audit:', error);
+          this.logger.error('Failed to log audit', error);
         }
       }),
     );
@@ -163,6 +144,25 @@ export class AuditLogInterceptor implements NestInterceptor {
   private extractTokenFromHeader(request: any): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
+  }
+
+  /**
+   * Busca recursivamente un campo UUID/ID en la respuesta.
+   * Cubre patrones comunes: { id }, { data.id }, { client.id }, { user.id }, etc.
+   */
+  private extractEntityId(response: any): string | undefined {
+    if (!response || typeof response !== 'object') return undefined;
+
+    // Nivel raíz
+    if (response.id) return response.id;
+
+    // Objetos anidados comunes
+    const nestedKeys = ['data', 'client', 'user', 'product', 'invoice', 'provider', 'result'];
+    for (const key of nestedKeys) {
+      if (response[key]?.id) return response[key].id;
+    }
+
+    return undefined;
   }
 
   private generateDescription(

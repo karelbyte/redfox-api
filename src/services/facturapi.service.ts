@@ -942,6 +942,61 @@ export class FacturaAPIService implements ICertificationPackService {
     }
   }
 
+  /**
+   * Lista TODOS los productos del pack (Facturapi).
+   * Paginación basada en total_pages de la respuesta.
+   */
+  async listProducts(): Promise<ProductResponse[]> {
+    const apiKey = this.getApiKey();
+    const all: ProductResponse[] = [];
+    const limit = 100;
+    let page = 1;
+
+    while (true) {
+      let data: any;
+      try {
+        const res = await fetch(
+          `${this.getProductsBaseUrl()}?page=${page}&limit=${limit}`,
+          { headers: { Authorization: `Bearer ${apiKey}` } },
+        );
+        data = await res.json();
+        if (!res.ok) {
+          throw new BadRequestException(
+            data?.message ?? 'Error listing products from FacturaAPI',
+          );
+        }
+      } catch (error: any) {
+        if (error instanceof BadRequestException) throw error;
+        throw new BadRequestException(
+          error?.message ?? 'Error listing products from FacturaAPI',
+        );
+      }
+
+      const items: any[] = Array.isArray(data) ? data : data?.data || [];
+      if (!items.length) break;
+
+      for (const item of items) {
+        all.push({
+          ...item,
+          created_at:
+            item.created_at instanceof Date
+              ? item.created_at.toISOString()
+              : String(item.created_at || new Date().toISOString()),
+        } as ProductResponse);
+      }
+
+      const hasMore =
+        typeof data?.total_pages === 'number'
+          ? page < data.total_pages
+          : items.length === limit;
+
+      if (!hasMore) break;
+      page += 1;
+    }
+
+    return all;
+  }
+
   async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
     try {
       const client = this.getClient();

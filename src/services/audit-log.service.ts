@@ -23,9 +23,10 @@ export class AuditLogService {
     newValues?: Record<string, any>,
     description?: string,
     ipAddress?: string,
+    organizationIdFallback?: string,
   ): Promise<AuditLog | null> {
     try {
-      const organizationId = this.tenantContext.getOrganizationId();
+      const organizationId = this.tenantContext.getOrganizationId() || organizationIdFallback;
 
       if (!organizationId) {
         this.logger.warn(

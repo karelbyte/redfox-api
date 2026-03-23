@@ -124,11 +124,11 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
   providers: [
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditLogInterceptor,
+      useClass: TenantInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: TenantInterceptor,
+      useClass: AuditLogInterceptor,
     },
     TenantContext,
     UnverifiedAccountCleanupService,

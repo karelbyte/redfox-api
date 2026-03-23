@@ -37,9 +37,9 @@ export class ProductPackSyncService {
 
     // Mapear los impuestos reales del producto
     const taxes = product.taxes?.map((tax) => ({
-      type: tax.name,
-      rate: Number(tax.value) / 100, // Convertir de porcentaje a decimal
-    })) || [{ type: 'IVA', rate: 0.16 }]; // Fallback a IVA 16%
+      type: tax.code,  // code = tipo SAT oficial (IVA, IEPS, ISR)
+      rate: Number(tax.value) / 100,
+    })) || [{ type: 'IVA', rate: 0.16 }];
 
     return {
       description: product.description || product.name,

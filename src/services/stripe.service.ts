@@ -54,12 +54,11 @@ export class StripeService {
       customer: customerId,
       amount: Math.round(amount * 100),
       currency,
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      // confirmation_method manual allows the frontend to confirm via confirmCardPayment
+      confirmation_method: 'manual',
+      confirm: false,
     };
 
-    // Si se proporciona un payment method, adjuntarlo pero NO confirmar automáticamente
     if (paymentMethodId) {
       paymentIntentData.payment_method = paymentMethodId;
     }

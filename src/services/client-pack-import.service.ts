@@ -96,8 +96,12 @@ export class ClientPackImportService {
   async importAllFromPack(
     userId?: string,
   ): Promise<ImportClientsFromPackResponseDto> {
+    const organizationId = this.organizationId; // lanza si no hay contexto
+
     let packService: any;
+    let activePack: any;
     try {
+      activePack = await this.certificationPackFactory.getActivePack();
       packService = await this.certificationPackFactory.getPackService();
     } catch (error: any) {
       const msg = await this.translationService.translate(
@@ -118,7 +122,13 @@ export class ClientPackImportService {
       throw new BadRequestException(msg);
     }
 
-    const customers: CustomerResponse[] = await packService.listCustomers();
+    let customers: CustomerResponse[];
+    try {
+      customers = await packService.listCustomers();
+    } catch (error: any) {
+      this.logger.error(`listCustomers failed: ${error?.message}`, error?.stack);
+      throw new BadRequestException(error?.message || 'Error listing customers from pack');
+    }
 
     let created = 0;
     let updated = 0;

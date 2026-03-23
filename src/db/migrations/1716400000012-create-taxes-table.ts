@@ -81,8 +81,8 @@ export class CreateTaxesTable1716400000012 implements MigrationInterface {
         ],
         indices: [
           {
-            name: 'IDX_TAX_ORGANIZATION_CODE',
-            columnNames: ['organization_id', 'code'],
+            name: 'IDX_TAX_ORGANIZATION_CODE_VALUE',
+            columnNames: ['organization_id', 'code', 'value'],
             isUnique: true,
           },
         ],

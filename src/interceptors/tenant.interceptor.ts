@@ -25,7 +25,6 @@ export class TenantInterceptor implements NestInterceptor {
 
     if (tenantSlug && this.tenantContext) {
       this.tenantContext.setTenantSlug(tenantSlug as string);
-      // Optional: Validate that user.organization.slug matches tenantSlug
     }
 
     return next.handle();

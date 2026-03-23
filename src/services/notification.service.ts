@@ -10,25 +10,28 @@ import { CreateNotificationDto } from '../dtos/notification/create-notification.
 import { UpdateNotificationDto } from '../dtos/notification/update-notification.dto';
 import { NotificationQueryDto } from '../dtos/notification/notification-query.dto';
 import { NotificationResponseDto } from '../dtos/notification/notification-response.dto';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
+    private readonly tenantContext: TenantContext,
   ) {}
 
   async create(
     createNotificationDto: CreateNotificationDto,
     currentUserId?: string,
   ): Promise<NotificationResponseDto> {
+    const organizationId = this.tenantContext.getOrganizationId();
     const notification = this.notificationRepository.create({
       ...createNotificationDto,
       userId: createNotificationDto.userId || currentUserId,
+      ...(organizationId && { organization_id: organizationId }),
     });
 
-    const savedNotification =
-      await this.notificationRepository.save(notification);
+    const savedNotification = await this.notificationRepository.save(notification);
     return this.mapToResponseDto(savedNotification);
   }
 
@@ -37,64 +40,45 @@ export class NotificationService {
     userId: string,
   ): Promise<{
     data: NotificationResponseDto[];
-    meta: {
-      total: number;
-      unreadCount: number;
-      page: number;
-      totalPages: number;
-    };
+    meta: { total: number; unreadCount: number; page: number; totalPages: number };
   }> {
+    const organizationId = this.tenantContext.getOrganizationId();
+
     const queryBuilder = this.notificationRepository
       .createQueryBuilder('notification')
       .where('notification.userId = :userId', { userId });
 
-    // Apply filters
+    if (organizationId) {
+      queryBuilder.andWhere('notification.organization_id = :organizationId', { organizationId });
+    }
+
     if (query.type) {
       queryBuilder.andWhere('notification.type = :type', { type: query.type });
     }
 
     if (query.priority) {
-      queryBuilder.andWhere('notification.priority = :priority', {
-        priority: query.priority,
-      });
+      queryBuilder.andWhere('notification.priority = :priority', { priority: query.priority });
     }
 
     if (query.isRead !== undefined) {
-      queryBuilder.andWhere('notification.isRead = :isRead', {
-        isRead: query.isRead,
-      });
+      queryBuilder.andWhere('notification.isRead = :isRead', { isRead: query.isRead });
     }
 
-    // Get total count
     const total = await queryBuilder.getCount();
 
-    // Get unread count
-    const unreadCount = await this.notificationRepository.count({
-      where: { userId, isRead: false },
-    });
+    const unreadWhere: any = { userId, isRead: false };
+    if (organizationId) unreadWhere.organization_id = organizationId;
+    const unreadCount = await this.notificationRepository.count({ where: unreadWhere });
 
-    // Apply pagination
     const page = query.page || 1;
     const limit = query.limit || 20;
-    const skip = (page - 1) * limit;
-    queryBuilder
-      .orderBy('notification.createdAt', 'DESC')
-      .skip(skip)
-      .take(limit);
+    queryBuilder.orderBy('notification.createdAt', 'DESC').skip((page - 1) * limit).take(limit);
 
     const notifications = await queryBuilder.getMany();
-    const totalPages = Math.ceil(total / limit);
 
     return {
-      data: notifications.map((notification) =>
-        this.mapToResponseDto(notification),
-      ),
-      meta: {
-        total,
-        unreadCount,
-        page,
-        totalPages,
-      },
+      data: notifications.map((n) => this.mapToResponseDto(n)),
+      meta: { total, unreadCount, page, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -143,23 +127,24 @@ export class NotificationService {
   }
 
   async markAllAsRead(userId: string): Promise<void> {
-    await this.notificationRepository.update(
-      { userId, isRead: false },
-      { isRead: true },
-    );
+    const organizationId = this.tenantContext.getOrganizationId();
+    const where: any = { userId, isRead: false };
+    if (organizationId) where.organization_id = organizationId;
+    await this.notificationRepository.update(where, { isRead: true });
   }
 
   async deleteAllRead(userId: string): Promise<void> {
-    await this.notificationRepository.delete({
-      userId,
-      isRead: true,
-    });
+    const organizationId = this.tenantContext.getOrganizationId();
+    const where: any = { userId, isRead: true };
+    if (organizationId) where.organization_id = organizationId;
+    await this.notificationRepository.delete(where);
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    return this.notificationRepository.count({
-      where: { userId, isRead: false },
-    });
+    const organizationId = this.tenantContext.getOrganizationId();
+    const where: any = { userId, isRead: false };
+    if (organizationId) where.organization_id = organizationId;
+    return this.notificationRepository.count({ where });
   }
 
   // Utility methods for creating specific notification types
