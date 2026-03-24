@@ -27,6 +27,7 @@ export enum PaymentMethod {
   CARD = 'card',
   TRANSFER = 'transfer',
   CHECK = 'check',
+  CREDIT = 'credit',
 }
 
 @Entity('invoices')

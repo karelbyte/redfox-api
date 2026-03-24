@@ -105,7 +105,7 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
           {
             name: 'payment_method',
             type: 'enum',
-            enum: ['cash', 'card', 'transfer', 'check'],
+            enum: ['cash', 'card', 'transfer', 'check', 'credit'],
             default: "'cash'",
             isNullable: false,
           },

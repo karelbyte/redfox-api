@@ -527,6 +527,7 @@ export class InvoiceService {
       tax_amount: amounts.tax_amount,
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
+      payment_method: withdrawal.paymentMethod as any,
       organization_id: this.organizationId,
     });
 

@@ -49,7 +49,7 @@ export class Withdrawal {
   @Column({ length: 50 })
   code: string;
 
-  @Column({ length: 200 })
+  @Column({ length: 200, nullable: true })
   destination: string;
 
   @ManyToOne(() => Client)

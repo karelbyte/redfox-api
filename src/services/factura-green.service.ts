@@ -87,17 +87,12 @@ export class FacturaGreenService implements ICertificationPackService {
         const item: any = {
           uuid: productPackId,
           qty: detail.quantity,
+          // Siempre enviar el precio para cubrir productos con price.type = 'dynamic' en Factura Green.
+          // Para productos 'fixed', Factura Green acepta el precio como override sin problema.
+          price: {
+            amount: options?.itemPrices?.[detail.product_id] ?? Number(detail.price),
+          },
         };
-
-        // CASO 1: Productos con precio dinámico
-        // Solo enviar precio si se especifica en las opciones o si el precio es diferente al del producto
-        // Factura Green: si el producto tiene price.type = 'dynamic', DEBE enviarse el precio
-        // Si el producto tiene price.type = 'fixed', NO se debe enviar (usa el precio del producto)
-        if (options?.itemPrices && options.itemPrices[detail.product_id] !== undefined) {
-          item.price = {
-            amount: options.itemPrices[detail.product_id],
-          };
-        }
 
         // CASO 2: Descuentos (porcentaje o monto fijo)
         // Los descuentos se pasan a través de las opciones por producto
@@ -128,26 +123,33 @@ export class FacturaGreenService implements ICertificationPackService {
         return item;
       });
 
-      // Mapear payment_method a forma de pago SAT
+      // Mapear payment_method a forma de pago SAT (cómo se paga)
       const paymentFormMap: Record<string, string> = {
         cash: '01',      // Efectivo
         card: '04',      // Tarjeta de crédito
         transfer: '03',  // Transferencia electrónica
         check: '02',     // Cheque nominativo
+        credit: '99',    // Por definir (obligatorio en PPD)
       };
+
+      // Derivar método de pago SAT (cuándo se paga): PPD para crédito, PUE para el resto
+      const isCredit = (invoice.payment_method as string) === 'credit';
+      const satPaymentMethod = isCredit ? 'PPD' : 'PUE';
+      // Cuando es PPD, la forma de pago DEBE ser '99' (regla SAT CFDI 4.0)
+      const satPaymentForm = isCredit ? '99' : (paymentFormMap[invoice.payment_method as string] || '01');
 
       const payload: any = {
         cfdi: {
           customer: {
             uuid: invoice.client.pack_client_id,
-            email: "karelpuerto78@gmail.com"
+            email: "karelpuerto78@gmail.com",
           },
           payment: {
             form: {
-              k: paymentFormMap[invoice.payment_method] || '99',
+              k: satPaymentForm,
             },
             method: {
-              k: options?.paymentMethod || 'PUE', // Pago en Una Exhibición (por defecto)
+              k: satPaymentMethod,
             },
           },
           items,
@@ -219,13 +221,13 @@ export class FacturaGreenService implements ICertificationPackService {
         payload['@config'] = config;
       }
 
+      console.log('[FacturaGreen] generateCFDI payload:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
-
-      console.log('[FacturaGreen] generateCFDI payload:', JSON.stringify(payload, null, 2));
 
       const data = await response.json();
 
@@ -640,8 +642,6 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
-      console.log('[FacturaGreen] updateCustomer payload:', JSON.stringify(payload, null, 2));
-
       const response = await fetch(url, {
         method: 'POST',
         headers,
@@ -649,7 +649,6 @@ export class FacturaGreenService implements ICertificationPackService {
       });
 
       const data = await response.json();
-      console.log('[FacturaGreen] updateCustomer response:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
         const message = data.message || 'Error updating customer in Factura Green';
@@ -797,7 +796,7 @@ export class FacturaGreenService implements ICertificationPackService {
             k: productData.unit_key || 'E48',
           },
           price: {
-            type: 'dynamic',
+            type: 'fixed',
             amount: productData.price,
           },
           taxes,
@@ -981,11 +980,11 @@ export class FacturaGreenService implements ICertificationPackService {
         created_at: new Date().toISOString(),
         livemode: true,
         description: product.name || '',
-        product_key: product.s, // Clave SAT
-        unit_key: product.u, // Unidad de medida SAT
-        price: product.dp || 0, // dp es el precio dinámico
+        product_key: product.s,
+        unit_key: product.u,
+        price: product.dp ?? product.p ?? 0,
         tax_included: false,
-        sku: product.sku || product.id || '', // Usar id si no hay sku
+        sku: product.sku || product.id || '',
         taxes: this.mapFacturaGreenTaxes(product.t),
       }));
     } catch (error: any) {

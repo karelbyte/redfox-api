@@ -39,8 +39,9 @@ export class CreateWithdrawalDto {
   code: string;
 
   @IsString()
-  @Length(1, 200)
-  destination: string;
+  @Length(0, 200)
+  @IsOptional()
+  destination?: string;
 
   @IsUUID()
   client_id: string;

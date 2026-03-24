@@ -40,7 +40,7 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
             name: 'destination',
             type: 'varchar',
             length: '200',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'client_id',
