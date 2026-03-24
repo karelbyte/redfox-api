@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 
 async function bootstrap() {
   try {
@@ -55,11 +54,8 @@ async function bootstrap() {
       }),
     );
 
-    // Misma base que multer (process.cwd()/uploads) para que el archivo recién subido sea visible de inmediato
-    const uploadsPath = join(process.cwd(), 'uploads');
-    app.useStaticAssets(uploadsPath, {
-      prefix: '/api/uploads',
-    });
+    // Los archivos estáticos ahora se sirven via proxy en UploadsController
+    // para soportar tanto storage local como S3/Railway Bucket
 
     await app.listen(port);
     console.log(`✅ Nitro API está corriendo en :${port}`);

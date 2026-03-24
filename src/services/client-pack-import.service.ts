@@ -47,7 +47,7 @@ export class ClientPackImportService {
     const address = customer.address || {};
     return {
       organization_id: this.organizationId,
-      name: customer.legal_name,
+      name: customer.legal_name?.trim(),
       email: customer.email || undefined,
       phone: customer.phone || undefined,
       addresses: [
@@ -78,7 +78,7 @@ export class ClientPackImportService {
         {
           is_main: true,
           tax_document: customer.tax_id,
-          tax_name: customer.legal_name,
+          tax_name: customer.legal_name?.trim(),
           tax_system: (customer as any).tax_system || undefined,
           default_invoice_use:
             (customer as any).default_invoice_use || undefined,
@@ -137,7 +137,7 @@ export class ClientPackImportService {
     for (const customer of customers) {
       try {
         const existing = await this.clientRepository.findOne({
-          where: { pack_client_id: customer.id },
+          where: { pack_client_id: customer.id, organization_id: organizationId },
           relations: ['addresses', 'taxData'],
           withDeleted: false,
         });
@@ -145,10 +145,41 @@ export class ClientPackImportService {
         const data = this.mapPackCustomerToClientData(customer);
 
         if (existing) {
-          // Para actualizar, removemos las anteriores y agregamos las nuevas (simplificado para dev)
-          // O podríamos intentar buscar la principal y actualizarla.
-          // Por simplicidad en esta fase, reemplazamos:
-          Object.assign(existing, data);
+          // Actualizar campos escalares del cliente
+          existing.name = data.name;
+          existing.email = data.email ?? existing.email;
+          existing.phone = data.phone ?? existing.phone;
+          existing.pack_client_response = data.pack_client_response;
+
+          // Actualizar dirección principal si existe, o agregar si no hay
+          if (data.addresses?.length > 0) {
+            const newAddr = data.addresses[0];
+            const mainAddr = existing.addresses?.find(a => a.is_main);
+            if (mainAddr) {
+              Object.assign(mainAddr, { ...newAddr, client_id: existing.id });
+            } else {
+              // No hay dirección principal — agregar con client_id ya asignado
+              existing.addresses = [
+                ...(existing.addresses || []),
+                { ...newAddr, client_id: existing.id } as any,
+              ];
+            }
+          }
+
+          // Actualizar tax data principal si existe
+          if (data.taxData?.length > 0) {
+            const newTax = data.taxData[0];
+            const mainTax = existing.taxData?.find((t: any) => t.is_main);
+            if (mainTax) {
+              Object.assign(mainTax, { ...newTax, client_id: existing.id });
+            } else {
+              existing.taxData = [
+                ...(existing.taxData || []),
+                { ...newTax, client_id: existing.id } as any,
+              ];
+            }
+          }
+
           await this.clientRepository.save(existing);
           updated += 1;
           continue;

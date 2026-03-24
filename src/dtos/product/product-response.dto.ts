@@ -5,6 +5,7 @@ import { TaxResponseDto } from '../tax/tax-response.dto';
 import { MeasurementUnitResponseDto } from '../measurement-unit/measurement-unit-response.dto';
 import { ProductType, InventoryStrategy } from '../../models/product.entity';
 import { ProductPriceResponseDto } from './product-price.dto';
+import { CurrencyResponseDto } from '../currency/currency-response.dto';
 
 export class ProductResponseDto {
   @Expose()
@@ -84,6 +85,9 @@ export class ProductResponseDto {
 
   @Expose()
   total_stock: number;
+
+  @Expose()
+  currency?: CurrencyResponseDto | null;
 
   @Expose()
   created_at: Date;

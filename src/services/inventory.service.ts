@@ -273,7 +273,8 @@ export class InventoryService {
 
   /**
    * Obtiene todos los productos en inventario con su cantidad y precio total
-   * agrupados por producto, con paginación y búsqueda por nombre
+   * agrupados por producto, con paginación y búsqueda por nombre.
+   * También incluye productos de tipo service/digital que no requieren almacén.
    */
   async findAllProductsInInventory(
     queryDto: InventoryQueryDto,
@@ -296,25 +297,43 @@ export class InventoryService {
         'product',
         'product.brand',
         'product.category',
-        'product.tax',
+        'product.taxes',
         'product.measurement_unit',
         'product.prices',
         'warehouse',
         'warehouse.currency',
       ],
-      skip,
-      take: limit,
-      order: {
-        product: {
-          name: 'ASC',
-        },
-        quantity: 'DESC',
-      },
+      order: { product: { name: 'ASC' }, quantity: 'DESC' },
     });
 
-    // Filtrar por cantidad > 0 y término de búsqueda en memoria
+    // Solo tangibles con stock > 0
     let filteredInventory = inventory.filter((item) => item.quantity > 0);
 
+    // Productos service/digital del catálogo (no necesitan almacén)
+    // Solo si no se filtra por warehouse específico
+    let serviceDigitalItems: InventoryListResponseDto[] = [];
+    if (!warehouse_id) {
+      const nonTangibleProducts = await this.productService.findNonTangibleActive(
+        this.organizationId,
+      );
+
+      // Excluir los que ya están en inventario (por si alguien los metió)
+      const inventoryProductIds = new Set(filteredInventory.map((i) => i.product.id));
+
+      serviceDigitalItems = nonTangibleProducts
+        .filter((p) => !inventoryProductIds.has(p.id))
+        .map((p) => ({
+          id: p.id, // usamos el product id como id virtual
+          product: this.productMapper.mapToResponseDto(p),
+          warehouse: null,
+          quantity: null, // ilimitado
+          price: Number(p.base_price) || 0,
+          pack_product_id: null,
+          createdAt: p.created_at,
+        }));
+    }
+
+    // Aplicar filtro de término sobre ambas listas
     if (term) {
       const searchTerm = term.toLowerCase();
       filteredInventory = filteredInventory.filter(
@@ -324,19 +343,33 @@ export class InventoryService {
           (item.product.description &&
             item.product.description.toLowerCase().includes(searchTerm)),
       );
+      serviceDigitalItems = serviceDigitalItems.filter(
+        (item) =>
+          item.product.name.toLowerCase().includes(searchTerm) ||
+          item.product.sku.toLowerCase().includes(searchTerm) ||
+          (item.product.description &&
+            item.product.description.toLowerCase().includes(searchTerm)),
+      );
     }
 
-    const data = filteredInventory.map((item) =>
+    const tangibleData = filteredInventory.map((item) =>
       this.mapToListResponseDto(item),
     );
 
+    // Combinar: tangibles primero, luego service/digital
+    const combined = [...tangibleData, ...serviceDigitalItems];
+
+    // Paginación sobre el resultado combinado
+    const total = combined.length;
+    const paginated = combined.slice(skip, skip + limit);
+
     return {
-      data,
+      data: paginated,
       meta: {
-        total: filteredInventory.length,
+        total,
         page,
         limit,
-        totalPages: Math.ceil(filteredInventory.length / limit),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

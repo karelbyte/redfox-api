@@ -25,11 +25,11 @@ export class ProductHistoryService {
         sku: history.product.sku,
         description: history.product.description,
       },
-      warehouse: {
+      warehouse: history.warehouse ? {
         id: history.warehouse.id,
         code: history.warehouse.code,
         name: history.warehouse.name,
-      },
+      } : null,
       operation_type: history.operation_type,
       operation_id: history.operation_id,
       quantity: history.quantity,

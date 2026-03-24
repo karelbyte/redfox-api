@@ -140,6 +140,9 @@ export class ProductService {
         images: createProductDto.images
           ? JSON.stringify(createProductDto.images)
           : undefined,
+        currency: createProductDto.currency_id
+          ? { id: createProductDto.currency_id }
+          : undefined,
       });
 
       if (createProductDto.prices) {
@@ -170,7 +173,7 @@ export class ProductService {
 
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
       });
 
       // Sincronizar con el pack de certificación (si está configurado)
@@ -214,7 +217,7 @@ export class ProductService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
     };
 
     // Construir condiciones de búsqueda OR (para el término)
@@ -316,7 +319,7 @@ export class ProductService {
   async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
     });
 
     if (!product) {
@@ -334,7 +337,7 @@ export class ProductService {
   async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
     });
 
     if (!product) {
@@ -347,6 +350,18 @@ export class ProductService {
     }
 
     return product;
+  }
+
+  /** Devuelve todos los productos activos de tipo service o digital (no necesitan almacén). */
+  async findNonTangibleActive(organizationId: string): Promise<Product[]> {
+    return this.productRepository.find({
+      where: [
+        { organization_id: organizationId, type: ProductType.SERVICE, is_active: true },
+        { organization_id: organizationId, type: ProductType.DIGITAL, is_active: true },
+      ],
+      relations: ['brand', 'category', 'taxes', 'measurement_unit', 'prices'],
+      order: { name: 'ASC' },
+    });
   }
 
   async update(
@@ -386,6 +401,9 @@ export class ProductService {
         base_price: updateProductDto.base_price,
         images: updateProductDto.images
           ? JSON.stringify(updateProductDto.images)
+          : undefined,
+        currency: updateProductDto.currency_id !== undefined
+          ? (updateProductDto.currency_id ? { id: updateProductDto.currency_id } : null)
           : undefined,
       });
 
@@ -436,7 +454,7 @@ export class ProductService {
       const savedProduct = await this.productRepository.save(updatedProduct);
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes'],
+        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
       });
 
       // Sincronizar con el pack de certificación (si está configurado)

@@ -72,10 +72,6 @@ export class GlobalInvoiceDataDto {
 }
 
 export class GenerateCFDIDto {
-  @IsUUID()
-  @IsNotEmpty()
-  invoice_id: string;
-
   @IsString()
   @IsOptional()
   @Length(3, 255)
@@ -127,10 +123,6 @@ export class GenerateCFDIDto {
 }
 
 export class CancelCFDIDto {
-  @IsUUID()
-  @IsNotEmpty()
-  invoice_id: string;
-
   @IsString()
   @IsNotEmpty()
   @Length(3, 255)

@@ -9,24 +9,20 @@ import {
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
+  FileTypeValidator,
   BadRequestException,
+  Req,
+  Inject,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { CompanySettingsService } from '../services/company-settings.service';
 import { UpdateCompanySettingsDto } from '../dtos/company-settings/update-company-settings.dto';
 import { CompanySettingsResponseDto } from '../dtos/company-settings/company-settings-response.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { join } from 'path';
-import * as fs from 'fs';
-
-const formatFileName = (fileName: string): string => {
-  return fileName.replace(/\s+/g, '-');
-};
-
-const getUploadsCompanyDir = (): string =>
-  join(process.cwd(), 'uploads', 'company');
+import { memoryStorage } from 'multer';
+import { IStorageService, STORAGE_SERVICE } from '../services/storage/storage.interface';
 
 @Controller('company-settings')
 @UseGuards(AuthGuard)
@@ -34,6 +30,8 @@ const getUploadsCompanyDir = (): string =>
 export class CompanySettingsController {
   constructor(
     private readonly companySettingsService: CompanySettingsService,
+    @Inject(STORAGE_SERVICE)
+    private readonly storageService: IStorageService,
   ) {}
 
   @Get()
@@ -51,20 +49,7 @@ export class CompanySettingsController {
   @Post('logo')
   @UseInterceptors(
     FileInterceptor('logo', {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = getUploadsCompanyDir();
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `logo-${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(), // Usamos memoria para pasar el buffer al StorageService
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -76,16 +61,29 @@ export class CompanySettingsController {
       },
     }),
   )
-  uploadLogo(
+  async uploadLogo(
+    @Req() req: Request,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\// }),
+        ],
         fileIsRequired: true,
       }),
     )
     file: Express.Multer.File,
   ): Promise<CompanySettingsResponseDto> {
-    const logoUrl = `/api/uploads/company/${file.filename}`;
-    return this.companySettingsService.updateLogoUrl(logoUrl);
+    const organizationId = (req as any)['organizationId'];
+    if (!organizationId) {
+      throw new BadRequestException('Organization context is required');
+    }
+
+    const ext = file.originalname.split('.').pop() || 'png';
+    const key = `company/${organizationId}/logo-${Date.now()}.${ext}`;
+
+    const { url } = await this.storageService.upload(file.buffer, key, file.mimetype);
+
+    return this.companySettingsService.updateLogoUrl(url);
   }
 }

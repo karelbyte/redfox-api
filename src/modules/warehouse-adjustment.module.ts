@@ -18,6 +18,7 @@ import { MeasurementUnitModule } from './measurement-unit.module';
 import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
+import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { OrganizationModule } from './organization.module';
 
 @Module({
@@ -41,7 +42,7 @@ import { OrganizationModule } from './organization.module';
     OrganizationModule,
   ],
   controllers: [WarehouseAdjustmentController],
-  providers: [WarehouseAdjustmentService, WarehouseMapper, ProductMapper],
+  providers: [WarehouseAdjustmentService, WarehouseMapper, ProductMapper, CurrencyMapper],
   exports: [WarehouseAdjustmentService],
 })
 export class WarehouseAdjustmentModule {}

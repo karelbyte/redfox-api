@@ -11,7 +11,7 @@ export class ProductHistoryResponseDto {
     id: string;
     code: string;
     name: string;
-  };
+  } | null;
   operation_type: OperationType;
   operation_id: string;
   quantity: number;

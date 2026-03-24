@@ -5,6 +5,7 @@ import { BrandMapper } from './brand.mapper';
 import { CategoryMapper } from './category.mapper';
 import { TaxMapper } from './tax.mapper';
 import { MeasurementUnitMapper } from './measurement-unit.mapper';
+import { CurrencyMapper } from './currency.mapper';
 
 @Injectable()
 export class ProductMapper {
@@ -13,6 +14,7 @@ export class ProductMapper {
     private readonly categoryMapper: CategoryMapper,
     private readonly taxMapper: TaxMapper,
     private readonly measurementUnitMapper: MeasurementUnitMapper,
+    private readonly currencyMapper: CurrencyMapper,
   ) {}
 
   mapToResponseDto(product: Product): ProductResponseDto {
@@ -44,6 +46,7 @@ export class ProductMapper {
       prices,
       images,
       total_stock,
+      currency,
       created_at,
     } = product;
 
@@ -83,6 +86,7 @@ export class ProductMapper {
           }))
         : [],
       images: images ? (JSON.parse(images) as string[]) : [],
+      currency: currency ? this.currencyMapper.mapToResponseDto(currency) : null,
       created_at,
     };
   }

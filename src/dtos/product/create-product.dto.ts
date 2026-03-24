@@ -161,4 +161,8 @@ export class CreateProductDto {
   @IsOptional()
   @Transform(transformToArray)
   prices?: ProductPriceDto[];
+
+  @IsUUID()
+  @IsOptional()
+  currency_id?: string;
 }

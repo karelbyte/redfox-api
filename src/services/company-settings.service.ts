@@ -69,7 +69,9 @@ export class CompanySettingsService {
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({});
+      settings = this.companySettingsRepository.create({
+        organization_id: this.organizationId,
+      });
       settings = await this.companySettingsRepository.save(settings);
     }
 

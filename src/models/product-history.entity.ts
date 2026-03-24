@@ -51,12 +51,12 @@ export class ProductHistory {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @Column({ name: 'warehouse_id' })
-  warehouse_id: string;
+  @Column({ name: 'warehouse_id', nullable: true })
+  warehouse_id: string | null;
 
-  @ManyToOne(() => Warehouse, { nullable: false })
+  @ManyToOne(() => Warehouse, { nullable: true })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Warehouse | null;
 
   @Column({
     type: 'enum',

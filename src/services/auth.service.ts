@@ -4,11 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { UserService } from './user.service';
 import { LoginDto } from '../dtos/auth/login.dto';
 import { RegisterDto } from '../dtos/auth/register.dto';
 import { AuthResponseDto } from '../dtos/auth/auth-response.dto';
 import { User } from '../models/user.entity';
+import { Currency } from '../models/currency.entity';
 import { compare } from 'bcrypt';
 import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
@@ -28,6 +31,8 @@ export class AuthService {
     private emailQueue: EmailQueue,
     private organizationService: OrganizationService,
     private subscriptionService: SubscriptionService,
+    @InjectRepository(Currency)
+    private readonly currencyRepository: Repository<Currency>,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -306,6 +311,30 @@ export class AuthService {
           );
         } catch (subscriptionError) {
           console.error('Failed to create trial subscription:', subscriptionError);
+        }
+
+        // Crear monedas por defecto para la organización
+        try {
+          const defaultCurrencies = [
+            { code: 'MXN', name: 'Peso Mexicano' },
+            { code: 'USD', name: 'Dólar Estadounidense' },
+          ];
+          for (const c of defaultCurrencies) {
+            const exists = await this.currencyRepository.findOne({
+              where: { code: c.code, organization_id: user.organization_id },
+            });
+            if (!exists) {
+              await this.currencyRepository.save(
+                this.currencyRepository.create({
+                  code: c.code,
+                  name: c.name,
+                  organization_id: user.organization_id,
+                }),
+              );
+            }
+          }
+        } catch (currencyError) {
+          console.error('Failed to create default currencies:', currencyError);
         }
       }
 

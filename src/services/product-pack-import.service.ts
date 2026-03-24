@@ -7,6 +7,7 @@ import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
 import { MeasurementUnit } from '../models/measurement-unit.entity';
 import { Tax, TaxType } from '../models/tax.entity';
+import { Currency } from '../models/currency.entity';
 import { ProductResponse } from '../interfaces/certification-pack.interface';
 
 interface ImportProductsFromPackResponseDto {
@@ -31,6 +32,8 @@ export class ProductPackImportService {
     private readonly measurementUnitRepository: Repository<MeasurementUnit>,
     @InjectRepository(Tax)
     private readonly taxRepository: Repository<Tax>,
+    @InjectRepository(Currency)
+    private readonly currencyRepository: Repository<Currency>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
@@ -266,6 +269,11 @@ export class ProductPackImportService {
 
     const products: ProductResponse[] = await packService.listProducts();
 
+    // Obtener moneda MXN de la organización para asignar a productos importados
+    const mxnCurrency = await this.currencyRepository.findOne({
+      where: { code: 'MXN', organization_id: this.organizationId },
+    });
+
     let created = 0;
     let updated = 0;
     let skipped = 0;
@@ -301,6 +309,10 @@ export class ProductPackImportService {
           }
           existing.measurement_unit = { id: measurementUnitId } as any;
           existing.taxes = taxes;
+          // Asignar MXN si no tiene moneda
+          if (!existing.currency_id && mxnCurrency) {
+            existing.currency = mxnCurrency;
+          }
           await this.productRepository.save(existing);
           updated += 1;
           continue;
@@ -327,6 +339,7 @@ export class ProductPackImportService {
           inventory_strategy: InventoryStrategy.AVERAGE,
           base_price: packProduct.price || 0,
           organization_id: this.organizationId,
+          currency: mxnCurrency || undefined,
         });
 
         await this.productRepository.save(product);

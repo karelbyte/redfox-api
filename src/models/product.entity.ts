@@ -19,6 +19,7 @@ import { MeasurementUnit } from './measurement-unit.entity';
 import { ProductPrice } from './product-price.entity';
 import { ProductTax } from './product-tax.entity';
 import { Organization } from './organization.entity';
+import { Currency } from './currency.entity';
 
 export enum ProductType {
   DIGITAL = 'digital',
@@ -137,6 +138,13 @@ export class Product {
 
   @Column({ type: 'text', nullable: true })
   images: string;
+
+  @Column({ name: 'currency_id', type: 'uuid', nullable: true })
+  currency_id: string | null;
+
+  @ManyToOne(() => Currency, { nullable: true })
+  @JoinColumn({ name: 'currency_id' })
+  currency: Currency | null;
 
   @Column({ length: 255, nullable: true })
   product_pack_id: string;

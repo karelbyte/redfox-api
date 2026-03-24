@@ -4,7 +4,7 @@ import { WarehouseResponseDto } from '../warehouse/warehouse-response.dto';
 export class WithdrawalDetailResponseDto {
   id: string;
   product: ProductResponseDto;
-  warehouse: WarehouseResponseDto;
+  warehouse: WarehouseResponseDto | null;
   quantity: number;
   price: number;
   created_at: Date;

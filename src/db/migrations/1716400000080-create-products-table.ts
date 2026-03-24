@@ -155,6 +155,12 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'currency_id',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'product_pack_id',
             type: 'varchar',
             length: '255',
@@ -203,6 +209,13 @@ export class CreateProductsTable1716400000080 implements MigrationInterface {
             name: 'FK_Measurement_Unit',
             columnNames: ['measurement_unit_id'],
             referencedTableName: 'measurement_units',
+            referencedColumnNames: ['id'],
+            onDelete: 'SET NULL',
+          },
+          {
+            name: 'FK_Products_Currencies',
+            columnNames: ['currency_id'],
+            referencedTableName: 'currencies',
             referencedColumnNames: ['id'],
             onDelete: 'SET NULL',
           },

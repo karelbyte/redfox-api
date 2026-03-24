@@ -35,7 +35,7 @@ export class CreateWithdrawalsDetailsTable1716400000130
             name: 'warehouse_id',
             type: isPostgres ? 'uuid' : 'varchar',
             length: isPostgres ? undefined : '36',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'product_id',

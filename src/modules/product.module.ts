@@ -14,10 +14,13 @@ import { BrandModule } from './brand.module';
 import { CategoryModule } from './category.module';
 import { TaxModule } from './tax.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
+import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
 import { SurrogateModule } from './surrogate.module';
 import { OrganizationModule } from './organization.module';
+import { CurrencyModule } from './currency.module';
+import { Currency } from '../models/currency.entity';
 import { ProductPackImportService } from '../services/product-pack-import.service';
 import { ProductPackSyncService } from '../services/product-pack-sync.service';
 
@@ -31,6 +34,7 @@ import { ProductPackSyncService } from '../services/product-pack-sync.service';
       WarehouseOpening,
       MeasurementUnit,
       Tax,
+      Currency,
     ]),
     MeasurementUnitModule,
     BrandModule,
@@ -40,9 +44,10 @@ import { ProductPackSyncService } from '../services/product-pack-sync.service';
     CertificationPackModule,
     SurrogateModule,
     OrganizationModule,
+    CurrencyModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, ProductMapper, ProductPackImportService, ProductPackSyncService],
-  exports: [ProductService, ProductMapper],
+  providers: [ProductService, ProductMapper, CurrencyMapper, ProductPackImportService, ProductPackSyncService],
+  exports: [ProductService, ProductMapper, CurrencyMapper, ProductPackSyncService],
 })
 export class ProductModule {}

@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   IsObject,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateClientAddressDto } from './update-client-address.dto';
@@ -31,6 +32,7 @@ export class UpdateClientDto {
 
   @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.phone && o.phone.length > 0)
   @Length(3, 20)
   phone?: string;
 

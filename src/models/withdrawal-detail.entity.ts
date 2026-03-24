@@ -25,9 +25,9 @@ export class WithdrawalDetail {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @ManyToOne(() => Warehouse)
+  @ManyToOne(() => Warehouse, { nullable: true })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Warehouse | null;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   quantity: number;

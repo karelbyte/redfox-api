@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsArray,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateClientAddressDto } from './create-client-address.dto';
@@ -29,6 +30,7 @@ export class CreateClientDto {
 
   @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.phone && o.phone.length > 0)
   @Length(3, 20)
   phone?: string;
 

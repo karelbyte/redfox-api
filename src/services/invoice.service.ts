@@ -29,6 +29,7 @@ import { ClientMapper } from './mappers/client.mapper';
 import { WithdrawalMapper } from './mappers/withdrawal.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 
 @Injectable()
@@ -52,6 +53,7 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
   ) { }
 
@@ -62,28 +64,37 @@ export class InvoiceService {
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
   ): InvoiceDetailResponseDto {
+    const subtotal = Math.round(Number(detail.quantity) * Number(detail.price) * 100) / 100;
+    const taxRate = (detail.product as any)?.taxes?.length
+      ? (detail.product as any).taxes.reduce((acc: number, tax: any) => {
+          if (tax.type === 'PERCENTAGE') return acc + Number(tax.value);
+          return acc;
+        }, 0)
+      : Number(detail.tax_rate) || 0;
+    const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
+    const total = Math.round((subtotal + taxAmount) * 100) / 100;
+
     return {
       id: detail.id,
       quantity: detail.quantity,
       price: detail.price,
-      subtotal: detail.subtotal,
-      tax_rate: detail.tax_rate,
-      tax_amount: detail.tax_amount,
-      total: detail.total,
+      subtotal,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      total,
       product: this.productMapper.mapToResponseDto(detail.product),
       created_at: detail.created_at,
     };
   }
 
   private mapToResponseDto(invoice: Invoice): InvoiceResponseDto {
-    // Debug temporal - verificar el estado de la relación client
-    console.log('🔍 Debug Invoice:', {
-      invoiceId: invoice.id,
-      invoiceCode: invoice.code,
-      hasClient: !!invoice.client,
-      clientId: invoice.client?.id,
-      clientName: invoice.client?.name,
-    });
+    const mappedDetails = invoice.details?.map((detail) =>
+      this.mapDetailToResponseDto(detail),
+    );
+
+    const subtotal = mappedDetails?.reduce((s, d) => s + Number(d.subtotal), 0) ?? Number(invoice.subtotal);
+    const tax_amount = mappedDetails?.reduce((s, d) => s + Number(d.tax_amount), 0) ?? Number(invoice.tax_amount);
+    const total_amount = mappedDetails?.reduce((s, d) => s + Number(d.total), 0) ?? Number(invoice.total_amount);
 
     return {
       id: invoice.id,
@@ -93,9 +104,9 @@ export class InvoiceService {
       withdrawal: invoice.withdrawal
         ? this.withdrawalMapper.mapToResponseDto(invoice.withdrawal)
         : null,
-      subtotal: invoice.subtotal,
-      tax_amount: invoice.tax_amount,
-      total_amount: invoice.total_amount,
+      subtotal: Math.round(subtotal * 100) / 100,
+      tax_amount: Math.round(tax_amount * 100) / 100,
+      total_amount: Math.round(total_amount * 100) / 100,
       status: invoice.status,
       cfdi_uuid: invoice.cfdi_uuid,
       pack_invoice_id: invoice.pack_invoice_id ?? null,
@@ -103,9 +114,7 @@ export class InvoiceService {
       payment_method: invoice.payment_method,
       payment_conditions: invoice.payment_conditions,
       notes: invoice.notes,
-      details: invoice.details?.map((detail) =>
-        this.mapDetailToResponseDto(detail),
-      ),
+      details: mappedDetails,
       created_at: invoice.created_at,
     };
   }
@@ -237,6 +246,7 @@ export class InvoiceService {
         'details.product.category',
         'details.product.tax',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
     });
 
@@ -274,8 +284,9 @@ export class InvoiceService {
         'details.product',
         'details.product.brand',
         'details.product.category',
-        'details.product.tax',
+        'details.product.taxes',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
       skip,
       take: limit,
@@ -303,8 +314,9 @@ export class InvoiceService {
         'details.product',
         'details.product.brand',
         'details.product.category',
-        'details.product.tax',
+        'details.product.taxes',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
     });
 
@@ -325,18 +337,12 @@ export class InvoiceService {
           'product',
           'product.brand',
           'product.category',
-          'product.tax',
+          'product.taxes',
           'product.measurement_unit',
         ],
         withDeleted: false,
       });
     }
-
-    console.log('🔍 Invoice findOne - Details loaded:', {
-      invoiceId: invoice.id,
-      detailsCount: invoice.details?.length || 0,
-      details: invoice.details,
-    });
 
     return this.mapToResponseDto(invoice);
   }
@@ -389,6 +395,7 @@ export class InvoiceService {
         'details.product.category',
         'details.product.tax',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
     });
 
@@ -438,7 +445,7 @@ export class InvoiceService {
         'client',
         'details',
         'details.product',
-        'details.product.tax',
+        'details.product.taxes',
       ],
     });
 
@@ -475,6 +482,7 @@ export class InvoiceService {
         'details.product.category',
         'details.product.tax',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
     });
     if (existingByWithdrawal) {
@@ -494,12 +502,18 @@ export class InvoiceService {
     }
 
     const details: CreateInvoiceDetailDto[] = withdrawal.details.map(
-      (detail) => ({
-        product_id: detail.product.id,
-        quantity: detail.quantity,
-        price: detail.price,
-        tax_rate: detail.product.tax?.value || 0,
-      }),
+      (detail) => {
+        const taxRate = (detail.product.taxes || []).reduce((acc, tax) => {
+          if ((tax as any).type === 'PERCENTAGE') return acc + Number(tax.value);
+          return acc;
+        }, 0);
+        return {
+          product_id: detail.product.id,
+          quantity: detail.quantity,
+          price: detail.price,
+          tax_rate: taxRate,
+        };
+      },
     );
 
     const amounts = this.calculateAmounts(details);
@@ -520,12 +534,6 @@ export class InvoiceService {
 
     withdrawal.invoiceId = savedInvoice.id;
     await this.withdrawalRepository.save(withdrawal);
-
-    console.log('🔍 convertWithdrawalToInvoice - Starting to save details:', {
-      invoiceId: savedInvoice.id,
-      detailsCount: details.length,
-      details: details,
-    });
 
     for (const detailDto of details) {
       const product = await this.productService.findOneEntity(
@@ -549,14 +557,6 @@ export class InvoiceService {
         organization_id: this.organizationId,
       });
 
-      console.log('🔍 Saving invoice detail:', {
-        invoiceId: savedInvoice.id,
-        productId: detailDto.product_id,
-        quantity: detailDto.quantity,
-        price: detailDto.price,
-        taxRate: taxRate,
-      });
-
       await this.invoiceDetailRepository.save(detail);
     }
 
@@ -571,6 +571,7 @@ export class InvoiceService {
         'details.product.category',
         'details.product.tax',
         'details.product.measurement_unit',
+        'details.product.currency',
       ],
     });
 
@@ -588,12 +589,6 @@ export class InvoiceService {
         withDeleted: false,
       });
     }
-
-    console.log('🔍 convertWithdrawalToInvoice - Details saved:', {
-      invoiceId: invoiceWithDetails?.id,
-      detailsCount: invoiceWithDetails?.details?.length || 0,
-      details: invoiceWithDetails?.details,
-    });
 
     return this.mapToResponseDto(invoiceWithDetails!);
   }
@@ -764,7 +759,21 @@ export class InvoiceService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
-      
+
+      // Auto-sincronizar productos que no tengan product_pack_id
+      for (const detail of invoice.details) {
+        if (detail.product && !detail.product.product_pack_id) {
+          const result = await this.productPackSyncService.syncProduct(detail.product);
+          if (result.packSyncSuccess) {
+            detail.product.product_pack_id = result.product.product_pack_id;
+          } else {
+            throw new BadRequestException(
+              `No se pudo sincronizar el producto "${detail.product.name}" con Factura Green: ${result.packErrorMessage}`,
+            );
+          }
+        }
+      }
+
       // Pasar opciones especiales al servicio de pack (solo Factura Green las usa)
       const cfdiResult = await packService.generateCFDI(invoice, options);
 
@@ -791,6 +800,7 @@ export class InvoiceService {
           'details.product.category',
           'details.product.tax',
           'details.product.measurement_unit',
+        'details.product.currency',
         ],
       });
 
@@ -861,6 +871,7 @@ export class InvoiceService {
           'details.product.category',
           'details.product.tax',
           'details.product.measurement_unit',
+        'details.product.currency',
         ],
       });
 
@@ -975,7 +986,7 @@ export class InvoiceService {
       .leftJoinAndSelect('detail.product', 'product')
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.tax', 'tax')
+      .leftJoinAndSelect('product.taxes', 'taxes')
       .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
       .where('detail.invoice.id = :invoiceId', { invoiceId });
 

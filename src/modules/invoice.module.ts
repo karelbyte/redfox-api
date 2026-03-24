@@ -17,6 +17,7 @@ import { BrandMapper } from '../services/mappers/brand.mapper';
 import { CategoryMapper } from '../services/mappers/category.mapper';
 import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
+import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { InvoiceMapper } from '../services/mappers/invoice.mapper';
 import { InvoiceDetailMapper } from '../services/mappers/invoice-detail.mapper';
 import { LanguageModule } from './language.module';
@@ -47,6 +48,7 @@ import { OrganizationModule } from './organization.module';
     CategoryMapper,
     TaxMapper,
     MeasurementUnitMapper,
+    CurrencyMapper,
     InvoiceMapper,
     InvoiceDetailMapper,
   ],

@@ -23,7 +23,7 @@ export class ClientPackSyncService {
       (client.addresses || []).find((a) => a.is_main) || client.addresses?.[0];
 
     return {
-      legal_name: mainTax?.tax_name || client.name,
+      legal_name: (mainTax?.tax_name || client.name)?.trim(),
       tax_id: mainTax?.tax_document || 'XAXX010101000',
       tax_system: mainTax?.tax_system || undefined,
       email: client.email || undefined,
