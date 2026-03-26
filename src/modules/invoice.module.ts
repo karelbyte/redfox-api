@@ -1,15 +1,20 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Invoice } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
+import { InvoicePayment } from '../models/invoice-payment.entity';
 import { Client } from '../models/client.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { Product } from '../models/product.entity';
 import { Tax } from '../models/tax.entity';
+import { AccountReceivable } from '../models/account-receivable.entity';
 import { InvoiceService } from '../services/invoice.service';
+import { InvoicePaymentService } from '../services/invoice-payment.service';
 import { InvoiceController } from '../controllers/invoice.controller';
+import { InvoicePaymentController } from '../controllers/invoice-payment.controller';
 import { CertificationPackModule } from './certification-pack.module';
 import { ProductModule } from './product.module';
+import { AccountReceivableModule } from './account-receivable.module';
 import { ClientMapper } from '../services/mappers/client.mapper';
 import { WithdrawalMapper } from '../services/mappers/withdrawal.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
@@ -28,6 +33,8 @@ import { OrganizationModule } from './organization.module';
     TypeOrmModule.forFeature([
       Invoice,
       InvoiceDetail,
+      InvoicePayment,
+      AccountReceivable,
       Client,
       Withdrawal,
       Product,
@@ -37,10 +44,12 @@ import { OrganizationModule } from './organization.module';
     LanguageModule,
     CertificationPackModule,
     OrganizationModule,
+    forwardRef(() => AccountReceivableModule),
   ],
-  controllers: [InvoiceController],
+  controllers: [InvoiceController, InvoicePaymentController],
   providers: [
     InvoiceService,
+    InvoicePaymentService,
     ClientMapper,
     WithdrawalMapper,
     ProductMapper,
@@ -52,6 +61,6 @@ import { OrganizationModule } from './organization.module';
     InvoiceMapper,
     InvoiceDetailMapper,
   ],
-  exports: [InvoiceService],
+  exports: [InvoiceService, InvoicePaymentService],
 })
 export class InvoiceModule {}

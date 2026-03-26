@@ -13,6 +13,7 @@ import {
 import { Client } from './client.entity';
 import { Withdrawal } from './withdrawal.entity';
 import { InvoiceDetail } from './invoice-detail.entity';
+import { InvoicePayment } from './invoice-payment.entity';
 import { Organization } from './organization.entity';
 
 export enum InvoiceStatus {
@@ -98,6 +99,9 @@ export class Invoice {
 
   @OneToMany(() => InvoiceDetail, (detail) => detail.invoice)
   details: InvoiceDetail[];
+
+  @OneToMany(() => InvoicePayment, (payment) => payment.invoice)
+  payments: InvoicePayment[];
 
   @CreateDateColumn()
   created_at: Date;

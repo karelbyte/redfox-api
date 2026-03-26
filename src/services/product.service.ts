@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import {
   Product,
   ProductType,
@@ -523,11 +523,59 @@ export class ProductService {
     await this.productRepository.softRemove(product);
   }
 
-  async removeMany(ids: string[]): Promise<void> {
-    await this.productRepository.softDelete({
-      id: ids as any,
-      organization_id: this.organizationId,
+  async removeMany(ids: string[]): Promise<{ deleted: number; skipped: string[] }> {
+    if (!ids.length) return { deleted: 0, skipped: [] };
+
+    // Verificar que todos los productos pertenecen a la organización
+    const products = await this.productRepository.find({
+      where: { id: In(ids), organization_id: this.organizationId },
+      select: ['id', 'name'],
     });
+
+    if (!products.length) return { deleted: 0, skipped: [] };
+
+    const validIds = products.map(p => p.id);
+
+    // Verificar dependencias usando el entity manager (sin inyectar todos los repos)
+    const manager = this.productRepository.manager;
+
+    const dependencyTables = [
+      { table: 'withdrawal_details', column: 'product_id', label: 'ventas' },
+      { table: 'reception_details', column: 'product_id', label: 'recepciones' },
+      { table: 'invoice_details', column: 'product_id', label: 'facturas' },
+      { table: 'purchase_order_details', column: 'product_id', label: 'órdenes de compra' },
+      { table: 'quotation_details', column: 'product_id', label: 'cotizaciones' },
+      { table: 'return_details', column: 'product_id', label: 'devoluciones' },
+      { table: 'inventory', column: 'product_id', label: 'inventario' },
+    ];
+
+    // Obtener todos los IDs con dependencias en una sola query por tabla
+    const blockedIds = new Set<string>();
+
+    for (const dep of dependencyTables) {
+      const rows: { product_id: string }[] = await manager.query(
+        `SELECT DISTINCT product_id FROM "${dep.table}" WHERE product_id = ANY($1) AND deleted_at IS NULL`,
+        [validIds],
+      );
+      rows.forEach(r => blockedIds.add(r.product_id));
+    }
+
+    const deletableIds = validIds.filter(id => !blockedIds.has(id));
+    const skippedIds = validIds.filter(id => blockedIds.has(id));
+
+    if (deletableIds.length > 0) {
+      // Soft delete uno por uno para respetar el organizationId y el soft delete de TypeORM
+      await this.productRepository.softDelete({
+        id: In(deletableIds),
+        organization_id: this.organizationId,
+      });
+    }
+
+    const skippedNames = products
+      .filter(p => skippedIds.includes(p.id))
+      .map(p => p.name);
+
+    return { deleted: deletableIds.length, skipped: skippedNames };
   }
 
   async getProductUsage(

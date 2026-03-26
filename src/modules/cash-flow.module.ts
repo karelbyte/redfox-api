@@ -6,6 +6,7 @@ import { Expense } from '../models/expense.entity';
 import { AccountReceivable } from '../models/account-receivable.entity';
 import { AccountPayable } from '../models/account-payable.entity';
 import { Invoice } from '../models/invoice.entity';
+import { TenantContext } from '../services/tenant-context.service';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { Invoice } from '../models/invoice.entity';
       Invoice,
     ]),
   ],
-  providers: [CashFlowService],
+  providers: [CashFlowService, TenantContext],
   controllers: [CashFlowController],
   exports: [CashFlowService],
 })

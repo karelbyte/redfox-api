@@ -611,22 +611,24 @@ export class InvoiceService {
     let withdrawals: Withdrawal[];
     if (dto.withdrawal_ids?.length) {
       withdrawals = await this.withdrawalRepository.find({
-        where: dto.withdrawal_ids.map((id) => ({ 
-          id, 
-          organization_id: this.organizationId 
+        where: dto.withdrawal_ids.map((id) => ({
+          id,
+          organization_id: this.organizationId,
         })),
         relations: ['client'],
       });
     } else if (dto.from && dto.to) {
       const fromDate = new Date(dto.from);
+      // Incluir todo el día final
       const toDate = new Date(dto.to);
+      toDate.setHours(23, 59, 59, 999);
       withdrawals = await this.withdrawalRepository
         .createQueryBuilder('w')
         .where('w.organization_id = :organizationId', { organizationId: this.organizationId })
         .andWhere('w.created_at >= :from', { from: fromDate })
         .andWhere('w.created_at <= :to', { to: toDate })
-        .andWhere('w.pack_receipt_id IS NOT NULL')
         .andWhere('w.invoice_id IS NULL')
+        .andWhere("w.status = 'CLOSED'")
         .getMany();
     } else {
       throw new BadRequestException(
@@ -634,53 +636,47 @@ export class InvoiceService {
       );
     }
 
-    withdrawals = withdrawals.filter((w) => w.pack_receipt_id && !w.invoiceId);
+    withdrawals = withdrawals.filter((w) => !w.invoiceId);
     if (!withdrawals.length) {
       throw new BadRequestException(
-        'No hay ventas con nota (recibo) sin facturar en el periodo o lista indicada',
+        'No hay ventas cerradas sin facturar en el periodo indicado',
       );
     }
 
+    // Calcular el total real de las ventas del período
+    const totalAmount = withdrawals.reduce((sum, w) => sum + Number(w.amount), 0);
+
     const packService = await this.certificationPackFactory.getPackService();
-    const createGlobal =
-      (packService as any).createGlobalInvoice ??
-      packService.createGlobalInvoice;
-    if (!createGlobal) {
+    if (!packService.createGlobalInvoice) {
       throw new BadRequestException('El PAC activo no soporta factura global');
     }
 
-    const receiptIds = withdrawals.map((w) => w.pack_receipt_id!);
-    const from =
-      dto.from ??
-      withdrawals.reduce(
-        (min, w) =>
-          !min || new Date(w.created_at) < new Date(min)
-            ? w.created_at.toISOString().split('T')[0]
-            : min,
-        null as string | null,
-      );
-    const to =
-      dto.to ??
-      withdrawals.reduce(
-        (max, w) =>
-          !max || new Date(w.created_at) > new Date(max)
-            ? w.created_at.toISOString().split('T')[0]
-            : max,
-        null as string | null,
-      );
+    const from = dto.from ?? withdrawals.reduce(
+      (min, w) => !min || new Date(w.created_at) < new Date(min)
+        ? w.created_at.toISOString().split('T')[0] : min,
+      null as string | null,
+    );
+    const to = dto.to ?? withdrawals.reduce(
+      (max, w) => !max || new Date(w.created_at) > new Date(max)
+        ? w.created_at.toISOString().split('T')[0] : max,
+      null as string | null,
+    );
 
-    const cfdiResult = await createGlobal.call(packService, {
+    const cfdiResult = await packService.createGlobalInvoice({
       from: from ?? undefined,
       to: to ?? undefined,
       periodicity: dto.periodicity as any,
-      receipts: receiptIds,
+      receipts: withdrawals.map((w) => w.pack_receipt_id!).filter(Boolean),
+      totalAmount,
     });
 
-    const firstClient = await this.clientRepository.findOne({
+    // Buscar cliente XAXX010101000 (Público en General) en nuestra DB
+    const publicClient = await this.clientRepository.findOne({
       where: { organization_id: this.organizationId },
       order: { id: 'ASC' },
     });
-    if (!firstClient) {
+
+    if (!publicClient) {
       throw new BadRequestException(
         'No hay clientes en el sistema; se requiere al menos uno para la factura global',
       );
@@ -695,11 +691,11 @@ export class InvoiceService {
     const invoice = this.invoiceRepository.create({
       code,
       date: new Date(),
-      client: firstClient,
+      client: publicClient,
       withdrawal: undefined,
-      subtotal: 0,
-      tax_amount: 0,
-      total_amount: 0,
+      subtotal: Math.round(totalAmount / 1.16 * 100) / 100,
+      tax_amount: Math.round((totalAmount - totalAmount / 1.16) * 100) / 100,
+      total_amount: Math.round(totalAmount * 100) / 100,
       status: InvoiceStatus.SENT,
       cfdi_uuid: cfdiResult.uuid,
       pack_invoice_id: cfdiResult.id,
@@ -707,6 +703,8 @@ export class InvoiceService {
         uuid: cfdiResult.uuid,
         status: cfdiResult.status,
         id: cfdiResult.id,
+        pdf_url: cfdiResult.pdf_url,
+        xml_url: cfdiResult.xml_url,
       },
       payment_method: 'cash' as any,
       organization_id: this.organizationId,
@@ -858,8 +856,18 @@ export class InvoiceService {
       await packService.cancelCFDI(invoice.cfdi_uuid, reason);
 
       invoice.status = InvoiceStatus.CANCELLED;
-
       const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+      // Liberar las ventas asociadas para que puedan volver a facturarse
+      await this.withdrawalRepository
+        .createQueryBuilder()
+        .update()
+        .set({ invoiceId: null })
+        .where('invoice_id = :invoiceId AND organization_id = :organizationId', {
+          invoiceId: invoiceId,
+          organizationId: this.organizationId,
+        })
+        .execute();
 
       const invoiceWithDetails = await this.invoiceRepository.findOne({
         where: { id: updatedInvoice.id },

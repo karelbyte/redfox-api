@@ -156,6 +156,38 @@ export interface ReceiptResponse {
   [key: string]: unknown;
 }
 
+/**
+ * Datos para generar un complemento de pago (REP) en el PAC.
+ * El control de parcialidad y saldo insoluto es responsabilidad de nuestro sistema.
+ */
+export interface PaymentComplementData {
+  /** Folio fiscal SAT (cfdi_uuid) de la factura PPD original */
+  cfdi_uuid: string;
+  /** Número de parcialidad (1, 2, 3...) */
+  payment_number: number;
+  /** Fecha del pago en formato YYYY-MM-DD */
+  payment_date: string;
+  /** Monto del pago */
+  amount: number;
+  /** Saldo insoluto antes del pago */
+  balance_before: number;
+  /** Saldo insoluto después del pago */
+  balance_after: number;
+  /** Clave SAT de forma de pago (01=Efectivo, 03=Transferencia, 04=Tarjeta...) */
+  payment_form: string;
+}
+
+export interface PaymentComplementResponse {
+  /** ID interno del complemento en el PAC */
+  id: string;
+  /** Folio fiscal SAT del complemento de pago generado */
+  complement_uuid: string;
+  /** Folio fiscal SAT de la factura original */
+  invoice_uuid: string;
+  pdf_url?: string;
+  xml_url?: string;
+}
+
 export interface ICertificationPackService {
   generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
@@ -206,6 +238,16 @@ export interface ICertificationPackService {
    * FacturaAPI: POST /v2/receipts/global-invoice
    */
   createGlobalInvoice?(data: GlobalInvoiceData): Promise<CFDIResponse>;
+  /**
+   * Genera un complemento de pago (REP) para una factura PPD.
+   * Opcional: no todos los packs soportan complementos de pago.
+   */
+  generatePaymentComplement?(data: PaymentComplementData): Promise<PaymentComplementResponse>;
+  /**
+   * Cancela un complemento de pago en el PAC.
+   * Opcional: no todos los packs soportan cancelación de complementos.
+   */
+  cancelPaymentComplement?(complementPackId: string, reason: string): Promise<void>;
 }
 
 /** Datos para crear factura global en el PAC (ej. FacturaAPI). */
@@ -219,4 +261,6 @@ export interface GlobalInvoiceData {
   date?: string;
   folio_number?: number;
   series?: string;
+  /** Monto total de las ventas del período (requerido para Factura Green) */
+  totalAmount?: number;
 }

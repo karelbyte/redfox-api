@@ -173,7 +173,7 @@ export class ProductController {
   @Post('bulk-delete')
   removeMany(
     @Body() bulkDeleteProductDto: BulkDeleteProductDto,
-  ): Promise<void> {
+  ) {
     return this.productService.removeMany(bulkDeleteProductDto.ids);
   }
 

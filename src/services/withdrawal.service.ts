@@ -941,6 +941,7 @@ export class WithdrawalService {
           'details.warehouse',
           'cashTransaction',
           'cashTransaction.cashRegister',
+          'invoice',
         ],
       });
 
@@ -961,6 +962,16 @@ export class WithdrawalService {
         throw new BadRequestException(
           'Only closed withdrawals can be returned',
         );
+      }
+
+      // Bloquear devolución si tiene factura activa (no cancelada)
+      if (withdrawal.invoiceId && withdrawal.invoice) {
+        const invoiceStatus = (withdrawal.invoice as any).status;
+        if (invoiceStatus && invoiceStatus !== 'CANCELLED') {
+          throw new BadRequestException(
+            'No se puede devolver una venta con factura activa. Cancela la factura primero.',
+          );
+        }
       }
 
       // 1. Restaurar Inventario y crear ProductHistory (Kardex)

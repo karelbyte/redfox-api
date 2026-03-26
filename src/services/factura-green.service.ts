@@ -12,6 +12,9 @@ import {
   ReceiptResponse,
   MeasurementUnitSuggestion,
   ProductKeySuggestion,
+  PaymentComplementData,
+  PaymentComplementResponse,
+  GlobalInvoiceData,
 } from '../interfaces/certification-pack.interface';
 import { GenerateCFDIOptions } from '../interfaces/factura-green-options.interface';
 import { TenantContext } from './tenant-context.service';
@@ -21,11 +24,11 @@ export class FacturaGreenService implements ICertificationPackService {
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private getConfig() {
     const pacConfig = this.tenantContext.getPacConfig();
-    
+
     return {
       baseUrl: this.configService.get<string>('FACTURA_GREEN_BASE_URL') || 'https://www',
       businessUuid: pacConfig?.business_uuid,
@@ -37,7 +40,7 @@ export class FacturaGreenService implements ICertificationPackService {
   private getHeaders() {
     const config = this.getConfig();
     const pacConfig = this.tenantContext.getPacConfig();
-    
+
     if (!config.businessUuid) {
       throw new BadRequestException('Factura Green business UUID not configured');
     }
@@ -77,7 +80,7 @@ export class FacturaGreenService implements ICertificationPackService {
       // Construir items con soporte para casos especiales
       const items = invoice.details.map(detail => {
         const productPackId = (detail.product as any)?.product_pack_id;
-        
+
         if (!productPackId) {
           throw new BadRequestException(
             `Product ${detail.product?.name || detail.product_id} not synced with Factura Green. Please sync products first.`
@@ -764,7 +767,7 @@ export class FacturaGreenService implements ICertificationPackService {
       // Mapear impuestos de nuestro formato al formato de Factura Green
       for (const tax of productData.taxes || []) {
         const rate = (tax.rate * 100).toFixed(2); // Convertir a porcentaje string
-        
+
         if (tax.type === 'IVA' && !tax.type.includes('RET')) {
           taxes.iva_ta = true;
           taxes.iva_tr = rate;
@@ -974,7 +977,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
       // Mapear los productos de Factura Green al formato ProductResponse
       const products = data.data?.products || [];
-      
+
       return products.map((product: any) => ({
         id: product.uuid,
         created_at: new Date().toISOString(),
@@ -982,6 +985,7 @@ export class FacturaGreenService implements ICertificationPackService {
         description: product.name || '',
         product_key: product.s,
         unit_key: product.u,
+        unit_name: product.u_str,
         price: product.dp ?? product.p ?? 0,
         tax_included: false,
         sku: product.sku || product.id || '',
@@ -996,9 +1000,9 @@ export class FacturaGreenService implements ICertificationPackService {
 
   private mapFacturaGreenTaxes(taxesObj: any): any[] {
     if (!taxesObj) return [];
-    
+
     const taxes: any[] = [];
-    
+
     // IVA Trasladado (cobrado al cliente)
     if (taxesObj.iva_ta && taxesObj.iva_tr && taxesObj.iva_tr.v) {
       const rate = parseFloat(taxesObj.iva_tr.v);
@@ -1010,7 +1014,7 @@ export class FacturaGreenService implements ICertificationPackService {
         });
       }
     }
-    
+
     // IVA Retenido
     if (taxesObj.iva_ra && taxesObj.iva_rr) {
       const rate = parseFloat(taxesObj.iva_rr);
@@ -1022,7 +1026,7 @@ export class FacturaGreenService implements ICertificationPackService {
         });
       }
     }
-    
+
     // ISR Retenido
     if (taxesObj.isr_ra && taxesObj.isr_rr) {
       const rate = parseFloat(taxesObj.isr_rr);
@@ -1034,7 +1038,7 @@ export class FacturaGreenService implements ICertificationPackService {
         });
       }
     }
-    
+
     // IEPS Trasladado
     if (taxesObj.ieps_ta && taxesObj.ieps_tr) {
       const rate = parseFloat(taxesObj.ieps_tr);
@@ -1046,7 +1050,7 @@ export class FacturaGreenService implements ICertificationPackService {
         });
       }
     }
-    
+
     // IEPS Retenido
     if (taxesObj.ieps_ra && taxesObj.ieps_rr) {
       const rate = parseFloat(taxesObj.ieps_rr);
@@ -1058,8 +1062,226 @@ export class FacturaGreenService implements ICertificationPackService {
         });
       }
     }
-    
+
     return taxes;
   }
-}
 
+  async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = this.getHeaders();
+
+      // Mapeo de periodicidad frontend → clave SAT c_Periodicidad
+      const periodicityMap: Record<string, string> = {
+        day: '01',        // Diario
+        week: '02',       // Semanal
+        fortnight: '03',  // Quincenal
+        month: '04',      // Mensual
+        two_months: '05', // Bimestral
+      };
+
+      const periodicitySAT = periodicityMap[data.periodicity];
+      if (!periodicitySAT) {
+        throw new BadRequestException(
+          `Periodicidad no válida: "${data.periodicity}". Valores permitidos: day, week, fortnight, month, two_months`,
+        );
+      }
+
+      // Determinar el período (mes) y año desde la fecha "from"
+      // Para periodicidad mensual: period = mes (01-12), year = año
+      const fromDate = data.from ? new Date(data.from) : new Date();
+      const month = String(fromDate.getMonth() + 1).padStart(2, '0'); // 01-12
+      const year = String(fromDate.getFullYear());
+
+      // Buscar el cliente XAXX010101000 (Público en General) en el PAC
+      let publicCustomerUuid: string | null = null;
+      try {
+        const customers = await this.listCustomers?.() ?? [];
+        const publicCustomer = customers.find(
+          (c) => c.tax_id === 'XAXX010101000' || c.legal_name?.toUpperCase().includes('PUBLICO EN GENERAL'),
+        );
+        if (publicCustomer) {
+          publicCustomerUuid = publicCustomer.id;
+        }
+      } catch {
+        // Si falla la búsqueda, continuamos — el PAC puede tener el cliente por defecto
+      }
+
+      if (!publicCustomerUuid) {
+        throw new BadRequestException(
+          'No se encontró el cliente "PÚBLICO EN GENERAL" (XAXX010101000) en Factura Green. ' +
+          'Verifica que el cliente esté registrado en el PAC.',
+        );
+      }
+
+      // Calcular el total de las ventas del período (viene en data.receipts como monto total)
+      // Si no viene monto, usamos 0 — el caller debe pasar el total
+      const totalAmount = (data as any).totalAmount ?? 0;
+
+      if (totalAmount <= 0) {
+        throw new BadRequestException(
+          'El monto total de las ventas del período debe ser mayor a cero.',
+        );
+      }
+
+      // Producto genérico "VENTA" — Factura Green aplica las reglas SAT automáticamente
+      // (clave 01010101, descripción VENTA) cuando enforce.cfdiGlobal = true (default)
+      // Necesitamos un producto registrado en el PAC — buscamos uno con clave 01010101
+      let ventaProductUuid: string | null = null;
+      try {
+        const products = await this.listProducts?.() ?? [];
+        const ventaProduct = products.find(
+          (p) => String(p.product_key) === '01010101',
+        );
+        if (ventaProduct) {
+          ventaProductUuid = ventaProduct.id;
+        }
+      } catch {
+        // Continuar
+      }
+
+      if (!ventaProductUuid) {
+        throw new BadRequestException(
+          'No se encontró un producto con clave SAT "01010101" (VENTA) en Factura Green. ' +
+          'Crea un producto con esa clave en el PAC para poder emitir facturas globales.',
+        );
+      }
+
+      const payload: any = {
+        cfdi: {
+          customer: {
+            uuid: publicCustomerUuid,
+          },
+          payment: {
+            form: { k: '01' }, // Efectivo — forma de pago de mostrador
+            method: { k: 'PUE' },
+          },
+          global: {
+            period: { k: month },
+            periodicity: { k: periodicitySAT },
+            year: { k: year },
+          },
+          items: [
+            {
+              uuid: ventaProductUuid,
+              qty: 1,
+              price: { amount: totalAmount },
+            },
+          ],
+          observations: `Factura global ${data.from ?? ''} - ${data.to ?? ''}`,
+        },
+      };
+
+      const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.response !== 'success') {
+        const message = result.message || result.error?.message || 'Error al emitir la factura global en Factura Green';
+        throw new BadRequestException(message);
+      }
+
+      return {
+        id: result.data.uuid,
+        uuid: result.data.cfdi?.folio_tax || result.data.folio_tax,
+        status: 'valid',
+        pdf_url: result.data.pdf_url,
+        xml_url: result.data.xml_url,
+        message: 'Factura global emitida exitosamente',
+      };
+    } catch (error: any) {
+      console.error('Factura Green Global Invoice Error:', error);
+      throw new BadRequestException(error.message || 'Error al emitir la factura global');
+    }
+  }
+
+  async generatePaymentComplement(data: PaymentComplementData): Promise<PaymentComplementResponse> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = this.getHeaders();
+
+      const payload = {
+        cfdi: {
+          uuid: data.cfdi_uuid,
+          // delete 
+          customer: {
+            email: "karelpuerto78@gmail.com"
+          }
+        },
+        payment: {
+          number: data.payment_number,
+          date: data.payment_date,
+          amount: data.amount,
+          balance: {
+            before: data.balance_before,
+            after: data.balance_after,
+          },
+          form: {
+            k: data.payment_form,
+          },
+          method: {
+            k: 'PUE', // El REP siempre es PUE — ya se pagó
+          },
+        },
+      };
+
+      const response = await fetch(`${baseUrl}/interop/cfdi/emmited/payment`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.response !== 'success') {
+        const message = result.message || 'Error generating payment complement with Factura Green';
+        throw new BadRequestException(message);
+      }
+
+      return {
+        id: result.data?.payment?.uuid || result.data?.uuid,
+        complement_uuid: result.data?.payment?.uuid,
+        invoice_uuid: result.data?.uuid,
+        pdf_url: result.data?.pdf_url,
+        xml_url: result.data?.xml_url,
+      };
+    } catch (error: any) {
+      console.error('Factura Green Payment Complement Error:', error);
+      throw new BadRequestException(error.message || 'Error generating payment complement');
+    }
+  }
+
+  async cancelPaymentComplement(complementPackId: string, reason: string): Promise<void> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = this.getHeaders();
+
+      const payload = {
+        cancel: {
+          folio_tax: complementPackId,
+          reason: reason || '01',
+        },
+      };
+
+      const response = await fetch(`${baseUrl}/interop/cfdi/emmited/cancel`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.response !== 'success') {
+        const message = data.error?.message || 'Error canceling payment complement';
+        throw new BadRequestException(message);
+      }
+    } catch (error: any) {
+      console.error('Factura Green Cancel Complement Error:', error);
+      throw new BadRequestException(error.message || 'Error canceling payment complement');
+    }
+  }
+}
