@@ -5,7 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   try {
-    console.log('🚀 Iniciando RedFox API...');
+    console.log('🚀 Iniciando Nitro API...');
     console.log('📋 Variables de entorno:');
     console.log(`   PORT: ${process.env.PORT || '3000'}`);
     console.log(`   HOST: ${process.env.HOST || '0.0.0.0'}`);

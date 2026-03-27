@@ -177,7 +177,7 @@ fly logs
 fly open
 
 # Probar endpoint
-curl https://nitrocore.fly.dev/health
+curl nitrocore.up.railway.app/health
 ```
 
 ## 🔄 Migraciones y Seeders
@@ -397,7 +397,7 @@ fly autoscale show
 En el frontend (`redfox-front/.env`):
 
 ```env
-NEXT_PUBLIC_URL_API=https://nitrocore.fly.dev
+NEXT_PUBLIC_URL_API=nitrocore.up.railway.app
 ```
 
 ## 📝 Notas Importantes

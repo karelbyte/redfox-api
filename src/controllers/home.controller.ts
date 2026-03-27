@@ -19,7 +19,7 @@ export class HomeController {
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
       version: '1.0.0',
-      service: 'RedFox API',
+      service: 'Nitro API',
     };
 
     return res.status(HttpStatus.OK).json(healthData);
