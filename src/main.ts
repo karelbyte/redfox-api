@@ -36,7 +36,6 @@ async function bootstrap() {
     // const host = process.env.HOST || '0.0.0.0'; // Cambiar a 0.0.0.0 para Railway
     const port = process.env.PORT || 3000;
 
-    // Habilitar CORS
     app.enableCors({
       origin: process.env.CORS_ORIGIN || '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
