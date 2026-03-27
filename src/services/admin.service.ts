@@ -24,6 +24,16 @@ export class AdminService {
     return { data, meta: { total } };
   }
 
+  async deleteOrganization(id: string) {
+    // No permitir eliminar la organización landlord
+    const org = await this.orgRepository.findOne({ where: { id } });
+    if (!org) throw new Error('Organización no encontrada');
+    if (org.slug === 'landlord') throw new Error('No se puede eliminar la organización principal del sistema');
+
+    // Eliminar con hard delete — las FK con CASCADE se encargan de las dependencias
+    await this.orgRepository.delete(id);
+  }
+
   async toggleOrganization(id: string, status: boolean) {
     await this.orgRepository.update(id, { status });
     return this.orgRepository.findOne({ where: { id }, relations: ['subscription', 'subscription.plan'] });
@@ -35,6 +45,19 @@ export class AdminService {
       order: { created_at: 'DESC' },
     });
     return { data, meta: { total } };
+  }
+
+  async toggleUser(id: string, status: boolean) {
+    await this.userRepository.update(id, { status });
+    return this.userRepository.findOne({ where: { id }, relations: ['roles', 'organization'] });
+  }
+
+  async deleteUser(id: string) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new Error('Usuario no encontrado');
+    // No permitir eliminar el usuario master
+    if (user.email === 'master@nitro.com') throw new Error('No se puede eliminar el usuario master del sistema');
+    await this.userRepository.delete(id);
   }
 
   async getUsers(page = 1, limit = 20) {

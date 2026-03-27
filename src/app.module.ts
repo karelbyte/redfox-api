@@ -122,6 +122,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     OrganizationModule,
     SubscriptionModule,
     UploadsModule,
+    AdminModule,
   ],
   controllers: [HomeController],
   providers: [
