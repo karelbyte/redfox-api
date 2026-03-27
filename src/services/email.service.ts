@@ -189,7 +189,7 @@ export class EmailService {
 
     if (provider === 'gmail') {
       try {
-        console.log(`[EmailService] 🚀 Enviando correo vía Gmail OAuth2 a: ${to}`);
+        console.log(`[EmailService] 🚀 Enviando correo vía Gmail API (HTTP 443) a: ${to}`);
         console.log(`[EmailService] 📧 Client ID cargado: ${this.configService.get<string>('GMAIL_CLIENT_ID')?.substring(0, 10)}...`);
 
         const OAuth2 = google.auth.OAuth2;
@@ -203,32 +203,45 @@ export class EmailService {
           refresh_token: this.configService.get<string>('GMAIL_REFRESH_TOKEN'),
         });
 
-        const accessToken = await oauth2Client.getAccessToken();
+        // Aseguramos refrescar/obtener el token localmente para auth
+        await oauth2Client.getAccessToken();
 
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            type: 'OAuth2',
-            user: this.configService.get<string>('SMTP_USER'),
-            clientId: this.configService.get<string>('GMAIL_CLIENT_ID'),
-            clientSecret: this.configService.get<string>('GMAIL_CLIENT_SECRET'),
-            refreshToken: this.configService.get<string>('GMAIL_REFRESH_TOKEN'),
-            accessToken: accessToken.token,
-          },
-        } as any);
-
+        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
         const fromEmail = this.configService.get<string>('SMTP_USER');
+        const toHeader = Array.isArray(to) ? to.join(', ') : to;
 
-        await transporter.sendMail({
-          from: `"Nitro" <${fromEmail}>`,
-          to: Array.isArray(to) ? to : [to],
-          subject,
+        // Construir el body del email en formato crudo (RFC 2822) 
+        // y codificar Subject para caracteres especiales (utf-8 B)
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+        const emailLines = [
+          `From: "Nitro" <${fromEmail}>`,
+          `To: ${toHeader}`,
+          `Subject: ${utf8Subject}`,
+          'MIME-Version: 1.0',
+          'Content-Type: text/html; charset=utf-8',
+          '',
           html,
+        ];
+
+        const rawMessage = emailLines.join('\r\n');
+        
+        // Gmail requiere 'base64url' (seguro para URL) sin el padding (====)
+        const encodedMessage = Buffer.from(rawMessage)
+          .toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+
+        await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: {
+            raw: encodedMessage,
+          },
         });
 
         return true;
       } catch (error) {
-        console.error('Error enviando email de sistema con Gmail OAuth2:', error);
+        console.error('Error enviando email de sistema con Gmail API (HTTP):', error);
         return false;
       }
     }

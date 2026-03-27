@@ -33,6 +33,11 @@ export class AdminController {
     return this.adminService.getSubscriptions();
   }
 
+  @Put('subscriptions/:id')
+  updateSubscription(@Param('id') id: string, @Body() body: { plan_id?: string; trial_end_date?: string }) {
+    return this.adminService.updateSubscription(id, body);
+  }
+
   @Get('users')
   getUsers(@Query('page') page?: string) {
     return this.adminService.getUsers(page ? parseInt(page) : 1);

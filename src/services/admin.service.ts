@@ -89,4 +89,32 @@ export class AdminService {
 
     return { totalOrganizations, activeSubscriptions, trialSubscriptions, totalUsers, revenueThisMonth };
   }
+
+  async updateSubscription(id: string, data: { plan_id?: string; trial_end_date?: string }) {
+    const subscription = await this.subRepository.findOne({ where: { id } });
+    if (!subscription) throw new Error('Suscripción no encontrada');
+
+    if (data.plan_id) {
+      subscription.plan_id = data.plan_id;
+      // Actualizar también la referencia a nivel organización
+      await this.orgRepository.update(subscription.organization_id, { plan_id: data.plan_id });
+    }
+
+    if (data.trial_end_date) {
+      const newTrialDate = new Date(data.trial_end_date);
+      subscription.trial_end_date = newTrialDate;
+      const now = new Date();
+      // Si el trial está en el futuro y estaba 'expired', pasarlo a 'trial' nuevamente
+      if (subscription.status === 'expired' && newTrialDate > now) {
+        subscription.status = 'trial';
+      }
+    }
+
+    await this.subRepository.save(subscription);
+
+    return this.subRepository.findOne({
+      where: { id },
+      relations: ['plan', 'organization'],
+    });
+  }
 }
