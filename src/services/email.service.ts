@@ -169,11 +169,12 @@ export class EmailService {
       host: config.host,
       port: config.port,
       secure: config.secure,
+      tls: { family: 4 },
       auth: {
         user: config.user,
         pass: config.password,
       },
-    });
+    } as any);
   }
 
   async sendSystemEmail(
@@ -190,13 +191,14 @@ export class EmailService {
           host: this.configService.get<string>('SMTP_HOST'),
           port: this.configService.get<number>('SMTP_PORT'),
           secure: this.configService.get<boolean>('SMTP_SECURE') || false,
+          tls: { family: 4 }, // Forzar IPv4
           auth: {
             user: this.configService.get<string>('SMTP_USER'),
             pass: this.configService.get<string>('SMTP_PASS'),
           },
         };
 
-        const transporter = nodemailer.createTransport(smtpConfig);
+        const transporter = nodemailer.createTransport(smtpConfig as any);
         const fromEmail = this.configService.get<string>('SMTP_USER');
 
         await transporter.sendMail({
