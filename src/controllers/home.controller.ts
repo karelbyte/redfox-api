@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Res, InternalServerErrorException } from '@nestjs/common';
 import { Response } from 'express';
 
 @Controller()
@@ -23,5 +23,10 @@ export class HomeController {
     };
 
     return res.status(HttpStatus.OK).json(healthData);
+  }
+
+  @Get('test-error')
+  testError() {
+    throw new InternalServerErrorException('🚨 Este es un error provocado para probar el envío de correos por Gmail OAuth2');
   }
 }

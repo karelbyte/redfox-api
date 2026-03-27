@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
+  Param,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -55,4 +57,10 @@ export class SubscriptionController {
   async createPlan(@Body() createPlanDto: CreatePlanDto) {
     return this.subscriptionService.createPlan(createPlanDto);
   }
+
+  @Put('plans/:id')
+  async updatePlan(@Param('id') id: string, @Body() data: Partial<CreatePlanDto>) {
+    return this.subscriptionService.updatePlan(id, data);
+  }
 }
+

@@ -229,4 +229,13 @@ export class SubscriptionService {
   async getPlanById(id: string) {
     return this.planRepository.findOne({ where: { id } });
   }
+
+  async updatePlan(id: string, data: Partial<Plan>) {
+    const plan = await this.planRepository.findOne({ where: { id } });
+    if (!plan) {
+      throw new BadRequestException('Plan not found');
+    }
+    Object.assign(plan, data);
+    return this.planRepository.save(plan);
+  }
 }

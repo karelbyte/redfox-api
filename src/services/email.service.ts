@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+import { google } from 'googleapis';
 import { Resend } from 'resend';
 import { EmailConfig } from '../models/email-config.entity';
 import { CreateEmailConfigDto } from '../dtos/email-config/create-email-config.dto';
@@ -185,6 +186,52 @@ export class EmailService {
   ): Promise<boolean> {
     const provider =
       this.configService.get<string>('EMAIL_PROVIDER') || 'resend';
+
+    if (provider === 'gmail') {
+      try {
+        console.log(`[EmailService] 🚀 Enviando correo vía Gmail OAuth2 a: ${to}`);
+        console.log(`[EmailService] 📧 Client ID cargado: ${this.configService.get<string>('GMAIL_CLIENT_ID')?.substring(0, 10)}...`);
+
+        const OAuth2 = google.auth.OAuth2;
+        const oauth2Client = new OAuth2(
+          this.configService.get<string>('GMAIL_CLIENT_ID'),
+          this.configService.get<string>('GMAIL_CLIENT_SECRET'),
+          'https://developers.google.com/oauthplayground'
+        );
+
+        oauth2Client.setCredentials({
+          refresh_token: this.configService.get<string>('GMAIL_REFRESH_TOKEN'),
+        });
+
+        const accessToken = await oauth2Client.getAccessToken();
+
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            type: 'OAuth2',
+            user: this.configService.get<string>('SMTP_USER'),
+            clientId: this.configService.get<string>('GMAIL_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('GMAIL_CLIENT_SECRET'),
+            refreshToken: this.configService.get<string>('GMAIL_REFRESH_TOKEN'),
+            accessToken: accessToken.token,
+          },
+        } as any);
+
+        const fromEmail = this.configService.get<string>('SMTP_USER');
+
+        await transporter.sendMail({
+          from: `"Nitro" <${fromEmail}>`,
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html,
+        });
+
+        return true;
+      } catch (error) {
+        console.error('Error enviando email de sistema con Gmail OAuth2:', error);
+        return false;
+      }
+    }
 
     if (provider === 'smtp') {
       try {
