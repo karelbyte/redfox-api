@@ -4,9 +4,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
+import { InvoicePayment, InvoicePaymentStatus } from '../models/invoice-payment.entity';
 import { Client } from '../models/client.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { Product } from '../models/product.entity';
@@ -39,6 +40,8 @@ export class InvoiceService {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(InvoiceDetail)
     private readonly invoiceDetailRepository: Repository<InvoiceDetail>,
+    @InjectRepository(InvoicePayment)
+    private readonly invoicePaymentRepository: Repository<InvoicePayment>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(Withdrawal)
@@ -851,6 +854,22 @@ export class InvoiceService {
       throw new BadRequestException(message);
     }
 
+    // Bloquear cancelación si tiene complementos de pago timbrados activos
+    const activePayments = await this.invoicePaymentRepository.find({
+      where: {
+        invoice_id: invoiceId,
+        organization_id: this.organizationId,
+        status: InvoicePaymentStatus.STAMPED,
+      },
+    });
+
+    if (activePayments.length > 0) {
+      throw new BadRequestException(
+        `No se puede cancelar la factura porque tiene ${activePayments.length} complemento(s) de pago timbrado(s). ` +
+        `Cancela los complementos de pago primero.`,
+      );
+    }
+
     try {
       const packService = await this.certificationPackFactory.getPackService();
       await packService.cancelCFDI(invoice.cfdi_uuid, reason);
@@ -880,11 +899,10 @@ export class InvoiceService {
           'details.product.category',
           'details.product.tax',
           'details.product.measurement_unit',
-        'details.product.currency',
+          'details.product.currency',
         ],
       });
 
-      // Cargar detalles explícitamente sin filtro de soft delete
       if (invoiceWithDetails) {
         invoiceWithDetails.details = await this.invoiceDetailRepository.find({
           where: { invoice_id: invoiceWithDetails.id },
@@ -900,9 +918,10 @@ export class InvoiceService {
       }
 
       return this.mapToResponseDto(invoiceWithDetails!);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error canceling CFDI:', error);
-      throw new BadRequestException('Error canceling CFDI');
+      // Propagar el mensaje original del PAC
+      throw new BadRequestException(error.message || 'Error al cancelar el CFDI');
     }
   }
 

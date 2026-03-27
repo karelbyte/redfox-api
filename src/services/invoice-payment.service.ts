@@ -223,7 +223,7 @@ export class InvoicePaymentService {
     return this.mapToDto(savedPayment);
   }
 
-  async cancelPayment(invoiceId: string, paymentId: string): Promise<void> {
+  async cancelPayment(invoiceId: string, paymentId: string, reason?: string): Promise<void> {
     const payment = await this.invoicePaymentRepository.findOne({
       where: { id: paymentId, invoice_id: invoiceId, organization_id: this.organizationId },
     });
@@ -231,14 +231,17 @@ export class InvoicePaymentService {
     if (!payment) throw new NotFoundException('Payment not found');
 
     if (payment.status === InvoicePaymentStatus.CANCELLED) {
-      throw new BadRequestException('Payment is already cancelled');
+      throw new BadRequestException('El complemento de pago ya está cancelado');
     }
 
-    // Si está timbrado, cancelar en el PAC
+    // Si está timbrado, cancelar en el PAC con el motivo proporcionado
     if (payment.status === InvoicePaymentStatus.STAMPED && payment.cfdi_complement_uuid) {
       const packService = await this.certificationPackFactory.getPackService();
       if (packService.cancelPaymentComplement) {
-        await packService.cancelPaymentComplement(payment.cfdi_complement_uuid, '01');
+        await packService.cancelPaymentComplement(
+          payment.cfdi_complement_uuid,
+          reason || '01', // 01 = Comprobante emitido con errores con relación
+        );
       }
     }
 

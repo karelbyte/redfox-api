@@ -24,7 +24,8 @@ export class InvoicePaymentController {
   cancelPayment(
     @Param('invoiceId') invoiceId: string,
     @Param('paymentId') paymentId: string,
+    @Body() body: { reason?: string },
   ) {
-    return this.invoicePaymentService.cancelPayment(invoiceId, paymentId);
+    return this.invoicePaymentService.cancelPayment(invoiceId, paymentId, body?.reason);
   }
 }
