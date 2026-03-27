@@ -44,12 +44,20 @@ export class QueueModule {
           BullModule.registerQueue({ name: 'email' }),
         );
 
-        // Provide the Bull queue under the custom token 'BULL_EMAIL_QUEUE'
-        providers.push(EmailProcessor, {
-          provide: 'BULL_EMAIL_QUEUE',
-          useFactory: (queue: any) => queue,
-          inject: [{ token: 'BullQueue_email', optional: true } as any],
-        });
+        const { EmailService } = await import('../services/email.service');
+
+        providers.push(
+          {
+            provide: EmailProcessor,
+            useFactory: (emailService: any) => new EmailProcessor(emailService),
+            inject: [EmailService],
+          },
+          {
+            provide: 'BULL_EMAIL_QUEUE',
+            useFactory: (queue: any) => queue,
+            inject: [{ token: 'BullQueue_email', optional: true } as any],
+          },
+        );
 
         QueueModule.logger.log('🔴 QueueModule configured with Redis/Bull');
       } catch (error) {

@@ -33,6 +33,12 @@ export class RolesSeed {
         status: true,
         organization_id: landlordOrg.id,
       },
+      {
+        code: 'SUPER_ADMIN',
+        description: 'Super Administrador — acceso al backoffice',
+        status: true,
+        organization_id: landlordOrg.id,
+      },
     ];
 
     for (const role of roles) {

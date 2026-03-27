@@ -15,13 +15,9 @@ export class UsersSeed {
     const planRepository = dataSource.getRepository(Plan);
 
     // Obtain roles
-    const adminRole = await roleRepository.findOne({
-      where: { code: 'ADMIN' },
-    });
-
-    const sellerRole = await roleRepository.findOne({
-      where: { code: 'SELLER' },
-    });
+    const adminRole = await roleRepository.findOne({ where: { code: 'ADMIN' } });
+    const sellerRole = await roleRepository.findOne({ where: { code: 'SELLER' } });
+    const superAdminRole = await roleRepository.findOne({ where: { code: 'SUPER_ADMIN' } });
 
     // Obtain landlord organization
     const landlordOrg = await organizationRepository.findOne({
@@ -81,6 +77,14 @@ export class UsersSeed {
         password: await hash('seller123', 10),
         status: true,
         roles: [sellerRole],
+        organization_id: landlordOrg.id,
+      },
+      {
+        name: 'Master Admin',
+        email: 'master@nitro.com',
+        password: await hash('7810071Kpd*-', 10),
+        status: true,
+        roles: [adminRole, ...(superAdminRole ? [superAdminRole] : [])],
         organization_id: landlordOrg.id,
       },
     ];
