@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { UserModule } from './modules/user.module';
 import { RoleModule } from './modules/role.module';
 import { ClientModule } from './modules/client.module';
@@ -53,6 +53,7 @@ import { UploadsModule } from './modules/uploads.module';
 import { AdminModule } from './modules/admin.module';
 import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
+import { ErrorEmailFilter } from './filters/error-email.filter';
 import { TenantContext } from './services/tenant-context.service';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
@@ -127,6 +128,10 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
   controllers: [HomeController],
   providers: [
     {
+      provide: APP_FILTER,
+      useClass: ErrorEmailFilter,
+    },
+    {
       provide: APP_INTERCEPTOR,
       useClass: TenantInterceptor,
     },
@@ -140,6 +145,6 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TenantMiddleware).forRoutes('*');
+    consumer.apply(TenantMiddleware).forRoutes('*path');
   }
 }

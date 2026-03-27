@@ -31,7 +31,7 @@ export class EmailService {
     private emailConfigRepository: Repository<EmailConfig>,
     private readonly tenantContext: TenantContext,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -169,8 +169,8 @@ export class EmailService {
       host: config.host,
       port: config.port,
       secure: config.secure,
-     // tls: { family: 4 },
-      family: 4, 
+      // tls: { family: 4 },
+      family: 4,
       auth: {
         user: config.user,
         pass: config.password,
@@ -190,17 +190,26 @@ export class EmailService {
       try {
         const smtpConfig = {
           host: this.configService.get<string>('SMTP_HOST'),
-          port: this.configService.get<number>('SMTP_PORT'),
-          secure: this.configService.get<boolean>('SMTP_SECURE') || false,
-         // tls: { family: 4 }, // Forzar IPv4
-          family: 4,
+          port: Number(this.configService.get('SMTP_PORT')), // Forzar número
+          // Comparar como string porque Railway lo entrega así
+          secure: String(this.configService.get('SMTP_SECURE')) === 'true',
+          family: 4, // Forzar IPv4
           auth: {
             user: this.configService.get<string>('SMTP_USER'),
             pass: this.configService.get<string>('SMTP_PASS'),
           },
+          // Timeouts para evitar que el contenedor se quede "Sleeping" por colgarse
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
         };
 
+        console.log(smtpConfig)
+
         const transporter = nodemailer.createTransport(smtpConfig as any);
+
+        // Verificar conexión antes de enviar (ayuda a ver errores en logs rápido)
+        // await transporter.verify(); 
+
         const fromEmail = this.configService.get<string>('SMTP_USER');
 
         await transporter.sendMail({
