@@ -12,6 +12,8 @@ import {
   ProductResponse,
   ReceiptData,
   ReceiptResponse,
+  PaymentComplementData,
+  PaymentComplementResponse,
 } from '../interfaces/certification-pack.interface';
 
 import { TenantContext } from './tenant-context.service';
@@ -89,6 +91,125 @@ export class FacturaAPIService implements ICertificationPackService {
       console.error('FacturaAPI Status Error:', error);
       throw new BadRequestException(
         'Error getting CFDI status from FacturaAPI',
+      );
+    }
+  }
+
+  async generatePaymentComplement(
+    data: PaymentComplementData,
+  ): Promise<PaymentComplementResponse> {
+    try {
+      const client = this.getClient() as any;
+
+      // Intentar recuperar usando pack_invoice_id si existe, si no por UUID
+      const lookupId = data.pack_invoice_id || data.cfdi_uuid;
+
+      if (!lookupId) {
+        throw new BadRequestException('No se proporcionó un ID o UUID válido para la factura original');
+      }
+
+
+      const originalInvoice = await client.invoices.retrieve(lookupId);
+
+      if (!originalInvoice || !originalInvoice.customer) {
+        throw new BadRequestException(
+          `Factura original o cliente no encontrado en Facturapi (ID: ${lookupId}). Verifica que la factura haya sido emitida con el mismo API Key.`,
+        );
+      }
+
+      // --- Lógica de Impuestos Proporcionales para CFDI 4.0 ---
+      const invoiceTotal = Number(originalInvoice.total || originalInvoice.total_amount || 0);
+      const paymentAmount = Number(data.amount);
+      const ratio = invoiceTotal > 0 ? paymentAmount / invoiceTotal : 1;
+
+      // Agrupar impuestos de la factura original para calcular la parte proporcional del pago
+      const taxesMap = new Map<string, any>();
+      (originalInvoice.items || []).forEach((item: any) => {
+        const itemQuantity = Number(item.quantity || 0);
+        const itemPrice = Number(item.product?.price || 0);
+        const itemBase = itemQuantity * itemPrice;
+
+        const itemTaxes = item.product?.taxes || item.taxes || [];
+        itemTaxes.forEach((tax: any) => {
+          const key = `${tax.type}-${tax.rate}-${tax.factor}-${tax.withholding}`;
+          if (!taxesMap.has(key)) {
+            taxesMap.set(key, {
+              type: tax.type,
+              rate: tax.rate,
+              factor: tax.factor || 'Tasa',
+              withholding: !!tax.withholding,
+              base: 0,
+            });
+          }
+          const group = taxesMap.get(key);
+          const proportionalBase = itemBase * ratio;
+          group.base += proportionalBase;
+        });
+      });
+
+      const proportionalTaxes = Array.from(taxesMap.values()).map(t => ({
+        ...t,
+        base: Math.round(t.base * 100) / 100,
+      }));
+      // --------------------------------------------------------
+
+      const paymentPayload = {
+        type: 'P', // Tipo Pago (REP)
+        customer: (originalInvoice.customer as any).id || originalInvoice.customer,
+        complements: [
+          {
+            type: 'pago',
+            data: [
+              {
+                date: new Date(data.payment_date).toISOString(),
+                payment_form: data.payment_form,
+                currency: originalInvoice.currency || 'MXN',
+                related_documents: [
+                  {
+                    uuid: originalInvoice.uuid || originalInvoice.cfdi_uuid || data.cfdi_uuid,
+                    amount: data.amount,
+                    last_balance: data.balance_before,
+                    installment: data.payment_number,
+                    currency: originalInvoice.currency || 'MXN',
+                    taxes: proportionalTaxes,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const paymentResponse = await client.invoices.create(paymentPayload);
+
+      return {
+        id: paymentResponse.id,
+        complement_uuid: paymentResponse.uuid,
+        invoice_uuid: data.cfdi_uuid,
+        pdf_url: paymentResponse.pdf_url,
+        xml_url: paymentResponse.xml_url,
+      };
+    } catch (error: any) {
+      console.error('FacturaAPI Payment Complement Error:', error);
+      throw new BadRequestException(
+        `Error generating payment complement: ${error.message}`,
+      );
+    }
+  }
+
+  async cancelPaymentComplement(
+    complementPackId: string,
+    reason: string,
+  ): Promise<void> {
+    try {
+      const client = this.getClient() as any;
+      await client.invoices.cancel(complementPackId, {
+        motive: reason as any,
+      });
+    } catch (error: any) {
+      console.error('FacturaAPI Cancel Payment Complement Error:', error);
+      throw new BadRequestException(
+        `Error canceling payment complement: ${error.message}`,
       );
     }
   }
@@ -224,6 +345,7 @@ export class FacturaAPIService implements ICertificationPackService {
       customer: customerData,
       items: itemsData,
       payment_form: this.mapPaymentMethod(invoice.payment_method),
+      payment_method: invoice.payment_method === 'credit' ? 'PPD' : 'PUE',
       use: 'G01',
       type: 'I',
       folio_number: invoice.code,
@@ -334,6 +456,7 @@ export class FacturaAPIService implements ICertificationPackService {
       card: '28',
       transfer: '03',
       check: '02',
+      credit: '99',
     };
     return mapping[paymentMethod] || '01';
   }

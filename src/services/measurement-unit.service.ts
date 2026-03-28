@@ -313,16 +313,9 @@ export class MeasurementUnitService {
   }
 
   async searchFromPack(term: string): Promise<MeasurementUnitSuggestion[]> {
-    console.log('='.repeat(80));
-    console.log('[MeasurementUnit Service] searchFromPack CALLED');
-    console.log('[MeasurementUnit Service] Search term:', term);
-    console.log('[MeasurementUnit Service] Term length:', term?.length);
-    console.log('[MeasurementUnit Service] Term type:', typeof term);
-    
     try {
       // Intentar usar API pública de factura123.mx (no requiere autenticación)
       const url = `https://factura123.mx/api/v2/public/cat/units?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
-      console.log('[MeasurementUnit Service] Request URL:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -331,47 +324,29 @@ export class MeasurementUnitService {
         },
       });
 
-      console.log('[MeasurementUnit Service] factura123.mx response status:', response.status);
-      console.log('[MeasurementUnit Service] factura123.mx response statusText:', response.statusText);
-
       if (!response.ok) {
-        console.log('[MeasurementUnit Service] factura123.mx request failed, using static fallback');
-        const staticResults = this.getStaticMeasurementUnits(term);
-        console.log('[MeasurementUnit Service] Static fallback results count:', staticResults.length);
-        console.log('[MeasurementUnit Service] Static fallback results:', JSON.stringify(staticResults, null, 2));
-        console.log('='.repeat(80));
-        return staticResults;
+        return this.getStaticMeasurementUnits(term);
       }
 
       const data = await response.json();
-      //console.log('[MeasurementUnit Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
       
       // Adaptar la respuesta de factura123.mx al formato esperado
-      // La API regresa { rows: [...], total: number }
       const items = data.rows || data.data || data || [];
       const results = items.map((item: any) => ({
         key: item.clavesat || item.clave || item.code || item.key,
         description: item.descripcion || item.description || item.name,
       }));
       
-      // Ordenar por longitud de descripción (más cortas primero)
+      // Ordenar por longitud de descripción
       results.sort((a, b) => {
         const lengthA = a.description?.length || 0;
         const lengthB = b.description?.length || 0;
         return lengthA - lengthB;
       });
       
-      console.log('[MeasurementUnit Service] Processed results count:', results.length);
-      console.log('[MeasurementUnit Service] Sorted results (by description length):', JSON.stringify(results, null, 2));
-      console.log('='.repeat(80));
       return results;
     } catch (error) {
-      console.error('[MeasurementUnit Service] ERROR in searchFromPack:', error);
-      console.error('[MeasurementUnit Service] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      const staticResults = this.getStaticMeasurementUnits(term);
-      console.log('[MeasurementUnit Service] Returning static fallback after error, count:', staticResults.length);
-      console.log('='.repeat(80));
-      return staticResults;
+      return this.getStaticMeasurementUnits(term);
     }
   }
 

@@ -162,6 +162,7 @@ export class InvoicePaymentService {
         balance_before: balanceBefore,
         balance_after: balanceAfter,
         payment_form: dto.payment_form,
+        pack_invoice_id: invoice.pack_invoice_id,
       });
 
       savedPayment.status = InvoicePaymentStatus.STAMPED;

@@ -59,9 +59,8 @@ export class FacturaGreenService implements ICertificationPackService {
 
   private getBaseUrl(): string {
     const config = this.getConfig();
-    // Si tenant_id ya incluye el protocolo (https://), usarlo directamente
-    // Si no, agregarlo
-    const tenantId = config.tenantId;
+    // Limpieza estricta de espacios para evitar dobles 'https://'
+    const tenantId = (config.tenantId || 'www').trim();
     if (tenantId.startsWith('http://') || tenantId.startsWith('https://')) {
       return tenantId;
     }
@@ -224,7 +223,7 @@ export class FacturaGreenService implements ICertificationPackService {
         payload['@config'] = config;
       }
 
-      console.log('[FacturaGreen] generateCFDI payload:', JSON.stringify(payload, null, 2));
+
 
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
@@ -716,7 +715,8 @@ export class FacturaGreenService implements ICertificationPackService {
       return customers;
     } catch (error: any) {
       console.error('Factura Green List Customers Error:', error);
-      return [];
+      // 🔥 Forzamos la excepción global para que envíe el Email de Error alertando al Admin 🔥
+      throw new BadRequestException(error.message || 'Error listing customers in Factura Green');
     }
   }
 
@@ -860,6 +860,11 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
+        // En Factura Green, un status de no éxito en GET a menudo implica que no existe
+        // Pero si es un error estructural o 500, deberíamos alertar.
+        if (response.status >= 500) {
+           throw new BadRequestException('Factura Green service unavailable while searching SKU');
+        }
         return null;
       }
 
@@ -876,8 +881,9 @@ export class FacturaGreenService implements ICertificationPackService {
         sku: product.id,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Find Product by SKU Error:', error);
-      return null;
+      throw new BadRequestException(error.message || 'Error finding product by SKU in Factura Green');
     }
   }
 

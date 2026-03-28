@@ -175,6 +175,8 @@ export interface PaymentComplementData {
   balance_after: number;
   /** Clave SAT de forma de pago (01=Efectivo, 03=Transferencia, 04=Tarjeta...) */
   payment_form: string;
+  /** ID interno del comprobante en el PAC (opcional, ayuda a Facturapi) */
+  pack_invoice_id?: string;
 }
 
 export interface PaymentComplementResponse {

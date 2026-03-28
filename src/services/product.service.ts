@@ -645,16 +645,9 @@ export class ProductService {
   }
 
   async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {
-    console.log('='.repeat(80));
-    console.log('[Product Service] searchFromPack CALLED');
-    console.log('[Product Service] Search term:', term);
-    console.log('[Product Service] Term length:', term?.length);
-    console.log('[Product Service] Term type:', typeof term);
-    
     try {
       // Usar API pública de factura123.mx (no requiere autenticación)
       const url = `https://factura123.mx/api/v2/public/cat/prodclasses?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
-      console.log('[Product Service] Request URL:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -663,23 +656,13 @@ export class ProductService {
         },
       });
 
-      console.log('[Product Service] factura123.mx response status:', response.status);
-      console.log('[Product Service] factura123.mx response statusText:', response.statusText);
-
       if (!response.ok) {
-        console.log('[Product Service] factura123.mx request failed, using static fallback');
-        const staticResults = this.getStaticProductKeys(term);
-        console.log('[Product Service] Static fallback results count:', staticResults.length);
-        console.log('[Product Service] Static fallback results:', JSON.stringify(staticResults, null, 2));
-        console.log('='.repeat(80));
-        return staticResults;
+        return this.getStaticProductKeys(term);
       }
 
       const data = await response.json();
-      //console.log('[Product Service] factura123.mx RAW response data:', JSON.stringify(data, null, 2));
       
       // Adaptar la respuesta de factura123.mx al formato esperado
-      // La API regresa { rows: [...], total: number }
       const items = data.rows || data.data || data || [];
       const results = items.map((item: any) => ({
         key: item.clavesat || item.clave || item.code || item.key,
@@ -687,24 +670,16 @@ export class ProductService {
         score: 0,
       }));
       
-      // Ordenar por longitud de descripción (más cortas primero)
+      // Ordenar por longitud de descripción
       results.sort((a, b) => {
         const lengthA = a.description?.length || 0;
         const lengthB = b.description?.length || 0;
         return lengthA - lengthB;
       });
       
-      console.log('[Product Service] Processed results count:', results.length);
-      console.log('[Product Service] Sorted results (by description length):', JSON.stringify(results, null, 2));
-      console.log('='.repeat(80));
       return results;
     } catch (error) {
-      console.error('[Product Service] ERROR in searchFromPack:', error);
-      console.error('[Product Service] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      const staticResults = this.getStaticProductKeys(term);
-      console.log('[Product Service] Returning static fallback after error, count:', staticResults.length);
-      console.log('='.repeat(80));
-      return staticResults;
+      return this.getStaticProductKeys(term);
     }
   }
 
