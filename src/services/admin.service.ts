@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Organization } from '../models/organization.entity';
 import { Subscription } from '../models/subscription.entity';
 import { User } from '../models/user.entity';
+import { AuditLogService } from './audit-log.service';
+import { AuditAction } from '../models/audit-log.entity';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +16,7 @@ export class AdminService {
     private readonly subRepository: Repository<Subscription>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async getOrganizations() {
@@ -30,8 +33,14 @@ export class AdminService {
     if (!org) throw new Error('Organización no encontrada');
     if (org.slug === 'landlord') throw new Error('No se puede eliminar la organización principal del sistema');
 
-    // Eliminar con hard delete — las FK con CASCADE se encargan de las dependencias
-    await this.orgRepository.delete(id);
+    // Usar el Stored Procedure para una eliminación escalonada y segura (Multi-DB)
+    const connectionType = this.orgRepository.manager.connection.options.type;
+    
+    if (connectionType === 'postgres') {
+      await this.orgRepository.query('SELECT delete_organization_data($1)', [id]);
+    } else {
+      await this.orgRepository.query('CALL delete_organization_data(?)', [id]);
+    }
   }
 
   async toggleOrganization(id: string, status: boolean) {
@@ -116,5 +125,17 @@ export class AdminService {
       where: { id },
       relations: ['plan', 'organization'],
     });
+  }
+
+  async getAuditLogs(
+    page: number,
+    limit: number,
+    entityType?: string,
+    action?: AuditAction,
+    userId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    return this.auditLogService.findAll(page, limit, entityType, action, userId, startDate, endDate);
   }
 }

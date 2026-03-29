@@ -51,7 +51,8 @@ import { AuditLogModule } from './modules/audit-log.module';
 import { SubscriptionModule } from './modules/subscription.module';
 import { UploadsModule } from './modules/uploads.module';
 import { AdminModule } from './modules/admin.module';
-import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
+import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
 import { ErrorEmailFilter } from './filters/error-email.filter';
 import { TenantContext } from './services/tenant-context.service';
@@ -137,8 +138,9 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditLogInterceptor,
+      useClass: LoggingInterceptor,
     },
+    AuditSubscriber,
     TenantContext,
     UnverifiedAccountCleanupService,
   ],

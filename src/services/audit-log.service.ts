@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { LessThan } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog, AuditAction } from '../models/audit-log.entity';
@@ -13,6 +15,22 @@ export class AuditLogService {
     private auditLogRepository: Repository<AuditLog>,
     private readonly tenantContext: TenantContext,
   ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleCleanup() {
+    this.logger.log('Starting audit log cleanup (90 days retention)...');
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    try {
+      const result = await this.auditLogRepository.delete({
+        created_at: LessThan(ninetyDaysAgo),
+      });
+      this.logger.log(`Cleanup finished. Removed ${result.affected} records.`);
+    } catch (error) {
+      this.logger.error('Error during audit log cleanup', error.stack);
+    }
+  }
 
   async log(
     userId: string,
@@ -29,14 +47,17 @@ export class AuditLogService {
       const organizationId = this.tenantContext.getOrganizationId() || organizationIdFallback;
 
       if (!organizationId) {
-        this.logger.warn(
-          `Skipping audit log for ${action} ${entityType}: No organization context.`,
-        );
-        return null;
+        // En algunos casos de sistema (cron) no hay contexto, usamos el fallback si existe
+        if (!organizationIdFallback) {
+          this.logger.warn(
+            `Skipping audit log for ${action} ${entityType}: No organization context.`,
+          );
+          return null;
+        }
       }
 
       const log = this.auditLogRepository.create({
-        organization_id: organizationId,
+        organization_id: organizationId || organizationIdFallback,
         userId,
         entityType,
         entityId,
@@ -49,7 +70,7 @@ export class AuditLogService {
       return await this.auditLogRepository.save(log);
     } catch (error) {
       // Si falla por foreign key (usuario no existe), solo logueamos el warning
-      if (error.code === '23503') {
+      if (error.code === '23503' || error.code === 'ER_NO_REFERENCED_ROW_2') {
         console.warn(
           `[AuditLogService] User ${userId} not found, skipping audit log`,
         );
@@ -79,6 +100,7 @@ export class AuditLogService {
     const query = this.auditLogRepository
       .createQueryBuilder('log')
       .leftJoinAndSelect('log.user', 'user')
+      .leftJoinAndSelect('log.organization', 'organization')
       .where('log.organization_id = :organizationId', { organizationId });
 
     if (entityType) {

@@ -52,4 +52,25 @@ export class AdminController {
   deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }
+
+  @Get('audit-logs')
+  getAuditLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('entityType') entityType?: string,
+    @Query('action') action?: any,
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.adminService.getAuditLogs(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+      entityType,
+      action,
+      userId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
 }
