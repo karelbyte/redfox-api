@@ -5,13 +5,23 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Organization } from './organization.entity';
 
 @Entity('bookmarks')
+@Index(['organization_id'])
 export class Bookmark {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column()
   userId: string;

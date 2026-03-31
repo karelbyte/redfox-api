@@ -135,7 +135,9 @@ export class AdminService {
     userId?: string,
     startDate?: Date,
     endDate?: Date,
+    organizationId?: string,
+    search?: string,
   ) {
-    return this.auditLogService.findAll(page, limit, entityType, action, userId, startDate, endDate);
+    return this.auditLogService.findAllGlobal(page, limit, entityType, action, userId, startDate, endDate, organizationId, search);
   }
 }

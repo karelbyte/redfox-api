@@ -8,8 +8,11 @@ export class TenantMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     // Initialize the store for this request
-    this.tenantContext.run({ organizationId: null, tenantSlug: null }, () => {
-      next();
-    });
+    this.tenantContext.run(
+      { organizationId: null, tenantSlug: null, userId: null, ipAddress: null },
+      () => {
+        next();
+      },
+    );
   }
 }

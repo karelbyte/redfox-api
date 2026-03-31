@@ -35,7 +35,7 @@ export class CreateClientAddressesTable1716400000031
             name: 'type',
             type: 'varchar',
             length: '20',
-            default: "'OTHER'",
+            default: "'BILLING'",
           },
           {
             name: 'street',

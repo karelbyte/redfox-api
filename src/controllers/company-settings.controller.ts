@@ -79,8 +79,9 @@ export class CompanySettingsController {
       throw new BadRequestException('Organization context is required');
     }
 
+    // Usar la nueva estructura: {orgId}/company/logo-{timestamp}.{ext}
     const ext = file.originalname.split('.').pop() || 'png';
-    const key = `company/${organizationId}/logo-${Date.now()}.${ext}`;
+    const key = `${organizationId}/company/logo-${Date.now()}.${ext}`;
 
     const { url } = await this.storageService.upload(file.buffer, key, file.mimetype);
 

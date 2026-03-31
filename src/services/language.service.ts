@@ -6,6 +6,7 @@ import { CreateLanguageDto } from '../dtos/language/create-language.dto';
 import { LanguageMapper } from './mappers/language.mapper';
 import { LanguageResponseDto } from '../dtos/language/language-response.dto';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class LanguageService {
@@ -13,11 +14,20 @@ export class LanguageService {
     @InjectRepository(Language)
     private languageRepository: Repository<Language>,
     private translationService: TranslationService,
+    private tenantContext: TenantContext,
   ) {}
 
   async create(createLanguageDto: CreateLanguageDto): Promise<void> {
+    const orgId = this.tenantContext.getOrganizationId();
+    
+    if (!orgId) {
+      // Si no hay organización en el contexto (por ejemplo, durante el registro inicial),
+      // omitimos el guardado hasta que el usuario esté asociado.
+      return;
+    }
+
     const existingLanguage = await this.languageRepository.findOne({
-      where: { userId: createLanguageDto.userId },
+      where: { userId: createLanguageDto.userId, organization_id: orgId },
     });
 
     if (existingLanguage) {
@@ -27,6 +37,7 @@ export class LanguageService {
       await this.languageRepository.save({
         code: createLanguageDto.code,
         userId: createLanguageDto.userId,
+        organization_id: orgId,
       });
     }
   }
@@ -35,8 +46,9 @@ export class LanguageService {
     id: string,
     languageCode?: string,
   ): Promise<LanguageResponseDto> {
+    const orgId = this.tenantContext.getOrganizationId();
     const language = await this.languageRepository.findOne({
-      where: { id },
+      where: { id, ...(orgId ? { organization_id: orgId } : {}) },
     });
 
     if (!language) {
@@ -55,8 +67,9 @@ export class LanguageService {
     code: string,
     languageCode?: string,
   ): Promise<LanguageResponseDto> {
+    const orgId = this.tenantContext.getOrganizationId();
     const language = await this.languageRepository.findOne({
-      where: { code },
+      where: { code, ...(orgId ? { organization_id: orgId } : {}) },
     });
 
     if (!language) {

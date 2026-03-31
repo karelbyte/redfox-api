@@ -87,6 +87,9 @@ export class ProductResponseDto {
   total_stock: number;
 
   @Expose()
+  min_stock: number;
+
+  @Expose()
   currency?: CurrencyResponseDto | null;
 
   @Expose()

@@ -34,8 +34,8 @@ export class AuditLog {
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  userId: string | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'userId' })

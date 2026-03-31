@@ -11,7 +11,6 @@ import {
 import { Client } from './client.entity';
 
 export enum AddressType {
-  FISCAL = 'FISCAL',
   SHIPPING = 'SHIPPING',
   BILLING = 'BILLING',
   OTHER = 'OTHER',
@@ -32,7 +31,7 @@ export class ClientAddress {
   @Column({
     type: 'varchar',
     length: 20,
-    default: AddressType.OTHER,
+    default: AddressType.BILLING,
   })
   type: AddressType;
 
@@ -60,7 +59,7 @@ export class ClientAddress {
   @Column({ length: 100, nullable: true })
   state: string;
 
-  @Column({ length: 3, nullable: true, default: 'MEX' })
+  @Column({ length: 3, nullable: true })
   country: string;
 
   @Column({ default: false })

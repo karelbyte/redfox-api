@@ -24,6 +24,7 @@ const transformToNumber = ({
   value,
 }: TransformFnParams): number | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'number') return value;
   const num = Number(value);
   return isNaN(num) ? undefined : num;
 };
@@ -33,28 +34,35 @@ const transformToBoolean = ({
 }: TransformFnParams): boolean | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value === 'boolean') return value;
-  return value.toLowerCase() === 'true';
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return undefined;
 };
 
 const transformToArray = ({
   value,
   key,
 }: TransformFnParams): any[] | undefined => {
-  if (!value) return undefined;
-  if (Array.isArray(value)) return value;
+  if (!value || value === '[]') return undefined;
+  if (Array.isArray(value)) return value.length === 0 ? undefined : value;
   if (typeof value === 'string') {
     try {
       const parsed = JSON.parse(value);
-      if (key === 'prices') {
-        const instances = plainToInstance(
-          ProductPriceDto,
-          parsed,
-        ) as unknown as any[];
-        return instances;
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) return undefined;
+        if (key === 'prices') {
+          const instances = plainToInstance(
+            ProductPriceDto,
+            parsed,
+          ) as unknown as any[];
+          return instances;
+        }
+        return parsed;
       }
-      return parsed;
+      return [parsed]; // Si no es array, convertir a array
     } catch (error) {
-      return [value];
+      return [value]; // Si falla el parse, tratar como string simple
     }
   }
   return undefined;
@@ -70,8 +78,9 @@ export class CreateProductDto {
   slug: string;
 
   @IsString()
-  @MinLength(10)
-  description: string;
+  @MinLength(3)
+  @IsOptional()
+  description?: string;
 
   @IsString()
   @MinLength(3)
@@ -154,6 +163,12 @@ export class CreateProductDto {
   @IsOptional()
   @Transform(transformToNumber)
   base_price?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Transform(transformToNumber)
+  min_stock?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

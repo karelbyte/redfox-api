@@ -21,6 +21,7 @@ import { LanguageModule } from './language.module';
 import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 import { ProviderModule } from './provider.module';
 import { OrganizationModule } from './organization.module';
+import { SurrogateModule } from './surrogate.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OrganizationModule } from './organization.module';
     InventoryPackSyncModule,
     ProviderModule,
     OrganizationModule,
+    SurrogateModule,
   ],
   controllers: [ReceptionController],
   providers: [

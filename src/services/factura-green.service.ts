@@ -144,7 +144,7 @@ export class FacturaGreenService implements ICertificationPackService {
         cfdi: {
           customer: {
             uuid: invoice.client.pack_client_id,
-            email: "karelpuerto78@gmail.com",
+            ...(process.env.NODE_ENV === 'development' && { email: "karelpuerto78@gmail.com" }),
           },
           payment: {
             form: {
@@ -1215,7 +1215,7 @@ export class FacturaGreenService implements ICertificationPackService {
           uuid: data.cfdi_uuid,
           // delete 
           customer: {
-            email: "karelpuerto78@gmail.com"
+            ...(process.env.NODE_ENV === 'development' && { email: "karelpuerto78@gmail.com" })
           }
         },
         payment: {

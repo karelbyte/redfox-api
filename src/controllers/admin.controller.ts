@@ -1,12 +1,94 @@
-import { Controller, Get, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { AdminService } from '../services/admin.service';
+import { AuthService } from '../services/auth.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { SuperAdminGuard } from '../guards/super-admin.guard';
 
 @Controller('admin')
 @UseGuards(AuthGuard, SuperAdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly authService: AuthService,
+  ) {}
+
+  // Campos sensibles que deben ser filtrados en las respuestas
+  private readonly SENSITIVE_FIELDS = [
+    'password',
+    'token',
+    'secret',
+    'key',
+    'apiKey',
+    'api_key',
+    'accessToken',
+    'access_token',
+    'refreshToken',
+    'refresh_token',
+    'privateKey',
+    'private_key',
+    'publicKey',
+    'public_key',
+    'salt',
+    'hash',
+    'signature',
+    'authorization',
+    'auth',
+    'credentials',
+    'ssn',
+    'social_security_number',
+    'credit_card',
+    'creditCard',
+    'cvv',
+    'pin',
+    'otp',
+  ];
+
+  /**
+   * Sanitiza datos sensibles de forma recursiva
+   */
+  private sanitizeResponseData(data: any): any {
+    if (!data || typeof data !== 'object') {
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizeResponseData(item));
+    }
+
+    const sanitized: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      const lowerKey = key.toLowerCase();
+      
+      // Verificar si el campo es sensible
+      if (this.SENSITIVE_FIELDS.some(sensitiveField => lowerKey.includes(sensitiveField))) {
+        sanitized[key] = '[FILTERED]';
+      } else if (value && typeof value === 'object') {
+        // Recursivamente sanitizar objetos anidados
+        sanitized[key] = this.sanitizeResponseData(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Sanitiza un log de auditoría completo
+   */
+  private sanitizeAuditLog(log: any): any {
+    return {
+      ...log,
+      oldValues: log.oldValues ? this.sanitizeResponseData(log.oldValues) : null,
+      newValues: log.newValues ? this.sanitizeResponseData(log.newValues) : null,
+    };
+  }
+
+  @Post('impersonate/:userId')
+  impersonate(@Param('userId') userId: string) {
+    return this.authService.impersonate(userId);
+  }
 
   @Get('metrics')
   getMetrics() {
@@ -54,7 +136,7 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  getAuditLogs(
+  async getAuditLogs(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('entityType') entityType?: string,
@@ -62,8 +144,10 @@ export class AdminController {
     @Query('userId') userId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('organizationId') organizationId?: string,
+    @Query('search') search?: string,
   ) {
-    return this.adminService.getAuditLogs(
+    const result = await this.adminService.getAuditLogs(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 50,
       entityType,
@@ -71,6 +155,13 @@ export class AdminController {
       userId,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
+      organizationId,
+      search,
     );
+
+    return {
+      ...result,
+      data: result.data.map(log => this.sanitizeAuditLog(log)),
+    };
   }
 }

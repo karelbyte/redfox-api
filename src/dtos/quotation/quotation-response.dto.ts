@@ -8,7 +8,7 @@ export class QuotationResponseDto {
   date: Date;
   valid_until: Date;
   client: Client;
-  warehouse: WarehouseResponseDto;
+  warehouse: WarehouseResponseDto | null;
   notes: string;
   subtotal: number;
   tax: number;

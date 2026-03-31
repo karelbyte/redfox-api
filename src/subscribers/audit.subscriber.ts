@@ -22,10 +22,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     dataSource.subscribers.push(this);
   }
 
-  // No auditamos la propia tabla de logs para prevenir bucles infinitos
-  listenTo() {
-    return 'all'; // Escuchamos todas las entidades
-  }
+
 
   async afterInsert(event: InsertEvent<any>) {
     if (event.metadata.name === 'AuditLog') return;
@@ -42,6 +39,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
   }
 
   async afterUpdate(event: UpdateEvent<any>) {
+    console.log(`[AuditSubscriber] afterUpdate fired for entity: ${event.metadata.name}`);
     if (event.metadata.name === 'AuditLog') return;
 
     await this.auditLogService.log(
@@ -59,11 +57,11 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     if (event.metadata.name === 'AuditLog') return;
 
     await this.auditLogService.log(
-      'SYSTEM', // En el remove a veces no tenemos el usuario en la entidad
+      'SYSTEM', // En el remove a veces no tenemos el usuario en la entidad, pero AuditLogService usará el TenantContext si lo hay
       event.metadata.name,
       event.entityId || 'N/A',
       AuditAction.DELETE,
-      event.databaseEntity,
+      event.databaseEntity || event.entity,
       undefined,
       `Deleted ${event.metadata.name}`,
     );

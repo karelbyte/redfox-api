@@ -12,6 +12,7 @@ import { RoleResponseDto } from '../dtos/role/role-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class RoleService {
@@ -19,7 +20,12 @@ export class RoleService {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
     private readonly translationService: TranslationService,
+    private readonly tenantContext: TenantContext,
   ) {}
+
+  private get organizationId(): string {
+    return this.tenantContext.getOrganizationId() as string;
+  }
 
   private mapToResponseDto(role: Role): RoleResponseDto {
     const { id, code, description, status, created_at } = role;
@@ -37,7 +43,10 @@ export class RoleService {
     userId?: string,
   ): Promise<RoleResponseDto> {
     try {
-      const role = this.roleRepository.create(createRoleDto);
+      const role = this.roleRepository.create({
+        ...createRoleDto,
+        organization_id: this.organizationId,
+      });
       const savedRole = await this.roleRepository.save(role);
       return this.mapToResponseDto(savedRole);
     } catch (error) {
@@ -64,9 +73,11 @@ export class RoleService {
     const skip = (page - 1) * limit;
 
     const [roles, total] = await this.roleRepository.findAndCount({
+      where: { organization_id: this.organizationId },
       withDeleted: false,
       skip,
       take: limit,
+      order: { created_at: 'ASC' },
     });
 
     const data = roles.map((role) => this.mapToResponseDto(role));
@@ -84,7 +95,7 @@ export class RoleService {
 
   async findOne(id: string, userId?: string): Promise<RoleResponseDto> {
     const role = await this.roleRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!role) {
@@ -100,7 +111,7 @@ export class RoleService {
 
   async findOneEntity(id: string, userId?: string): Promise<Role> {
     const role = await this.roleRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!role) {
@@ -121,7 +132,7 @@ export class RoleService {
   ): Promise<RoleResponseDto> {
     try {
       const role = await this.roleRepository.findOne({
-        where: { id },
+        where: { id, organization_id: this.organizationId },
         withDeleted: false,
       });
       if (!role) {
@@ -156,7 +167,7 @@ export class RoleService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const role = await this.roleRepository.findOne({
-      where: { id },
+      where: { id, organization_id: this.organizationId },
       withDeleted: false,
     });
     if (!role) {
@@ -172,7 +183,7 @@ export class RoleService {
 
   async findByCode(code: string): Promise<Role | null> {
     return this.roleRepository.findOne({
-      where: { code },
+      where: { code, organization_id: this.organizationId },
       withDeleted: false,
     });
   }

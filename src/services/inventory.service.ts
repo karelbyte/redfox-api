@@ -67,6 +67,8 @@ export class InventoryService {
       quantity: inventory.quantity,
       price: inventory.price,
       pack_product_id: inventory.pack_product_id ?? null,
+      batch_number: inventory.batch_number,
+      expiration_date: inventory.expiration_date,
       createdAt: inventory.created_at,
     };
   }
@@ -340,6 +342,7 @@ export class InventoryService {
         (item) =>
           item.product.name.toLowerCase().includes(searchTerm) ||
           item.product.sku.toLowerCase().includes(searchTerm) ||
+          (item.product.barcode && item.product.barcode.toLowerCase().includes(searchTerm)) ||
           (item.product.description &&
             item.product.description.toLowerCase().includes(searchTerm)),
       );
@@ -347,6 +350,7 @@ export class InventoryService {
         (item) =>
           item.product.name.toLowerCase().includes(searchTerm) ||
           item.product.sku.toLowerCase().includes(searchTerm) ||
+          (item.product.barcode && item.product.barcode.toLowerCase().includes(searchTerm)) ||
           (item.product.description &&
             item.product.description.toLowerCase().includes(searchTerm)),
       );

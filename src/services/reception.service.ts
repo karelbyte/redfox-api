@@ -31,7 +31,7 @@ import { ReceptionDetailQueryDto } from '../dtos/reception-detail/reception-deta
 import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { ProviderMapper } from './mappers/provider.mapper';
-
+import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
 
 @Injectable()
@@ -57,6 +57,7 @@ export class ReceptionService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly providerMapper: ProviderMapper,
+    private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
   ) { }
 
@@ -150,6 +151,9 @@ export class ReceptionService {
     });
 
     const savedReception = await this.receptionRepository.save(reception);
+
+    // Incrementar el contador del surrogate si el código coincide con el sugerido
+    await this.surrogateService.useCodeIfMatches('reception', createReceptionDto.code);
 
     // Recargar con relaciones para la respuesta
     const receptionWithRelations = await this.receptionRepository.findOne({

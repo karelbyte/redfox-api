@@ -24,8 +24,8 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
+import { UnifiedUploadService } from '../services/unified-upload.service';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
@@ -35,25 +35,15 @@ const formatFileName = (fileName: string): string => {
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly unifiedUploadService: UnifiedUploadService,
+  ) {}
 
   @Post()
   @UseInterceptors(
-    FilesInterceptor('image', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/categories';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+    FilesInterceptor('image', 1, {
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -76,10 +66,27 @@ export class CategoryController {
     )
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
+    // Primero crear la categoría para obtener su ID
+    const category = await this.categoryService.create(createCategoryDto, userId);
+
+    // Si hay archivo, subirlo con el ID de la categoría
     if (files && files.length > 0) {
-      createCategoryDto.image = `/api/uploads/categories/${files[0].filename}`;
+      const uploadResult = await this.unifiedUploadService.uploadFile(
+        files[0],
+        'categories',
+        category.id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 1,
+        }
+      );
+
+      // Actualizar la categoría con la URL de la imagen
+      return this.categoryService.updateImage(category.id, uploadResult.url, userId);
     }
-    return this.categoryService.create(createCategoryDto, userId);
+
+    return category;
   }
 
   @Get()
@@ -108,21 +115,8 @@ export class CategoryController {
 
   @Put(':id')
   @UseInterceptors(
-    FilesInterceptor('image', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/categories';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+    FilesInterceptor('image', 1, {
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -146,11 +140,24 @@ export class CategoryController {
     )
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
+    // Si hay archivo nuevo, subirlo
     if (files && files.length > 0) {
-      updateCategoryDto.image = `/api/uploads/categories/${files[0].filename}`;
+      const uploadResult = await this.unifiedUploadService.uploadFile(
+        files[0],
+        'categories',
+        id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 1,
+        }
+      );
+
+      updateCategoryDto.image = uploadResult.url;
     } else if (updateCategoryDto.imageChanged) {
       updateCategoryDto.image = '';
     }
+    
     delete updateCategoryDto.imageChanged;
     return this.categoryService.update(id, updateCategoryDto, userId);
   }

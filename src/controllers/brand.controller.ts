@@ -22,11 +22,11 @@ import { BrandResponseDto } from '../dtos/brand/brand-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
+import { UnifiedUploadService } from '../services/unified-upload.service';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
@@ -36,25 +36,15 @@ const formatFileName = (fileName: string): string => {
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class BrandController {
-  constructor(private readonly brandService: BrandService) {}
+  constructor(
+    private readonly brandService: BrandService,
+    private readonly unifiedUploadService: UnifiedUploadService,
+  ) {}
 
   @Post()
   @UseInterceptors(
-    FilesInterceptor('img', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/brands';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+    FilesInterceptor('img', 1, {
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -66,7 +56,7 @@ export class BrandController {
       },
     }),
   )
-  create(
+  async create(
     @Body() createBrandDto: CreateBrandDto,
     @UserId() userId: string,
     @UploadedFiles(
@@ -77,10 +67,27 @@ export class BrandController {
     )
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
+    // Primero crear la marca para obtener su ID
+    const brand = await this.brandService.create(createBrandDto, userId);
+
+    // Si hay archivo, subirlo con el ID de la marca
     if (files && files.length > 0) {
-      createBrandDto.img = `/api/uploads/brands/${files[0].filename}`;
+      const uploadResult = await this.unifiedUploadService.uploadFile(
+        files[0],
+        'brands',
+        brand.id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 1,
+        }
+      );
+
+      // Actualizar la marca con la URL de la imagen
+      return this.brandService.updateImage(brand.id, uploadResult.url, userId);
     }
-    return this.brandService.create(createBrandDto, userId);
+
+    return brand;
   }
 
   @Get()
@@ -100,21 +107,8 @@ export class BrandController {
 
   @Put(':id')
   @UseInterceptors(
-    FilesInterceptor('img', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/brands';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+    FilesInterceptor('img', 1, {
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -126,7 +120,7 @@ export class BrandController {
       },
     }),
   )
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBrandDto: UpdateBrandDto,
     @UserId() userId: string,
@@ -138,11 +132,24 @@ export class BrandController {
     )
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
+    // Si hay archivo nuevo, subirlo
     if (files && files.length > 0) {
-      updateBrandDto.img = `/api/uploads/brands/${files[0].filename}`;
+      const uploadResult = await this.unifiedUploadService.uploadFile(
+        files[0],
+        'brands',
+        id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 1,
+        }
+      );
+
+      updateBrandDto.img = uploadResult.url;
     } else if (updateBrandDto.imageChanged) {
       updateBrandDto.img = '';
     }
+    
     return this.brandService.update(id, updateBrandDto, userId);
   }
 

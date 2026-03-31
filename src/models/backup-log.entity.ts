@@ -3,12 +3,24 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
+import { Organization } from './organization.entity';
 
 @Entity('backup_logs')
+@Index(['organization_id'])
 export class BackupLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true })
+  organization_id: string;
+
+  @ManyToOne(() => Organization)
+  @JoinColumn({ name: 'organization_id' })
+  organization: Organization;
 
   @Column({ type: 'varchar' })
   filename: string;

@@ -23,6 +23,16 @@ export class TenantInterceptor implements NestInterceptor {
       request['organizationId'] = user.organizationId;
     }
 
+    const userId = user?.id || user?.sub;
+    if (userId && this.tenantContext) {
+      this.tenantContext.setUserId(userId);
+    }
+
+    const ip = request.ip || request.connection?.remoteAddress;
+    if (ip && this.tenantContext) {
+      this.tenantContext.setIpAddress(ip);
+    }
+
     if (tenantSlug && this.tenantContext) {
       this.tenantContext.setTenantSlug(tenantSlug as string);
     }

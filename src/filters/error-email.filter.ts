@@ -41,6 +41,12 @@ export class ErrorEmailFilter implements ExceptionFilter {
     const stack =
       exception instanceof Error ? exception.stack : String(exception);
 
+    // Registrar el error en consola para monitoreo rápido
+    this.logger.error(
+      `❌ [${status}] ${message} en ${request?.method} ${request?.url}`,
+      stack,
+    );
+
     // Responder al cliente normalmente
     const errorResponse = {
       statusCode: status,
@@ -150,8 +156,8 @@ export class ErrorEmailFilter implements ExceptionFilter {
             request?.body && Object.keys(request.body).length > 0
               ? `
           <div style="margin-top: 20px;">
-            <h3 style="color: #111827; font-size: 15px; margin: 0 0 8px;">Request Body</h3>
-            <pre style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(request.body, null, 2)}</pre>
+            <h3 style="color: #111827; font-size: 15px; margin: 0 0 8px;">Request Body (Sensored)</h3>
+            <pre style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(this.maskSensitiveData(request.body), null, 2)}</pre>
           </div>
           `
               : ''
@@ -179,5 +185,37 @@ export class ErrorEmailFilter implements ExceptionFilter {
         emailError?.message || emailError,
       );
     }
+  }
+
+  private maskSensitiveData(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+
+    const sensitiveKeys = [
+      'password',
+      'token',
+      'secret',
+      'authorization',
+      'bearer',
+      'cvv',
+      'pin',
+      'key',
+      'credential',
+      'cookie',
+    ];
+
+    const masked = Array.isArray(data) ? [...data] : { ...data };
+
+    for (const key in masked) {
+      if (typeof masked[key] === 'object' && masked[key] !== null) {
+        masked[key] = this.maskSensitiveData(masked[key]);
+      } else if (
+        typeof key === 'string' &&
+        sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))
+      ) {
+        masked[key] = '********';
+      }
+    }
+
+    return masked;
   }
 }

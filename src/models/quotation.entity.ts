@@ -50,9 +50,9 @@ export class Quotation {
   @JoinColumn({ name: 'client_id' })
   client: Client;
 
-  @ManyToOne(() => Warehouse)
+  @ManyToOne(() => Warehouse, { nullable: true })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Warehouse | null;
 
   @Column({ type: 'text', nullable: true })
   notes: string;

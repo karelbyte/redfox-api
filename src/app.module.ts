@@ -51,6 +51,7 @@ import { AuditLogModule } from './modules/audit-log.module';
 import { SubscriptionModule } from './modules/subscription.module';
 import { UploadsModule } from './modules/uploads.module';
 import { AdminModule } from './modules/admin.module';
+import { InventoryAlertsModule } from './modules/inventory-alerts.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -125,6 +126,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     SubscriptionModule,
     UploadsModule,
     AdminModule,
+    InventoryAlertsModule,
   ],
   controllers: [HomeController],
   providers: [
@@ -141,7 +143,6 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
       useClass: LoggingInterceptor,
     },
     AuditSubscriber,
-    TenantContext,
     UnverifiedAccountCleanupService,
   ],
 })

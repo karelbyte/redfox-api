@@ -15,6 +15,7 @@ import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { UnifiedUploadService } from './unified-upload.service';
 
 @Injectable()
 export class BrandService {
@@ -25,6 +26,7 @@ export class BrandService {
     private readonly productRepository: Repository<Product>,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly unifiedUploadService: UnifiedUploadService,
   ) { }
 
   private get organizationId(): string {
@@ -248,5 +250,38 @@ export class BrandService {
       productsCount: products.length,
       products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
     };
+  }
+
+  /**
+   * Actualiza solo la imagen de una marca
+   */
+  async updateImage(
+    id: string,
+    imageUrl: string,
+    userId?: string,
+  ): Promise<BrandResponseDto> {
+    const brand = await this.brandRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
+
+    if (!brand) {
+      const message = await this.translationService.translate(
+        'brand.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+
+    // Eliminar imagen anterior si existe
+    if (brand.img) {
+      await this.unifiedUploadService.deleteFilesByUrls([brand.img]);
+    }
+
+    // Actualizar con la nueva imagen
+    brand.img = imageUrl;
+    const savedBrand = await this.brandRepository.save(brand);
+
+    return this.mapToResponseDto(savedBrand);
   }
 }

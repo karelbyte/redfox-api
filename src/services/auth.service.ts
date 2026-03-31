@@ -19,6 +19,12 @@ import { RoleService } from './role.service';
 import { EmailQueue } from '../queues/email.queue';
 import { OrganizationService } from './organization.service';
 import { SubscriptionService } from './subscription.service';
+import { PermissionService } from './permission.service';
+import { RolePermissionService } from './role-permission.service';
+import { TaxService } from './tax.service';
+import { MeasurementUnitService } from './measurement-unit.service';
+import { TenantContext } from './tenant-context.service';
+import { TaxType } from '../models/tax.entity';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +37,11 @@ export class AuthService {
     private emailQueue: EmailQueue,
     private organizationService: OrganizationService,
     private subscriptionService: SubscriptionService,
+    private permissionService: PermissionService,
+    private rolePermissionService: RolePermissionService,
+    private taxService: TaxService,
+    private measurementUnitService: MeasurementUnitService,
+    private tenantContext: TenantContext,
     @InjectRepository(Currency)
     private readonly currencyRepository: Repository<Currency>,
   ) {}
@@ -63,6 +74,47 @@ export class AuthService {
       email: user.email,
       roles: user.roles.map((role) => role.code),
       organizationId: user.organization_id,
+    };
+
+    const expiresIn = '72h';
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 72);
+
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn }),
+      expires_at: expiresAt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        organization_id: user.organization_id,
+        organization_slug: user.organization?.slug,
+        roles: user.roles.map((role) => ({
+          id: role.id,
+          code: role.code,
+          description: role.description,
+          status: role.status,
+          created_at: role.created_at,
+        })),
+        permissions: user.getPermissionCodes(),
+        status: user.status,
+        created_at: user.created_at,
+      },
+    };
+  }
+
+  async impersonate(userId: string): Promise<AuthResponseDto> {
+    const user = await this.userService.findOneWithPermissions(userId);
+    if (!user) {
+      throw new BadRequestException('Target user not found');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      roles: user.roles.map((role) => role.code),
+      organizationId: user.organization_id,
+      isImpersonated: true,
     };
 
     const expiresIn = '72h';
@@ -125,21 +177,86 @@ export class AuthService {
       );
     }
 
-    const newUser = await this.userService.create({
-      ...registerDto,
-      role_ids: roleIds,
-    });
-
     const organization = await this.organizationService.create({
       name: registerDto.companyName,
       slug,
       status: false,
     });
 
-    await this.userService.update(newUser.id, {
-      status: false,
+    // Establecer el contexto de la organización
+    this.tenantContext.setOrganizationId(organization.id);
+
+    // Crear rol ADMIN para la nueva organización
+    const adminRole = await this.roleService.create({
       organization_id: organization.id,
+      code: 'ADMIN',
+      description: 'Administrador con todos los permisos',
+      status: true,
     } as any);
+
+    // Asignar todos los permisos al rol ADMIN
+    const allPermissions = await this.permissionService.findAll();
+    const permissionIds = allPermissions.map((p) => p.id);
+    await this.rolePermissionService.updateRolePermissions(
+      adminRole.id,
+      permissionIds,
+    );
+
+    // Crear el usuario ya asociado a la organización y al rol ADMIN
+    const newUser = await this.userService.create({
+      ...registerDto,
+      organization_id: organization.id,
+      role_ids: [adminRole.id],
+      status: false, // El usuario se crea inactivo hasta que se verifique
+    } as any);
+
+    // Crear impuestos por defecto
+    await this.taxService.create({
+      code: 'IVA',
+      name: 'IVA 16%',
+      value: 16,
+      type: TaxType.PERCENTAGE,
+      isActive: true,
+    });
+
+    await this.taxService.create({
+      code: 'IVA',
+      name: 'IVA 0%',
+      value: 0,
+      type: TaxType.PERCENTAGE,
+      isActive: true,
+    });
+
+    // Crear unidades de medida por defecto
+    const defaultUnits = [
+      { code: 'E48', description: 'Unidad de servicio' },
+      { code: 'H87', description: 'Pieza' },
+      { code: 'ACT', description: 'Actividad' },
+      { code: 'HUR', description: 'Hora' },
+      { code: 'XPK', description: 'Paquete' },
+      { code: 'SET', description: 'Conjunto' },
+      { code: 'KGM', description: 'Kilogramo' },
+      { code: 'LTR', description: 'Litro' },
+      { code: 'MTR', description: 'Metro' },
+      { code: 'MTK', description: 'Metro cuadrado' },
+      { code: 'XBX', description: 'Caja' },
+      { code: 'E51', description: 'Trabajo' },
+    ];
+
+    for (const unit of defaultUnits) {
+      try {
+        await this.measurementUnitService.create({
+          code: unit.code,
+          description: unit.description,
+          status: true,
+        });
+      } catch (error) {
+        console.error(`Error creating default unit ${unit.code}:`, error);
+      }
+    }
+
+    // Limpiar el contexto para no afectar otras peticiones concurrentes (aunque sea per-request)
+    this.tenantContext.clear();
 
     const payload = { sub: newUser.id };
     const token = this.jwtService.sign(payload, { expiresIn: '72h' });

@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateProviderAddressDto } from './create-provider-address.dto';
-import { CreateProviderTaxDataDto } from './create-provider-tax-data.dto';
+import { UpdateProviderTaxDataDto } from './update-provider-tax-data.dto';
 import { UpdateProviderCreditDto } from './update-provider-credit.dto';
 
 export class UpdateProviderDto {
@@ -52,8 +52,8 @@ export class UpdateProviderDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => CreateProviderTaxDataDto)
-  taxData?: CreateProviderTaxDataDto[];
+  @Type(() => UpdateProviderTaxDataDto)
+  taxData?: UpdateProviderTaxDataDto[];
 
   @IsArray()
   @IsOptional()

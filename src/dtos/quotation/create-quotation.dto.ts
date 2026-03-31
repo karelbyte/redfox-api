@@ -22,7 +22,8 @@ export class CreateQuotationDto {
   client_id: string;
 
   @IsUUID()
-  warehouse_id: string;
+  @IsOptional()
+  warehouse_id?: string;
 
   @IsString()
   @IsOptional()

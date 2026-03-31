@@ -14,7 +14,7 @@ export class CompanySettingsService {
     private readonly companySettingsRepository: Repository<CompanySettings>,
     private readonly companySettingsMapper: CompanySettingsMapper,
     private readonly tenantContext: TenantContext,
-  ) {}
+  ) { }
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -55,10 +55,8 @@ export class CompanySettingsService {
       settings = await this.companySettingsRepository.save(settings);
     }
 
-    const updated = await this.companySettingsRepository.save({
-      ...settings,
-      ...dto,
-    });
+    Object.assign(settings, dto);
+    const updated = await this.companySettingsRepository.save(settings);
 
     return this.companySettingsMapper.mapToResponseDto(updated);
   }
@@ -75,10 +73,8 @@ export class CompanySettingsService {
       settings = await this.companySettingsRepository.save(settings);
     }
 
-    const updated = await this.companySettingsRepository.save({
-      ...settings,
-      logoUrl,
-    });
+    settings.logoUrl = logoUrl;
+    const updated = await this.companySettingsRepository.save(settings);
 
     return this.companySettingsMapper.mapToResponseDto(updated);
   }

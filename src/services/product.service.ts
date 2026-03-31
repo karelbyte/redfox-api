@@ -27,6 +27,9 @@ import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
 import { ProductPackImportService } from './product-pack-import.service';
 import { ProductPackSyncService } from './product-pack-sync.service';
+import { NotificationService } from './notification.service';
+import { User } from '../models/user.entity';
+import { UnifiedUploadService } from './unified-upload.service';
 
 interface SearchCondition {
   name?: any;
@@ -67,6 +70,10 @@ export class ProductService {
     private readonly tenantContext: TenantContext,
     private readonly productPackImportService: ProductPackImportService,
     private readonly productPackSyncService: ProductPackSyncService,
+    private readonly notificationService: NotificationService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly unifiedUploadService: UnifiedUploadService,
   ) {}
 
   private get organizationId(): string {
@@ -137,6 +144,7 @@ export class ProductService {
         inventory_strategy:
           createProductDto.inventory_strategy ?? InventoryStrategy.AVERAGE,
         base_price: createProductDto.base_price ?? 0,
+        min_stock: createProductDto.min_stock ?? 0,
         images: createProductDto.images
           ? JSON.stringify(createProductDto.images)
           : undefined,
@@ -405,6 +413,9 @@ export class ProductService {
         currency: updateProductDto.currency_id !== undefined
           ? (updateProductDto.currency_id ? { id: updateProductDto.currency_id } : null)
           : undefined,
+        min_stock: updateProductDto.min_stock !== undefined
+          ? updateProductDto.min_stock
+          : undefined,
       });
 
       // Manejar actualización de múltiples impuestos
@@ -639,8 +650,33 @@ export class ProductService {
       where: { id, organization_id: this.organizationId },
     });
     if (product) {
-      product.total_stock = Number(product.total_stock || 0) + Number(quantity);
+      const oldStock = Number(product.total_stock || 0);
+      const newStock = oldStock + Number(quantity);
+      product.total_stock = newStock;
       await repo.save(product, { reload: false });
+
+      // Verificar stock mínimo para notificaciones
+      if (product.min_stock > 0 && newStock <= product.min_stock && oldStock > product.min_stock) {
+        await this.triggerLowStockNotification(product);
+      }
+    }
+  }
+
+  private async triggerLowStockNotification(product: Product): Promise<void> {
+    const users = await this.userRepository.find({
+      where: { organization_id: product.organization_id, status: true },
+    });
+
+    const title = '⚠️ Alerta de Stock Bajo';
+    const message = `El producto "${product.name}" ha bajado del stock mínimo. Actual: ${product.total_stock}, Mínimo: ${product.min_stock}`;
+
+    for (const user of users) {
+      await this.notificationService.createInventoryNotification(
+        title,
+        message,
+        product.id,
+        user.id,
+      );
     }
   }
 
@@ -716,5 +752,35 @@ export class ProductService {
 
   async importFromPack(userId?: string): Promise<any> {
     return this.productPackImportService.importAllFromPack(userId);
+  }
+
+  /**
+   * Actualiza solo las imágenes de un producto
+   */
+  async updateImages(
+    id: string,
+    imageUrls: string[],
+    userId?: string,
+  ): Promise<ProductResponseDto> {
+    const product = await this.findOneEntity(id, userId);
+
+    // Eliminar imágenes anteriores si existen
+    if (product.images) {
+      const oldImages = JSON.parse(product.images) as string[];
+      await this.unifiedUploadService.deleteFilesByUrls(oldImages);
+    }
+
+    // Actualizar con las nuevas imágenes
+    product.images = JSON.stringify(imageUrls);
+    const savedProduct = await this.productRepository.save(product);
+
+    const productWithRelations = await this.productRepository.findOne({
+      where: { id: savedProduct.id, organization_id: this.organizationId },
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+    });
+
+    return this.productMapper.mapToResponseDto(
+      productWithRelations ?? savedProduct,
+    );
   }
 }

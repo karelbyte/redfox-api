@@ -76,9 +76,10 @@ export class QuotationController {
   @Post(':id/convert-to-sale')
   convertToSale(
     @Param('id', ParseUUIDPipe) id: string,
+    @Body('warehouse_id') warehouseId: string,
     @UserId() userId: string,
   ): Promise<ConvertToSaleResponseDto> {
-    return this.quotationService.convertToSale(id, userId);
+    return this.quotationService.convertToSale(id, warehouseId, userId);
   }
 
   @Post(':id/details')

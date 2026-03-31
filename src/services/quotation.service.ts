@@ -143,16 +143,20 @@ export class QuotationService {
       throw new NotFoundException(message);
     }
 
-    const warehouse = await this.warehouseRepository.findOne({
-      where: { id: createQuotationDto.warehouse_id, organization_id: this.organizationId },
-    });
-    if (!warehouse) {
-      const message = await this.translationService.translate(
-        'quotation.warehouse_not_found',
-        userId,
-        { warehouseId: createQuotationDto.warehouse_id },
-      );
-      throw new NotFoundException(message);
+    // Warehouse es opcional en cotización
+    let warehouse = null;
+    if (createQuotationDto.warehouse_id) {
+      warehouse = await this.warehouseRepository.findOne({
+        where: { id: createQuotationDto.warehouse_id, organization_id: this.organizationId },
+      });
+      if (!warehouse) {
+        const message = await this.translationService.translate(
+          'quotation.warehouse_not_found',
+          userId,
+          { warehouseId: createQuotationDto.warehouse_id },
+        );
+        throw new NotFoundException(message);
+      }
     }
 
     const quotation = this.quotationRepository.create({
@@ -656,6 +660,7 @@ export class QuotationService {
 
   async convertToSale(
     quotationId: string,
+    warehouseId: string,
     userId?: string,
   ): Promise<ConvertToSaleResponseDto> {
     const quotation = await this.quotationRepository.findOne({
@@ -688,6 +693,19 @@ export class QuotationService {
       throw new BadRequestException(message);
     }
 
+    // Validar el almacén recibido en la conversión
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id: warehouseId, organization_id: this.organizationId },
+    });
+    if (!warehouse) {
+      const message = await this.translationService.translate(
+        'quotation.warehouse_not_found',
+        userId,
+        { warehouseId },
+      );
+      throw new NotFoundException(message);
+    }
+
     const withdrawal = this.withdrawalRepository.create({
       code: `SALE-${quotation.code}`,
       destination: `Sale from quotation ${quotation.code}`,
@@ -703,7 +721,7 @@ export class QuotationService {
       const withdrawalDetail = this.withdrawalDetailRepository.create({
         withdrawal: savedWithdrawal,
         product: detail.product,
-        warehouse: quotation.warehouse,
+        warehouse: warehouse,
         quantity: detail.quantity,
         price: detail.price,
       });

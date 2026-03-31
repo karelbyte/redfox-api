@@ -8,12 +8,14 @@ import { BrandMapper } from '../services/mappers/brand.mapper';
 import { TranslationService } from '../services/translation.service';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
+import { UploadsModule } from './uploads.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Brand, Product]),
     LanguageModule,
     OrganizationModule,
+    UploadsModule,
   ],
   controllers: [BrandController],
   providers: [BrandService, BrandMapper],

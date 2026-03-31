@@ -29,7 +29,7 @@ export class CreateAuditLogsTable1716400000430 implements MigrationInterface {
           {
             name: 'userId',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'entityType',

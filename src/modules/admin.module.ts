@@ -7,9 +7,14 @@ import { Organization } from '../models/organization.entity';
 import { Subscription } from '../models/subscription.entity';
 import { User } from '../models/user.entity';
 
+import { AuthModule } from './auth.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Organization, Subscription, User])],
+  imports: [
+    TypeOrmModule.forFeature([Organization, Subscription, User]),
+    AuthModule,
+  ],
   controllers: [AdminController],
   providers: [AdminService, SuperAdminGuard],
 })
-export class AdminModule {}
+ export class AdminModule {}

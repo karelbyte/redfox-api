@@ -16,6 +16,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { CategoryMapper } from './mappers/category.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { UnifiedUploadService } from './unified-upload.service';
 
 @Injectable()
 export class CategoryService {
@@ -30,6 +31,7 @@ export class CategoryService {
     private readonly categoryMapper: CategoryMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly unifiedUploadService: UnifiedUploadService,
   ) { }
 
   private get organizationId(): string {
@@ -550,5 +552,38 @@ export class CategoryService {
       products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku })),
       childrenCount,
     };
+  }
+
+  /**
+   * Actualiza solo la imagen de una categoría
+   */
+  async updateImage(
+    id: string,
+    imageUrl: string,
+    userId?: string,
+  ): Promise<CategoryResponseDto> {
+    const category = await this.categoryRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
+
+    if (!category) {
+      const message = await this.translationService.translate(
+        'category.not_found',
+        userId,
+        { id },
+      );
+      throw new NotFoundException(message);
+    }
+
+    // Eliminar imagen anterior si existe
+    if (category.image) {
+      await this.unifiedUploadService.deleteFilesByUrls([category.image]);
+    }
+
+    // Actualizar con la nueva imagen
+    category.image = imageUrl;
+    const savedCategory = await this.categoryRepository.save(category);
+
+    return this.categoryMapper.mapToResponseDto(savedCategory);
   }
 }

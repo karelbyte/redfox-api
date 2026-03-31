@@ -5,11 +5,13 @@ import {
   Length,
   IsBoolean,
 } from 'class-validator';
+import { IsValidRFC } from '../../validators/rfc.validator';
 
 export class CreateClientTaxDataDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 100)
+  @IsValidRFC()
   tax_document: string;
 
   @IsString()

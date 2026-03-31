@@ -27,6 +27,8 @@ import { ClientAddress } from '../models/client-address.entity';
 import { ClientTaxData } from '../models/client-tax-data.entity';
 import { ClientCredit } from '../models/client-credit.entity';
 import { TenantContext } from './tenant-context.service';
+import { AuditLogService } from './audit-log.service';
+import { AuditAction } from '../models/audit-log.entity';
 
 @Injectable()
 export class ClientService {
@@ -54,6 +56,7 @@ export class ClientService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
+    private readonly auditLogService: AuditLogService,
   ) { }
 
   private get organizationId(): string {
@@ -270,8 +273,15 @@ export class ClientService {
     // Guardar cliente sin cascade para evitar que TypeORM intente actualizar relaciones
     const savedClient = await this.clientRepository.save(client);
 
+    // Recargar el cliente con todas las relaciones para la sincronización
+    const clientWithRelations = await this.clientRepository.findOne({
+      where: { id: savedClient.id, organization_id: this.organizationId },
+      relations: ['addresses', 'taxData', 'credit'],
+      withDeleted: false,
+    });
+
     const syncResult = await this.clientPackSyncService.syncOnUpdate(
-      savedClient,
+      clientWithRelations!,
       updateClientDto,
     );
 
@@ -346,14 +356,58 @@ export class ClientService {
       throw new BadRequestException(message);
     }
 
+    // Guardar datos del cliente antes de eliminarlo para el log de auditoría
+    const clientDataForAudit = { ...client };
+
     await this.clientRepository.softRemove(client);
+
+    // Log manual de auditoría para soft delete
+    try {
+      await this.auditLogService.log(
+        userId || 'SYSTEM',
+        'Client',
+        client.id,
+        AuditAction.DELETE,
+        clientDataForAudit,
+        undefined,
+        `Soft deleted client: ${client.name}`,
+      );
+    } catch (error: any) {
+      this.logger.warn(`Failed to create audit log for client deletion: ${error?.message}`);
+    }
   }
 
   async removeMany(ids: string[]): Promise<void> {
+    // Obtener los clientes antes de eliminarlos para el log de auditoría
+    const clients = await this.clientRepository.find({
+      where: { 
+        id: In(ids), 
+        organization_id: this.organizationId 
+      },
+      withDeleted: false,
+    });
+
     await this.clientRepository.softDelete({
       id: In(ids),
       organization_id: this.organizationId,
     });
+
+    // Log manual de auditoría para cada cliente eliminado
+    for (const client of clients) {
+      try {
+        await this.auditLogService.log(
+          'SYSTEM', // No tenemos userId en bulk delete
+          'Client',
+          client.id,
+          AuditAction.DELETE,
+          client,
+          undefined,
+          `Bulk soft deleted client: ${client.name}`,
+        );
+      } catch (error: any) {
+        this.logger.warn(`Failed to create audit log for bulk client deletion (${client.id}): ${error?.message}`);
+      }
+    }
   }
 
   async updateBalance(

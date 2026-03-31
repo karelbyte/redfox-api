@@ -5,6 +5,8 @@ interface TenantStore {
   organizationId: string | null;
   tenantSlug: string | null;
   pacConfig?: Record<string, any> | null;
+  userId?: string | null;
+  ipAddress?: string | null;
 }
 
 /**
@@ -52,11 +54,35 @@ export class TenantContext {
     return TenantContext.storage.getStore()?.pacConfig || null;
   }
 
+  setUserId(userId: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.userId = userId;
+    }
+  }
+
+  getUserId(): string | null {
+    return TenantContext.storage.getStore()?.userId || null;
+  }
+
+  setIpAddress(ipAddress: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.ipAddress = ipAddress;
+    }
+  }
+
+  getIpAddress(): string | null {
+    return TenantContext.storage.getStore()?.ipAddress || null;
+  }
+
   clear() {
     const store = TenantContext.storage.getStore();
     if (store) {
       store.organizationId = null;
       store.tenantSlug = null;
+      store.userId = null;
+      store.ipAddress = null;
     }
   }
 }

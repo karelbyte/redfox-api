@@ -26,36 +26,22 @@ import { UserId } from '../decorators/user-id.decorator';
 import { BulkDeleteProductDto } from '../dtos/product/bulk-delete-product.dto';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
-
-const formatFileName = (fileName: string): string => {
-  return fileName.replace(/\s+/g, '-');
-};
+import { memoryStorage } from 'multer';
+import { UnifiedUploadService } from '../services/unified-upload.service';
 
 @Controller('products')
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly unifiedUploadService: UnifiedUploadService,
+  ) {}
 
   @Post()
   @UseInterceptors(
     FilesInterceptor('images', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/products';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -67,7 +53,7 @@ export class ProductController {
       },
     }),
   )
-  create(
+  async create(
     @Body() createProductDto: CreateProductDto,
     @UserId() userId: string,
     @UploadedFiles(
@@ -78,12 +64,32 @@ export class ProductController {
     )
     files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
+    // Log temporal para debug
+    console.log('🔍 CreateProductDto received:', JSON.stringify(createProductDto, null, 2));
+    
+    // Primero crear el producto para obtener su ID
+    const product = await this.productService.create(createProductDto, userId);
+
+    // Si hay archivos, subirlos con el ID del producto
     if (files && files.length > 0) {
-      createProductDto.images = files.map(
-        (file) => `/api/uploads/products/${file.filename}`,
+      const uploadResults = await this.unifiedUploadService.uploadFiles(
+        files,
+        'products',
+        product.id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 10,
+        }
       );
+
+      const imageUrls = uploadResults.map(result => result.url);
+      
+      // Actualizar el producto con las URLs de las imágenes
+      return this.productService.updateImages(product.id, imageUrls, userId);
     }
-    return this.productService.create(createProductDto, userId);
+
+    return product;
   }
 
   @Get()
@@ -109,20 +115,7 @@ export class ProductController {
   @Put(':id')
   @UseInterceptors(
     FilesInterceptor('images', 10, {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const dir = './uploads/products';
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-          const formattedName = formatFileName(file.originalname);
-          const uniqueName = `${Date.now()}-${formattedName}`;
-          cb(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -134,7 +127,7 @@ export class ProductController {
       },
     }),
   )
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
     @UserId() userId: string,
@@ -146,11 +139,29 @@ export class ProductController {
     )
     files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
+    // Si hay archivos nuevos, subirlos
     if (files && files.length > 0) {
-      updateProductDto.images = files.map(
-        (file) => `/api/uploads/products/${file.filename}`,
+      const uploadResults = await this.unifiedUploadService.uploadFiles(
+        files,
+        'products',
+        id,
+        {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          maxFiles: 10,
+        }
       );
+
+      const newImageUrls = uploadResults.map(result => result.url);
+      
+      // Si se especifican imágenes existentes, combinarlas con las nuevas
+      if (updateProductDto.images) {
+        updateProductDto.images = [...updateProductDto.images, ...newImageUrls];
+      } else {
+        updateProductDto.images = newImageUrls;
+      }
     }
+
     return this.productService.update(id, updateProductDto, userId);
   }
 

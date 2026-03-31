@@ -1,4 +1,5 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsValidRFC } from '../../validators/rfc.validator';
 
 export class UpdateCompanySettingsDto {
   @IsOptional()
@@ -14,6 +15,7 @@ export class UpdateCompanySettingsDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @IsValidRFC()
   taxId?: string;
 
   @IsOptional()

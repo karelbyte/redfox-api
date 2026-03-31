@@ -8,13 +8,87 @@ import { AuditAction } from '../models/audit-log.entity';
 export class AuditLogController {
   constructor(private auditLogService: AuditLogService) {}
 
+  // Campos sensibles que deben ser filtrados en las respuestas
+  private readonly SENSITIVE_FIELDS = [
+    'password',
+    'token',
+    'secret',
+    'key',
+    'apiKey',
+    'api_key',
+    'accessToken',
+    'access_token',
+    'refreshToken',
+    'refresh_token',
+    'privateKey',
+    'private_key',
+    'publicKey',
+    'public_key',
+    'salt',
+    'hash',
+    'signature',
+    'authorization',
+    'auth',
+    'credentials',
+    'ssn',
+    'social_security_number',
+    'credit_card',
+    'creditCard',
+    'cvv',
+    'pin',
+    'otp',
+  ];
+
+  /**
+   * Sanitiza datos sensibles de forma recursiva
+   */
+  private sanitizeResponseData(data: any): any {
+    if (!data || typeof data !== 'object') {
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizeResponseData(item));
+    }
+
+    const sanitized: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      const lowerKey = key.toLowerCase();
+      
+      // Verificar si el campo es sensible
+      if (this.SENSITIVE_FIELDS.some(sensitiveField => lowerKey.includes(sensitiveField))) {
+        sanitized[key] = '[FILTERED]';
+      } else if (value && typeof value === 'object') {
+        // Recursivamente sanitizar objetos anidados
+        sanitized[key] = this.sanitizeResponseData(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Sanitiza un log de auditoría completo
+   */
+  private sanitizeAuditLog(log: any): any {
+    return {
+      ...log,
+      oldValues: log.oldValues ? this.sanitizeResponseData(log.oldValues) : null,
+      newValues: log.newValues ? this.sanitizeResponseData(log.newValues) : null,
+    };
+  }
+
   @Get('entity/:entityType/:entityId')
   async findByEntity(
     @Param('entityType') entityType: string,
     @Param('entityId') entityId: string,
     @Query('limit') limit: number = 50,
   ) {
-    return this.auditLogService.findByEntity(entityType, entityId, limit);
+    const logs = await this.auditLogService.findByEntity(entityType, entityId, limit);
+    return logs.map(log => this.sanitizeAuditLog(log));
   }
 
   @Get('user')
@@ -22,7 +96,8 @@ export class AuditLogController {
     @Query('userId') userId: string,
     @Query('limit') limit: number = 100,
   ) {
-    return this.auditLogService.findByUser(userId, limit);
+    const logs = await this.auditLogService.findByUser(userId, limit);
+    return logs.map(log => this.sanitizeAuditLog(log));
   }
 
   @Get('action/:action')
@@ -30,7 +105,8 @@ export class AuditLogController {
     @Param('action') action: AuditAction,
     @Query('limit') limit: number = 100,
   ) {
-    return this.auditLogService.findByAction(action, limit);
+    const logs = await this.auditLogService.findByAction(action, limit);
+    return logs.map(log => this.sanitizeAuditLog(log));
   }
 
   @Get('stats/:entityType')
@@ -48,7 +124,7 @@ export class AuditLogController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.auditLogService.findAll(
+    const result = await this.auditLogService.findAll(
       page,
       limit,
       entityType,
@@ -57,5 +133,10 @@ export class AuditLogController {
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
+
+    return {
+      ...result,
+      data: result.data.map(log => this.sanitizeAuditLog(log)),
+    };
   }
 }

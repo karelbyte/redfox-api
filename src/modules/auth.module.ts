@@ -11,6 +11,10 @@ import { QueueModule } from './queue.module';
 import { OrganizationModule } from './organization.module';
 import { SubscriptionModule } from './subscription.module';
 import { Currency } from '../models/currency.entity';
+import { PermissionModule } from './permission.module';
+import { RolePermissionModule } from './role-permission.module';
+import { TaxModule } from './tax.module';
+import { MeasurementUnitModule } from './measurement-unit.module';
 
 @Module({
   imports: [
@@ -26,6 +30,10 @@ import { Currency } from '../models/currency.entity';
     QueueModule.forRootAsync(),
     OrganizationModule,
     SubscriptionModule,
+    PermissionModule,
+    RolePermissionModule,
+    TaxModule,
+    MeasurementUnitModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

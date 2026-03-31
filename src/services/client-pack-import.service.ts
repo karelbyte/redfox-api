@@ -53,7 +53,7 @@ export class ClientPackImportService {
       addresses: [
         {
           is_main: true,
-          type: AddressType.FISCAL,
+          type: AddressType.BILLING,
           street: (address as any).street || undefined,
           exterior_number:
             (address as any).exterior !== undefined

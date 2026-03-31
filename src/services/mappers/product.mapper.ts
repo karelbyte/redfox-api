@@ -46,6 +46,7 @@ export class ProductMapper {
       prices,
       images,
       total_stock,
+      min_stock,
       currency,
       created_at,
     } = product;
@@ -63,21 +64,16 @@ export class ProductMapper {
       height,
       length,
       brand: brand ? this.brandMapper.mapToResponseDto(brand) : null,
-      category: category
-        ? this.categoryMapper.mapToResponseDto(category)
-        : null,
+      category: category ? this.categoryMapper.mapToResponseDto(category) : null,
       tax: tax ? this.taxMapper.mapToResponseDto(tax) : null,
-      taxes: taxes && taxes.length > 0
-        ? taxes.map((t) => this.taxMapper.mapToResponseDto(t))
-        : [],
-      measurement_unit: measurement_unit
-        ? this.measurementUnitMapper.mapToResponseDto(measurement_unit)
-        : null,
+      taxes: taxes && taxes.length > 0 ? taxes.map((t) => this.taxMapper.mapToResponseDto(t)) : [],
+      measurement_unit: measurement_unit ? this.measurementUnitMapper.mapToResponseDto(measurement_unit) : null,
       is_active,
       type,
       inventory_strategy,
       base_price: Number(base_price),
       total_stock: Number(total_stock || 0),
+      min_stock: Number(min_stock || 0),
       prices: prices
         ? prices.map((p) => ({
             id: p.id,

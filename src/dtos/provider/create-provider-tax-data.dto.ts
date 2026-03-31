@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsUUID,
 } from 'class-validator';
+import { IsValidRFC } from '../../validators/rfc.validator';
 
 export class CreateProviderTaxDataDto {
   @IsUUID()
@@ -13,6 +14,7 @@ export class CreateProviderTaxDataDto {
 
   @IsString()
   @Length(1, 100)
+  @IsValidRFC()
   tax_document: string;
 
   @IsString()
