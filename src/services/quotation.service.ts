@@ -76,7 +76,9 @@ export class QuotationService {
       date: quotation.date,
       valid_until: quotation.valid_until,
       client: quotation.client,
-      warehouse: this.warehouseMapper.mapToResponseDto(quotation.warehouse),
+      warehouse: quotation.warehouse
+        ? this.warehouseMapper.mapToResponseDto(quotation.warehouse)
+        : null,
       notes: quotation.notes,
       subtotal: quotation.subtotal,
       tax: quotation.tax,
@@ -144,7 +146,7 @@ export class QuotationService {
     }
 
     // Warehouse es opcional en cotización
-    let warehouse = null;
+    let warehouse: Warehouse | null = null;
     if (createQuotationDto.warehouse_id) {
       warehouse = await this.warehouseRepository.findOne({
         where: { id: createQuotationDto.warehouse_id, organization_id: this.organizationId },
