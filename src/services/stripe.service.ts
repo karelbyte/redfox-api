@@ -54,8 +54,7 @@ export class StripeService {
       customer: customerId,
       amount: Math.round(amount * 100),
       currency,
-      // confirmation_method manual allows the frontend to confirm via confirmCardPayment
-      confirmation_method: 'manual',
+      confirmation_method: 'automatic',
       confirm: false,
     };
 

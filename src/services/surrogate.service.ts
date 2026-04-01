@@ -302,10 +302,25 @@ export class SurrogateService {
   }
 
   async useCodeIfMatches(code: string, value: string): Promise<void> {
+    // Usar UPDATE atómico para evitar race conditions con múltiples requests simultáneos
+    // Solo incrementa si el código generado coincide con el valor esperado
     const surrogate = await this.findByCode(code);
-    if (surrogate.generateNext() === value) {
-      surrogate.increment();
-      await this.surrogateRepository.save(surrogate);
+    if (surrogate.generateNext() !== value) return;
+
+    // UPDATE atómico: solo actualiza si next_number no cambió entre el findOne y el UPDATE
+    const result = await this.surrogateRepository
+      .createQueryBuilder()
+      .update(Surrogate)
+      .set({ next_number: () => 'next_number + 1' })
+      .where('id = :id AND next_number = :currentNumber', {
+        id: surrogate.id,
+        currentNumber: surrogate.next_number,
+      })
+      .execute();
+
+    // Si no actualizó ninguna fila, otro request ya incrementó — no es un error
+    if (result.affected === 0) {
+      // Otro proceso ya incrementó el contador, está bien
     }
   }
 }

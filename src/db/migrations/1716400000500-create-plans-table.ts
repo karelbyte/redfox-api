@@ -67,6 +67,17 @@ export class CreatePlansTable1716400000500 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'features',
+            type: 'text',
+            isNullable: true,
+            comment: 'JSON array of feature strings',
+          },
+          {
+            name: 'is_default',
+            type: 'boolean',
+            default: false,
+          },
+          {
             name: 'is_active',
             type: 'boolean',
             default: true,

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as compression from 'compression';
 
 async function bootstrap() {
   try {
@@ -41,6 +42,12 @@ async function bootstrap() {
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
     });
+
+    // Compresión gzip/brotli — reduce payload hasta 70%
+    app.use(compression({
+      threshold: 1024, // solo comprimir respuestas > 1KB
+      level: 6,        // balance entre velocidad y compresión
+    }));
 
     // Configurar el prefijo global 'api'
     app.setGlobalPrefix('api');

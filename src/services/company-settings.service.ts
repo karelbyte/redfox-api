@@ -32,10 +32,22 @@ export class CompanySettingsService {
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({
-        organization_id: this.organizationId,
-      });
-      settings = await this.companySettingsRepository.save(settings);
+      try {
+        settings = this.companySettingsRepository.create({
+          organization_id: this.organizationId,
+        });
+        settings = await this.companySettingsRepository.save(settings);
+      } catch (error: any) {
+        // Race condition: otro request ya insertó el registro, buscarlo de nuevo
+        if (error?.code === '23505' || error?.message?.includes('UQ_company_settings_organization')) {
+          settings = await this.companySettingsRepository.findOne({
+            where: { organization_id: this.organizationId },
+          });
+          if (!settings) throw error;
+        } else {
+          throw error;
+        }
+      }
     }
 
     return this.companySettingsMapper.mapToResponseDto(settings);
@@ -49,10 +61,21 @@ export class CompanySettingsService {
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({
-        organization_id: this.organizationId,
-      });
-      settings = await this.companySettingsRepository.save(settings);
+      try {
+        settings = this.companySettingsRepository.create({
+          organization_id: this.organizationId,
+        });
+        settings = await this.companySettingsRepository.save(settings);
+      } catch (error: any) {
+        if (error?.code === '23505' || error?.message?.includes('UQ_company_settings_organization')) {
+          settings = await this.companySettingsRepository.findOne({
+            where: { organization_id: this.organizationId },
+          });
+          if (!settings) throw error;
+        } else {
+          throw error;
+        }
+      }
     }
 
     Object.assign(settings, dto);
@@ -67,10 +90,21 @@ export class CompanySettingsService {
     });
 
     if (!settings) {
-      settings = this.companySettingsRepository.create({
-        organization_id: this.organizationId,
-      });
-      settings = await this.companySettingsRepository.save(settings);
+      try {
+        settings = this.companySettingsRepository.create({
+          organization_id: this.organizationId,
+        });
+        settings = await this.companySettingsRepository.save(settings);
+      } catch (error: any) {
+        if (error?.code === '23505' || error?.message?.includes('UQ_company_settings_organization')) {
+          settings = await this.companySettingsRepository.findOne({
+            where: { organization_id: this.organizationId },
+          });
+          if (!settings) throw error;
+        } else {
+          throw error;
+        }
+      }
     }
 
     settings.logoUrl = logoUrl;

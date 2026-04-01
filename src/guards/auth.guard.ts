@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { AppConfig } from '../config';
+import { RedisService } from '../services/redis.service';
 
 interface JwtPayload {
   sub: string;
@@ -32,7 +33,10 @@ export class CustomUnauthorizedException extends HttpException {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private redisService: RedisService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -40,6 +44,12 @@ export class AuthGuard implements CanActivate {
 
     if (!token) {
       throw new UnauthorizedException();
+    }
+
+    // Verificar si el token está en la blacklist (logout)
+    const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      throw new CustomUnauthorizedException('Token has been revoked. Please log in again.');
     }
 
     try {

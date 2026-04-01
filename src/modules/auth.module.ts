@@ -4,6 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../config';
 import { AuthController } from '../controllers/auth.controller';
+import { AuthGuard } from '../guards/auth.guard';
 import { UserModule } from './user.module';
 import { EmailConfigModule } from './email-config.module';
 import { RoleModule } from './role.module';
@@ -36,7 +37,7 @@ import { MeasurementUnitModule } from './measurement-unit.module';
     MeasurementUnitModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, AuthGuard],
   exports: [AuthService],
 })
 export class AuthModule {}

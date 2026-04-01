@@ -9,6 +9,13 @@ import {
 } from 'typeorm';
 import { Subscription } from './subscription.entity';
 
+const featuresTransformer = {
+  to: (value: string[]) => (value && value.length > 0 ? JSON.stringify(value) : null),
+  from: (value: string | null) => {
+    if (!value) return [];
+    try { return JSON.parse(value); } catch { return []; }
+  },
+};
 @Entity('plans')
 export class Plan {
   @PrimaryGeneratedColumn('uuid')
@@ -37,6 +44,12 @@ export class Plan {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @Column({ type: 'text', nullable: true, transformer: featuresTransformer })
+  features: string[];
+
+  @Column({ type: 'boolean', default: false })
+  is_default: boolean;
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;

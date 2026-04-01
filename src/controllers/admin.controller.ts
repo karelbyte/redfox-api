@@ -111,12 +111,37 @@ export class AdminController {
   }
 
   @Get('subscriptions')
-  getSubscriptions() {
-    return this.adminService.getSubscriptions();
+  getSubscriptions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.getSubscriptions(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+      search,
+    );
+  }
+
+  @Post('subscriptions')
+  createSubscription(@Body() body: {
+    organization_id: string;
+    plan_id: string;
+    status: string;
+    trial_end_date?: string;
+    subscription_start_date?: string;
+    subscription_end_date?: string;
+  }) {
+    return this.adminService.createSubscription(body);
+  }
+
+  @Delete('subscriptions/:id')
+  deleteSubscription(@Param('id') id: string) {
+    return this.adminService.deleteSubscription(id);
   }
 
   @Put('subscriptions/:id')
-  updateSubscription(@Param('id') id: string, @Body() body: { plan_id?: string; trial_end_date?: string }) {
+  updateSubscription(@Param('id') id: string, @Body() body: { plan_id?: string; trial_end_date?: string; status?: string }) {
     return this.adminService.updateSubscription(id, body);
   }
 

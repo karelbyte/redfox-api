@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Subscription } from '../models/subscription.entity';
 import { Plan } from '../models/plan.entity';
 import { Organization } from '../models/organization.entity';
+import { SubscriptionPayment } from '../models/subscription-payment.entity';
 import { StripeService } from './stripe.service';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 
@@ -16,6 +17,8 @@ export class SubscriptionService {
     private planRepository: Repository<Plan>,
     @InjectRepository(Organization)
     private organizationRepository: Repository<Organization>,
+    @InjectRepository(SubscriptionPayment)
+    private subscriptionPaymentRepository: Repository<SubscriptionPayment>,
     private stripeService: StripeService,
   ) {}
 
@@ -156,6 +159,26 @@ export class SubscriptionService {
       throw new BadRequestException('Subscription is already active');
     }
 
+    // Si no tiene stripe_customer_id, crearlo ahora
+    if (!subscription.stripe_customer_id) {
+      const organization = await this.organizationRepository.findOne({
+        where: { id: organizationId },
+      });
+      const users = await this.organizationRepository.manager
+        .getRepository('User')
+        .find({ where: { organization_id: organizationId } } as any);
+      const email = (users[0] as any)?.email || `org-${organizationId}@nitro.app`;
+      const stripeCustomer = await this.stripeService.createCustomer(
+        email,
+        organization?.name || organizationId,
+      );
+      subscription.stripe_customer_id = stripeCustomer.id;
+      // Guardar solo el customer_id, sin tocar plan_id
+      await this.subscriptionRepository.update(subscription.id, {
+        stripe_customer_id: stripeCustomer.id,
+      });
+    }
+
     // Si se proporciona un planId, actualizar el plan de la suscripción
     let selectedPlan = subscription.plan;
     if (planId) {
@@ -169,7 +192,10 @@ export class SubscriptionService {
       
       selectedPlan = newPlan;
       subscription.plan_id = planId;
-      await this.subscriptionRepository.save(subscription);
+      // Guardar solo el plan_id de forma explícita
+      await this.subscriptionRepository.update(subscription.id, {
+        plan_id: planId,
+      });
     }
 
     // Crear el PaymentIntent con el payment method adjunto usando el precio del plan seleccionado
@@ -180,8 +206,9 @@ export class SubscriptionService {
     );
 
     // Guardar el payment_intent_id en la suscripción para referencia
-    subscription.stripe_payment_intent_id = paymentIntent.id;
-    await this.subscriptionRepository.save(subscription);
+    await this.subscriptionRepository.update(subscription.id, {
+      stripe_payment_intent_id: paymentIntent.id,
+    });
 
     // NO cambiar el estado aquí - se cambiará cuando el pago sea confirmado
     return {
@@ -193,41 +220,77 @@ export class SubscriptionService {
   async confirmSubscriptionPayment(subscriptionId: string) {
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
+      relations: ['plan'],
     });
 
     if (!subscription) {
       throw new BadRequestException('Subscription not found');
     }
 
-    // Cambiar el estado a activo después de confirmar el pago
+    const now = new Date();
+    const endDate = new Date(now);
+
+    // Calcular duración según el billing_period del plan elegido
+    const billingPeriod = subscription.plan?.billing_period || 'monthly';
+    if (billingPeriod === 'yearly' || billingPeriod === 'annual') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else if (billingPeriod === 'lifetime') {
+      endDate.setFullYear(endDate.getFullYear() + 100);
+    } else {
+      // monthly por defecto
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
     subscription.status = 'active';
-    subscription.subscription_start_date = new Date();
-    subscription.subscription_end_date = new Date();
-    subscription.subscription_end_date.setMonth(
-      subscription.subscription_end_date.getMonth() + 1,
-    );
-    subscription.current_period_start = new Date();
-    subscription.current_period_end = new Date();
-    subscription.current_period_end.setMonth(
-      subscription.current_period_end.getMonth() + 1,
-    );
+    subscription.subscription_start_date = now;
+    subscription.subscription_end_date = endDate;
+    subscription.current_period_start = now;
+    subscription.current_period_end = endDate;
 
     await this.subscriptionRepository.save(subscription);
+
+    // Actualizar la organización con el plan correcto
+    await this.organizationRepository.update(subscription.organization_id, {
+      plan_id: subscription.plan_id,
+    });
+
+    // Registrar el pago en subscription_payments
+    try {
+      const payment = this.subscriptionPaymentRepository.create({
+        subscription_id: subscriptionId,
+        stripe_payment_intent_id: subscription.stripe_payment_intent_id,
+        amount: subscription.plan?.price ?? 0,
+        currency: subscription.plan?.currency ?? 'MXN',
+        status: 'succeeded',
+        payment_method: 'card',
+        paid_at: now,
+      });
+      await this.subscriptionPaymentRepository.save(payment);
+    } catch (e) {
+      // No bloquear el flujo si falla el registro del pago
+      console.warn('Error registrando pago de suscripción:', e);
+    }
 
     return subscription;
   }
 
   async createPlan(createPlanDto: CreatePlanDto) {
-    const plan = this.planRepository.create(createPlanDto);
-    return this.planRepository.save(plan);
+    const plan = this.planRepository.create({
+      ...createPlanDto,
+      features: createPlanDto.features ? JSON.stringify(createPlanDto.features) as any : null,
+    });
+    const saved = await this.planRepository.save(plan);
+    return this.parsePlanFeatures(saved);
   }
 
   async getAllPlans() {
-    return this.planRepository.find({ where: { is_active: true } });
+    const plans = await this.planRepository.find({ where: { is_active: true } });
+    return plans.map(p => this.parsePlanFeatures(p));
   }
 
   async getPlanById(id: string) {
-    return this.planRepository.findOne({ where: { id } });
+    const plan = await this.planRepository.findOne({ where: { id } });
+    return plan ? this.parsePlanFeatures(plan) : null;
   }
 
   async updatePlan(id: string, data: Partial<Plan>) {
@@ -235,7 +298,26 @@ export class SubscriptionService {
     if (!plan) {
       throw new BadRequestException('Plan not found');
     }
-    Object.assign(plan, data);
-    return this.planRepository.save(plan);
+    const updateData: any = { ...data };
+    if (data.features !== undefined) {
+      updateData.features = Array.isArray(data.features)
+        ? JSON.stringify(data.features)
+        : data.features;
+    }
+    Object.assign(plan, updateData);
+    const saved = await this.planRepository.save(plan);
+    return this.parsePlanFeatures(saved);
+  }
+
+  private parsePlanFeatures(plan: Plan): Plan & { features: string[] } {
+    let features: string[] = [];
+    if (plan.features) {
+      try {
+        features = typeof plan.features === 'string'
+          ? JSON.parse(plan.features as any)
+          : plan.features;
+      } catch { features = []; }
+    }
+    return { ...plan, features };
   }
 }

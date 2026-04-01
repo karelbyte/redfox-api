@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Organization } from '../models/organization.entity';
 import { Subscription } from '../models/subscription.entity';
+import { Plan } from '../models/plan.entity';
 import { User } from '../models/user.entity';
 import { AuditLogService } from './audit-log.service';
 import { AuditAction } from '../models/audit-log.entity';
@@ -14,6 +15,8 @@ export class AdminService {
     private readonly orgRepository: Repository<Organization>,
     @InjectRepository(Subscription)
     private readonly subRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private readonly planRepository: Repository<Plan>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly auditLogService: AuditLogService,
@@ -48,12 +51,80 @@ export class AdminService {
     return this.orgRepository.findOne({ where: { id }, relations: ['subscription', 'subscription.plan'] });
   }
 
-  async getSubscriptions() {
-    const [data, total] = await this.subRepository.findAndCount({
-      relations: ['plan', 'organization'],
-      order: { created_at: 'DESC' },
+  async getSubscriptions(page = 1, limit = 10, search?: string) {
+    const query = this.subRepository
+      .createQueryBuilder('sub')
+      .leftJoinAndSelect('sub.plan', 'plan')
+      .leftJoinAndSelect('sub.organization', 'org')
+      .where('sub.deleted_at IS NULL')
+      .orderBy('sub.created_at', 'DESC');
+
+    if (search) {
+      query.andWhere('LOWER(org.name) LIKE :search OR LOWER(org.slug) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const total = await query.getCount();
+    const data = await query.skip((page - 1) * limit).take(limit).getMany();
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async createSubscription(data: {
+    organization_id: string;
+    plan_id: string;
+    status: string;
+    trial_end_date?: string;
+    subscription_start_date?: string;
+    subscription_end_date?: string;
+  }) {
+    const org = await this.orgRepository.findOne({ where: { id: data.organization_id } });
+    if (!org) throw new NotFoundException('Organización no encontrada');
+
+    const plan = await this.planRepository.findOne({ where: { id: data.plan_id } });
+    if (!plan) throw new NotFoundException('Plan no encontrado');
+
+    // Si ya tiene suscripción activa, cancelar la anterior
+    const existing = await this.subRepository.findOne({
+      where: { organization_id: data.organization_id },
     });
-    return { data, meta: { total } };
+    if (existing) {
+      existing.status = 'cancelled';
+      existing.canceled_at = new Date();
+      existing.canceled_reason = 'Reemplazada por nueva suscripción desde admin';
+      await this.subRepository.save(existing);
+    }
+
+    const now = new Date();
+    const trialEnd = data.trial_end_date ? new Date(data.trial_end_date) : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const subscription = this.subRepository.create({
+      organization_id: data.organization_id,
+      plan_id: data.plan_id,
+      status: data.status,
+      trial_start_date: now,
+      trial_end_date: trialEnd,
+      subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : (data.status === 'active' ? now : undefined),
+      subscription_end_date: data.subscription_end_date ? new Date(data.subscription_end_date) : undefined,
+    } as any);
+
+    const saved = await this.subRepository.save(subscription) as any;
+
+    // Actualizar la organización con el nuevo plan y suscripción
+    await this.orgRepository.update(data.organization_id, {
+      plan_id: data.plan_id,
+      subscription_id: saved.id,
+      status: true, // Activar la organización si estaba inactiva
+    });
+
+    return this.subRepository.findOne({
+      where: { id: saved.id },
+      relations: ['plan', 'organization'],
+    });
   }
 
   async toggleUser(id: string, status: boolean) {
@@ -99,21 +170,40 @@ export class AdminService {
     return { totalOrganizations, activeSubscriptions, trialSubscriptions, totalUsers, revenueThisMonth };
   }
 
-  async updateSubscription(id: string, data: { plan_id?: string; trial_end_date?: string }) {
+  async deleteSubscription(id: string) {
+    const subscription = await this.subRepository.findOne({ where: { id } });
+    if (!subscription) throw new NotFoundException('Suscripción no encontrada');
+
+    // Marcar como cancelada y soft delete
+    subscription.status = 'cancelled';
+    subscription.canceled_at = new Date();
+    subscription.canceled_reason = 'Eliminada manualmente desde admin';
+    await this.subRepository.save(subscription);
+    await this.subRepository.softDelete(id);
+
+    // Limpiar la referencia en la organización
+    await this.orgRepository.update(subscription.organization_id, {
+      subscription_id: null as any,
+    });
+  }
+
+  async updateSubscription(id: string, data: { plan_id?: string; trial_end_date?: string; status?: string }) {
     const subscription = await this.subRepository.findOne({ where: { id } });
     if (!subscription) throw new Error('Suscripción no encontrada');
 
     if (data.plan_id) {
       subscription.plan_id = data.plan_id;
-      // Actualizar también la referencia a nivel organización
       await this.orgRepository.update(subscription.organization_id, { plan_id: data.plan_id });
+    }
+
+    if (data.status) {
+      subscription.status = data.status;
     }
 
     if (data.trial_end_date) {
       const newTrialDate = new Date(data.trial_end_date);
       subscription.trial_end_date = newTrialDate;
       const now = new Date();
-      // Si el trial está en el futuro y estaba 'expired', pasarlo a 'trial' nuevamente
       if (subscription.status === 'expired' && newTrialDate > now) {
         subscription.status = 'trial';
       }

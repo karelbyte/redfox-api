@@ -53,6 +53,7 @@ import { UploadsModule } from './modules/uploads.module';
 import { AdminModule } from './modules/admin.module';
 import { InventoryAlertsModule } from './modules/inventory-alerts.module';
 import { SupportModule } from './modules/support.module';
+import { RedisServiceModule } from './modules/redis-service.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -129,6 +130,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     AdminModule,
     InventoryAlertsModule,
     SupportModule,
+    RedisServiceModule,
   ],
   controllers: [HomeController],
   providers: [

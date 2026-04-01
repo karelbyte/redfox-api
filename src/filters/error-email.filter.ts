@@ -9,16 +9,17 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { EmailService } from '../services/email.service';
+import { RedisService } from '../services/redis.service';
 
 @Catch()
 export class ErrorEmailFilter implements ExceptionFilter {
   private readonly logger = new Logger(ErrorEmailFilter.name);
-  private readonly recentErrors = new Map<string, number>();
-  private readonly RATE_LIMIT_MS = 60_000; // 1 email por error único cada 60s
+  private readonly RATE_LIMIT_SECONDS = 60;
 
   constructor(
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {}
 
   async catch(exception: unknown, host: ArgumentsHost) {
@@ -79,24 +80,12 @@ export class ErrorEmailFilter implements ExceptionFilter {
       return;
     }
 
-    // Rate limiting: evitar spam por el mismo error
-    const errorKey = `${request?.method}:${request?.url}:${message}`;
-    const lastSent = this.recentErrors.get(errorKey);
-    const now = Date.now();
-
-    if (lastSent && now - lastSent < this.RATE_LIMIT_MS) {
+    // Rate limiting con Redis: evitar spam por el mismo error
+    const errorKey = `rate:error:${request?.method}:${request?.url}:${message}`;
+    const count = await this.redisService.increment(errorKey, this.RATE_LIMIT_SECONDS);
+    if (count > 1) {
       this.logger.debug(`Error email rate-limited para: ${errorKey}`);
       return;
-    }
-    this.recentErrors.set(errorKey, now);
-
-    // Limpiar entradas viejas del rate limiter cada 100 entradas
-    if (this.recentErrors.size > 100) {
-      for (const [key, time] of this.recentErrors.entries()) {
-        if (now - time > this.RATE_LIMIT_MS) {
-          this.recentErrors.delete(key);
-        }
-      }
     }
 
     const env = this.configService.get<string>('NODE_ENV') || 'development';
