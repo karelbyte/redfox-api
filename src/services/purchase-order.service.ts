@@ -25,6 +25,7 @@ import { UpdatePurchaseOrderDetailDto } from '../dtos/purchase-order-detail/upda
 import { PurchaseOrderDetailQueryDto } from '../dtos/purchase-order-detail/purchase-order-detail-query.dto';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -44,6 +45,7 @@ export class PurchaseOrderService {
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private get organizationId(): string {
@@ -140,6 +142,19 @@ export class PurchaseOrderService {
 
     const savedPurchaseOrder =
       await this.purchaseOrderRepository.save(purchaseOrder);
+
+    // Notificar al usuario que creó la orden
+    try {
+      if (userId) {
+        await this.notificationService.createOrderNotification(
+          `📦 Nueva orden de compra: ${savedPurchaseOrder.code}`,
+          `Se creó la orden de compra ${savedPurchaseOrder.code} con el proveedor ${provider.name}.`,
+          savedPurchaseOrder.id,
+          userId,
+        );
+      }
+    } catch { /* no bloquear el flujo */ }
+
     return this.mapToResponseDto(savedPurchaseOrder);
   }
 

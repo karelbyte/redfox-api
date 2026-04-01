@@ -27,6 +27,7 @@ import { InvoiceMapper } from '../services/mappers/invoice.mapper';
 import { InvoiceDetailMapper } from '../services/mappers/invoice-detail.mapper';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { OrganizationModule } from './organization.module';
     CertificationPackModule,
     OrganizationModule,
     forwardRef(() => AccountReceivableModule),
+    NotificationModule,
   ],
   controllers: [InvoiceController, InvoicePaymentController],
   providers: [

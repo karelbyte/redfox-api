@@ -46,7 +46,7 @@ export class CreateWarehousesTable1716400000070 implements MigrationInterface {
             name: 'address',
             type: 'varchar',
             length: '200',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'phone',

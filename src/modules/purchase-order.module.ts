@@ -18,6 +18,7 @@ import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { OrganizationModule } from './organization.module';
     ProductModule,
     LanguageModule,
     OrganizationModule,
+    NotificationModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [

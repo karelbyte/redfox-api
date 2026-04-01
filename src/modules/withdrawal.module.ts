@@ -23,6 +23,7 @@ import { CertificationPackModule } from './certification-pack.module';
 import { PosPackSyncService } from '../services/pos-pack-sync.service';
 import { AccountReceivableModule } from './account-receivable.module';
 import { OrganizationModule } from './organization.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { OrganizationModule } from './organization.module';
     CertificationPackModule,
     AccountReceivableModule,
     OrganizationModule,
+    NotificationModule,
   ],
   controllers: [WithdrawalController],
   providers: [

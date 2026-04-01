@@ -16,8 +16,9 @@ export class CreateWarehouseDto {
   name: string;
 
   @IsString()
+  @IsOptional()
   @Length(1, 200)
-  address: string;
+  address?: string;
 
   @IsString()
   @IsOptional()

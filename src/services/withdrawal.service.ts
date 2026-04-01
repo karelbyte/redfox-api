@@ -53,6 +53,8 @@ import { TranslationService } from './translation.service';
 import { PosPackSyncService } from './pos-pack-sync.service';
 import { AccountReceivableService } from './account-receivable.service';
 import { TenantContext } from './tenant-context.service';
+import { NotificationService } from './notification.service';
+import { User } from '../models/user.entity';
 
 @Injectable()
 export class WithdrawalService {
@@ -77,6 +79,7 @@ export class WithdrawalService {
     private readonly posPackSyncService: PosPackSyncService,
     private readonly accountReceivableService: AccountReceivableService,
     private readonly tenantContext: TenantContext,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private get organizationId(): string {
@@ -905,6 +908,19 @@ export class WithdrawalService {
         closedWithdrawal.id,
       );
     }
+
+    // Notificar al usuario que cerró la venta
+    try {
+      if (userId) {
+        const amount = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(closedWithdrawal.amount));
+        await this.notificationService.createSaleNotification(
+          `✅ Venta cerrada: ${closedWithdrawal.code}`,
+          `La venta ${closedWithdrawal.code} por ${amount} fue procesada exitosamente. ${withdrawnProducts} producto(s) descontados del inventario.`,
+          closedWithdrawal.id,
+          userId,
+        );
+      }
+    } catch { /* no bloquear el flujo */ }
 
     // Retornar resumen de la operación
     const resMessage =

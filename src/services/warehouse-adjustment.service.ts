@@ -59,11 +59,10 @@ export class WarehouseAdjustmentService {
     createDto: CreateWarehouseAdjustmentDto,
     userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
-    // Validar que los almacenes existan y estén abiertos
+    // Validar que los almacenes existan (sin importar si están abiertos o cerrados)
     const sourceWarehouse = await this.warehouseRepository.findOne({
       where: {
         id: createDto.sourceWarehouseId,
-        isOpen: true,
         organization_id: this.organizationId,
       },
     });
@@ -79,7 +78,6 @@ export class WarehouseAdjustmentService {
     const targetWarehouse = await this.warehouseRepository.findOne({
       where: {
         id: createDto.targetWarehouseId,
-        isOpen: true,
         organization_id: this.organizationId,
       },
     });

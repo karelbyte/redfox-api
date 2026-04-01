@@ -168,8 +168,18 @@ export class AuthService {
 
     const slug = registerDto.companyName
       .toLowerCase()
-      .replace(/ /g, '-')
-      .replace(/[^\w-]+/g, '');
+      .trim()
+      .replace(/\s+/g, '-')        // múltiples espacios → un guión
+      .replace(/[^\w-]+/g, '')     // eliminar cualquier carácter no alfanumérico
+      .replace(/-+/g, '-')         // múltiples guiones → uno solo
+      .replace(/^-|-$/g, '');      // quitar guiones al inicio/fin
+
+    if (slug.length < 3) {
+      throw new BadRequestException(
+        'El nombre de la organización genera un identificador demasiado corto. Usa un nombre más descriptivo.',
+      );
+    }
+
     const existingOrg = await this.organizationService.findBySlug(slug);
     if (existingOrg) {
       throw new BadRequestException(

@@ -32,6 +32,7 @@ import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class InvoiceService {
@@ -58,6 +59,7 @@ export class InvoiceService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private get organizationId(): string {
@@ -820,6 +822,18 @@ export class InvoiceService {
           withDeleted: false,
         });
       }
+
+      // Notificar al usuario que el CFDI fue generado
+      try {
+        if (userId) {
+          await this.notificationService.createInvoiceNotification(
+            `🧾 CFDI generado: ${invoice.code}`,
+            `La factura ${invoice.code} fue timbrada exitosamente. UUID: ${cfdiResult.uuid}`,
+            updatedInvoice.id,
+            userId,
+          );
+        }
+      } catch { /* no bloquear el flujo */ }
 
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
