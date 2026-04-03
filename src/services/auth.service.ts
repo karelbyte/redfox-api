@@ -730,99 +730,37 @@ export class AuthService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Restablecer Contraseña - Nitro</title>
         <style>
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #1a1a1a;
-            margin: 0;
-            padding: 0;
-            background-color: #f8fafc;
-          }
-          .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-          }
-          .header {
-            background: #6b7c6b;
-            padding: 40px 20px;
-            text-align: center;
-          }
-          .header h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-          }
-          .content {
-            padding: 40px;
-          }
-          .footer {
-            background-color: #f1f5f9;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #64748b;
-          }
-          .button {
-            display: inline-block;
-            padding: 14px 32px;
-            background-color: #6b7c6b;
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin: 30px 0;
-            transition: background-color 0.2s;
-          }
-          .welcome-text {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 16px;
-          }
-          .instruction-text {
-            color: #475569;
-            margin-bottom: 24px;
-          }
-          .expiry-notice {
-            font-size: 13px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 20px;
-            margin-top: 20px;
-          }
+          body { font-family: 'Inter','Segoe UI',Tahoma,Geneva,Verdana,sans-serif; line-height:1.6; color:#E2E8F0; margin:0; padding:0; background-color:#0F172A; }
+          .container { max-width:600px; margin:40px auto; background:#1E293B; border-radius:16px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.5); border:1px solid #334155; }
+          .header { background:#2D3748; padding:40px 20px; text-align:center; border-bottom:2px solid #EAB308; }
+          .header h1 { color:#F8FAFC; margin:0; font-size:32px; font-weight:800; letter-spacing:-.025em; text-transform:uppercase; }
+          .header h1 span { color:#EAB308; }
+          .content { padding:40px; }
+          .footer { background-color:#0F172A; padding:24px; text-align:center; font-size:13px; color:#64748B; border-top:1px solid #334155; }
+          .button { display:inline-block; padding:16px 36px; background-color:#EAB308; color:#0F172A !important; text-decoration:none; border-radius:8px; font-weight:700; margin:30px 0; text-transform:uppercase; font-size:14px; }
+          .welcome-text { font-size:20px; font-weight:600; color:#F8FAFC; margin-bottom:16px; }
+          .instruction-text { color:#CBD5E1; margin-bottom:24px; font-size:15px; }
+          .link-box { word-break:break-all; font-size:12px; color:#EAB308; background:#0F172A; padding:12px; border-radius:6px; border:1px solid #334155; }
+          .expiry-notice { font-size:13px; color:#64748B; border-top:1px solid #334155; padding-top:24px; margin-top:24px; }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header">
-            <h1>Nitro</h1>
-          </div>
+          <div class="header"><h1>NITRO<span>.</span></h1></div>
           <div class="content">
             <p class="welcome-text">¡Hola, ${user.name}!</p>
-            <p class="instruction-text">Has solicitado restablecer tu contraseña para Nitro. Si no fuiste tú, por favor ignora este mensaje.</p>
-            <p class="instruction-text">Para elegir una nueva contraseña, haz clic en el botón de abajo:</p>
-            
-            <div style="text-align: center;">
+            <p class="instruction-text">Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para elegir una nueva:</p>
+            <div style="text-align:center;">
               <a href="${resetLink}" class="button">Restablecer mi contraseña</a>
             </div>
-            
-            <p class="instruction-text">Si el botón no funciona, puedes copiar y pegar este enlace en tu navegador:</p>
-            <p style="word-break: break-all; font-size: 12px; color: #6366f1;">${resetLink}</p>
-            
+            <p class="instruction-text">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+            <p class="link-box">${resetLink}</p>
             <div class="expiry-notice">
-              Este enlace de recuperación es válido por los próximos 60 minutos.<br>
-              Por tu seguridad, nunca compartas este enlace con nadie.
+              ⏱ Este enlace es válido por <strong>60 minutos</strong>.<br>
+              Si no solicitaste este cambio, ignora este correo.
             </div>
           </div>
-          <div class="footer">
-            &copy; ${new Date().getFullYear()} Nitro. Todos los derechos reservados.
-          </div>
+          <div class="footer">&copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>Todos los derechos reservados.</div>
         </div>
       </body>
       </html>

@@ -6,6 +6,11 @@ export interface EmailJob {
   subject: string;
   html: string;
   from?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 }
 
 interface InMemoryJob {
@@ -90,6 +95,7 @@ export class InMemoryEmailQueue implements OnModuleDestroy {
         job.data.to,
         job.data.subject,
         job.data.html,
+        job.data.attachments,
       );
 
       if (!success) {

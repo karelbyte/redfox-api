@@ -78,6 +78,12 @@ export class CreatePlansTable1716400000500 implements MigrationInterface {
             default: false,
           },
           {
+            name: 'is_public',
+            type: 'boolean',
+            default: true,
+            comment: 'If false, plan is private and not shown to clients in the subscription page',
+          },
+          {
             name: 'is_active',
             type: 'boolean',
             default: true,

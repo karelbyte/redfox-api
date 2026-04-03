@@ -3,7 +3,9 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { Subscription } from '../models/subscription.entity';
+import { User } from '../models/user.entity';
 import { ConfigService } from '@nestjs/config';
+import { SubscriptionEmailService } from './subscription-email.service';
 
 @Injectable()
 export class SubscriptionSchedulerService {
@@ -12,7 +14,10 @@ export class SubscriptionSchedulerService {
   constructor(
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private configService: ConfigService,
+    private subscriptionEmailService: SubscriptionEmailService,
   ) {}
 
   // Ejecutar todos los días a las 9:00 AM - Recordatorio de trial (3 días antes)
@@ -155,48 +160,65 @@ export class SubscriptionSchedulerService {
         (1000 * 60 * 60 * 24),
     );
 
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    
-    const organizationSlug = subscription.organization?.slug || 'app';
-    const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
+    const user = await this.userRepository.findOne({
+      where: { organization_id: subscription.organization_id },
+      order: { created_at: 'ASC' },
+    });
 
-    // Por ahora, solo logueamos el email. 
-    // TODO: Implementar envío real de email cuando se configure el servicio de correo del sistema
-    this.logger.log(`[TRIAL REMINDER] Email would be sent to: ${subscription.organization.email || subscription.organization.name}`);
-    this.logger.log(`[TRIAL REMINDER] Subject: ⏰ Tu período de prueba finaliza en ${daysRemaining} ${daysRemaining === 1 ? 'día' : 'días'}`);
-    this.logger.log(`[TRIAL REMINDER] Payment URL: ${paymentUrl}`);
+    if (!user) {
+      this.logger.warn(`[TRIAL REMINDER] No user found for org ${subscription.organization_id}`);
+      return;
+    }
+
+    await this.subscriptionEmailService.sendTrialReminder({
+      to: user.email,
+      userName: user.name,
+      organizationSlug: subscription.organization?.slug ?? 'app',
+      daysRemaining,
+      trialEndDate: new Date(subscription.trial_end_date),
+    });
   }
 
   private async sendRenewalReminderEmail(subscription: any) {
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    
-    const organizationSlug = subscription.organization?.slug || 'app';
-    const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
-    const expirationDate = new Date(subscription.current_period_end).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const user = await this.userRepository.findOne({
+      where: { organization_id: subscription.organization_id },
+      order: { created_at: 'ASC' },
     });
 
-    // Por ahora, solo logueamos el email
-    this.logger.log(`[RENEWAL REMINDER] Email would be sent to: ${subscription.organization.email || subscription.organization.name}`);
-    this.logger.log(`[RENEWAL REMINDER] Subject: ⏰ Tu suscripción vence mañana - Renueva ahora`);
-    this.logger.log(`[RENEWAL REMINDER] Expiration date: ${expirationDate}`);
-    this.logger.log(`[RENEWAL REMINDER] Payment URL: ${paymentUrl}`);
+    if (!user) {
+      this.logger.warn(`[RENEWAL REMINDER] No user found for org ${subscription.organization_id}`);
+      return;
+    }
+
+    await this.subscriptionEmailService.sendRenewalReminder({
+      to: user.email,
+      userName: user.name,
+      organizationSlug: subscription.organization?.slug ?? 'app',
+      planName: subscription.plan?.name ?? 'Plan Nitro',
+      amount: Number(subscription.plan?.price ?? 0),
+      currency: subscription.plan?.currency ?? 'MXN',
+      expirationDate: new Date(subscription.current_period_end),
+    });
   }
 
   private async sendExpiredEmail(subscription: any) {
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    
-    const organizationSlug = subscription.organization?.slug || 'app';
-    const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
+    const user = await this.userRepository.findOne({
+      where: { organization_id: subscription.organization_id },
+      order: { created_at: 'ASC' },
+    });
 
-    // Por ahora, solo logueamos el email
-    this.logger.log(`[EXPIRED] Email would be sent to: ${subscription.organization.email || subscription.organization.name}`);
-    this.logger.log(`[EXPIRED] Subject: ⚠️ Tu suscripción ha expirado - Renueva ahora`);
-    this.logger.log(`[EXPIRED] Payment URL: ${paymentUrl}`);
+    if (!user) {
+      this.logger.warn(`[EXPIRED] No user found for org ${subscription.organization_id}`);
+      return;
+    }
+
+    await this.subscriptionEmailService.sendExpiredNotification({
+      to: user.email,
+      userName: user.name,
+      organizationSlug: subscription.organization?.slug ?? 'app',
+      planName: subscription.plan?.name ?? 'Plan Nitro',
+      amount: Number(subscription.plan?.price ?? 0),
+      currency: subscription.plan?.currency ?? 'MXN',
+    });
   }
 }

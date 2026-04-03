@@ -6,14 +6,16 @@ interface EmailJob {
   subject: string;
   html: string;
   from?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 }
 
 /**
  * EmailProcessor for Bull/Redis queue.
  * Only used when CACHE_TYPE=redis and @nestjs/bull is installed.
- *
- * Note: This file uses dynamic decorator application to avoid
- * compile-time dependency on @nestjs/bull.
  */
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
@@ -28,6 +30,7 @@ export class EmailProcessor {
         job.data.to,
         job.data.subject,
         job.data.html,
+        job.data.attachments,
       );
 
       this.logger.log(`Email sent successfully to ${job.data.to}`);

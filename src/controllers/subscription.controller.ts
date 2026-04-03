@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { AuthGuard } from '../guards/auth.guard';
+import { Public } from '../decorators/public.decorator';
 import { ConvertTrialDto } from '../dtos/subscription/convert-trial.dto';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 
@@ -50,7 +51,14 @@ export class SubscriptionController {
 
   @Get('plans')
   async getPlans() {
+    // Solo planes públicos — para el front del cliente
     return this.subscriptionService.getAllPlans();
+  }
+
+  @Get('plans/admin')
+  async getPlansAdmin() {
+    // Todos los planes incluyendo privados — para el panel de administración
+    return this.subscriptionService.getAllPlansAdmin();
   }
 
   @Post('plans')

@@ -5,7 +5,9 @@ import { Subscription } from '../models/subscription.entity';
 import { Plan } from '../models/plan.entity';
 import { Organization } from '../models/organization.entity';
 import { SubscriptionPayment } from '../models/subscription-payment.entity';
+import { User } from '../models/user.entity';
 import { StripeService } from './stripe.service';
+import { SubscriptionEmailService } from './subscription-email.service';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 
 @Injectable()
@@ -19,7 +21,10 @@ export class SubscriptionService {
     private organizationRepository: Repository<Organization>,
     @InjectRepository(SubscriptionPayment)
     private subscriptionPaymentRepository: Repository<SubscriptionPayment>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private stripeService: StripeService,
+    private subscriptionEmailService: SubscriptionEmailService,
   ) {}
 
   async createTrialSubscription(organizationId: string, organizationEmail?: string) {
@@ -271,6 +276,34 @@ export class SubscriptionService {
       console.warn('Error registrando pago de suscripción:', e);
     }
 
+    // Enviar email de confirmación de pago (sin bloquear el flujo)
+    try {
+      const user = await this.userRepository.findOne({
+        where: { organization_id: subscription.organization_id },
+        order: { created_at: 'ASC' },
+      });
+      const organization = await this.organizationRepository.findOne({
+        where: { id: subscription.organization_id },
+      });
+
+      if (user && organization) {
+        await this.subscriptionEmailService.sendPaymentConfirmation({
+          to: user.email,
+          userName: user.name,
+          organizationName: organization.name,
+          planName: subscription.plan?.name ?? 'Plan Nitro',
+          billingPeriod: subscription.plan?.billing_period ?? 'monthly',
+          amount: Number(subscription.plan?.price ?? 0),
+          currency: subscription.plan?.currency ?? 'MXN',
+          periodStart: now,
+          periodEnd: endDate,
+          paymentIntentId: subscription.stripe_payment_intent_id ?? undefined,
+        });
+      }
+    } catch (e) {
+      console.warn('Error enviando email de confirmación de suscripción:', e);
+    }
+
     return subscription;
   }
 
@@ -284,7 +317,18 @@ export class SubscriptionService {
   }
 
   async getAllPlans() {
-    const plans = await this.planRepository.find({ where: { is_active: true } });
+    // Solo planes públicos — para la vista del cliente en el front
+    const plans = await this.planRepository.find({
+      where: { is_active: true, is_public: true },
+    });
+    return plans.map(p => this.parsePlanFeatures(p));
+  }
+
+  async getAllPlansAdmin() {
+    // Todos los planes (públicos y privados) — para el admin
+    const plans = await this.planRepository.find({
+      where: { is_active: true },
+    });
     return plans.map(p => this.parsePlanFeatures(p));
   }
 

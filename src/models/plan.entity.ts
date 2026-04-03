@@ -52,6 +52,9 @@ export class Plan {
   is_default: boolean;
 
   @Column({ type: 'boolean', default: true })
+  is_public: boolean;
+
+  @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
   @CreateDateColumn()

@@ -183,6 +183,7 @@ export class EmailService {
     to: string | string[],
     subject: string,
     html: string,
+    attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>,
   ): Promise<boolean> {
     const provider =
       this.configService.get<string>('EMAIL_PROVIDER') || 'resend';
@@ -277,6 +278,11 @@ export class EmailService {
           to: Array.isArray(to) ? to : [to],
           subject,
           html,
+          attachments: attachments?.map(a => ({
+            filename: a.filename,
+            content: a.content,
+            contentType: a.contentType,
+          })),
         });
 
         return true;
@@ -299,6 +305,10 @@ export class EmailService {
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
+        attachments: attachments?.map(a => ({
+          filename: a.filename,
+          content: a.content instanceof Buffer ? a.content.toString('base64') : a.content,
+        })),
       });
 
       if (error) {

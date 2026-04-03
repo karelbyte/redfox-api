@@ -1,9 +1,10 @@
-import { Module, DynamicModule, Logger } from '@nestjs/common';
+import { Module, DynamicModule, Logger, Global } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailQueue } from '../queues/email.queue';
 import { InMemoryEmailQueue } from '../queues/in-memory-email.queue';
 import { EmailModule } from './email.module';
 
+@Global()
 @Module({})
 export class QueueModule {
   private static readonly logger = new Logger(QueueModule.name);
@@ -70,6 +71,7 @@ export class QueueModule {
     }
 
     return {
+      global: true,
       module: QueueModule,
       imports,
       providers,
