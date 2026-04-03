@@ -26,31 +26,7 @@ import stripeConfig from '../config/stripe.config';
       User,
     ]),
     ConfigModule.forFeature(stripeConfig),
-    // 3 requests por IP cada 10 minutos en endpoints públicos
     ThrottlerModule.forRoot([{ ttl: 600000, limit: 3 }]),
-  ],
-  controllers: [SubscriptionController, PublicPlansController],
-  providers: [
-    SubscriptionService,
-    StripeService,
-    SubscriptionSchedulerService,
-    SubscriptionEmailService,
-    SubscriptionReceiptPdfService,
-  ],
-  exports: [SubscriptionService, StripeService],
-})
-export class SubscriptionModule {}
-
-@Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Subscription,
-      Plan,
-      SubscriptionPayment,
-      Organization,
-      User,
-    ]),
-    ConfigModule.forFeature(stripeConfig),
   ],
   controllers: [SubscriptionController, PublicPlansController],
   providers: [
