@@ -38,14 +38,14 @@ export class PurchaseOrder {
   @JoinColumn({ name: 'provider_id' })
   provider: Provider;
 
-  @ManyToOne(() => Warehouse)
+  @ManyToOne(() => Warehouse, { nullable: true })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Warehouse | null;
 
-  @Column({ length: 50 })
+  @Column({ length: 50, nullable: true })
   document: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   amount: number;
 
   @Column({

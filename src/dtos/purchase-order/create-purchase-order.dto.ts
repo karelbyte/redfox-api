@@ -21,10 +21,12 @@ export class CreatePurchaseOrderDto {
   provider_id: string;
 
   @IsUUID()
-  warehouse_id: string;
+  @IsOptional()
+  warehouse_id?: string;
 
+  @IsOptional()
   @IsString()
-  document: string;
+  document?: string;
 
   @IsNumber()
   @Min(0)

@@ -138,24 +138,24 @@ export class CategoryService {
       }
     }
 
-    const existingCategory = await this.categoryRepository.findOne({
-      where: {
-        slug: createCategoryDto.slug,
-        organization_id: this.organizationId,
-      },
-    });
+    // Auto-generar slug desde el nombre si no viene
+    const baseSlug = (createCategoryDto.slug || createCategoryDto.name)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
 
-    if (existingCategory) {
-      const message = await this.translationService.translate(
-        'category.already_exists',
-        userId,
-        { slug: createCategoryDto.slug },
-      );
-      throw new BadRequestException(message);
+    // Garantizar unicidad añadiendo sufijo numérico si ya existe
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await this.categoryRepository.findOne({ where: { slug, organization_id: this.organizationId } })) {
+      slug = `${baseSlug}-${suffix++}`;
     }
 
     const category = this.categoryRepository.create({
       ...createCategoryDto,
+      slug,
       organization_id: this.organizationId,
     });
     const savedCategory = await this.categoryRepository.save(category);

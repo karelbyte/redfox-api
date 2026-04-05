@@ -37,6 +37,7 @@ export class CreatePurchaseOrdersTable1716400000220
           {
             name: 'warehouse_id',
             type: 'uuid',
+            isNullable: true,
           },
           {
             name: 'document',

@@ -197,7 +197,8 @@ export class WithdrawalService {
     // Validar si el cliente tiene crédito activo cuando se selecciona pago a crédito
     if (createWithdrawalDto.payment_method === WithdrawalPaymentMethod.CREDIT) {
       if (!client.credit || !client.credit.is_active) {
-        throw new BadRequestException('El cliente no tiene crédito activo');
+        const message = await this.translationService.translate('withdrawal.no_active_credit', userId);
+        throw new BadRequestException(message);
       }
     }
 
@@ -408,7 +409,8 @@ export class WithdrawalService {
 
     if (isTangible) {
       if (!createDetailDto.warehouse_id) {
-        throw new BadRequestException('warehouse_id is required for tangible products');
+        const message = await this.translationService.translate('withdrawal.warehouse_required', userId);
+        throw new BadRequestException(message);
       }
       warehouse = await this.warehouseRepository.findOne({
         where: { id: createDetailDto.warehouse_id, organization_id: this.organizationId },
@@ -971,7 +973,8 @@ export class WithdrawalService {
       }
 
       if (withdrawal.status === WithdrawalStatus.RETURNED) {
-        throw new BadRequestException('Withdrawal is already returned');
+        const message = await this.translationService.translate('withdrawal.already_returned', userId);
+        throw new BadRequestException(message);
       }
 
       if (withdrawal.status !== WithdrawalStatus.CLOSED) {

@@ -50,7 +50,7 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
           {
             name: 'warehouse_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'notes',

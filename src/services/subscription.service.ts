@@ -10,6 +10,20 @@ import { StripeService } from './stripe.service';
 import { SubscriptionEmailService } from './subscription-email.service';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 
+// Subscription error messages — inline bilingual (no DB lookup needed for subscriptions)
+const MSG = {
+  org_not_found:    { es: 'Organización no encontrada.',           en: 'Organization not found.' },
+  no_active_plan:   { es: 'No se encontró un plan activo.',        en: 'No active plan found.' },
+  sub_not_found:    { es: 'Suscripción no encontrada.',            en: 'Subscription not found.' },
+  already_active:   { es: 'La suscripción ya está activa.',        en: 'Subscription is already active.' },
+  plan_not_found:   { es: 'Plan seleccionado no encontrado o inactivo.', en: 'Selected plan not found or inactive.' },
+  plan_id_missing:  { es: 'Plan no encontrado.',                   en: 'Plan not found.' },
+};
+
+function t(key: keyof typeof MSG, lang = 'es'): string {
+  return MSG[key][lang as 'es' | 'en'] ?? MSG[key]['en'];
+}
+
 @Injectable()
 export class SubscriptionService {
   constructor(
@@ -33,7 +47,7 @@ export class SubscriptionService {
     });
 
     if (!organization) {
-      throw new BadRequestException('Organization not found');
+      throw new BadRequestException(t('org_not_found'));
     }
 
     const plan = await this.planRepository.findOne({
@@ -42,7 +56,7 @@ export class SubscriptionService {
     });
 
     if (!plan) {
-      throw new BadRequestException('No active plan found');
+      throw new BadRequestException(t('no_active_plan'));
     }
 
     const stripeCustomer = await this.stripeService.createCustomer(
@@ -156,12 +170,12 @@ export class SubscriptionService {
     });
 
     if (!subscription) {
-      throw new BadRequestException('Subscription not found');
+      throw new BadRequestException(t('sub_not_found'));
     }
 
     // Permitir pago si está en trial o si está inactiva/expirada
     if (subscription.status !== 'trial' && subscription.status !== 'inactive' && subscription.status !== 'expired') {
-      throw new BadRequestException('Subscription is already active');
+      throw new BadRequestException(t('already_active'));
     }
 
     // Si no tiene stripe_customer_id, crearlo ahora
@@ -192,7 +206,7 @@ export class SubscriptionService {
       });
       
       if (!newPlan) {
-        throw new BadRequestException('Selected plan not found or inactive');
+        throw new BadRequestException(t('plan_not_found'));
       }
       
       selectedPlan = newPlan;
@@ -229,7 +243,7 @@ export class SubscriptionService {
     });
 
     if (!subscription) {
-      throw new BadRequestException('Subscription not found');
+      throw new BadRequestException(t('sub_not_found'));
     }
 
     const now = new Date();
@@ -340,7 +354,7 @@ export class SubscriptionService {
   async updatePlan(id: string, data: Partial<Plan>) {
     const plan = await this.planRepository.findOne({ where: { id } });
     if (!plan) {
-      throw new BadRequestException('Plan not found');
+      throw new BadRequestException(t('plan_id_missing'));
     }
     const updateData: any = { ...data };
     if (data.features !== undefined) {

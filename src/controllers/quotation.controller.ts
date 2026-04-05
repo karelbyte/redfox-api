@@ -10,8 +10,11 @@ import {
   UseGuards,
   Put,
   UseInterceptors,
+  Logger,
 } from '@nestjs/common';
 import { QuotationService } from '../services/quotation.service';
+import { WithdrawalService } from '../services/withdrawal.service';
+import { InvoiceService } from '../services/invoice.service';
 import { CreateQuotationDto } from '../dtos/quotation/create-quotation.dto';
 import { UpdateQuotationDto } from '../dtos/quotation/update-quotation.dto';
 import { QuotationResponseDto } from '../dtos/quotation/quotation-response.dto';
@@ -30,7 +33,13 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class QuotationController {
-  constructor(private readonly quotationService: QuotationService) {}
+  private readonly logger = new Logger(QuotationController.name);
+
+  constructor(
+    private readonly quotationService: QuotationService,
+    private readonly withdrawalService: WithdrawalService,
+    private readonly invoiceService: InvoiceService,
+  ) {}
 
   @Post()
   create(
@@ -74,12 +83,55 @@ export class QuotationController {
   }
 
   @Post(':id/convert-to-sale')
-  convertToSale(
+  async convertToSale(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body('warehouse_id') warehouseId: string,
+    @Body() body: {
+      items: { detail_id: string; warehouse_id?: string }[];
+      payment_method?: string;
+      close_sale?: boolean;
+      create_invoice?: boolean;
+      stamp_invoice?: boolean;
+    },
     @UserId() userId: string,
   ): Promise<ConvertToSaleResponseDto> {
-    return this.quotationService.convertToSale(id, warehouseId, userId);
+    // 1. Crear la venta (withdrawal en OPEN)
+    const result = await this.quotationService.convertToSale(
+      id,
+      body.items,
+      userId,
+      body.payment_method,
+    );
+
+    // 2. Cerrar la venta si se solicitó
+    if (body.close_sale) {
+      try {
+        await this.withdrawalService.closeWithdrawal(result.saleId, userId);
+      } catch (error) {
+        this.logger.warn(`[ConvertToSale] Could not close sale ${result.saleId}: ${error?.message}`);
+      }
+    }
+
+    // 3. Crear factura si se solicitó (requiere venta cerrada)
+    let invoiceId: string | null = null;
+    if (body.create_invoice && body.close_sale) {
+      try {
+        const invoice = await this.invoiceService.createFromWithdrawal(result.saleId, userId);
+        invoiceId = invoice?.id ?? null;
+      } catch (error) {
+        this.logger.warn(`[ConvertToSale] Could not create invoice for sale ${result.saleId}: ${error?.message}`);
+      }
+    }
+
+    // 4. Timbrar si se solicitó (requiere factura creada)
+    if (body.stamp_invoice && invoiceId) {
+      try {
+        await this.invoiceService.generateCFDI(invoiceId, userId);
+      } catch (error) {
+        this.logger.warn(`[ConvertToSale] Could not stamp invoice ${invoiceId}: ${error?.message}`);
+      }
+    }
+
+    return result;
   }
 
   @Post(':id/details')

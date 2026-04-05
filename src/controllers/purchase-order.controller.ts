@@ -76,9 +76,10 @@ export class PurchaseOrderController {
   @Post(':id/approve')
   approvePurchaseOrder(
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { sendEmail?: boolean },
     @UserId() userId: string,
   ): Promise<ApprovePurchaseOrderResponseDto> {
-    return this.purchaseOrderService.approvePurchaseOrder(id, userId);
+    return this.purchaseOrderService.approvePurchaseOrder(id, userId, body?.sendEmail ?? false);
   }
 
   @Post(':id/reject')

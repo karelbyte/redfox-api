@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuotationController } from '../controllers/quotation.controller';
 import { QuotationService } from '../services/quotation.service';
@@ -21,6 +21,9 @@ import { UserContextService } from '../services/user-context.service';
 import { Language } from '../models/language.entity';
 import { User } from '../models/user.entity';
 import { OrganizationModule } from './organization.module';
+import { SurrogateModule } from './surrogate.module';
+import { WithdrawalModule } from './withdrawal.module';
+import { InvoiceModule } from './invoice.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { OrganizationModule } from './organization.module';
       User,
     ]),
     OrganizationModule,
+    SurrogateModule,
+    forwardRef(() => WithdrawalModule),
+    forwardRef(() => InvoiceModule),
   ],
   controllers: [QuotationController],
   providers: [

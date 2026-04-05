@@ -696,6 +696,10 @@ export class TranslationService {
       es: 'No se puede eliminar el cliente porque tiene historial (Facturas: {invoiceCount}, Ventas: {withdrawalCount}).',
       en: 'Cannot delete client because it has history (Invoices: {invoiceCount}, Sales: {withdrawalCount}).',
     },
+    'reception.fefo_requires_expiration_date': {
+      es: 'El producto usa estrategia FEFO. La fecha de vencimiento es obligatoria.',
+      en: 'The product uses FEFO strategy. Expiration date is required.',
+    },
     'client.pack_not_configured': {
       es: 'No hay un pack activo configurado para importar clientes.',
       en: 'No active pack configured to import clients.',
@@ -703,6 +707,228 @@ export class TranslationService {
     'client.pack_list_not_supported': {
       es: 'El pack activo no soporta listar clientes para importación.',
       en: 'The active pack does not support listing customers for import.',
+    },
+
+    // Product pack messages
+    'product.pack_not_configured': {
+      es: 'No hay un pack activo configurado para importar productos.',
+      en: 'No active pack configured to import products.',
+    },
+    'product.pack_list_not_supported': {
+      es: 'El pack activo no soporta listar productos para importación.',
+      en: 'The active pack does not support listing products for import.',
+    },
+    'product.pack_not_supported': {
+      es: 'El pack activo no soporta operaciones de productos.',
+      en: 'The active pack does not support product operations.',
+    },
+
+    // Certification pack messages
+    'pack.not_found': {
+      es: 'No se encontró un pack de certificación activo.',
+      en: 'No active certification pack found.',
+    },
+    'pack.cannot_set_inactive': {
+      es: 'No se puede establecer un pack inactivo como predeterminado.',
+      en: 'Cannot set an inactive pack as default.',
+    },
+    'pack.no_active_found': {
+      es: 'No hay un pack de certificación activo configurado.',
+      en: 'No active certification pack configured.',
+    },
+
+    // Purchase order messages
+    'purchase_order.product_not_found': {
+      es: 'Producto no encontrado',
+      en: 'Product not found',
+    },
+    'purchase_order.cannot_cancel_completed': {
+      es: 'No se puede cancelar una orden de compra completada.',
+      en: 'Cannot cancel a completed purchase order.',
+    },
+
+    // Invoice payment messages
+    'invoice_payment.cannot_pay_cancelled': {
+      es: 'No se puede registrar un pago en una factura cancelada.',
+      en: 'Cannot register payment on a cancelled invoice.',
+    },
+
+    // Auth messages
+    'auth.email_already_in_use': {
+      es: 'La dirección de correo electrónico ya está en uso.',
+      en: 'The email address is already in use.',
+    },
+    'auth.invalid_or_expired_token': {
+      es: 'Token inválido o expirado.',
+      en: 'Invalid or expired token.',
+    },
+    'auth.invalid_token_type': {
+      es: 'Tipo de token inválido.',
+      en: 'Invalid token type.',
+    },
+
+    // Subscription messages
+    'subscription.no_active_plan': {
+      es: 'No se encontró un plan activo.',
+      en: 'No active plan found.',
+    },
+    'subscription.not_found': {
+      es: 'Suscripción no encontrada.',
+      en: 'Subscription not found.',
+    },
+    'subscription.already_active': {
+      es: 'La suscripción ya está activa.',
+      en: 'Subscription is already active.',
+    },
+
+    // Purchase order extended messages
+    'purchase_order.not_found': {
+      es: 'Orden de compra no encontrada.',
+      en: 'Purchase order not found.',
+    },
+    'purchase_order.code_exists': {
+      es: 'Ya existe una orden de compra con este código.',
+      en: 'Purchase order code already exists.',
+    },
+    'purchase_order.provider_not_found': {
+      es: 'Proveedor no encontrado.',
+      en: 'Provider not found.',
+    },
+    'purchase_order.warehouse_not_found': {
+      es: 'Almacén no encontrado.',
+      en: 'Warehouse not found.',
+    },
+    'purchase_order.detail_not_found': {
+      es: 'Detalle de orden de compra no encontrado.',
+      en: 'Purchase order detail not found.',
+    },
+    'purchase_order.not_pending': {
+      es: 'La orden de compra no está en estado pendiente.',
+      en: 'Purchase order is not in pending status.',
+    },
+
+    // Invoice extended messages
+    'invoice.not_found': {
+      es: 'Factura no encontrada.',
+      en: 'Invoice not found.',
+    },
+    'invoice.detail_not_found': {
+      es: 'Detalle de factura no encontrado.',
+      en: 'Invoice detail not found.',
+    },
+    'invoice.already_paid': {
+      es: 'La factura ya está completamente pagada.',
+      en: 'Invoice is already fully paid.',
+    },
+    'invoice.must_be_stamped': {
+      es: 'La factura debe estar timbrada (tener UUID CFDI) antes de registrar pagos.',
+      en: 'Invoice must be stamped (have a CFDI UUID) before registering payments.',
+    },
+    'invoice.pac_no_complement': {
+      es: 'El PAC activo no soporta complementos de pago.',
+      en: 'Active PAC does not support payment complements.',
+    },
+    'invoice.pac_no_global': {
+      es: 'El PAC activo no soporta factura global.',
+      en: 'Active PAC does not support global invoice.',
+    },
+    'invoice.error_generating_cfdi': {
+      es: 'Error al generar el CFDI.',
+      en: 'Error generating CFDI.',
+    },
+    'invoice.payment_already_cancelled': {
+      es: 'El complemento de pago ya está cancelado.',
+      en: 'Payment complement is already cancelled.',
+    },
+
+    // Withdrawal extended messages
+    'withdrawal.no_active_credit': {
+      es: 'El cliente no tiene crédito activo.',
+      en: 'The client does not have active credit.',
+    },
+    'withdrawal.warehouse_required': {
+      es: 'El almacén es requerido para productos tangibles.',
+      en: 'Warehouse is required for tangible products.',
+    },
+    'withdrawal.already_returned': {
+      es: 'La salida ya fue devuelta.',
+      en: 'Withdrawal is already returned.',
+    },
+    'withdrawal.detail_not_found_after_creation': {
+      es: 'No se encontró el detalle de salida después de crearlo.',
+      en: 'Withdrawal detail not found after creation.',
+    },
+
+    // Notification messages
+    'notification.not_found': {
+      es: 'Notificación no encontrada.',
+      en: 'Notification not found.',
+    },
+
+    // Surrogate messages
+    'surrogate.start_number_invalid': {
+      es: 'El número inicial debe ser mayor a 0.',
+      en: 'Start number must be greater than 0.',
+    },
+
+    // Pack/PAC technical messages
+    'pack.api_key_not_configured': {
+      es: 'La clave API del PAC no está configurada.',
+      en: 'PAC API key not configured.',
+    },
+    'pack.error_generating_cfdi': {
+      es: 'Error al generar el CFDI con el PAC.',
+      en: 'Error generating CFDI with PAC.',
+    },
+    'pack.error_cancelling_cfdi': {
+      es: 'Error al cancelar el CFDI con el PAC.',
+      en: 'Error cancelling CFDI with PAC.',
+    },
+    'pack.error_downloading_pdf': {
+      es: 'Error al descargar el PDF del PAC.',
+      en: 'Error downloading PDF from PAC.',
+    },
+    'pack.error_downloading_xml': {
+      es: 'Error al descargar el XML del PAC.',
+      en: 'Error downloading XML from PAC.',
+    },
+    'pack.business_uuid_not_configured': {
+      es: 'El UUID de negocio de Factura Green no está configurado.',
+      en: 'Factura Green business UUID not configured.',
+    },
+
+    // Quotation messages
+    'quotation.not_found': {
+      es: 'Cotización con ID {id} no encontrada.',
+      en: 'Quotation with ID {id} not found.',
+    },
+    'quotation.client_not_found': {
+      es: 'Cliente con ID {clientId} no encontrado.',
+      en: 'Client with ID {clientId} not found.',
+    },
+    'quotation.warehouse_not_found': {
+      es: 'Almacén con ID {warehouseId} no encontrado.',
+      en: 'Warehouse with ID {warehouseId} not found.',
+    },
+    'quotation.product_not_found': {
+      es: 'Producto con ID {productId} no encontrado.',
+      en: 'Product with ID {productId} not found.',
+    },
+    'quotation.detail_not_found': {
+      es: 'Detalle de cotización no encontrado.',
+      en: 'Quotation detail not found.',
+    },
+    'quotation.already_converted': {
+      es: 'La cotización ya fue convertida a venta.',
+      en: 'The quotation has already been converted to a sale.',
+    },
+    'quotation.no_products_to_convert': {
+      es: 'La cotización no tiene productos para convertir.',
+      en: 'The quotation has no products to convert.',
+    },
+    'quotation.converted_successfully': {
+      es: 'Cotización {quotationCode} convertida a venta {saleCode} exitosamente.',
+      en: 'Quotation {quotationCode} successfully converted to sale {saleCode}.',
     },
 
     // General messages

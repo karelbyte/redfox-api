@@ -12,6 +12,7 @@ import {
   UpdateCertificationPackDto,
 } from '../dtos/certification-pack/create-certification-pack.dto';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class CertificationPackService {
@@ -19,6 +20,7 @@ export class CertificationPackService {
     @InjectRepository(CertificationPack)
     private readonly certificationPackRepository: Repository<CertificationPack>,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
   private get organizationId(): string {
@@ -109,7 +111,8 @@ export class CertificationPackService {
     const pack = await this.findOne(id);
 
     if (!pack.is_active) {
-      throw new BadRequestException('Cannot set inactive pack as default');
+      const message = await this.translationService.translate('pack.cannot_set_inactive');
+      throw new BadRequestException(message);
     }
 
     await this.unsetDefaultPacks();

@@ -24,6 +24,12 @@ export class CreatePurchaseOrderDetailsTable1716400000230
             type: 'uuid',
           },
           {
+            name: 'warehouse_id',
+            type: 'uuid',
+            isNullable: true,
+            comment: 'Almacén destino para este producto al recibirlo',
+          },
+          {
             name: 'quantity',
             type: 'decimal',
             precision: 10,
@@ -70,6 +76,12 @@ export class CreatePurchaseOrderDetailsTable1716400000230
             referencedColumnNames: ['id'],
             referencedTableName: 'products',
             onDelete: 'RESTRICT',
+          },
+          {
+            columnNames: ['warehouse_id'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'warehouses',
+            onDelete: 'SET NULL',
           },
         ],
       }),

@@ -11,6 +11,7 @@ import { UpdateNotificationDto } from '../dtos/notification/update-notification.
 import { NotificationQueryDto } from '../dtos/notification/notification-query.dto';
 import { NotificationResponseDto } from '../dtos/notification/notification-response.dto';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class NotificationService {
@@ -18,6 +19,7 @@ export class NotificationService {
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
   async create(
@@ -88,7 +90,8 @@ export class NotificationService {
     });
 
     if (!notification) {
-      throw new NotFoundException('Notification not found');
+      const message = await this.translationService.translate('notification.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     return this.mapToResponseDto(notification);
@@ -104,7 +107,8 @@ export class NotificationService {
     });
 
     if (!notification) {
-      throw new NotFoundException('Notification not found');
+      const message = await this.translationService.translate('notification.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     Object.assign(notification, updateNotificationDto);
@@ -120,7 +124,8 @@ export class NotificationService {
     });
 
     if (!notification) {
-      throw new NotFoundException('Notification not found');
+      const message = await this.translationService.translate('notification.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     await this.notificationRepository.remove(notification);

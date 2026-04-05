@@ -2,40 +2,39 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Language } from '../models/language.entity';
+import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class UserContextService {
   constructor(
     @InjectRepository(Language)
     private languageRepository: Repository<Language>,
+    private readonly tenantContext: TenantContext,
   ) {}
 
-  /**
-   * Gets the language code for a specific user
-   * @param userId - User ID
-   * @returns Language code (e.g., 'es', 'en')
-   */
   async getUserLanguageCode(userId: string): Promise<string> {
     try {
-      // Look for the user's specific language
+      // 1. Idioma específico del usuario en DB
       const userLanguage = await this.languageRepository.findOne({
         where: { userId },
       });
+      if (userLanguage) return userLanguage.code;
 
-      if (userLanguage) {
-        return userLanguage.code;
-      }
+      // 2. Locale del request actual (enviado por el front via X-Locale header)
+      const requestLocale = this.tenantContext.getLocale();
+      if (requestLocale) return requestLocale;
 
-      // If the user doesn't have a specific language, look for the default language
+      // 3. Idioma por defecto del sistema en DB
       const defaultLanguage = await this.languageRepository.findOne({
         where: { userId: IsNull() },
       });
+      if (defaultLanguage) return defaultLanguage.code;
 
-      // If there's no default language, use English
-      return defaultLanguage ? defaultLanguage.code : 'en';
+      // 4. Fallback final — español
+      return 'es';
     } catch (error) {
       console.error('Error getting user language code:', error);
-      return 'en';
+      return 'es';
     }
   }
 

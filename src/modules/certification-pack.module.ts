@@ -8,12 +8,14 @@ import { FacturaAPIService } from '../services/facturapi.service';
 import { FacturaGreenService } from '../services/factura-green.service';
 import { ConfigModule } from '@nestjs/config';
 import { OrganizationModule } from './organization.module';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CertificationPack]),
     ConfigModule,
     OrganizationModule,
+    LanguageModule,
   ],
   controllers: [CertificationPackController],
   providers: [

@@ -581,6 +581,10 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
+      console.log('[FacturaGreen] createCustomer → REQUEST');
+      console.log('[FacturaGreen]   URL:', url);
+      console.log('[FacturaGreen]   Payload:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(url, {
         method: 'POST',
         headers,
@@ -589,10 +593,16 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
+      console.log('[FacturaGreen] createCustomer → RESPONSE status:', response.status);
+      console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
+
       if (!response.ok || data.response !== 'success') {
         const message = data.message || 'Error creating customer in Factura Green';
+        console.error('[FacturaGreen] createCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
+
+      console.log('[FacturaGreen] createCustomer → OK — uuid:', data.data.uuid);
 
       return {
         id: data.data.uuid,
@@ -627,6 +637,7 @@ export class FacturaGreenService implements ICertificationPackService {
         customer: {
           uuid: customerId,
           name: customerData.legal_name?.trim() || '',
+          taxid: customerData.tax_id || '',
           email: customerData.email || '',
           phone: customerData.phone || undefined,
           taxregime: {
@@ -644,6 +655,11 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
+      console.log('[FacturaGreen] updateCustomer → REQUEST');
+      console.log('[FacturaGreen]   URL:', url);
+      console.log('[FacturaGreen]   customerId:', customerId);
+      console.log('[FacturaGreen]   Payload:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(url, {
         method: 'POST',
         headers,
@@ -652,10 +668,16 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
+      console.log('[FacturaGreen] updateCustomer → RESPONSE status:', response.status);
+      console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
+
       if (!response.ok || data.response !== 'success') {
         const message = data.message || 'Error updating customer in Factura Green';
+        console.error('[FacturaGreen] updateCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
+
+      console.log('[FacturaGreen] updateCustomer → OK — uuid:', customerId);
 
       return {
         id: customerId,

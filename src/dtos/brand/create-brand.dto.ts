@@ -15,9 +15,9 @@ export class CreateBrandDto {
   code: string;
 
   @IsString()
-  @IsNotEmpty()
-  @Length(3, 255)
-  description: string;
+  @IsOptional()
+  @Length(0, 255)
+  description?: string;
 
   @IsString()
   @IsOptional()

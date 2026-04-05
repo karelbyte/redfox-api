@@ -46,6 +46,11 @@ export class NotificationController {
     return this.notificationService.findOne(id, userId);
   }
 
+  @Patch('mark-all-read')
+  markAllAsRead(@UserId() userId: string) {
+    return this.notificationService.markAllAsRead(userId);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -53,11 +58,6 @@ export class NotificationController {
     @UserId() userId: string,
   ) {
     return this.notificationService.update(id, updateNotificationDto, userId);
-  }
-
-  @Patch('mark-all-read')
-  markAllAsRead(@UserId() userId: string) {
-    return this.notificationService.markAllAsRead(userId);
   }
 
   @Delete('read')

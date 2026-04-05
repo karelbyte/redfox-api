@@ -6,7 +6,7 @@ export class PurchaseOrderResponseDto {
   code: string;
   date: Date;
   provider: Provider;
-  warehouse: WarehouseResponseDto;
+  warehouse: WarehouseResponseDto | null;
   document: string;
   amount: number;
   status: string;

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PurchaseOrder } from '../models/purchase-order.entity';
 import { PurchaseOrderDetail } from '../models/purchase-order-detail.entity';
@@ -19,6 +19,7 @@ import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapp
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
+import { ReceptionModule } from './reception.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationModule } from './notification.module';
     LanguageModule,
     OrganizationModule,
     NotificationModule,
+    forwardRef(() => ReceptionModule),
   ],
   controllers: [PurchaseOrderController],
   providers: [

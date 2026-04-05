@@ -6,4 +6,9 @@ export class InventoryQueryDto extends PaginationDto {
   @IsUUID()
   @IsOptional()
   warehouse_id?: string;
+
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  product_id?: string;
 }

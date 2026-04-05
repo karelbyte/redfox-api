@@ -1,4 +1,4 @@
-import { IsUUID, IsNumber, Min } from 'class-validator';
+import { IsUUID, IsNumber, Min, IsOptional } from 'class-validator';
 
 export class CreatePurchaseOrderDetailDto {
   @IsUUID()
@@ -11,4 +11,8 @@ export class CreatePurchaseOrderDetailDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @IsUUID()
+  @IsOptional()
+  warehouse_id?: string;
 }

@@ -26,6 +26,7 @@ import { PurchaseOrderDetailQueryDto } from '../dtos/purchase-order-detail/purch
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
+import { ReceptionService } from './reception.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -46,6 +47,7 @@ export class PurchaseOrderService {
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
+    private readonly receptionService: ReceptionService,
   ) { }
 
   private get organizationId(): string {
@@ -73,7 +75,9 @@ export class PurchaseOrderService {
       code: purchaseOrder.code,
       date: purchaseOrder.date,
       provider: purchaseOrder.provider,
-      warehouse: this.warehouseMapper.mapToResponseDto(purchaseOrder.warehouse),
+      warehouse: purchaseOrder.warehouse
+        ? this.warehouseMapper.mapToResponseDto(purchaseOrder.warehouse)
+        : null,
       document: purchaseOrder.document,
       amount: purchaseOrder.amount,
       status: purchaseOrder.status,
@@ -113,7 +117,8 @@ export class PurchaseOrderService {
       where: { id: provider_id, organization_id: this.organizationId },
     });
     if (!provider) {
-      throw new NotFoundException('Provider not found');
+      const message = await this.translationService.translate('purchase_order.provider_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que el almacén existe
@@ -121,7 +126,8 @@ export class PurchaseOrderService {
       where: { id: warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
-      throw new NotFoundException('Warehouse not found');
+      const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que el código es único
@@ -129,7 +135,8 @@ export class PurchaseOrderService {
       where: { code: createPurchaseOrderDto.code, organization_id: this.organizationId },
     });
     if (existingPurchaseOrder) {
-      throw new BadRequestException('Purchase order code already exists');
+      const message = await this.translationService.translate('purchase_order.code_exists', userId);
+      throw new BadRequestException(message);
     }
 
     const purchaseOrder = this.purchaseOrderRepository.create({
@@ -199,7 +206,8 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     return this.mapToResponseDto(purchaseOrder);
@@ -216,7 +224,8 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que el código es único si se está actualizando
@@ -228,7 +237,8 @@ export class PurchaseOrderService {
         where: { code: updatePurchaseOrderDto.code, organization_id: this.organizationId },
       });
       if (existingPurchaseOrder) {
-        throw new BadRequestException('Purchase order code already exists');
+        const message = await this.translationService.translate('purchase_order.code_exists', userId);
+        throw new BadRequestException(message);
       }
     }
 
@@ -238,7 +248,8 @@ export class PurchaseOrderService {
         where: { id: updatePurchaseOrderDto.provider_id, organization_id: this.organizationId },
       });
       if (!provider) {
-        throw new NotFoundException('Provider not found');
+        const message = await this.translationService.translate('purchase_order.provider_not_found', userId);
+        throw new NotFoundException(message);
       }
       purchaseOrder.provider = provider;
     }
@@ -249,7 +260,8 @@ export class PurchaseOrderService {
         where: { id: updatePurchaseOrderDto.warehouse_id, organization_id: this.organizationId },
       });
       if (!warehouse) {
-        throw new NotFoundException('Warehouse not found');
+        const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+        throw new NotFoundException(message);
       }
       purchaseOrder.warehouse = warehouse;
     }
@@ -266,7 +278,8 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que no tenga detalles antes de eliminar
@@ -298,7 +311,8 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que el producto existe
@@ -306,7 +320,11 @@ export class PurchaseOrderService {
       where: { id: createDetailDto.product_id, organization_id: this.organizationId },
     });
     if (!product) {
-      throw new NotFoundException('Product not found');
+      const message = await this.translationService.translate(
+        'purchase_order.product_not_found',
+        undefined,
+      );
+      throw new NotFoundException(message);
     }
 
     // Verificar que no existe ya un detalle para este producto
@@ -323,10 +341,23 @@ export class PurchaseOrderService {
       );
     }
 
+    // Verificar almacén destino si se especificó
+    let warehouse: Warehouse | null = null;
+    if (createDetailDto.warehouse_id) {
+      warehouse = await this.warehouseRepository.findOne({
+        where: { id: createDetailDto.warehouse_id, organization_id: this.organizationId },
+      });
+      if (!warehouse) {
+        const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+        throw new NotFoundException(message);
+      }
+    }
+
     const detail = this.purchaseOrderDetailRepository.create({
       ...createDetailDto,
       purchaseOrder,
       product,
+      warehouse: warehouse ?? undefined,
       received_quantity: 0,
     });
 
@@ -358,7 +389,8 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     const queryBuilder = this.purchaseOrderDetailRepository
@@ -414,7 +446,8 @@ export class PurchaseOrderService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Purchase order detail not found');
+      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     return this.mapDetailToResponseDto(detail);
@@ -435,7 +468,8 @@ export class PurchaseOrderService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Purchase order detail not found');
+      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     // Verificar que la cantidad recibida no exceda la cantidad ordenada
@@ -481,7 +515,8 @@ export class PurchaseOrderService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Purchase order detail not found');
+      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     await this.purchaseOrderDetailRepository.softDelete(detailId);
@@ -505,17 +540,21 @@ export class PurchaseOrderService {
   async approvePurchaseOrder(
     purchaseOrderId: string,
     userId?: string,
+    sendEmail = false,
   ): Promise<ApprovePurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
       where: { id: purchaseOrderId, organization_id: this.organizationId },
+      relations: ['provider'],
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     if (purchaseOrder.status !== 'PENDING') {
-      throw new BadRequestException('Purchase order is not in pending status');
+      const message = await this.translationService.translate('purchase_order.not_pending', userId);
+      throw new BadRequestException(message);
     }
 
     // Verificar que tenga detalles
@@ -532,10 +571,61 @@ export class PurchaseOrderService {
     purchaseOrder.status = 'APPROVED';
     await this.purchaseOrderRepository.save(purchaseOrder);
 
+    // Generar recepciones agrupadas por almacén destino
+    try {
+      const detailsWithRelations = await this.purchaseOrderDetailRepository.find({
+        where: { purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId } },
+        relations: ['product', 'warehouse'],
+      });
+
+      // Agrupar detalles por warehouse_id (null = sin almacén asignado)
+      const byWarehouse = new Map<string, typeof detailsWithRelations>();
+      for (const d of detailsWithRelations) {
+        const key = d.warehouse?.id || '__no_warehouse__';
+        if (!byWarehouse.has(key)) byWarehouse.set(key, []);
+        byWarehouse.get(key)!.push(d);
+      }
+
+      // Crear una recepción por cada almacén
+      for (const [warehouseKey, groupDetails] of byWarehouse.entries()) {
+        if (warehouseKey === '__no_warehouse__') continue; // sin almacén asignado, no crear recepción
+
+        const warehouseId = warehouseKey;
+        const receptionCode = `REC-${purchaseOrder.code}-${warehouseId.slice(0, 4).toUpperCase()}`;
+
+        const reception = await this.receptionService.create({
+          code: receptionCode,
+          date: new Date().toISOString().split('T')[0],
+          provider_id: purchaseOrder.provider.id,
+          warehouse_id: warehouseId,
+          document: purchaseOrder.document || purchaseOrder.code,
+          amount: groupDetails.reduce((s, d) => s + Number(d.quantity) * Number(d.price), 0),
+          purchase_order_id: purchaseOrder.id,
+        } as any, userId);
+
+        // Agregar los productos a la recepción
+        for (const d of groupDetails) {
+          await this.receptionService.createDetail(reception.id, {
+            product_id: d.product.id,
+            quantity: Number(d.quantity),
+            price: Number(d.price),
+          }, userId);
+        }
+      }
+    } catch (error) {
+      // No bloquear la aprobación si falla la generación de recepciones
+      console.warn('[PurchaseOrder] Could not generate receptions:', error?.message);
+    }
+
+    if (sendEmail) {
+      console.log(`[PurchaseOrder] sendEmail=true para orden ${purchaseOrder.id} — proveedor: ${purchaseOrder.provider?.email || 'sin email'}`);
+      // TODO: integrar emailService.sendPurchaseOrderEmail(purchaseOrder)
+    }
+
     return {
       id: purchaseOrder.id,
       status: purchaseOrder.status,
-      message: 'Purchase order approved successfully',
+      message: await this.translationService.translate('general.success', userId),
     };
   }
 
@@ -548,11 +638,13 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     if (purchaseOrder.status !== 'PENDING') {
-      throw new BadRequestException('Purchase order is not in pending status');
+      const message = await this.translationService.translate('purchase_order.not_pending', userId);
+      throw new BadRequestException(message);
     }
 
     purchaseOrder.status = 'REJECTED';
@@ -574,11 +666,16 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      throw new NotFoundException('Purchase order not found');
+      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      throw new NotFoundException(message);
     }
 
     if (purchaseOrder.status === 'COMPLETED') {
-      throw new BadRequestException('Cannot cancel a completed purchase order');
+      const message = await this.translationService.translate(
+        'purchase_order.cannot_cancel_completed',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     purchaseOrder.status = 'CANCELLED';
@@ -587,7 +684,7 @@ export class PurchaseOrderService {
     return {
       id: purchaseOrder.id,
       status: purchaseOrder.status,
-      message: 'Purchase order cancelled successfully',
+      message: await this.translationService.translate('general.success', userId),
     };
   }
 }

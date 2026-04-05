@@ -8,6 +8,7 @@ import { PaymentMethod as ARPaymentMethod } from '../models/account-receivable-p
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { AccountReceivableService } from './account-receivable.service';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 export interface CreateInvoicePaymentDto {
   amount: number;
@@ -44,6 +45,7 @@ export class InvoicePaymentService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly accountReceivableService: AccountReceivableService,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
   private get organizationId(): string {
@@ -72,7 +74,7 @@ export class InvoicePaymentService {
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
     });
-    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (!invoice) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
 
     const payments = await this.invoicePaymentRepository.find({
       where: { invoice_id: invoiceId, organization_id: this.organizationId },
@@ -90,19 +92,21 @@ export class InvoicePaymentService {
       where: { id: invoiceId, organization_id: this.organizationId },
     });
 
-    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (!invoice) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
 
     if (invoice.status === InvoiceStatus.CANCELLED) {
-      throw new BadRequestException('Cannot register payment on a cancelled invoice');
+      const message = await this.translationService.translate(
+        'invoice_payment.cannot_pay_cancelled',
+      );
+      throw new BadRequestException(message);
     }
 
     if (invoice.status === InvoiceStatus.PAID) {
-      throw new BadRequestException('Invoice is already fully paid');
+      throw new BadRequestException(await this.translationService.translate('invoice.already_paid'));
     }
 
-    // Solo facturas PPD (crédito) timbradas pueden tener complementos
     if (!invoice.cfdi_uuid) {
-      throw new BadRequestException('Invoice must be stamped (have a CFDI UUID) before registering payments');
+      throw new BadRequestException(await this.translationService.translate('invoice.must_be_stamped'));
     }
 
     // Calcular saldo insoluto actual
@@ -118,7 +122,7 @@ export class InvoicePaymentService {
     const balanceBefore = Math.round((Number(invoice.total_amount) - totalPaid) * 100) / 100;
 
     if (balanceBefore <= 0) {
-      throw new BadRequestException('Invoice is already fully paid');
+      throw new BadRequestException(await this.translationService.translate('invoice.already_paid'));
     }
 
     if (dto.amount > balanceBefore) {
@@ -151,7 +155,7 @@ export class InvoicePaymentService {
       const packService = await this.certificationPackFactory.getPackService();
 
       if (!packService.generatePaymentComplement) {
-        throw new BadRequestException('Active PAC does not support payment complements');
+        throw new BadRequestException(await this.translationService.translate('invoice.pac_no_complement'));
       }
 
       const complementResult = await packService.generatePaymentComplement({
@@ -229,10 +233,10 @@ export class InvoicePaymentService {
       where: { id: paymentId, invoice_id: invoiceId, organization_id: this.organizationId },
     });
 
-    if (!payment) throw new NotFoundException('Payment not found');
+    if (!payment) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
 
     if (payment.status === InvoicePaymentStatus.CANCELLED) {
-      throw new BadRequestException('El complemento de pago ya está cancelado');
+      throw new BadRequestException(await this.translationService.translate('invoice.payment_already_cancelled'));
     }
 
     // Si está timbrado, cancelar en el PAC con el motivo proporcionado

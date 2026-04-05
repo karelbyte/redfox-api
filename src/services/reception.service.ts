@@ -318,11 +318,32 @@ export class ReceptionService {
       product: product,
       quantity: createDetailDto.quantity,
       price: createDetailDto.price,
-      batch_number: createDetailDto.batch_number,
-      expiration_date: createDetailDto.expiration_date
-        ? new Date(createDetailDto.expiration_date)
-        : undefined,
     };
+
+    const strategy = product.inventory_strategy || InventoryStrategy.AVERAGE;
+
+    if (strategy === InventoryStrategy.FEFO) {
+      // FEFO requiere fecha de vencimiento obligatoriamente
+      if (!createDetailDto.expiration_date) {
+        const message = await this.translationService.translate(
+          'reception.fefo_requires_expiration_date',
+          userId,
+        );
+        throw new BadRequestException(message);
+      }
+      detailToSave.batch_number = createDetailDto.batch_number || undefined;
+      detailToSave.expiration_date = new Date(createDetailDto.expiration_date);
+    } else if (strategy === InventoryStrategy.FIFO) {
+      // FIFO: lote recomendado, fecha opcional
+      detailToSave.batch_number = createDetailDto.batch_number || undefined;
+      detailToSave.expiration_date = createDetailDto.expiration_date
+        ? new Date(createDetailDto.expiration_date)
+        : undefined;
+    } else {
+      // AVERAGE: lote y fecha no aplican — se ignoran
+      detailToSave.batch_number = undefined;
+      detailToSave.expiration_date = undefined;
+    }
 
     const detailAmount = this.calculateAmount(
       createDetailDto.quantity,

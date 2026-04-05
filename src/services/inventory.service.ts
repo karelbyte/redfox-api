@@ -100,6 +100,7 @@ export class InventoryService {
     userId?: string,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
     const { page = 1, limit = 10, warehouse_id, term } = queryDto;
+    const product_id = (queryDto as any).product_id;
     const skip = (page - 1) * limit;
 
     const whereConditions: FindOptionsWhere<Inventory> = {
@@ -107,6 +108,9 @@ export class InventoryService {
     };
     if (warehouse_id) {
       whereConditions.warehouse = { id: warehouse_id };
+    }
+    if (product_id) {
+      whereConditions.product = { id: product_id };
     }
 
     const [inventory, total] = await this.inventoryRepository.findAndCount({

@@ -82,13 +82,11 @@ export class ClientService {
       createClientDto.code,
     );
 
-    const syncResult =
-      await this.clientPackSyncService.syncOnCreate(savedClient);
-
+    // NO sincronizar al pack en la creación — se sincroniza cuando tenga address y tax data
     return {
-      client: this.clientMapper.mapToResponseDto(syncResult.client),
-      pack_sync_success: syncResult.packSyncSuccess,
-      pack_sync_error: syncResult.packErrorMessage,
+      client: this.clientMapper.mapToResponseDto(savedClient),
+      pack_sync_success: false,
+      pack_sync_error: undefined,
     };
   }
 
@@ -280,17 +278,27 @@ export class ClientService {
       withDeleted: false,
     });
 
-    const syncResult = await this.clientPackSyncService.syncOnUpdate(
-      clientWithRelations!,
-      updateClientDto,
-    );
+    const hasAddress = (clientWithRelations!.addresses || []).length > 0;
+    const hasTaxData = (clientWithRelations!.taxData || []).length > 0;
+
+    // Solo sincronizar al pack si tiene address Y tax data
+    if (hasAddress && hasTaxData) {
+      const syncResult = await this.clientPackSyncService.syncOnUpdate(
+        clientWithRelations!,
+        updateClientDto,
+      );
+      return {
+        client: this.clientMapper.mapToResponseDto(syncResult.client),
+        pack_sync_success: syncResult.packSyncSuccess,
+        pack_sync_error: syncResult.packErrorMessage,
+      };
+    }
 
     return {
-      client: this.clientMapper.mapToResponseDto(syncResult.client),
-      pack_sync_success: syncResult.packSyncSuccess,
-      pack_sync_error: syncResult.packErrorMessage,
-    };
-  }
+      client: this.clientMapper.mapToResponseDto(clientWithRelations!),
+      pack_sync_success: false,
+      pack_sync_error: undefined,
+    };  }
 
   async importFromPack(
     userId?: string,
@@ -312,26 +320,7 @@ export class ClientService {
       throw new NotFoundException(message);
     }
 
-    if (client.pack_client_id) {
-      try {
-        const packService: any =
-          await this.certificationPackFactory.getPackService();
-        if (
-          packService?.deleteCustomer &&
-          typeof packService.deleteCustomer === 'function'
-        ) {
-          await packService.deleteCustomer(client.pack_client_id);
-        }
-      } catch (error: any) {
-        this.logger.warn(
-          `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
-        );
-        throw new BadRequestException(
-          error?.message || 'Client cannot be deleted in the pack system.',
-        );
-      }
-    }
-
+    // Verificar historial ANTES de tocar el pack
     const invoiceCount = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .where('invoice.client_id = :id', { id })
@@ -354,6 +343,35 @@ export class ClientService {
         { invoiceCount, withdrawalCount, quotationCount },
       );
       throw new BadRequestException(message);
+    }
+
+    // Solo eliminar del pack si pasó la validación de historial
+    if (client.pack_client_id) {
+      try {
+        const packService: any =
+          await this.certificationPackFactory.getPackService();
+        if (
+          packService?.deleteCustomer &&
+          typeof packService.deleteCustomer === 'function'
+        ) {
+          await packService.deleteCustomer(client.pack_client_id);
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to delete client in pack (clientId=${id}, packClientId=${client.pack_client_id}): ${error?.message}`,
+        );
+        const isPackUnavailable =
+          error?.status === 404 ||
+          error?.message?.toLowerCase().includes('not found') ||
+          error?.message?.toLowerCase().includes('no certification pack') ||
+          error?.message?.toLowerCase().includes('not configured');
+
+        if (!isPackUnavailable) {
+          throw new BadRequestException(
+            error?.message || 'Client cannot be deleted in the pack system.',
+          );
+        }
+      }
     }
 
     // Guardar datos del cliente antes de eliminarlo para el log de auditoría
@@ -448,6 +466,18 @@ export class ClientService {
         { id },
       );
       throw new NotFoundException(message);
+    }
+
+    const hasAddress = (client.addresses || []).length > 0;
+    const hasTaxData = (client.taxData || []).length > 0;
+
+    if (!hasAddress || !hasTaxData) {
+      const missing: string[] = [];
+      if (!hasAddress) missing.push('dirección');
+      if (!hasTaxData) missing.push('datos fiscales');
+      throw new BadRequestException(
+        `El cliente no puede sincronizarse al pack porque le falta: ${missing.join(' y ')}. Agrega estos datos primero.`,
+      );
     }
 
     const syncResult = await this.clientPackSyncService.syncManually(client);

@@ -653,7 +653,8 @@ export class InvoiceService {
 
     const packService = await this.certificationPackFactory.getPackService();
     if (!packService.createGlobalInvoice) {
-      throw new BadRequestException('El PAC activo no soporta factura global');
+      const message = await this.translationService.translate('invoice.pac_no_global', userId);
+      throw new BadRequestException(message);
     }
 
     const from = dto.from ?? withdrawals.reduce(
@@ -838,7 +839,8 @@ export class InvoiceService {
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
       console.error('Error generating CFDI:', error);
-      throw new BadRequestException('Error generating CFDI');
+      const message = await this.translationService.translate('invoice.error_generating_cfdi', userId);
+      throw new BadRequestException(message);
     }
   }
 
@@ -1088,7 +1090,8 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Invoice detail not found');
+      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     return this.mapDetailToResponseDto(detail);
@@ -1121,7 +1124,8 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Invoice detail not found');
+      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     const oldAmount = detail.total;
@@ -1208,7 +1212,8 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      throw new NotFoundException('Invoice detail not found');
+      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      throw new NotFoundException(message);
     }
 
     const currentSubtotal = invoice.subtotal || 0;
@@ -1272,5 +1277,36 @@ export class InvoiceService {
 
     const packService = await this.certificationPackFactory.getPackService();
     return await packService.downloadXML(invoice.pack_invoice_id);
+  }
+
+  /**
+   * Crea una factura directamente desde una venta (withdrawal) cerrada.
+   * Copia los productos de la venta al invoice automáticamente.
+   */
+  async createFromWithdrawal(withdrawalId: string, userId?: string): Promise<InvoiceResponseDto | null> {
+    const withdrawal = await this.withdrawalRepository.findOne({
+      where: { id: withdrawalId, organization_id: this.organizationId },
+      relations: ['client', 'details', 'details.product', 'details.product.tax'],
+    });
+
+    if (!withdrawal) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const dto: CreateInvoiceDto = {
+      code: `FAC-${withdrawal.code}`,
+      date: today,
+      client_id: withdrawal.client.id,
+      withdrawal_id: withdrawalId,
+      payment_method: (withdrawal.paymentMethod as any) || 'cash',
+      details: (withdrawal.details || []).map(d => ({
+        product_id: d.product.id,
+        quantity: Number(d.quantity),
+        price: Number(d.price),
+        tax_rate: d.product.tax ? Number(d.product.tax.value) : 0,
+      })),
+    };
+
+    return this.create(dto, userId);
   }
 }

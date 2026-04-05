@@ -27,7 +27,7 @@ export class Brand {
   @Column({ length: 50 })
   code: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   description: string;
 
   @Column({ length: 500, nullable: true })

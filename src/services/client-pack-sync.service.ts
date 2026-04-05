@@ -22,7 +22,7 @@ export class ClientPackSyncService {
     const mainAddress =
       (client.addresses || []).find((a) => a.is_main) || client.addresses?.[0];
 
-    return {
+    const data: CustomerData = {
       legal_name: (mainTax?.tax_name || client.name)?.trim(),
       tax_id: mainTax?.tax_document || 'XAXX010101000',
       tax_system: mainTax?.tax_system || undefined,
@@ -43,6 +43,16 @@ export class ClientPackSyncService {
           }
         : undefined,
     };
+
+    this.logger.log(
+      `[extractCustomerData] client.id=${client.id} name="${client.name}" ` +
+      `taxData count=${client.taxData?.length ?? 0} addresses count=${client.addresses?.length ?? 0}`,
+    );
+    this.logger.log(
+      `[extractCustomerData] → CustomerData: ${JSON.stringify(data, null, 2)}`,
+    );
+
+    return data;
   }
 
   async syncOnCreate(client: Client): Promise<{
@@ -50,36 +60,32 @@ export class ClientPackSyncService {
     packSyncSuccess: boolean;
     packErrorMessage?: string;
   }> {
+    this.logger.log(`[syncOnCreate] START — client.id=${client.id} name="${client.name}"`);
+
     try {
       const packService = await this.certificationPackFactory.getPackService();
       const customerData = this.extractCustomerData(client);
 
+      this.logger.log(`[syncOnCreate] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+
       const packResponse = await packService.createCustomer(customerData);
+
+      this.logger.log(`[syncOnCreate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
 
       client.pack_client_id = packResponse.id;
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      return {
-        client: savedClient,
-        packSyncSuccess: true,
-      };
+      this.logger.log(`[syncOnCreate] SUCCESS — pack_client_id=${packResponse.id}`);
+
+      return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
-      this.logger.warn(
-        `Failed to create client in certification pack: ${error?.message}`,
-      );
-      return {
-        client,
-        packSyncSuccess: false,
-        packErrorMessage: error?.message,
-      };
+      this.logger.warn(`[syncOnCreate] FAILED — ${error?.message}`);
+      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
     }
   }
 
-  /**
-   * Sincroniza un cliente actualizado con el pack activo.
-   */
   async syncOnUpdate(
     client: Client,
     updateClientDto: UpdateClientDto,
@@ -88,105 +94,114 @@ export class ClientPackSyncService {
     packSyncSuccess: boolean;
     packErrorMessage?: string;
   }> {
+    this.logger.log(
+      `[syncOnUpdate] START — client.id=${client.id} name="${client.name}" ` +
+      `pack_client_id=${client.pack_client_id ?? 'none'}`,
+    );
+
     try {
       const packService = await this.certificationPackFactory.getPackService();
 
-      // Si el cliente aún no existe en el pack, intentamos crearlo
+      // Si el cliente aún no existe en el pack, crearlo
       if (!client.pack_client_id) {
         const customerData = this.extractCustomerData(client);
+
+        this.logger.log(`[syncOnUpdate] No pack_client_id — calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+
         const packResponse = await packService.createCustomer(customerData);
+
+        this.logger.log(`[syncOnUpdate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
 
         client.pack_client_id = packResponse.id;
         client.pack_client_response = packResponse;
 
         const savedClient = await this.clientRepository.save(client);
 
-        return {
-          client: savedClient,
-          packSyncSuccess: true,
-        };
+        this.logger.log(`[syncOnUpdate] SUCCESS (create) — pack_client_id=${packResponse.id}`);
+
+        return { client: savedClient, packSyncSuccess: true };
       }
 
-      // Si ya existe en el pack, construimos los datos finales basados en el estado actual del cliente
-      // (Porque updateClientDto puede no contener todo y queremos enviar el estado actual "limpio")
+      // Si ya existe, actualizar
       const customerData = this.extractCustomerData(client);
+
+      this.logger.log(
+        `[syncOnUpdate] Calling updateCustomer pack_client_id=${client.pack_client_id} ` +
+        `with payload: ${JSON.stringify(customerData, null, 2)}`,
+      );
 
       const packResponse = await packService.updateCustomer(
         client.pack_client_id,
         customerData,
       );
 
+      this.logger.log(`[syncOnUpdate] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      return {
-        client: savedClient,
-        packSyncSuccess: true,
-      };
+      this.logger.log(`[syncOnUpdate] SUCCESS (update) — pack_client_id=${client.pack_client_id}`);
+
+      return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
-      this.logger.warn(
-        `Failed to sync client with certification pack: ${error?.message}`,
-      );
-      return {
-        client,
-        packSyncSuccess: false,
-        packErrorMessage: error?.message,
-      };
+      this.logger.warn(`[syncOnUpdate] FAILED — ${error?.message}`);
+      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
     }
   }
 
-  /**
-   * Sincroniza manualmente un cliente existente con el pack activo.
-   * - Si el cliente NO tiene pack_client_id: Lo crea en el pack
-   * - Si el cliente YA tiene pack_client_id: Actualiza sus datos en el pack
-   */
   async syncManually(client: Client): Promise<{
     client: Client;
     packSyncSuccess: boolean;
     packErrorMessage?: string;
   }> {
+    this.logger.log(
+      `[syncManually] START — client.id=${client.id} name="${client.name}" ` +
+      `pack_client_id=${client.pack_client_id ?? 'none'}`,
+    );
+
     try {
       const packService = await this.certificationPackFactory.getPackService();
       const customerData = this.extractCustomerData(client);
 
-      // Si el cliente ya existe en el pack, actualizarlo
       if (client.pack_client_id) {
+        this.logger.log(
+          `[syncManually] Calling updateCustomer pack_client_id=${client.pack_client_id} ` +
+          `with payload: ${JSON.stringify(customerData, null, 2)}`,
+        );
+
         const packResponse = await packService.updateCustomer(
           client.pack_client_id,
           customerData,
         );
 
+        this.logger.log(`[syncManually] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+
         client.pack_client_response = packResponse;
         const savedClient = await this.clientRepository.save(client);
 
-        return {
-          client: savedClient,
-          packSyncSuccess: true,
-        };
+        this.logger.log(`[syncManually] SUCCESS (update) — pack_client_id=${client.pack_client_id}`);
+
+        return { client: savedClient, packSyncSuccess: true };
       }
 
-      // Si no existe, crearlo en el pack
+      this.logger.log(`[syncManually] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+
       const packResponse = await packService.createCustomer(customerData);
+
+      this.logger.log(`[syncManually] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
 
       client.pack_client_id = packResponse.id;
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      return {
-        client: savedClient,
-        packSyncSuccess: true,
-      };
+      this.logger.log(`[syncManually] SUCCESS (create) — pack_client_id=${packResponse.id}`);
+
+      return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
-      this.logger.warn(
-        `Failed to manually sync client with certification pack: ${error?.message}`,
-      );
-      return {
-        client,
-        packSyncSuccess: false,
-        packErrorMessage: error?.message,
-      };
+      this.logger.warn(`[syncManually] FAILED — ${error?.message}`);
+      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
     }
   }
 }

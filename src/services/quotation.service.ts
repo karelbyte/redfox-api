@@ -26,6 +26,7 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { SurrogateService } from './surrogate.service';
 
 @Injectable()
 export class QuotationService {
@@ -48,6 +49,7 @@ export class QuotationService {
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly surrogateService: SurrogateService,
   ) { }
 
   private get organizationId(): string {
@@ -176,6 +178,9 @@ export class QuotationService {
     });
 
     const savedQuotation = await this.quotationRepository.save(quotation);
+
+    // Incrementar el contador del surrogate si el código coincide con el sugerido
+    await this.surrogateService.useCodeIfMatches('quotation', createQuotationDto.code);
 
     const quotationWithRelations = await this.quotationRepository.findOne({
       where: { id: savedQuotation.id, organization_id: this.organizationId },
@@ -662,8 +667,9 @@ export class QuotationService {
 
   async convertToSale(
     quotationId: string,
-    warehouseId: string,
+    items: { detail_id: string; warehouse_id?: string }[],
     userId?: string,
+    paymentMethod?: string,
   ): Promise<ConvertToSaleResponseDto> {
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: this.organizationId },
@@ -695,17 +701,10 @@ export class QuotationService {
       throw new BadRequestException(message);
     }
 
-    // Validar el almacén recibido en la conversión
-    const warehouse = await this.warehouseRepository.findOne({
-      where: { id: warehouseId, organization_id: this.organizationId },
-    });
-    if (!warehouse) {
-      const message = await this.translationService.translate(
-        'quotation.warehouse_not_found',
-        userId,
-        { warehouseId },
-      );
-      throw new NotFoundException(message);
+    // Construir mapa detail_id → warehouse_id para acceso rápido
+    const warehouseMap = new Map<string, string | undefined>();
+    for (const item of items) {
+      warehouseMap.set(item.detail_id, item.warehouse_id);
     }
 
     const withdrawal = this.withdrawalRepository.create({
@@ -714,16 +713,30 @@ export class QuotationService {
       client: quotation.client,
       amount: quotation.total,
       status: WithdrawalStatus.OPEN,
+      paymentMethod: (paymentMethod as any) || 'cash',
       organization_id: this.organizationId,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
 
     for (const detail of quotation.details) {
+      const warehouseId = warehouseMap.get(detail.id);
+      const productType = (detail.product as any).type;
+
+      // Productos tangibles requieren almacén; servicios/digitales no
+      const isTangible = !productType || productType === 'tangible';
+
+      let warehouse: Warehouse | null = null;
+      if (isTangible && warehouseId) {
+        warehouse = await this.warehouseRepository.findOne({
+          where: { id: warehouseId, organization_id: this.organizationId },
+        });
+      }
+
       const withdrawalDetail = this.withdrawalDetailRepository.create({
         withdrawal: savedWithdrawal,
         product: detail.product,
-        warehouse: warehouse,
+        warehouse: warehouse ?? undefined,
         quantity: detail.quantity,
         price: detail.price,
       });

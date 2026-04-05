@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { PurchaseOrder } from './purchase-order.entity';
 import { Product } from './product.entity';
+import { Warehouse } from './warehouse.entity';
 
 @Entity('purchase_order_details')
 export class PurchaseOrderDetail {
@@ -23,6 +24,10 @@ export class PurchaseOrderDetail {
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @ManyToOne(() => Warehouse, { nullable: true })
+  @JoinColumn({ name: 'warehouse_id' })
+  warehouse: Warehouse | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   quantity: number;

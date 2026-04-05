@@ -7,6 +7,7 @@ interface TenantStore {
   pacConfig?: Record<string, any> | null;
   userId?: string | null;
   ipAddress?: string | null;
+  locale?: string | null;
 }
 
 /**
@@ -74,6 +75,17 @@ export class TenantContext {
 
   getIpAddress(): string | null {
     return TenantContext.storage.getStore()?.ipAddress || null;
+  }
+
+  setLocale(locale: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.locale = locale;
+    }
+  }
+
+  getLocale(): string | null {
+    return TenantContext.storage.getStore()?.locale || null;
   }
 
   clear() {

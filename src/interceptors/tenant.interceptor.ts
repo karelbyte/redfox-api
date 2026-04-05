@@ -37,6 +37,12 @@ export class TenantInterceptor implements NestInterceptor {
       this.tenantContext.setTenantSlug(tenantSlug as string);
     }
 
+    // Guardar el locale del request para usarlo en traducciones
+    const locale = request.headers['x-locale'] as string;
+    if (locale && this.tenantContext) {
+      this.tenantContext.setLocale(locale.split('-')[0].toLowerCase());
+    }
+
     return next.handle();
   }
 }
