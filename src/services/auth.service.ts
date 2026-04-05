@@ -191,7 +191,8 @@ export class AuthService {
       name: registerDto.companyName,
       slug,
       status: false,
-    });
+      ...(registerDto.referrer_code ? { referrer_code: registerDto.referrer_code.toUpperCase() } : {}),
+    } as any);
 
     // Establecer el contexto de la organización
     this.tenantContext.setOrganizationId(organization.id);

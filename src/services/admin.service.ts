@@ -187,7 +187,13 @@ export class AdminService {
     });
   }
 
-  async updateSubscription(id: string, data: { plan_id?: string; trial_end_date?: string; status?: string }) {
+  async updateSubscription(id: string, data: {
+    plan_id?: string;
+    trial_end_date?: string;
+    status?: string;
+    subscription_end_date?: string;
+    current_period_end?: string;
+  }) {
     const subscription = await this.subRepository.findOne({ where: { id } });
     if (!subscription) throw new Error('Suscripción no encontrada');
 
@@ -207,6 +213,14 @@ export class AdminService {
       if (subscription.status === 'expired' && newTrialDate > now) {
         subscription.status = 'trial';
       }
+    }
+
+    if (data.subscription_end_date) {
+      subscription.subscription_end_date = new Date(data.subscription_end_date);
+    }
+
+    if (data.current_period_end) {
+      subscription.current_period_end = new Date(data.current_period_end);
     }
 
     await this.subRepository.save(subscription);

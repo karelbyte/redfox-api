@@ -54,6 +54,12 @@ export class CreateOrganizationsTable1716399999999
             isNullable: true,
           },
           {
+            name: 'referrer_code',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

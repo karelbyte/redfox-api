@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -15,6 +15,7 @@ import { SubscriptionReceiptPdfService } from '../services/subscription-receipt-
 import { SubscriptionController } from '../controllers/subscription.controller';
 import { PublicPlansController } from '../controllers/public-plans.controller';
 import stripeConfig from '../config/stripe.config';
+import { ReferralModule } from './referral.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import stripeConfig from '../config/stripe.config';
     ]),
     ConfigModule.forFeature(stripeConfig),
     ThrottlerModule.forRoot([{ ttl: 600000, limit: 3 }]),
+    forwardRef(() => ReferralModule),
   ],
   controllers: [SubscriptionController, PublicPlansController],
   providers: [

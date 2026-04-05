@@ -9,6 +9,7 @@ import { User } from '../models/user.entity';
 import { StripeService } from './stripe.service';
 import { SubscriptionEmailService } from './subscription-email.service';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
+import { ReferralService } from './referral.service';
 
 // Subscription error messages — inline bilingual (no DB lookup needed for subscriptions)
 const MSG = {
@@ -39,6 +40,7 @@ export class SubscriptionService {
     private userRepository: Repository<User>,
     private stripeService: StripeService,
     private subscriptionEmailService: SubscriptionEmailService,
+    private referralService: ReferralService,
   ) {}
 
   async createTrialSubscription(organizationId: string, organizationEmail?: string) {
@@ -290,9 +292,23 @@ export class SubscriptionService {
       console.warn('Error registrando pago de suscripción:', e);
     }
 
-    // Enviar email de confirmación de pago (sin bloquear el flujo)
+    // Generar comisión de referido si aplica
     try {
-      const user = await this.userRepository.findOne({
+      const org = await this.organizationRepository.findOne({ where: { id: subscription.organization_id } });
+      if (org?.referrer_code) {
+        await this.referralService.generateCommissionForPayment({
+          organizationId: subscription.organization_id,
+          referrerCode: org.referrer_code,
+          planName: subscription.plan?.name ?? 'Plan',
+          planPrice: Number(subscription.plan?.price ?? 0),
+        });
+      }
+    } catch (e) {
+      console.warn('Error generando comisión de referido:', e);
+    }
+
+    // Enviar email de confirmación de pago (sin bloquear el flujo)
+    try {      const user = await this.userRepository.findOne({
         where: { organization_id: subscription.organization_id },
         order: { created_at: 'ASC' },
       });

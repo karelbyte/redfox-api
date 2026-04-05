@@ -141,7 +141,13 @@ export class AdminController {
   }
 
   @Put('subscriptions/:id')
-  updateSubscription(@Param('id') id: string, @Body() body: { plan_id?: string; trial_end_date?: string; status?: string }) {
+  updateSubscription(@Param('id') id: string, @Body() body: {
+    plan_id?: string;
+    trial_end_date?: string;
+    status?: string;
+    subscription_end_date?: string;
+    current_period_end?: string;
+  }) {
     return this.adminService.updateSubscription(id, body);
   }
 

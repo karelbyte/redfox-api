@@ -34,6 +34,9 @@ export class Organization {
   @Column({ type: 'uuid', nullable: true })
   subscription_id: string;
 
+  @Column({ length: 20, nullable: true })
+  referrer_code: string;
+
   @OneToMany(() => User, (user) => user.organization)
   users: User[];
 
