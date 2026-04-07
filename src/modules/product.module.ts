@@ -23,9 +23,11 @@ import { CurrencyModule } from './currency.module';
 import { Currency } from '../models/currency.entity';
 import { ProductPackImportService } from '../services/product-pack-import.service';
 import { ProductPackSyncService } from '../services/product-pack-sync.service';
-import { NotificationModule } from './notification.module';
+import { Brand } from '../models/brand.entity';
+import { Category } from '../models/category.entity';
 import { User } from '../models/user.entity';
 import { UploadsModule } from './uploads.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { UploadsModule } from './uploads.module';
       Tax,
       Currency,
       User,
+      Brand,
+      Category,
     ]),
     NotificationModule,
     MeasurementUnitModule,

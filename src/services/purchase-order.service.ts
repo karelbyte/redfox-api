@@ -27,6 +27,7 @@ import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { ReceptionService } from './reception.service';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -48,6 +49,7 @@ export class PurchaseOrderService {
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
     private readonly receptionService: ReceptionService,
+    private readonly emailService: EmailService,
   ) { }
 
   private get organizationId(): string {
@@ -618,8 +620,80 @@ export class PurchaseOrderService {
     }
 
     if (sendEmail) {
-      console.log(`[PurchaseOrder] sendEmail=true para orden ${purchaseOrder.id} — proveedor: ${purchaseOrder.provider?.email || 'sin email'}`);
-      // TODO: integrar emailService.sendPurchaseOrderEmail(purchaseOrder)
+      try {
+        const providerEmail = purchaseOrder.provider?.email;
+        if (providerEmail && userId) {
+          const detailsWithRelations = await this.purchaseOrderDetailRepository.find({
+            where: { purchaseOrder: { id: purchaseOrder.id, organization_id: this.organizationId } },
+            relations: ['product'],
+          });
+
+          const rows = detailsWithRelations.map(d =>
+            `<tr>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${d.product?.name || '—'}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${Number(d.quantity)}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${Number(d.price).toFixed(2)}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${(Number(d.quantity) * Number(d.price)).toFixed(2)}</td>
+            </tr>`
+          ).join('');
+
+          const total = detailsWithRelations.reduce((s, d) => s + Number(d.quantity) * Number(d.price), 0);
+
+          const html = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family:Arial,sans-serif;color:#374151;margin:0;padding:0;background:#f9fafb;">
+              <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+                <div style="background:#1e293b;padding:28px 32px;">
+                  <h1 style="color:#fff;margin:0;font-size:20px;">Orden de Compra Aprobada</h1>
+                  <p style="color:#94a3b8;margin:6px 0 0;font-size:14px;">Código: <strong style="color:#e2e8f0;">${purchaseOrder.code}</strong></p>
+                </div>
+                <div style="padding:28px 32px;">
+                  <p style="margin:0 0 16px;">Estimado proveedor <strong>${purchaseOrder.provider?.name}</strong>,</p>
+                  <p style="margin:0 0 24px;color:#6b7280;">Le informamos que la siguiente orden de compra ha sido aprobada y está lista para su procesamiento.</p>
+
+                  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <thead>
+                      <tr style="background:#f1f5f9;">
+                        <th style="padding:10px 12px;text-align:left;font-weight:600;color:#475569;">Producto</th>
+                        <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Cantidad</th>
+                        <th style="padding:10px 12px;text-align:right;font-weight:600;color:#475569;">Precio</th>
+                        <th style="padding:10px 12px;text-align:right;font-weight:600;color:#475569;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot>
+                      <tr>
+                        <td colspan="3" style="padding:12px;text-align:right;font-weight:700;color:#1e293b;">Total:</td>
+                        <td style="padding:12px;text-align:right;font-weight:700;color:#1e293b;">$${total.toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+
+                  ${purchaseOrder.expected_delivery_date ? `<p style="margin:20px 0 0;font-size:13px;color:#6b7280;">📅 Fecha de entrega esperada: <strong>${new Date(purchaseOrder.expected_delivery_date).toLocaleDateString('es-MX')}</strong></p>` : ''}
+                  ${purchaseOrder.notes ? `<p style="margin:8px 0 0;font-size:13px;color:#6b7280;">📝 Notas: ${purchaseOrder.notes}</p>` : ''}
+                </div>
+                <div style="background:#f8fafc;padding:16px 32px;font-size:12px;color:#94a3b8;text-align:center;">
+                  Este correo fue generado automáticamente. Por favor no responda a este mensaje.
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+
+          await this.emailService.sendEmail(userId, {
+            to: providerEmail,
+            subject: `Orden de Compra ${purchaseOrder.code} — Aprobada`,
+            html,
+          });
+
+          console.log(`[PurchaseOrder] Email enviado a proveedor ${providerEmail} para orden ${purchaseOrder.code}`);
+        }
+      } catch (emailError: any) {
+        // No bloquear la aprobación si falla el email
+        console.warn(`[PurchaseOrder] No se pudo enviar email al proveedor: ${emailError?.message}`);
+      }
     }
 
     return {

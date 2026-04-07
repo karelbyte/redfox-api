@@ -20,6 +20,7 @@ import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
 import { ReceptionModule } from './reception.module';
+import { EmailConfigModule } from './email-config.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ReceptionModule } from './reception.module';
     OrganizationModule,
     NotificationModule,
     forwardRef(() => ReceptionModule),
+    EmailConfigModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [
