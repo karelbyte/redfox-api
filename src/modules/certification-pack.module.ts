@@ -6,9 +6,11 @@ import { CertificationPackFactoryService } from '../services/certification-pack-
 import { CertificationPackController } from '../controllers/certification-pack.controller';
 import { FacturaAPIService } from '../services/facturapi.service';
 import { FacturaGreenService } from '../services/factura-green.service';
+import { SatCatalogService } from '../services/sat-catalog.service';
 import { ConfigModule } from '@nestjs/config';
 import { OrganizationModule } from './organization.module';
 import { LanguageModule } from './language.module';
+import { RedisServiceModule } from './redis-service.module';
 
 @Module({
   imports: [
@@ -16,6 +18,7 @@ import { LanguageModule } from './language.module';
     ConfigModule,
     OrganizationModule,
     LanguageModule,
+    RedisServiceModule,
   ],
   controllers: [CertificationPackController],
   providers: [
@@ -23,7 +26,8 @@ import { LanguageModule } from './language.module';
     CertificationPackFactoryService,
     FacturaAPIService,
     FacturaGreenService,
+    SatCatalogService,
   ],
-  exports: [CertificationPackService, CertificationPackFactoryService],
+  exports: [CertificationPackService, CertificationPackFactoryService, SatCatalogService],
 })
 export class CertificationPackModule {}

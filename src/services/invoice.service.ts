@@ -215,17 +215,23 @@ export class InvoiceService {
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
-    for (const detailDto of details) {
-      const product = await this.productService.findOneEntity(
-        detailDto.product_id,
-      );
+    // Batch load de productos — evita N+1 (1 query en lugar de N)
+    const productIds = details.map(d => d.product_id);
+    const products = await this.productRepository.find({
+      where: { id: In(productIds) },
+    });
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    const detailEntities = details.map(detailDto => {
+      const product = productMap.get(detailDto.product_id);
+      if (!product) throw new BadRequestException(`Producto ${detailDto.product_id} no encontrado`);
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
       const detailTaxAmount = detailSubtotal * (taxRate / 100);
       const detailTotal = detailSubtotal + detailTaxAmount;
 
-      const detail = this.invoiceDetailRepository.create({
+      return this.invoiceDetailRepository.create({
         invoice_id: savedInvoice.id,
         product_id: product.id,
         quantity: detailDto.quantity,
@@ -236,9 +242,9 @@ export class InvoiceService {
         total: Math.round(detailTotal * 100) / 100,
         organization_id: this.organizationId,
       });
+    });
 
-      await this.invoiceDetailRepository.save(detail);
-    }
+    await this.invoiceDetailRepository.save(detailEntities);
 
     const invoiceWithDetails = await this.invoiceRepository.findOne({
       where: { id: savedInvoice.id },
@@ -541,17 +547,23 @@ export class InvoiceService {
     withdrawal.invoiceId = savedInvoice.id;
     await this.withdrawalRepository.save(withdrawal);
 
-    for (const detailDto of details) {
-      const product = await this.productService.findOneEntity(
-        detailDto.product_id,
-      );
+    // Batch load de productos — evita N+1
+    const productIds2 = details.map(d => d.product_id);
+    const products2 = await this.productRepository.find({
+      where: { id: In(productIds2) },
+    });
+    const productMap2 = new Map(products2.map(p => [p.id, p]));
+
+    const detailEntities2 = details.map(detailDto => {
+      const product = productMap2.get(detailDto.product_id);
+      if (!product) throw new BadRequestException(`Producto ${detailDto.product_id} no encontrado`);
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
       const detailTaxAmount = detailSubtotal * (taxRate / 100);
       const detailTotal = detailSubtotal + detailTaxAmount;
 
-      const detail = this.invoiceDetailRepository.create({
+      return this.invoiceDetailRepository.create({
         invoice_id: savedInvoice.id,
         product_id: product.id,
         quantity: detailDto.quantity,
@@ -562,9 +574,9 @@ export class InvoiceService {
         total: Math.round(detailTotal * 100) / 100,
         organization_id: this.organizationId,
       });
+    });
 
-      await this.invoiceDetailRepository.save(detail);
-    }
+    await this.invoiceDetailRepository.save(detailEntities2);
 
     const invoiceWithDetails = await this.invoiceRepository.findOne({
       where: { id: savedInvoice.id },

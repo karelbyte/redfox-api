@@ -17,12 +17,14 @@ import {
 } from '../interfaces/certification-pack.interface';
 
 import { TenantContext } from './tenant-context.service';
+import { SatCatalogService } from './sat-catalog.service';
 
 @Injectable()
 export class FacturaAPIService implements ICertificationPackService {
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
+    private readonly satCatalogService: SatCatalogService,
   ) {}
 
   private getClient(): Facturapi {
@@ -578,51 +580,11 @@ export class FacturaAPIService implements ICertificationPackService {
   }
 
   async searchMeasurementUnits(term: string): Promise<any[]> {
-    try {
-      const apiKey = this.getApiKey();
-      const response = await fetch(
-        `https://www.facturapi.io/v2/catalogs/units?q=${encodeURIComponent(term)}&limit=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error('Measurement units search error:', error);
-      return [];
-    }
+    return this.satCatalogService.searchMeasurementUnits(term);
   }
 
   async searchProductKeys(term: string): Promise<any[]> {
-    try {
-      const apiKey = this.getApiKey();
-      const response = await fetch(
-        `https://www.facturapi.io/v2/catalogs/products?q=${encodeURIComponent(term)}&limit=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error('Product keys search error:', error);
-      return [];
-    }
+    return this.satCatalogService.searchProductKeys(term);
   }
 
   async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {

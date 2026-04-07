@@ -15,6 +15,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { MeasurementUnitMapper } from './mappers/measurement-unit.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { SatCatalogService } from './sat-catalog.service';
 import { MeasurementUnitSuggestion } from '../interfaces/certification-pack.interface';
 import { TenantContext } from './tenant-context.service';
 
@@ -29,6 +30,7 @@ export class MeasurementUnitService {
     private translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly tenantContext: TenantContext,
+    private readonly satCatalogService: SatCatalogService,
   ) { }
 
   private get organizationId(): string {
@@ -313,41 +315,7 @@ export class MeasurementUnitService {
   }
 
   async searchFromPack(term: string): Promise<MeasurementUnitSuggestion[]> {
-    try {
-      // Intentar usar API pública de factura123.mx (no requiere autenticación)
-      const url = `https://factura123.mx/api/v2/public/cat/units?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0',
-        },
-      });
-
-      if (!response.ok) {
-        return this.getStaticMeasurementUnits(term);
-      }
-
-      const data = await response.json();
-      
-      // Adaptar la respuesta de factura123.mx al formato esperado
-      const items = data.rows || data.data || data || [];
-      const results = items.map((item: any) => ({
-        key: item.clavesat || item.clave || item.code || item.key,
-        description: item.descripcion || item.description || item.name,
-      }));
-      
-      // Ordenar por longitud de descripción
-      results.sort((a, b) => {
-        const lengthA = a.description?.length || 0;
-        const lengthB = b.description?.length || 0;
-        return lengthA - lengthB;
-      });
-      
-      return results;
-    } catch (error) {
-      return this.getStaticMeasurementUnits(term);
-    }
+    return this.satCatalogService.searchMeasurementUnits(term);
   }
 
   private getStaticMeasurementUnits(term: string): MeasurementUnitSuggestion[] {

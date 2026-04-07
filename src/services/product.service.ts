@@ -22,6 +22,7 @@ import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { SatCatalogService } from './sat-catalog.service';
 import { ProductKeySuggestion } from '../interfaces/certification-pack.interface';
 import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
@@ -74,6 +75,7 @@ export class ProductService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly unifiedUploadService: UnifiedUploadService,
+    private readonly satCatalogService: SatCatalogService,
   ) {}
 
   private get organizationId(): string {
@@ -358,6 +360,15 @@ export class ProductService {
     }
 
     return product;
+  }
+
+  /** Batch load de productos por IDs — evita N+1 en operaciones con múltiples productos */
+  async findManyEntities(ids: string[]): Promise<Product[]> {
+    if (!ids.length) return [];
+    return this.productRepository.find({
+      where: { id: In(ids), organization_id: this.organizationId },
+      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+    });
   }
 
   /** Devuelve todos los productos activos de tipo service o digital (no necesitan almacén). */
@@ -681,42 +692,7 @@ export class ProductService {
   }
 
   async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {
-    try {
-      // Usar API pública de factura123.mx (no requiere autenticación)
-      const url = `https://factura123.mx/api/v2/public/cat/prodclasses?search=${encodeURIComponent(term)}&order=asc&offset=0&limit=20`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0',
-        },
-      });
-
-      if (!response.ok) {
-        return this.getStaticProductKeys(term);
-      }
-
-      const data = await response.json();
-      
-      // Adaptar la respuesta de factura123.mx al formato esperado
-      const items = data.rows || data.data || data || [];
-      const results = items.map((item: any) => ({
-        key: item.clavesat || item.clave || item.code || item.key,
-        description: item.descripcion || item.description || item.name,
-        score: 0,
-      }));
-      
-      // Ordenar por longitud de descripción
-      results.sort((a, b) => {
-        const lengthA = a.description?.length || 0;
-        const lengthB = b.description?.length || 0;
-        return lengthA - lengthB;
-      });
-      
-      return results;
-    } catch (error) {
-      return this.getStaticProductKeys(term);
-    }
+    return this.satCatalogService.searchProductKeys(term);
   }
 
   private getStaticProductKeys(term: string): ProductKeySuggestion[] {

@@ -18,12 +18,14 @@ import {
 } from '../interfaces/certification-pack.interface';
 import { GenerateCFDIOptions } from '../interfaces/factura-green-options.interface';
 import { TenantContext } from './tenant-context.service';
+import { SatCatalogService } from './sat-catalog.service';
 
 @Injectable()
 export class FacturaGreenService implements ICertificationPackService {
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
+    private readonly satCatalogService: SatCatalogService,
   ) { }
 
   private getConfig() {
@@ -431,32 +433,11 @@ export class FacturaGreenService implements ICertificationPackService {
   }
 
   async searchMeasurementUnits(term: string): Promise<MeasurementUnitSuggestion[]> {
-    try {
-      // Factura Green no tiene endpoint de búsqueda de catálogos
-      // Usamos el endpoint público de FacturaAPI que tiene los catálogos oficiales del SAT
-      const response = await fetch(
-        `https://www.facturapi.io/v2/catalogs/units?q=${encodeURIComponent(term)}&limit=20`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+    return this.satCatalogService.searchMeasurementUnits(term);
+  }
 
-      if (!response.ok) {
-        // Fallback a catálogo estático
-        return this.getStaticMeasurementUnits(term);
-      }
-
-      const data = await response.json();
-      return (data.data || []).map((item: any) => ({
-        key: item.key,
-        description: item.name || item.description,
-      }));
-    } catch (error) {
-      console.error('Measurement units search error:', error);
-      return this.getStaticMeasurementUnits(term);
-    }
+  async searchProductKeys(term: string): Promise<ProductKeySuggestion[]> {
+    return this.satCatalogService.searchProductKeys(term);
   }
 
   private getStaticMeasurementUnits(term: string): MeasurementUnitSuggestion[] {
@@ -492,36 +473,6 @@ export class FacturaGreenService implements ICertificationPackService {
         u.key.toLowerCase().includes(lowerTerm) ||
         u.description.toLowerCase().includes(lowerTerm),
     );
-  }
-
-  async searchProductKeys(term: string): Promise<ProductKeySuggestion[]> {
-    try {
-      // Factura Green no tiene endpoint de búsqueda de catálogos
-      // Usamos el endpoint público de FacturaAPI que tiene los catálogos oficiales del SAT
-      const response = await fetch(
-        `https://www.facturapi.io/v2/catalogs/products?q=${encodeURIComponent(term)}&limit=20`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (!response.ok) {
-        // Fallback a catálogo estático
-        return this.getStaticProductKeys(term);
-      }
-
-      const data = await response.json();
-      return (data.data || []).map((item: any) => ({
-        key: item.key,
-        description: item.name || item.description,
-        score: item.score,
-      }));
-    } catch (error) {
-      console.error('Product keys search error:', error);
-      return this.getStaticProductKeys(term);
-    }
   }
 
   private getStaticProductKeys(term: string): ProductKeySuggestion[] {

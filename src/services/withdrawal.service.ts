@@ -777,13 +777,19 @@ export class WithdrawalService {
       );
     }
 
+    // Batch load de productos — evita N+1 (1 query en lugar de N)
+    const productIds = withdrawalDetails.map(d => d.product.id);
+    const products = await this.productService.findManyEntities(productIds);
+    const productMap = new Map(products.map(p => [p.id, p]));
+
     let withdrawnProducts = 0;
     let totalQuantity = 0;
 
     for (const detail of withdrawalDetails) {
-      const product = await this.productService.findOneEntity(
-        detail.product.id,
-      );
+      const product = productMap.get(detail.product.id);
+      if (!product) {
+        throw new BadRequestException(`Producto ${detail.product.id} no encontrado`);
+      }
 
       // Productos service/digital no tienen inventario físico — solo registrar historia
       if (product.type !== 'tangible') {
@@ -840,6 +846,9 @@ export class WithdrawalService {
       }
 
       let remainingToDeduct = Number(detail.quantity);
+      const lotsToSave: Inventory[] = [];
+      const historyEntities: ProductHistory[] = [];
+
       for (const lot of lots) {
         if (remainingToDeduct <= 0) break;
 
@@ -848,23 +857,24 @@ export class WithdrawalService {
 
         lot.quantity = lotQuantity - deduction;
         remainingToDeduct -= deduction;
+        lotsToSave.push(lot);
 
-        const finalLot = await this.inventoryRepository.save(lot);
-
-        const productHistory = this.productHistoryRepository.create({
+        historyEntities.push(this.productHistoryRepository.create({
           product: detail.product,
           warehouse: detail.warehouse,
           operation_type: OperationType.WITHDRAWAL,
           operation_id: withdrawal.id,
           quantity: deduction,
-          current_stock: Number(finalLot.quantity),
+          current_stock: lot.quantity,
           batch_number: lot.batch_number,
           expiration_date: lot.expiration_date,
           organization_id: this.organizationId,
-        });
-
-        await this.productHistoryRepository.save(productHistory);
+        }));
       }
+
+      // Batch save lotes e historial — evita N saves individuales
+      await this.inventoryRepository.save(lotsToSave);
+      await this.productHistoryRepository.save(historyEntities);
 
       // Update denormalized total_stock
       await this.productService.updateStock(
