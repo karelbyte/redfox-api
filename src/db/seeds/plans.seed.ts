@@ -20,7 +20,7 @@ export class PlansSeed {
       {
         name: 'Plan Mensual',
         version: '1.0',
-        price: 700.00,
+        price: 700.0,
         currency: 'MXN',
         billing_period: 'monthly',
         description: 'Plan mensual con todas las características incluidas',
@@ -31,10 +31,11 @@ export class PlansSeed {
       {
         name: 'Plan Anual',
         version: '1.0',
-        price: 6500.00,
+        price: 6500.0,
         currency: 'MXN',
         billing_period: 'yearly',
-        description: 'Plan anual con todas las características incluidas - Ahorra más de 1 mes',
+        description:
+          'Plan anual con todas las características incluidas - Ahorra más de 1 mes',
         features: DEFAULT_FEATURES,
         is_default: false,
         is_active: true,

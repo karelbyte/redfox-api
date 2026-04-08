@@ -7,7 +7,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { IStorageService, STORAGE_SERVICE } from '../services/storage/storage.interface';
+import {
+  IStorageService,
+  STORAGE_SERVICE,
+} from '../services/storage/storage.interface';
 import { Public } from '../decorators/public.decorator';
 
 @Controller('uploads')
@@ -20,13 +23,13 @@ export class UploadsController {
   /**
    * Proxy de archivos — sirve cualquier archivo del storage configurado.
    * El frontend siempre llama a /api/uploads/* sin importar si es local o S3.
-   * 
+   *
    * Rutas soportadas:
    * - /api/uploads/{orgId}/products/{productId}/{filename}
    * - /api/uploads/{orgId}/categories/{categoryId}/{filename}
    * - /api/uploads/{orgId}/brands/{brandId}/{filename}
    * - /api/uploads/{orgId}/company/{filename}
-   * 
+   *
    * También mantiene compatibilidad con rutas legacy:
    * - /api/uploads/products/{filename}
    * - /api/uploads/categories/{filename}

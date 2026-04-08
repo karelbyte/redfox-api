@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateExpensePaymentsTable1716500000000 implements MigrationInterface {
+export class CreateExpensePaymentsTable1716500000000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -33,7 +40,14 @@ export class CreateExpensePaymentsTable1716500000000 implements MigrationInterfa
           {
             name: 'paymentMethod',
             type: 'enum',
-            enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'check', 'other'],
+            enum: [
+              'cash',
+              'credit_card',
+              'debit_card',
+              'bank_transfer',
+              'check',
+              'other',
+            ],
             default: "'cash'",
             isNullable: false,
           },
@@ -125,7 +139,7 @@ export class CreateExpensePaymentsTable1716500000000 implements MigrationInterfa
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('expense_payments');
-    
+
     await queryRunner.query(`
       ALTER TABLE expenses 
       DROP COLUMN IF EXISTS "paidAmount",

@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, TableColumn, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  TableColumn,
+  TableIndex,
+} from 'typeorm';
 
-export class DeleteOrganizationStoredProcedure1774708587518 implements MigrationInterface {
+export class DeleteOrganizationStoredProcedure1774708587518
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -12,7 +19,7 @@ export class DeleteOrganizationStoredProcedure1774708587518 implements Migration
       'bookmarks',
       'internal_notes',
       'tags',
-      'templates'
+      'templates',
     ];
 
     for (const tableName of tablesToFix) {
@@ -24,7 +31,7 @@ export class DeleteOrganizationStoredProcedure1774708587518 implements Migration
             name: 'organization_id',
             type: isPostgres ? 'uuid' : 'varchar(36)',
             isNullable: true,
-          })
+          }),
         );
 
         await queryRunner.createIndex(
@@ -32,7 +39,7 @@ export class DeleteOrganizationStoredProcedure1774708587518 implements Migration
           new TableIndex({
             name: `IDX_${tableName}_organization_id`,
             columnNames: ['organization_id'],
-          })
+          }),
         );
       }
     }
@@ -121,7 +128,9 @@ export class DeleteOrganizationStoredProcedure1774708587518 implements Migration
       `);
     } else {
       // Procedimiento para MySQL (Versión consolidada)
-      await queryRunner.query('DROP PROCEDURE IF EXISTS delete_organization_data');
+      await queryRunner.query(
+        'DROP PROCEDURE IF EXISTS delete_organization_data',
+      );
       await queryRunner.query(`
         CREATE PROCEDURE delete_organization_data(IN org_id CHAR(36))
         BEGIN
@@ -216,9 +225,13 @@ export class DeleteOrganizationStoredProcedure1774708587518 implements Migration
   public async down(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
     if (isPostgres) {
-      await queryRunner.query('DROP FUNCTION IF EXISTS delete_organization_data(UUID)');
+      await queryRunner.query(
+        'DROP FUNCTION IF EXISTS delete_organization_data(UUID)',
+      );
     } else {
-      await queryRunner.query('DROP PROCEDURE IF EXISTS delete_organization_data');
+      await queryRunner.query(
+        'DROP PROCEDURE IF EXISTS delete_organization_data',
+      );
     }
 
     // Revertir columnas si se desea (opcional)

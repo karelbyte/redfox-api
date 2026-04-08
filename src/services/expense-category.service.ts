@@ -12,7 +12,7 @@ export class ExpenseCategoryService {
     @InjectRepository(ExpenseCategory)
     private expenseCategoryRepository: Repository<ExpenseCategory>,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;

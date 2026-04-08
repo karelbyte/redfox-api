@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Expense, ExpenseStatus } from '../models/expense.entity';
@@ -16,7 +20,7 @@ export class ExpenseService {
     @InjectRepository(ExpensePayment)
     private paymentRepository: Repository<ExpensePayment>,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -107,7 +111,13 @@ export class ExpenseService {
   async findOne(id: string): Promise<Expense> {
     const expense = await this.expenseRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['category', 'provider', 'createdByUser', 'payments', 'payments.createdByUser'],
+      relations: [
+        'category',
+        'provider',
+        'createdByUser',
+        'payments',
+        'payments.createdByUser',
+      ],
     });
 
     if (!expense) {
@@ -310,11 +320,11 @@ export class ExpenseService {
 
   async getPayments(expenseId: string): Promise<ExpensePayment[]> {
     const expense = await this.findOne(expenseId);
-    
+
     return await this.paymentRepository.find({
-      where: { 
+      where: {
         expenseId: expense.id,
-        organization_id: this.organizationId 
+        organization_id: this.organizationId,
       },
       relations: ['createdByUser'],
       order: { paymentDate: 'DESC' },

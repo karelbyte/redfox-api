@@ -64,10 +64,17 @@ export class ProductMapper {
       height,
       length,
       brand: brand ? this.brandMapper.mapToResponseDto(brand) : null,
-      category: category ? this.categoryMapper.mapToResponseDto(category) : null,
+      category: category
+        ? this.categoryMapper.mapToResponseDto(category)
+        : null,
       tax: tax ? this.taxMapper.mapToResponseDto(tax) : null,
-      taxes: taxes && taxes.length > 0 ? taxes.map((t) => this.taxMapper.mapToResponseDto(t)) : [],
-      measurement_unit: measurement_unit ? this.measurementUnitMapper.mapToResponseDto(measurement_unit) : null,
+      taxes:
+        taxes && taxes.length > 0
+          ? taxes.map((t) => this.taxMapper.mapToResponseDto(t))
+          : [],
+      measurement_unit: measurement_unit
+        ? this.measurementUnitMapper.mapToResponseDto(measurement_unit)
+        : null,
       is_active,
       type,
       inventory_strategy,
@@ -82,7 +89,9 @@ export class ProductMapper {
           }))
         : [],
       images: images ? (JSON.parse(images) as string[]) : [],
-      currency: currency ? this.currencyMapper.mapToResponseDto(currency) : null,
+      currency: currency
+        ? this.currencyMapper.mapToResponseDto(currency)
+        : null,
       created_at,
     };
   }

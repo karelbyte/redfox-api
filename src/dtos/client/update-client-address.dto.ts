@@ -1,9 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-} from 'class-validator';
+import { IsOptional, IsString, IsUUID, Length } from 'class-validator';
 
 export class UpdateClientAddressDto {
   @IsUUID()

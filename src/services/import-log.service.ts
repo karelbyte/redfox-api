@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ImportLog, ImportLogStatus, ImportLogType } from '../models/import-log.entity';
+import {
+  ImportLog,
+  ImportLogStatus,
+  ImportLogType,
+} from '../models/import-log.entity';
 
 @Injectable()
 export class ImportLogService {

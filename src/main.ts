@@ -44,10 +44,12 @@ async function bootstrap() {
     });
 
     // Compresión gzip/brotli — reduce payload hasta 70%
-    app.use(compression({
-      threshold: 1024, // solo comprimir respuestas > 1KB
-      level: 6,        // balance entre velocidad y compresión
-    }));
+    app.use(
+      compression({
+        threshold: 1024, // solo comprimir respuestas > 1KB
+        level: 6, // balance entre velocidad y compresión
+      }),
+    );
 
     // Configurar el prefijo global 'api'
     app.setGlobalPrefix('api');

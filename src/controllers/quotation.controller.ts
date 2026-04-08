@@ -85,7 +85,8 @@ export class QuotationController {
   @Post(':id/convert-to-sale')
   async convertToSale(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: {
+    @Body()
+    body: {
       items: { detail_id: string; warehouse_id?: string }[];
       payment_method?: string;
       close_sale?: boolean;
@@ -107,7 +108,9 @@ export class QuotationController {
       try {
         await this.withdrawalService.closeWithdrawal(result.saleId, userId);
       } catch (error) {
-        this.logger.warn(`[ConvertToSale] Could not close sale ${result.saleId}: ${error?.message}`);
+        this.logger.warn(
+          `[ConvertToSale] Could not close sale ${result.saleId}: ${error?.message}`,
+        );
       }
     }
 
@@ -115,10 +118,15 @@ export class QuotationController {
     let invoiceId: string | null = null;
     if (body.create_invoice && body.close_sale) {
       try {
-        const invoice = await this.invoiceService.createFromWithdrawal(result.saleId, userId);
+        const invoice = await this.invoiceService.createFromWithdrawal(
+          result.saleId,
+          userId,
+        );
         invoiceId = invoice?.id ?? null;
       } catch (error) {
-        this.logger.warn(`[ConvertToSale] Could not create invoice for sale ${result.saleId}: ${error?.message}`);
+        this.logger.warn(
+          `[ConvertToSale] Could not create invoice for sale ${result.saleId}: ${error?.message}`,
+        );
       }
     }
 
@@ -127,7 +135,9 @@ export class QuotationController {
       try {
         await this.invoiceService.generateCFDI(invoiceId, userId);
       } catch (error) {
-        this.logger.warn(`[ConvertToSale] Could not stamp invoice ${invoiceId}: ${error?.message}`);
+        this.logger.warn(
+          `[ConvertToSale] Could not stamp invoice ${invoiceId}: ${error?.message}`,
+        );
       }
     }
 

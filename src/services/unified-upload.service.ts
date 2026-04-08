@@ -1,5 +1,9 @@
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
-import { IStorageService, STORAGE_SERVICE, UploadResult } from './storage/storage.interface';
+import {
+  IStorageService,
+  STORAGE_SERVICE,
+  UploadResult,
+} from './storage/storage.interface';
 import { TenantContext } from './tenant-context.service';
 
 export interface UploadOptions {
@@ -37,7 +41,7 @@ export class UnifiedUploadService {
     const orgId = this.organizationId;
     const timestamp = Date.now();
     const cleanFilename = this.sanitizeFilename(filename);
-    
+
     if (entityId) {
       // Para productos, categorías, marcas con ID específico
       return `${orgId}/${category}/${entityId}/${timestamp}-${cleanFilename}`;
@@ -60,10 +64,19 @@ export class UnifiedUploadService {
   /**
    * Valida los archivos según las opciones
    */
-  private validateFiles(files: Express.Multer.File[], options: UploadOptions): void {
+  private validateFiles(
+    files: Express.Multer.File[],
+    options: UploadOptions,
+  ): void {
     const {
       maxSize = 5 * 1024 * 1024, // 5MB por defecto
-      allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+      allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+      ],
       maxFiles = 10,
     } = options;
 
@@ -74,13 +87,13 @@ export class UnifiedUploadService {
     for (const file of files) {
       if (file.size > maxSize) {
         throw new BadRequestException(
-          `El archivo ${file.originalname} excede el tamaño máximo de ${Math.round(maxSize / 1024 / 1024)}MB`
+          `El archivo ${file.originalname} excede el tamaño máximo de ${Math.round(maxSize / 1024 / 1024)}MB`,
         );
       }
 
       if (!allowedTypes.includes(file.mimetype)) {
         throw new BadRequestException(
-          `Tipo de archivo no permitido: ${file.mimetype}. Tipos permitidos: ${allowedTypes.join(', ')}`
+          `Tipo de archivo no permitido: ${file.mimetype}. Tipos permitidos: ${allowedTypes.join(', ')}`,
         );
       }
     }
@@ -126,7 +139,7 @@ export class UnifiedUploadService {
    * Elimina archivos por sus keys
    */
   async deleteFiles(keys: string[]): Promise<void> {
-    const deletePromises = keys.map(key => this.storageService.delete(key));
+    const deletePromises = keys.map((key) => this.storageService.delete(key));
     await Promise.all(deletePromises);
   }
 
@@ -151,9 +164,9 @@ export class UnifiedUploadService {
    */
   async deleteFilesByUrls(urls: string[]): Promise<void> {
     const keys = urls
-      .map(url => this.extractKeyFromUrl(url))
-      .filter(key => key !== null) as string[];
-    
+      .map((url) => this.extractKeyFromUrl(url))
+      .filter((key) => key !== null);
+
     if (keys.length > 0) {
       await this.deleteFiles(keys);
     }

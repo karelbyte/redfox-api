@@ -27,7 +27,7 @@ export class BrandService {
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
     private readonly unifiedUploadService: UnifiedUploadService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;

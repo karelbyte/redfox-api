@@ -24,7 +24,7 @@ export class UserService {
     private roleService: RoleService,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;

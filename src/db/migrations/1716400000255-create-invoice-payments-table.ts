@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateInvoicePaymentsTable1716400000255 implements MigrationInterface {
+export class CreateInvoicePaymentsTable1716400000255
+  implements MigrationInterface
+{
   name = 'CreateInvoicePaymentsTable1716400000255';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -53,7 +60,8 @@ export class CreateInvoicePaymentsTable1716400000255 implements MigrationInterfa
             type: 'varchar',
             length: '5',
             isNullable: false,
-            comment: 'Clave SAT forma de pago: 01=Efectivo, 03=Transferencia, 04=Tarjeta...',
+            comment:
+              'Clave SAT forma de pago: 01=Efectivo, 03=Transferencia, 04=Tarjeta...',
           },
           {
             name: 'balance_before',
@@ -156,7 +164,11 @@ export class CreateInvoicePaymentsTable1716400000255 implements MigrationInterfa
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('invoice_payments');
     const foreignKeys = table?.foreignKeys || [];
-    await Promise.all(foreignKeys.map((fk) => queryRunner.dropForeignKey('invoice_payments', fk)));
+    await Promise.all(
+      foreignKeys.map((fk) =>
+        queryRunner.dropForeignKey('invoice_payments', fk),
+      ),
+    );
     await queryRunner.dropTable('invoice_payments');
   }
 }

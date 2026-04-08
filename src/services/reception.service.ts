@@ -59,7 +59,7 @@ export class ReceptionService {
     private readonly providerMapper: ProviderMapper,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -116,7 +116,10 @@ export class ReceptionService {
   ): Promise<ReceptionResponseDto> {
     // Verificar que el provider existe
     const provider = await this.providerRepository.findOne({
-      where: { id: createReceptionDto.provider_id, organization_id: this.organizationId },
+      where: {
+        id: createReceptionDto.provider_id,
+        organization_id: this.organizationId,
+      },
     });
     if (!provider) {
       const message = await this.translationService.translate(
@@ -129,7 +132,10 @@ export class ReceptionService {
 
     // Verificar que el warehouse existe
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id: createReceptionDto.warehouse_id, organization_id: this.organizationId },
+      where: {
+        id: createReceptionDto.warehouse_id,
+        organization_id: this.organizationId,
+      },
     });
     if (!warehouse) {
       const message = await this.translationService.translate(
@@ -153,7 +159,10 @@ export class ReceptionService {
     const savedReception = await this.receptionRepository.save(reception);
 
     // Incrementar el contador del surrogate si el código coincide con el sugerido
-    await this.surrogateService.useCodeIfMatches('reception', createReceptionDto.code);
+    await this.surrogateService.useCodeIfMatches(
+      'reception',
+      createReceptionDto.code,
+    );
 
     // Recargar con relaciones para la respuesta
     const receptionWithRelations = await this.receptionRepository.findOne({
@@ -242,7 +251,10 @@ export class ReceptionService {
 
     if (updateReceptionDto.provider_id) {
       const provider = await this.providerRepository.findOne({
-        where: { id: updateReceptionDto.provider_id, organization_id: this.organizationId },
+        where: {
+          id: updateReceptionDto.provider_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!provider) {
         const message = await this.translationService.translate(
@@ -268,7 +280,9 @@ export class ReceptionService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
-    const reception = await this.receptionRepository.findOne({ where: { id, organization_id: this.organizationId } });
+    const reception = await this.receptionRepository.findOne({
+      where: { id, organization_id: this.organizationId },
+    });
     if (!reception) {
       const message = await this.translationService.translate(
         'reception.not_found',
@@ -302,7 +316,10 @@ export class ReceptionService {
     }
 
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
+      where: {
+        id: createDetailDto.product_id,
+        organization_id: this.organizationId,
+      },
     });
     if (!product) {
       const message = await this.translationService.translate(
@@ -528,7 +545,10 @@ export class ReceptionService {
 
     if (updateDetailDto.product_id) {
       const product = await this.productRepository.findOne({
-        where: { id: updateDetailDto.product_id, organization_id: this.organizationId },
+        where: {
+          id: updateDetailDto.product_id,
+          organization_id: this.organizationId,
+        },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
       if (!product) {
@@ -684,12 +704,12 @@ export class ReceptionService {
 
           // Actualizar el inventario existente
           existingInventory.quantity = oldQuantity + newQuantity;
-          existingInventory.price = Math.round(weightedAveragePrice * 100) / 100;
+          existingInventory.price =
+            Math.round(weightedAveragePrice * 100) / 100;
           existingInventory.updated_at = new Date();
 
-          finalInventory = await this.inventoryRepository.save(
-            existingInventory,
-          );
+          finalInventory =
+            await this.inventoryRepository.save(existingInventory);
         } else {
           // Crear nuevo inventario si no existe
           const newInventory = this.inventoryRepository.create({
@@ -754,14 +774,14 @@ export class ReceptionService {
     const message =
       transferredProducts > 0
         ? await this.translationService.translate(
-          'reception.closed_successfully',
-          userId,
-          { transferredProducts },
-        )
+            'reception.closed_successfully',
+            userId,
+            { transferredProducts },
+          )
         : await this.translationService.translate(
-          'reception.closed_no_products',
-          userId,
-        );
+            'reception.closed_no_products',
+            userId,
+          );
 
     return {
       receptionId: reception.id,

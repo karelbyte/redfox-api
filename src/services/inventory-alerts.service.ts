@@ -78,8 +78,8 @@ export class InventoryAlertsService {
 
     return expiringInventory.map((item) => {
       const daysUntilExpiry = Math.ceil(
-        (new Date(item.expiration_date).getTime() - new Date().getTime()) / 
-        (1000 * 60 * 60 * 24)
+        (new Date(item.expiration_date).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24),
       );
 
       let priority: 'urgent' | 'high' | 'medium' = 'medium';
@@ -108,7 +108,9 @@ export class InventoryAlertsService {
   /**
    * Obtiene productos con stock bajo
    */
-  async getLowStockProducts(organizationId: string): Promise<LowStockProduct[]> {
+  async getLowStockProducts(
+    organizationId: string,
+  ): Promise<LowStockProduct[]> {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .where('product.organization_id = :organizationId', { organizationId })
@@ -146,7 +148,9 @@ export class InventoryAlertsService {
   /**
    * Obtiene todas las alertas de inventario para una organización
    */
-  async getInventoryAlerts(organizationId: string): Promise<InventoryAlertsResponse> {
+  async getInventoryAlerts(
+    organizationId: string,
+  ): Promise<InventoryAlertsResponse> {
     const [expiringProducts, lowStockProducts] = await Promise.all([
       this.getExpiringProducts(organizationId),
       this.getLowStockProducts(organizationId),
@@ -154,8 +158,8 @@ export class InventoryAlertsService {
 
     const totalAlerts = expiringProducts.length + lowStockProducts.length;
     const urgentAlerts = [
-      ...expiringProducts.filter(p => p.priority === 'urgent'),
-      ...lowStockProducts.filter(p => p.priority === 'urgent'),
+      ...expiringProducts.filter((p) => p.priority === 'urgent'),
+      ...lowStockProducts.filter((p) => p.priority === 'urgent'),
     ].length;
 
     return {
@@ -187,14 +191,19 @@ export class InventoryAlertsService {
 
       this.logger.log('Alertas diarias de inventario generadas exitosamente');
     } catch (error) {
-      this.logger.error('Error generando alertas diarias de inventario:', error);
+      this.logger.error(
+        'Error generando alertas diarias de inventario:',
+        error,
+      );
     }
   }
 
   /**
    * Genera alertas para una organización específica
    */
-  private async generateAlertsForOrganization(organizationId: string): Promise<void> {
+  private async generateAlertsForOrganization(
+    organizationId: string,
+  ): Promise<void> {
     try {
       const alerts = await this.getInventoryAlerts(organizationId);
 
@@ -207,7 +216,9 @@ export class InventoryAlertsService {
       });
 
       if (adminUsers.length === 0) {
-        this.logger.warn(`No se encontraron administradores para la organización ${organizationId}`);
+        this.logger.warn(
+          `No se encontraron administradores para la organización ${organizationId}`,
+        );
         return;
       }
 
@@ -225,9 +236,14 @@ export class InventoryAlertsService {
         }
       }
 
-      this.logger.log(`Alertas generadas para organización ${organizationId}: ${alerts.totalAlerts} total, ${alerts.urgentAlerts} urgentes`);
+      this.logger.log(
+        `Alertas generadas para organización ${organizationId}: ${alerts.totalAlerts} total, ${alerts.urgentAlerts} urgentes`,
+      );
     } catch (error) {
-      this.logger.error(`Error generando alertas para organización ${organizationId}:`, error);
+      this.logger.error(
+        `Error generando alertas para organización ${organizationId}:`,
+        error,
+      );
     }
   }
 
@@ -239,8 +255,8 @@ export class InventoryAlertsService {
     users: User[],
   ): Promise<void> {
     const isExpired = product.daysUntilExpiry <= 0;
-    const title = isExpired 
-      ? '🚨 Producto Vencido' 
+    const title = isExpired
+      ? '🚨 Producto Vencido'
       : '⚠️ Producto Próximo a Vencer';
 
     const message = isExpired
@@ -265,9 +281,7 @@ export class InventoryAlertsService {
     users: User[],
   ): Promise<void> {
     const isOutOfStock = product.currentStock <= 0;
-    const title = isOutOfStock 
-      ? '🚨 Sin Stock' 
-      : '📉 Stock Bajo';
+    const title = isOutOfStock ? '🚨 Sin Stock' : '📉 Stock Bajo';
 
     const message = isOutOfStock
       ? `${product.productName} (${product.productSku}) está agotado. Stock actual: ${product.currentStock}`
@@ -307,7 +321,7 @@ export class InventoryAlertsService {
       } else {
         // Verificar todos los productos críticos
         const alerts = await this.getInventoryAlerts(organizationId);
-        
+
         for (const product of alerts.expiringProducts) {
           if (product.priority === 'urgent') {
             await this.createExpirationNotification(product, adminUsers);
@@ -342,7 +356,8 @@ export class InventoryAlertsService {
       const currentStock = Number(product.total_stock);
       const minStock = Number(product.min_stock);
 
-      if (currentStock <= minStock * 0.5) { // 50% del mínimo o menos
+      if (currentStock <= minStock * 0.5) {
+        // 50% del mínimo o menos
         const lowStockProduct: LowStockProduct = {
           id: product.id,
           productName: product.name,
@@ -371,10 +386,13 @@ export class InventoryAlertsService {
     urgentDate.setDate(urgentDate.getDate() + 3);
 
     for (const item of expiringInventory) {
-      if (item.expiration_date && new Date(item.expiration_date) <= urgentDate) {
+      if (
+        item.expiration_date &&
+        new Date(item.expiration_date) <= urgentDate
+      ) {
         const daysUntilExpiry = Math.ceil(
-          (new Date(item.expiration_date).getTime() - new Date().getTime()) / 
-          (1000 * 60 * 60 * 24)
+          (new Date(item.expiration_date).getTime() - new Date().getTime()) /
+            (1000 * 60 * 60 * 24),
         );
 
         const expiringProduct: ExpiringProduct = {

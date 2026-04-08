@@ -78,9 +78,15 @@ export class BrandController {
         brand.id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 1,
-        }
+        },
       );
 
       // Actualizar la marca con la URL de la imagen
@@ -140,16 +146,22 @@ export class BrandController {
         id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 1,
-        }
+        },
       );
 
       updateBrandDto.img = uploadResult.url;
     } else if (updateBrandDto.imageChanged) {
       updateBrandDto.img = '';
     }
-    
+
     return this.brandService.update(id, updateBrandDto, userId);
   }
 

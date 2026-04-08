@@ -13,7 +13,11 @@ export class CompanySettingsMapper {
 
     // Normalizar path local legacy: /uploads/ → /api/uploads/
     // Las URLs de S3 ya vienen absolutas (https://...) y no se tocan
-    if (logoUrl && !logoUrl.startsWith('http') && logoUrl.startsWith('/uploads/')) {
+    if (
+      logoUrl &&
+      !logoUrl.startsWith('http') &&
+      logoUrl.startsWith('/uploads/')
+    ) {
       logoUrl = `/api${logoUrl}`;
     }
 

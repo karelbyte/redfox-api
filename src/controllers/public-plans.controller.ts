@@ -35,7 +35,7 @@ export class PublicPlansController {
   @Get('plans')
   async getPublicPlans() {
     const plans = await this.subscriptionService.getAllPlans();
-    return plans.map(p => ({
+    return plans.map((p) => ({
       id: p.id,
       name: p.name,
       price: p.price,

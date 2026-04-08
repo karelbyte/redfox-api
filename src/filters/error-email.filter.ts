@@ -82,7 +82,10 @@ export class ErrorEmailFilter implements ExceptionFilter {
 
     // Rate limiting con Redis: evitar spam por el mismo error
     const errorKey = `rate:error:${request?.method}:${request?.url}:${message}`;
-    const count = await this.redisService.increment(errorKey, this.RATE_LIMIT_SECONDS);
+    const count = await this.redisService.increment(
+      errorKey,
+      this.RATE_LIMIT_SECONDS,
+    );
     if (count > 1) {
       this.logger.debug(`Error email rate-limited para: ${errorKey}`);
       return;

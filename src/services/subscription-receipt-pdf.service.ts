@@ -54,8 +54,8 @@ export class SubscriptionReceiptPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const W = doc.page.width;   // 595
-      const H = doc.page.height;  // 842
+      const W = doc.page.width; // 595
+      const H = doc.page.height; // 842
 
       // ── Background ──────────────────────────────────────────────────────
       doc.rect(0, 0, W, H).fill(hexToRgb(C.bg));
@@ -92,13 +92,19 @@ export class SubscriptionReceiptPdfService {
         .font('Helvetica')
         .fontSize(9)
         .fillColor(hexToRgb(C.muted))
-        .text(`N° ${data.receiptNumber}`, 0, 56, { align: 'right', width: W - 50 });
+        .text(`N° ${data.receiptNumber}`, 0, 56, {
+          align: 'right',
+          width: W - 50,
+        });
 
       doc
         .font('Helvetica')
         .fontSize(9)
         .fillColor(hexToRgb(C.muted))
-        .text(this.fmt(data.issueDate), 0, 70, { align: 'right', width: W - 50 });
+        .text(this.fmt(data.issueDate), 0, 70, {
+          align: 'right',
+          width: W - 50,
+        });
 
       // ── Status badge ─────────────────────────────────────────────────────
       const badgeY = 130;
@@ -109,7 +115,10 @@ export class SubscriptionReceiptPdfService {
         .font('Helvetica-Bold')
         .fontSize(11)
         .fillColor(hexToRgb(C.white))
-        .text('✓  PAGO CONFIRMADO', badgeX, badgeY + 8, { width: badgeW, align: 'center' });
+        .text('✓  PAGO CONFIRMADO', badgeX, badgeY + 8, {
+          width: badgeW,
+          align: 'center',
+        });
 
       // ── Client info card ─────────────────────────────────────────────────
       const cardX = 50;
@@ -159,7 +168,10 @@ export class SubscriptionReceiptPdfService {
 
       const rows: [string, string][] = [
         ['Plan', `${data.planName} — ${this.periodLabel(data.billingPeriod)}`],
-        ['Período de vigencia', `${this.fmt(data.periodStart)}  →  ${this.fmt(data.periodEnd)}`],
+        [
+          'Período de vigencia',
+          `${this.fmt(data.periodStart)}  →  ${this.fmt(data.periodEnd)}`,
+        ],
         ['Método de pago', 'Tarjeta de crédito / débito'],
         ['Estado del pago', 'Completado'],
       ];
@@ -183,7 +195,10 @@ export class SubscriptionReceiptPdfService {
       y = 500;
       doc.roundedRect(cardX, y, cardW, 90, 8).fill(hexToRgb(C.surface));
       // Full accent border
-      doc.roundedRect(cardX, y, cardW, 90, 8).stroke(hexToRgb(C.accent)).lineWidth(1.5);
+      doc
+        .roundedRect(cardX, y, cardW, 90, 8)
+        .stroke(hexToRgb(C.accent))
+        .lineWidth(1.5);
 
       doc
         .font('Helvetica-Bold')

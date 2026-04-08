@@ -1,8 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../models/invoice.entity';
-import { InvoicePayment, InvoicePaymentStatus } from '../models/invoice-payment.entity';
+import {
+  InvoicePayment,
+  InvoicePaymentStatus,
+} from '../models/invoice-payment.entity';
 import { AccountReceivable } from '../models/account-receivable.entity';
 import { PaymentMethod as ARPaymentMethod } from '../models/account-receivable-payment.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
@@ -74,7 +81,10 @@ export class InvoicePaymentService {
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
     });
-    if (!invoice) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
+    if (!invoice)
+      throw new NotFoundException(
+        await this.translationService.translate('invoice.not_found'),
+      );
 
     const payments = await this.invoicePaymentRepository.find({
       where: { invoice_id: invoiceId, organization_id: this.organizationId },
@@ -92,7 +102,10 @@ export class InvoicePaymentService {
       where: { id: invoiceId, organization_id: this.organizationId },
     });
 
-    if (!invoice) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
+    if (!invoice)
+      throw new NotFoundException(
+        await this.translationService.translate('invoice.not_found'),
+      );
 
     if (invoice.status === InvoiceStatus.CANCELLED) {
       const message = await this.translationService.translate(
@@ -102,11 +115,15 @@ export class InvoicePaymentService {
     }
 
     if (invoice.status === InvoiceStatus.PAID) {
-      throw new BadRequestException(await this.translationService.translate('invoice.already_paid'));
+      throw new BadRequestException(
+        await this.translationService.translate('invoice.already_paid'),
+      );
     }
 
     if (!invoice.cfdi_uuid) {
-      throw new BadRequestException(await this.translationService.translate('invoice.must_be_stamped'));
+      throw new BadRequestException(
+        await this.translationService.translate('invoice.must_be_stamped'),
+      );
     }
 
     // Calcular saldo insoluto actual
@@ -119,10 +136,13 @@ export class InvoicePaymentService {
       .filter((p) => p.status !== InvoicePaymentStatus.CANCELLED)
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    const balanceBefore = Math.round((Number(invoice.total_amount) - totalPaid) * 100) / 100;
+    const balanceBefore =
+      Math.round((Number(invoice.total_amount) - totalPaid) * 100) / 100;
 
     if (balanceBefore <= 0) {
-      throw new BadRequestException(await this.translationService.translate('invoice.already_paid'));
+      throw new BadRequestException(
+        await this.translationService.translate('invoice.already_paid'),
+      );
     }
 
     if (dto.amount > balanceBefore) {
@@ -132,7 +152,10 @@ export class InvoicePaymentService {
     }
 
     const balanceAfter = Math.round((balanceBefore - dto.amount) * 100) / 100;
-    const paymentNumber = existingPayments.filter((p) => p.status !== InvoicePaymentStatus.CANCELLED).length + 1;
+    const paymentNumber =
+      existingPayments.filter(
+        (p) => p.status !== InvoicePaymentStatus.CANCELLED,
+      ).length + 1;
 
     // Crear el registro del pago
     const payment = this.invoicePaymentRepository.create({
@@ -155,7 +178,9 @@ export class InvoicePaymentService {
       const packService = await this.certificationPackFactory.getPackService();
 
       if (!packService.generatePaymentComplement) {
-        throw new BadRequestException(await this.translationService.translate('invoice.pac_no_complement'));
+        throw new BadRequestException(
+          await this.translationService.translate('invoice.pac_no_complement'),
+        );
       }
 
       const complementResult = await packService.generatePaymentComplement({
@@ -197,7 +222,8 @@ export class InvoicePaymentService {
           '28': ARPaymentMethod.DEBIT_CARD,
           '29': ARPaymentMethod.DEBIT_CARD,
         };
-        const arPaymentMethod = paymentMethodMap[dto.payment_form] || ARPaymentMethod.OTHER;
+        const arPaymentMethod =
+          paymentMethodMap[dto.payment_form] || ARPaymentMethod.OTHER;
 
         await this.accountReceivableService.addPayment(
           {
@@ -228,19 +254,37 @@ export class InvoicePaymentService {
     return this.mapToDto(savedPayment);
   }
 
-  async cancelPayment(invoiceId: string, paymentId: string, reason?: string): Promise<void> {
+  async cancelPayment(
+    invoiceId: string,
+    paymentId: string,
+    reason?: string,
+  ): Promise<void> {
     const payment = await this.invoicePaymentRepository.findOne({
-      where: { id: paymentId, invoice_id: invoiceId, organization_id: this.organizationId },
+      where: {
+        id: paymentId,
+        invoice_id: invoiceId,
+        organization_id: this.organizationId,
+      },
     });
 
-    if (!payment) throw new NotFoundException(await this.translationService.translate('invoice.not_found'));
+    if (!payment)
+      throw new NotFoundException(
+        await this.translationService.translate('invoice.not_found'),
+      );
 
     if (payment.status === InvoicePaymentStatus.CANCELLED) {
-      throw new BadRequestException(await this.translationService.translate('invoice.payment_already_cancelled'));
+      throw new BadRequestException(
+        await this.translationService.translate(
+          'invoice.payment_already_cancelled',
+        ),
+      );
     }
 
     // Si está timbrado, cancelar en el PAC con el motivo proporcionado
-    if (payment.status === InvoicePaymentStatus.STAMPED && payment.cfdi_complement_uuid) {
+    if (
+      payment.status === InvoicePaymentStatus.STAMPED &&
+      payment.cfdi_complement_uuid
+    ) {
       const packService = await this.certificationPackFactory.getPackService();
       if (packService.cancelPaymentComplement) {
         await packService.cancelPaymentComplement(

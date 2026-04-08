@@ -44,7 +44,7 @@ export class WarehouseService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -249,7 +249,10 @@ export class WarehouseService {
 
       // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
-        where: { id: updatedWarehouse.id, organization_id: this.organizationId },
+        where: {
+          id: updatedWarehouse.id,
+          organization_id: this.organizationId,
+        },
         relations: ['currency'],
       });
 
@@ -390,7 +393,7 @@ export class WarehouseService {
         // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
-          (Number(existingInventory.quantity) - Number(opening.quantity)) +
+            (Number(existingInventory.quantity) - Number(opening.quantity)) +
           Number(opening.price) * Number(opening.quantity);
         existingInventory.price =
           totalValue / Number(existingInventory.quantity);

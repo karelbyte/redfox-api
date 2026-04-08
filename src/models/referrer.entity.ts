@@ -1,6 +1,12 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ReferralCommission } from './referral-commission.entity';
 import { User } from './user.entity';
@@ -32,7 +38,7 @@ export class Referrer {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 10.00 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 10.0 })
   commission_rate: number;
 
   @Column({ default: true })

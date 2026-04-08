@@ -17,7 +17,7 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
 
     // Validar RFC de persona física (13 caracteres)
     const personaFisicaRegex = /^[A-ZÑ&]{4}[0-9]{6}[A-Z0-9]{3}$/;
-    
+
     // Validar RFC de persona moral (12 caracteres)
     const personaMoralRegex = /^[A-ZÑ&]{3}[0-9]{6}[A-Z0-9]{3}$/;
 
@@ -29,14 +29,23 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
     }
 
     // Verificar si coincide con alguno de los patrones
-    if (!personaFisicaRegex.test(cleanRFC) && !personaMoralRegex.test(cleanRFC)) {
+    if (
+      !personaFisicaRegex.test(cleanRFC) &&
+      !personaMoralRegex.test(cleanRFC)
+    ) {
       return false;
     }
 
     // Validar fecha dentro del RFC
-    const year = parseInt(cleanRFC.substring(cleanRFC.length - 9, cleanRFC.length - 7));
-    const month = parseInt(cleanRFC.substring(cleanRFC.length - 7, cleanRFC.length - 5));
-    const day = parseInt(cleanRFC.substring(cleanRFC.length - 5, cleanRFC.length - 3));
+    const year = parseInt(
+      cleanRFC.substring(cleanRFC.length - 9, cleanRFC.length - 7),
+    );
+    const month = parseInt(
+      cleanRFC.substring(cleanRFC.length - 7, cleanRFC.length - 5),
+    );
+    const day = parseInt(
+      cleanRFC.substring(cleanRFC.length - 5, cleanRFC.length - 3),
+    );
 
     // Ajustar año (00-29 = 2000-2029, 30-99 = 1930-1999)
     const fullYear = year <= 29 ? 2000 + year : 1900 + year;
@@ -58,7 +67,8 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
 
     // Validar febrero en años no bisiestos
     if (month === 2 && day === 29) {
-      const isLeapYear = (fullYear % 4 === 0 && fullYear % 100 !== 0) || (fullYear % 400 === 0);
+      const isLeapYear =
+        (fullYear % 4 === 0 && fullYear % 100 !== 0) || fullYear % 400 === 0;
       if (!isLeapYear) {
         return false;
       }
@@ -73,7 +83,7 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
 }
 
 export function IsValidRFC(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

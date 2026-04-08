@@ -26,7 +26,7 @@ export class WarehouseOpeningService {
     private readonly productMapper: ProductMapper,
     private readonly productService: ProductService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;

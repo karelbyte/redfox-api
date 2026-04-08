@@ -24,7 +24,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class ExpenseController {
-  constructor(private readonly expenseService: ExpenseService) { }
+  constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
   create(@Body() createExpenseDto: CreateExpenseDto, @UserId() userId: string) {

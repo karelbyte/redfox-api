@@ -28,7 +28,7 @@ export class AccountPayableService {
     @Inject(forwardRef(() => ProviderService))
     private readonly providerService: ProviderService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -61,13 +61,14 @@ export class AccountPayableService {
     accountPayable.paidAmount = paidAmount;
     accountPayable.status = status;
 
-    const savedAccount = await this.accountPayableRepository.save(accountPayable);
+    const savedAccount =
+      await this.accountPayableRepository.save(accountPayable);
 
     console.log('Saved Account Result:', {
       id: savedAccount.id,
       paidAmount: savedAccount.paidAmount,
       totalAmount: savedAccount.totalAmount,
-      remainingAmount: savedAccount.remainingAmount
+      remainingAmount: savedAccount.remainingAmount,
     });
 
     // Update denormalized provider balance (increase debt to provider)
@@ -149,7 +150,12 @@ export class AccountPayableService {
   async findOne(id: string): Promise<AccountPayable> {
     const accountPayable = await this.accountPayableRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['provider', 'purchaseOrder', 'payments', 'payments.createdByUser'],
+      relations: [
+        'provider',
+        'purchaseOrder',
+        'payments',
+        'payments.createdByUser',
+      ],
     });
 
     if (!accountPayable) {
@@ -184,11 +190,11 @@ export class AccountPayableService {
     paidAmount: number;
     pendingAmount: number;
   }> {
-    const queryBuilder =
-      this.accountPayableRepository.createQueryBuilder('accountPayable')
-        .where('accountPayable.organization_id = :organizationId', {
-          organizationId: this.organizationId,
-        });
+    const queryBuilder = this.accountPayableRepository
+      .createQueryBuilder('accountPayable')
+      .where('accountPayable.organization_id = :organizationId', {
+        organizationId: this.organizationId,
+      });
 
     if (startDate && endDate) {
       queryBuilder.where(

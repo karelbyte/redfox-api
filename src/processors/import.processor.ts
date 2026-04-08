@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Process, Processor } from '@nestjs/bull';
+import { Job } from 'bull';
 import { InMemoryImportQueue } from '../queues/in-memory-import.queue';
 import { ImportJob } from '../queues/import.queue';
 import { ClientImportService } from '../services/client-import.service';
@@ -10,6 +12,7 @@ import { ImportLogService } from '../services/import-log.service';
 import { ImportLogType } from '../models/import-log.entity';
 import { Notification } from '../models/notification.entity';
 
+@Processor('import')
 @Injectable()
 export class ImportProcessor implements OnModuleInit {
   private readonly logger = new Logger(ImportProcessor.name);
@@ -29,11 +32,20 @@ export class ImportProcessor implements OnModuleInit {
     this.logger.log('✅ ImportProcessor registered');
   }
 
+  /** Consumidor Bull — se activa cuando CACHE_TYPE=redis */
+  @Process('process-import')
+  async processBullJob(job: Job<ImportJob>): Promise<void> {
+    return this.process(job.data);
+  }
+
   async process(job: ImportJob): Promise<void> {
     const { userId, organizationId } = job;
-    const logType = job.type === 'client' ? ImportLogType.CLIENT
-      : job.type === 'product' ? ImportLogType.PRODUCT
-      : ImportLogType.PROVIDER;
+    const logType =
+      job.type === 'client'
+        ? ImportLogType.CLIENT
+        : job.type === 'product'
+          ? ImportLogType.PRODUCT
+          : ImportLogType.PROVIDER;
 
     // Crear registro pending en import_logs
     const importLog = await this.importLogService.createPending(
@@ -45,9 +57,14 @@ export class ImportProcessor implements OnModuleInit {
 
     try {
       if (job.type === 'client') {
-        this.logger.log(`⚙️ Processing client import: ${job.rows.length} rows for org=${organizationId}`);
+        this.logger.log(
+          `⚙️ Processing client import: ${job.rows.length} rows for org=${organizationId}`,
+        );
 
-        const result = await this.clientImportService.importRows(job.rows, organizationId);
+        const result = await this.clientImportService.importRows(
+          job.rows,
+          organizationId,
+        );
 
         await this.importLogService.complete(importLog.id, {
           created_count: result.created,
@@ -70,19 +87,36 @@ export class ImportProcessor implements OnModuleInit {
         const lines = [
           `${result.created} clientes creados`,
           result.skipped > 0 ? `${result.skipped} omitidos` : null,
-          result.pack_synced > 0 ? `${result.pack_synced} sincronizados al PAC` : null,
-          result.pack_failed > 0 ? `${result.pack_failed} fallaron en el PAC` : null,
+          result.pack_synced > 0
+            ? `${result.pack_synced} sincronizados al PAC`
+            : null,
+          result.pack_failed > 0
+            ? `${result.pack_failed} fallaron en el PAC`
+            : null,
           result.errors.length > 0 ? `${result.errors.length} errores` : null,
         ].filter(Boolean);
 
-        await this.notify(userId, organizationId, title, lines.join(' · '), type, priority);
-        this.logger.log(`✅ Client import done for org=${organizationId}: ${lines.join(', ')}`);
-
+        await this.notify(
+          userId,
+          organizationId,
+          title,
+          lines.join(' · '),
+          type,
+          priority,
+        );
+        this.logger.log(
+          `✅ Client import done for org=${organizationId}: ${lines.join(', ')}`,
+        );
       } else if (job.type === 'product') {
-        this.logger.log(`⚙️ Processing product import: ${job.rows.length} rows for org=${organizationId}`);
+        this.logger.log(
+          `⚙️ Processing product import: ${job.rows.length} rows for org=${organizationId}`,
+        );
 
         // ProductImportService usa TenantContext — necesitamos pasarle el orgId directamente
-        const result = await this.productImportService.importRowsWithOrg(job.rows, organizationId);
+        const result = await this.productImportService.importRowsWithOrg(
+          job.rows,
+          organizationId,
+        );
 
         await this.importLogService.complete(importLog.id, {
           created_count: result.created,
@@ -95,7 +129,8 @@ export class ImportProcessor implements OnModuleInit {
           pack_warnings: result.warnings,
         });
 
-        const hasIssues = result.errors.length > 0 || result.warnings.length > 0;
+        const hasIssues =
+          result.errors.length > 0 || result.warnings.length > 0;
         const type = hasIssues ? 'warning' : 'success';
         const priority = hasIssues ? 'high' : 'medium';
         const title = hasIssues
@@ -105,17 +140,32 @@ export class ImportProcessor implements OnModuleInit {
         const lines = [
           `${result.created} productos creados`,
           result.skipped > 0 ? `${result.skipped} omitidos` : null,
-          result.warnings.length > 0 ? `${result.warnings.length} advertencias` : null,
+          result.warnings.length > 0
+            ? `${result.warnings.length} advertencias`
+            : null,
           result.errors.length > 0 ? `${result.errors.length} errores` : null,
         ].filter(Boolean);
 
-        await this.notify(userId, organizationId, title, lines.join(' · '), type, priority);
-        this.logger.log(`✅ Product import done for org=${organizationId}: ${lines.join(', ')}`);
-
+        await this.notify(
+          userId,
+          organizationId,
+          title,
+          lines.join(' · '),
+          type,
+          priority,
+        );
+        this.logger.log(
+          `✅ Product import done for org=${organizationId}: ${lines.join(', ')}`,
+        );
       } else if (job.type === 'provider') {
-        this.logger.log(`⚙️ Processing provider import: ${job.rows.length} rows for org=${organizationId}`);
+        this.logger.log(
+          `⚙️ Processing provider import: ${job.rows.length} rows for org=${organizationId}`,
+        );
 
-        const result = await this.providerImportService.importRows(job.rows, organizationId);
+        const result = await this.providerImportService.importRows(
+          job.rows,
+          organizationId,
+        );
 
         await this.importLogService.complete(importLog.id, {
           created_count: result.created,
@@ -141,11 +191,23 @@ export class ImportProcessor implements OnModuleInit {
           result.errors.length > 0 ? `${result.errors.length} errores` : null,
         ].filter(Boolean);
 
-        await this.notify(userId, organizationId, title, lines.join(' · '), type, priority);
-        this.logger.log(`✅ Provider import done for org=${organizationId}: ${lines.join(', ')}`);
+        await this.notify(
+          userId,
+          organizationId,
+          title,
+          lines.join(' · '),
+          type,
+          priority,
+        );
+        this.logger.log(
+          `✅ Provider import done for org=${organizationId}: ${lines.join(', ')}`,
+        );
       }
     } catch (error: any) {
-      this.logger.error(`❌ Import job failed for org=${organizationId}: ${error?.message}`, error?.stack);
+      this.logger.error(
+        `❌ Import job failed for org=${organizationId}: ${error?.message}`,
+        error?.stack,
+      );
 
       await this.importLogService.fail(
         importLog.id,
@@ -153,18 +215,23 @@ export class ImportProcessor implements OnModuleInit {
       );
 
       await this.notify(
-        userId, organizationId,
+        userId,
+        organizationId,
         '❌ Error en la importación',
         `La importación falló inesperadamente: ${error?.message || 'Error desconocido'}. Intenta de nuevo.`,
-        'error', 'urgent',
+        'error',
+        'urgent',
       );
     }
   }
 
   private async notify(
-    userId: string, organizationId: string,
-    title: string, message: string,
-    type: string, priority: string,
+    userId: string,
+    organizationId: string,
+    title: string,
+    message: string,
+    type: string,
+    priority: string,
   ): Promise<void> {
     try {
       const notification = this.notificationRepo.create({

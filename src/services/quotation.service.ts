@@ -50,7 +50,7 @@ export class QuotationService {
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
     private readonly surrogateService: SurrogateService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -136,7 +136,10 @@ export class QuotationService {
     userId?: string,
   ): Promise<QuotationResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id: createQuotationDto.client_id, organization_id: this.organizationId },
+      where: {
+        id: createQuotationDto.client_id,
+        organization_id: this.organizationId,
+      },
     });
     if (!client) {
       const message = await this.translationService.translate(
@@ -151,7 +154,10 @@ export class QuotationService {
     let warehouse: Warehouse | null = null;
     if (createQuotationDto.warehouse_id) {
       warehouse = await this.warehouseRepository.findOne({
-        where: { id: createQuotationDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: createQuotationDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
         const message = await this.translationService.translate(
@@ -180,7 +186,10 @@ export class QuotationService {
     const savedQuotation = await this.quotationRepository.save(quotation);
 
     // Incrementar el contador del surrogate si el código coincide con el sugerido
-    await this.surrogateService.useCodeIfMatches('quotation', createQuotationDto.code);
+    await this.surrogateService.useCodeIfMatches(
+      'quotation',
+      createQuotationDto.code,
+    );
 
     const quotationWithRelations = await this.quotationRepository.findOne({
       where: { id: savedQuotation.id, organization_id: this.organizationId },
@@ -268,7 +277,10 @@ export class QuotationService {
 
     if (updateQuotationDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateQuotationDto.client_id, organization_id: this.organizationId },
+        where: {
+          id: updateQuotationDto.client_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -283,7 +295,10 @@ export class QuotationService {
 
     if (updateQuotationDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updateQuotationDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: updateQuotationDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
         const message = await this.translationService.translate(
@@ -345,7 +360,10 @@ export class QuotationService {
     }
 
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
+      where: {
+        id: createDetailDto.product_id,
+        organization_id: this.organizationId,
+      },
       relations: ['brand', 'category', 'tax', 'measurement_unit'],
     });
     if (!product) {
@@ -360,7 +378,10 @@ export class QuotationService {
     const existingDetail = await this.quotationDetailRepository.findOne({
       where: {
         quotation: { id: quotationId, organization_id: this.organizationId },
-        product: { id: createDetailDto.product_id, organization_id: this.organizationId },
+        product: {
+          id: createDetailDto.product_id,
+          organization_id: this.organizationId,
+        },
       },
       relations: [
         'product',
@@ -588,7 +609,10 @@ export class QuotationService {
 
     if (updateDetailDto.product_id) {
       const product = await this.productRepository.findOne({
-        where: { id: updateDetailDto.product_id, organization_id: this.organizationId },
+        where: {
+          id: updateDetailDto.product_id,
+          organization_id: this.organizationId,
+        },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
       if (!product) {

@@ -41,16 +41,18 @@ export class SubscriptionSchedulerService {
         relations: ['organization', 'plan'],
       });
 
-      this.logger.log(`Found ${subscriptions.length} subscriptions to send reminders`);
+      this.logger.log(
+        `Found ${subscriptions.length} subscriptions to send reminders`,
+      );
 
       for (const subscription of subscriptions) {
         try {
           await this.sendTrialReminderEmail(subscription);
-          
+
           // Marcar como enviado
           subscription.trial_reminder_sent = true;
           await this.subscriptionRepository.save(subscription);
-          
+
           this.logger.log(`Reminder sent for subscription ${subscription.id}`);
         } catch (error) {
           this.logger.error(
@@ -86,17 +88,21 @@ export class SubscriptionSchedulerService {
         relations: ['organization', 'plan'],
       });
 
-      this.logger.log(`Found ${subscriptions.length} subscriptions expiring tomorrow`);
+      this.logger.log(
+        `Found ${subscriptions.length} subscriptions expiring tomorrow`,
+      );
 
       for (const subscription of subscriptions) {
         try {
           await this.sendRenewalReminderEmail(subscription);
-          
+
           // Marcar como enviado
           subscription.renewal_reminder_sent = true;
           await this.subscriptionRepository.save(subscription);
-          
-          this.logger.log(`Renewal reminder sent for subscription ${subscription.id}`);
+
+          this.logger.log(
+            `Renewal reminder sent for subscription ${subscription.id}`,
+          );
         } catch (error) {
           this.logger.error(
             `Failed to send renewal reminder for subscription ${subscription.id}`,
@@ -135,10 +141,10 @@ export class SubscriptionSchedulerService {
           // Cambiar estado a expired
           subscription.status = 'expired';
           await this.subscriptionRepository.save(subscription);
-          
+
           // Enviar email de notificación de expiración
           await this.sendExpiredEmail(subscription);
-          
+
           this.logger.log(`Subscription ${subscription.id} marked as expired`);
         } catch (error) {
           this.logger.error(
@@ -166,7 +172,9 @@ export class SubscriptionSchedulerService {
     });
 
     if (!user) {
-      this.logger.warn(`[TRIAL REMINDER] No user found for org ${subscription.organization_id}`);
+      this.logger.warn(
+        `[TRIAL REMINDER] No user found for org ${subscription.organization_id}`,
+      );
       return;
     }
 
@@ -186,7 +194,9 @@ export class SubscriptionSchedulerService {
     });
 
     if (!user) {
-      this.logger.warn(`[RENEWAL REMINDER] No user found for org ${subscription.organization_id}`);
+      this.logger.warn(
+        `[RENEWAL REMINDER] No user found for org ${subscription.organization_id}`,
+      );
       return;
     }
 
@@ -208,7 +218,9 @@ export class SubscriptionSchedulerService {
     });
 
     if (!user) {
-      this.logger.warn(`[EXPIRED] No user found for org ${subscription.organization_id}`);
+      this.logger.warn(
+        `[EXPIRED] No user found for org ${subscription.organization_id}`,
+      );
       return;
     }
 

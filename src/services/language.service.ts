@@ -19,7 +19,7 @@ export class LanguageService {
 
   async create(createLanguageDto: CreateLanguageDto): Promise<void> {
     const orgId = this.tenantContext.getOrganizationId();
-    
+
     if (!orgId) {
       // Si no hay organización en el contexto (por ejemplo, durante el registro inicial),
       // omitimos el guardado hasta que el usuario esté asociado.

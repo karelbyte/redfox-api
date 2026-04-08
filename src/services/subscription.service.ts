@@ -13,12 +13,27 @@ import { ReferralService } from './referral.service';
 
 // Subscription error messages — inline bilingual (no DB lookup needed for subscriptions)
 const MSG = {
-  org_not_found:    { es: 'Organización no encontrada.',           en: 'Organization not found.' },
-  no_active_plan:   { es: 'No se encontró un plan activo.',        en: 'No active plan found.' },
-  sub_not_found:    { es: 'Suscripción no encontrada.',            en: 'Subscription not found.' },
-  already_active:   { es: 'La suscripción ya está activa.',        en: 'Subscription is already active.' },
-  plan_not_found:   { es: 'Plan seleccionado no encontrado o inactivo.', en: 'Selected plan not found or inactive.' },
-  plan_id_missing:  { es: 'Plan no encontrado.',                   en: 'Plan not found.' },
+  org_not_found: {
+    es: 'Organización no encontrada.',
+    en: 'Organization not found.',
+  },
+  no_active_plan: {
+    es: 'No se encontró un plan activo.',
+    en: 'No active plan found.',
+  },
+  sub_not_found: {
+    es: 'Suscripción no encontrada.',
+    en: 'Subscription not found.',
+  },
+  already_active: {
+    es: 'La suscripción ya está activa.',
+    en: 'Subscription is already active.',
+  },
+  plan_not_found: {
+    es: 'Plan seleccionado no encontrado o inactivo.',
+    en: 'Selected plan not found or inactive.',
+  },
+  plan_id_missing: { es: 'Plan no encontrado.', en: 'Plan not found.' },
 };
 
 function t(key: keyof typeof MSG, lang = 'es'): string {
@@ -43,7 +58,10 @@ export class SubscriptionService {
     private referralService: ReferralService,
   ) {}
 
-  async createTrialSubscription(organizationId: string, organizationEmail?: string) {
+  async createTrialSubscription(
+    organizationId: string,
+    organizationEmail?: string,
+  ) {
     const organization = await this.organizationRepository.findOne({
       where: { id: organizationId },
     });
@@ -79,7 +97,8 @@ export class SubscriptionService {
       stripe_customer_id: stripeCustomer.id,
     });
 
-    const savedSubscription = await this.subscriptionRepository.save(subscription);
+    const savedSubscription =
+      await this.subscriptionRepository.save(subscription);
 
     await this.organizationRepository.update(organizationId, {
       plan_id: plan.id,
@@ -176,7 +195,11 @@ export class SubscriptionService {
     }
 
     // Permitir pago si está en trial o si está inactiva/expirada
-    if (subscription.status !== 'trial' && subscription.status !== 'inactive' && subscription.status !== 'expired') {
+    if (
+      subscription.status !== 'trial' &&
+      subscription.status !== 'inactive' &&
+      subscription.status !== 'expired'
+    ) {
       throw new BadRequestException(t('already_active'));
     }
 
@@ -188,7 +211,8 @@ export class SubscriptionService {
       const users = await this.organizationRepository.manager
         .getRepository('User')
         .find({ where: { organization_id: organizationId } } as any);
-      const email = (users[0] as any)?.email || `org-${organizationId}@nitro.app`;
+      const email =
+        (users[0] as any)?.email || `org-${organizationId}@nitro.app`;
       const stripeCustomer = await this.stripeService.createCustomer(
         email,
         organization?.name || organizationId,
@@ -206,11 +230,11 @@ export class SubscriptionService {
       const newPlan = await this.planRepository.findOne({
         where: { id: planId, is_active: true },
       });
-      
+
       if (!newPlan) {
         throw new BadRequestException(t('plan_not_found'));
       }
-      
+
       selectedPlan = newPlan;
       subscription.plan_id = planId;
       // Guardar solo el plan_id de forma explícita
@@ -294,7 +318,9 @@ export class SubscriptionService {
 
     // Generar comisión de referido si aplica
     try {
-      const org = await this.organizationRepository.findOne({ where: { id: subscription.organization_id } });
+      const org = await this.organizationRepository.findOne({
+        where: { id: subscription.organization_id },
+      });
       if (org?.referrer_code) {
         await this.referralService.generateCommissionForPayment({
           organizationId: subscription.organization_id,
@@ -308,7 +334,8 @@ export class SubscriptionService {
     }
 
     // Enviar email de confirmación de pago (sin bloquear el flujo)
-    try {      const user = await this.userRepository.findOne({
+    try {
+      const user = await this.userRepository.findOne({
         where: { organization_id: subscription.organization_id },
         order: { created_at: 'ASC' },
       });
@@ -340,7 +367,9 @@ export class SubscriptionService {
   async createPlan(createPlanDto: CreatePlanDto) {
     const plan = this.planRepository.create({
       ...createPlanDto,
-      features: createPlanDto.features ? JSON.stringify(createPlanDto.features) as any : null,
+      features: createPlanDto.features
+        ? (JSON.stringify(createPlanDto.features) as any)
+        : null,
     });
     const saved = await this.planRepository.save(plan);
     return this.parsePlanFeatures(saved);
@@ -351,7 +380,7 @@ export class SubscriptionService {
     const plans = await this.planRepository.find({
       where: { is_active: true, is_public: true },
     });
-    return plans.map(p => this.parsePlanFeatures(p));
+    return plans.map((p) => this.parsePlanFeatures(p));
   }
 
   async getAllPlansAdmin() {
@@ -359,7 +388,7 @@ export class SubscriptionService {
     const plans = await this.planRepository.find({
       where: { is_active: true },
     });
-    return plans.map(p => this.parsePlanFeatures(p));
+    return plans.map((p) => this.parsePlanFeatures(p));
   }
 
   async getPlanById(id: string) {
@@ -387,10 +416,13 @@ export class SubscriptionService {
     let features: string[] = [];
     if (plan.features) {
       try {
-        features = typeof plan.features === 'string'
-          ? JSON.parse(plan.features as any)
-          : plan.features;
-      } catch { features = []; }
+        features =
+          typeof plan.features === 'string'
+            ? JSON.parse(plan.features as any)
+            : plan.features;
+      } catch {
+        features = [];
+      }
     }
     return { ...plan, features };
   }

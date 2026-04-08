@@ -7,10 +7,7 @@ import { Organization } from '../models/organization.entity';
 import { TenantContext } from '../services/tenant-context.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, Organization]),
-    EmailModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User, Organization]), EmailModule],
   controllers: [SupportController],
   providers: [TenantContext],
 })

@@ -57,7 +57,7 @@ export class ClientService {
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
     private readonly auditLogService: AuditLogService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -115,14 +115,30 @@ export class ClientService {
       query.andWhere(
         new Brackets((qb) => {
           qb.where('LOWER(client.code) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(client.name) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(client.description) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(client.phone) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(client.email) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(taxData.tax_document) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(taxData.tax_name) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(address.street) LIKE :term', { term: `%${lowerTerm}%` })
-            .orWhere('LOWER(address.city) LIKE :term', { term: `%${lowerTerm}%` });
+            .orWhere('LOWER(client.name) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(client.description) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(client.phone) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(client.email) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(taxData.tax_document) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(taxData.tax_name) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(address.street) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            })
+            .orWhere('LOWER(address.city) LIKE :term', {
+              term: `%${lowerTerm}%`,
+            });
         }),
       );
     }
@@ -190,8 +206,14 @@ export class ClientService {
     }
 
     // Actualizar campos básicos
-    const { delete_addresses, delete_tax_data, credit, taxData, addresses, ...baseData } =
-      updateClientDto;
+    const {
+      delete_addresses,
+      delete_tax_data,
+      credit,
+      taxData,
+      addresses,
+      ...baseData
+    } = updateClientDto;
     Object.assign(client, baseData);
 
     // Manejar crédito
@@ -224,7 +246,7 @@ export class ClientService {
             {
               ...taxDataItem,
               client_id: id, // Asegurar que client_id se preserve
-            }
+            },
           );
         } else {
           // Crear nuevo
@@ -251,7 +273,7 @@ export class ClientService {
             {
               ...addressItem,
               client_id: id, // Asegurar que client_id se preserve
-            }
+            },
           );
         } else {
           // Crear nuevo
@@ -298,7 +320,8 @@ export class ClientService {
       client: this.clientMapper.mapToResponseDto(clientWithRelations!),
       pack_sync_success: false,
       pack_sync_error: undefined,
-    };  }
+    };
+  }
 
   async importFromPack(
     userId?: string,
@@ -391,16 +414,18 @@ export class ClientService {
         `Soft deleted client: ${client.name}`,
       );
     } catch (error: any) {
-      this.logger.warn(`Failed to create audit log for client deletion: ${error?.message}`);
+      this.logger.warn(
+        `Failed to create audit log for client deletion: ${error?.message}`,
+      );
     }
   }
 
   async removeMany(ids: string[]): Promise<void> {
     // Obtener los clientes antes de eliminarlos para el log de auditoría
     const clients = await this.clientRepository.find({
-      where: { 
-        id: In(ids), 
-        organization_id: this.organizationId 
+      where: {
+        id: In(ids),
+        organization_id: this.organizationId,
       },
       withDeleted: false,
     });
@@ -423,7 +448,9 @@ export class ClientService {
           `Bulk soft deleted client: ${client.name}`,
         );
       } catch (error: any) {
-        this.logger.warn(`Failed to create audit log for bulk client deletion (${client.id}): ${error?.message}`);
+        this.logger.warn(
+          `Failed to create audit log for bulk client deletion (${client.id}): ${error?.message}`,
+        );
       }
     }
   }

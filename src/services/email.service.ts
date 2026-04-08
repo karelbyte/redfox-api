@@ -32,7 +32,7 @@ export class EmailService {
     private emailConfigRepository: Repository<EmailConfig>,
     private readonly tenantContext: TenantContext,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -183,21 +183,29 @@ export class EmailService {
     to: string | string[],
     subject: string,
     html: string,
-    attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>,
+    attachments?: Array<{
+      filename: string;
+      content: Buffer | string;
+      contentType?: string;
+    }>,
   ): Promise<boolean> {
     const provider =
       this.configService.get<string>('EMAIL_PROVIDER') || 'resend';
 
     if (provider === 'gmail') {
       try {
-        console.log(`[EmailService] 🚀 Enviando correo vía Gmail API (HTTP 443) a: ${to}`);
-        console.log(`[EmailService] 📧 Client ID cargado: ${this.configService.get<string>('GMAIL_CLIENT_ID')?.substring(0, 10)}...`);
+        console.log(
+          `[EmailService] 🚀 Enviando correo vía Gmail API (HTTP 443) a: ${to}`,
+        );
+        console.log(
+          `[EmailService] 📧 Client ID cargado: ${this.configService.get<string>('GMAIL_CLIENT_ID')?.substring(0, 10)}...`,
+        );
 
         const OAuth2 = google.auth.OAuth2;
         const oauth2Client = new OAuth2(
           this.configService.get<string>('GMAIL_CLIENT_ID'),
           this.configService.get<string>('GMAIL_CLIENT_SECRET'),
-          'https://developers.google.com/oauthplayground'
+          'https://developers.google.com/oauthplayground',
         );
 
         oauth2Client.setCredentials({
@@ -211,7 +219,7 @@ export class EmailService {
         const fromEmail = this.configService.get<string>('SMTP_USER');
         const toHeader = Array.isArray(to) ? to.join(', ') : to;
 
-        // Construir el body del email en formato crudo (RFC 2822) 
+        // Construir el body del email en formato crudo (RFC 2822)
         // y codificar Subject para caracteres especiales (utf-8 B)
         const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
         const emailLines = [
@@ -225,7 +233,7 @@ export class EmailService {
         ];
 
         const rawMessage = emailLines.join('\r\n');
-        
+
         // Gmail requiere 'base64url' (seguro para URL) sin el padding (====)
         const encodedMessage = Buffer.from(rawMessage)
           .toString('base64')
@@ -242,7 +250,10 @@ export class EmailService {
 
         return true;
       } catch (error) {
-        console.error('Error enviando email de sistema con Gmail API (HTTP):', error);
+        console.error(
+          'Error enviando email de sistema con Gmail API (HTTP):',
+          error,
+        );
         return false;
       }
     }
@@ -264,12 +275,12 @@ export class EmailService {
           greetingTimeout: 10000,
         };
 
-        console.log(smtpConfig)
+        console.log(smtpConfig);
 
         const transporter = nodemailer.createTransport(smtpConfig as any);
 
         // Verificar conexión antes de enviar (ayuda a ver errores en logs rápido)
-        // await transporter.verify(); 
+        // await transporter.verify();
 
         const fromEmail = this.configService.get<string>('SMTP_USER');
 
@@ -278,7 +289,7 @@ export class EmailService {
           to: Array.isArray(to) ? to : [to],
           subject,
           html,
-          attachments: attachments?.map(a => ({
+          attachments: attachments?.map((a) => ({
             filename: a.filename,
             content: a.content,
             contentType: a.contentType,
@@ -305,9 +316,12 @@ export class EmailService {
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
-        attachments: attachments?.map(a => ({
+        attachments: attachments?.map((a) => ({
           filename: a.filename,
-          content: a.content instanceof Buffer ? a.content.toString('base64') : a.content,
+          content:
+            a.content instanceof Buffer
+              ? a.content.toString('base64')
+              : a.content,
         })),
       });
 

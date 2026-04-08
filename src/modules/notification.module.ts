@@ -10,9 +10,16 @@ import { User } from '../models/user.entity';
 import { LanguageModule } from './language.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, AccountReceivable, User]), LanguageModule],
+  imports: [
+    TypeOrmModule.forFeature([Notification, AccountReceivable, User]),
+    LanguageModule,
+  ],
   controllers: [NotificationController],
-  providers: [NotificationService, TenantContext, OverdueAccountsSchedulerService],
+  providers: [
+    NotificationService,
+    TenantContext,
+    OverdueAccountsSchedulerService,
+  ],
   exports: [NotificationService],
 })
 export class NotificationModule {}

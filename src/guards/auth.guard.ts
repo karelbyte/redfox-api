@@ -49,7 +49,9 @@ export class AuthGuard implements CanActivate {
     // Verificar si el token está en la blacklist (logout)
     const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
     if (isBlacklisted) {
-      throw new CustomUnauthorizedException('Token has been revoked. Please log in again.');
+      throw new CustomUnauthorizedException(
+        'Token has been revoked. Please log in again.',
+      );
     }
 
     try {

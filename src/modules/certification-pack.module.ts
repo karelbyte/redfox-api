@@ -28,6 +28,10 @@ import { RedisServiceModule } from './redis-service.module';
     FacturaGreenService,
     SatCatalogService,
   ],
-  exports: [CertificationPackService, CertificationPackFactoryService, SatCatalogService],
+  exports: [
+    CertificationPackService,
+    CertificationPackFactoryService,
+    SatCatalogService,
+  ],
 })
 export class CertificationPackModule {}

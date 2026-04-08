@@ -21,7 +21,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 export class ExpenseCategoryController {
   constructor(
     private readonly expenseCategoryService: ExpenseCategoryService,
-  ) { }
+  ) {}
 
   @Post()
   create(@Body() createExpenseCategoryDto: CreateExpenseCategoryDto) {

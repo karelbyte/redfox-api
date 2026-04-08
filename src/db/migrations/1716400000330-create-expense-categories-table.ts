@@ -1,7 +1,8 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateExpenseCategoriesTable1716400000330
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
     await queryRunner.createTable(

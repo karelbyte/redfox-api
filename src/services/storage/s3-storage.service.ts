@@ -18,8 +18,10 @@ export class S3StorageService implements IStorageService {
   constructor(private readonly configService: ConfigService) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const region = this.configService.get<string>('S3_REGION') || 'auto';
-    const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY_ID') || '';
-    const secretAccessKey = this.configService.get<string>('S3_SECRET_ACCESS_KEY') || '';
+    const accessKeyId =
+      this.configService.get<string>('S3_ACCESS_KEY_ID') || '';
+    const secretAccessKey =
+      this.configService.get<string>('S3_SECRET_ACCESS_KEY') || '';
     this.bucket = this.configService.get<string>('S3_BUCKET_NAME') || '';
 
     this.client = new S3Client({
@@ -30,7 +32,11 @@ export class S3StorageService implements IStorageService {
     });
   }
 
-  async upload(file: Buffer, key: string, mimeType: string): Promise<UploadResult> {
+  async upload(
+    file: Buffer,
+    key: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,

@@ -1,4 +1,14 @@
-import { Controller, Get, Put, Post, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
 import { AuthGuard } from '../guards/auth.guard';
@@ -52,16 +62,20 @@ export class AdminController {
     }
 
     if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeResponseData(item));
+      return data.map((item) => this.sanitizeResponseData(item));
     }
 
     const sanitized: any = {};
-    
+
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
-      
+
       // Verificar si el campo es sensible
-      if (this.SENSITIVE_FIELDS.some(sensitiveField => lowerKey.includes(sensitiveField))) {
+      if (
+        this.SENSITIVE_FIELDS.some((sensitiveField) =>
+          lowerKey.includes(sensitiveField),
+        )
+      ) {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
         // Recursivamente sanitizar objetos anidados
@@ -80,8 +94,12 @@ export class AdminController {
   private sanitizeAuditLog(log: any): any {
     return {
       ...log,
-      oldValues: log.oldValues ? this.sanitizeResponseData(log.oldValues) : null,
-      newValues: log.newValues ? this.sanitizeResponseData(log.newValues) : null,
+      oldValues: log.oldValues
+        ? this.sanitizeResponseData(log.oldValues)
+        : null,
+      newValues: log.newValues
+        ? this.sanitizeResponseData(log.newValues)
+        : null,
     };
   }
 
@@ -101,7 +119,10 @@ export class AdminController {
   }
 
   @Put('organizations/:id')
-  toggleOrganization(@Param('id') id: string, @Body() body: { status: boolean }) {
+  toggleOrganization(
+    @Param('id') id: string,
+    @Body() body: { status: boolean },
+  ) {
     return this.adminService.toggleOrganization(id, body.status);
   }
 
@@ -124,14 +145,17 @@ export class AdminController {
   }
 
   @Post('subscriptions')
-  createSubscription(@Body() body: {
-    organization_id: string;
-    plan_id: string;
-    status: string;
-    trial_end_date?: string;
-    subscription_start_date?: string;
-    subscription_end_date?: string;
-  }) {
+  createSubscription(
+    @Body()
+    body: {
+      organization_id: string;
+      plan_id: string;
+      status: string;
+      trial_end_date?: string;
+      subscription_start_date?: string;
+      subscription_end_date?: string;
+    },
+  ) {
     return this.adminService.createSubscription(body);
   }
 
@@ -141,13 +165,17 @@ export class AdminController {
   }
 
   @Put('subscriptions/:id')
-  updateSubscription(@Param('id') id: string, @Body() body: {
-    plan_id?: string;
-    trial_end_date?: string;
-    status?: string;
-    subscription_end_date?: string;
-    current_period_end?: string;
-  }) {
+  updateSubscription(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      plan_id?: string;
+      trial_end_date?: string;
+      status?: string;
+      subscription_end_date?: string;
+      current_period_end?: string;
+    },
+  ) {
     return this.adminService.updateSubscription(id, body);
   }
 
@@ -192,7 +220,7 @@ export class AdminController {
 
     return {
       ...result,
-      data: result.data.map(log => this.sanitizeAuditLog(log)),
+      data: result.data.map((log) => this.sanitizeAuditLog(log)),
     };
   }
 }

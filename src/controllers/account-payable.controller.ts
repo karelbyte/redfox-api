@@ -22,7 +22,7 @@ import { AddAccountPayablePaymentDto } from '../dtos/account-payable/add-payment
 @Controller('accounts-payable')
 @UseGuards(AuthGuard)
 export class AccountPayableController {
-  constructor(private readonly accountPayableService: AccountPayableService) { }
+  constructor(private readonly accountPayableService: AccountPayableService) {}
 
   @Post()
   create(@Body() createAccountPayableDto: CreateAccountPayableDto) {

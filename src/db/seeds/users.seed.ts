@@ -15,9 +15,15 @@ export class UsersSeed {
     const planRepository = dataSource.getRepository(Plan);
 
     // Obtain roles
-    const adminRole = await roleRepository.findOne({ where: { code: 'ADMIN' } });
-    const sellerRole = await roleRepository.findOne({ where: { code: 'SELLER' } });
-    const superAdminRole = await roleRepository.findOne({ where: { code: 'SUPER_ADMIN' } });
+    const adminRole = await roleRepository.findOne({
+      where: { code: 'ADMIN' },
+    });
+    const sellerRole = await roleRepository.findOne({
+      where: { code: 'SELLER' },
+    });
+    const superAdminRole = await roleRepository.findOne({
+      where: { code: 'SUPER_ADMIN' },
+    });
 
     // Obtain landlord organization
     const landlordOrg = await organizationRepository.findOne({

@@ -22,7 +22,10 @@ import { AuthGuard } from '../guards/auth.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { IStorageService, STORAGE_SERVICE } from '../services/storage/storage.interface';
+import {
+  IStorageService,
+  STORAGE_SERVICE,
+} from '../services/storage/storage.interface';
 
 @Controller('company-settings')
 @UseGuards(AuthGuard)
@@ -83,7 +86,11 @@ export class CompanySettingsController {
     const ext = file.originalname.split('.').pop() || 'png';
     const key = `${organizationId}/company/logo-${Date.now()}.${ext}`;
 
-    const { url } = await this.storageService.upload(file.buffer, key, file.mimetype);
+    const { url } = await this.storageService.upload(
+      file.buffer,
+      key,
+      file.mimetype,
+    );
 
     return this.companySettingsService.updateLogoUrl(url);
   }

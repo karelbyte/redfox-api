@@ -67,7 +67,10 @@ export class CategoryController {
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
     // Primero crear la categoría para obtener su ID
-    const category = await this.categoryService.create(createCategoryDto, userId);
+    const category = await this.categoryService.create(
+      createCategoryDto,
+      userId,
+    );
 
     // Si hay archivo, subirlo con el ID de la categoría
     if (files && files.length > 0) {
@@ -77,13 +80,23 @@ export class CategoryController {
         category.id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 1,
-        }
+        },
       );
 
       // Actualizar la categoría con la URL de la imagen
-      return this.categoryService.updateImage(category.id, uploadResult.url, userId);
+      return this.categoryService.updateImage(
+        category.id,
+        uploadResult.url,
+        userId,
+      );
     }
 
     return category;
@@ -148,16 +161,22 @@ export class CategoryController {
         id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 1,
-        }
+        },
       );
 
       updateCategoryDto.image = uploadResult.url;
     } else if (updateCategoryDto.imageChanged) {
       updateCategoryDto.image = '';
     }
-    
+
     delete updateCategoryDto.imageChanged;
     return this.categoryService.update(id, updateCategoryDto, userId);
   }

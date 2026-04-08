@@ -169,10 +169,10 @@ export class AuthService {
     const slug = registerDto.companyName
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, '-')        // múltiples espacios → un guión
-      .replace(/[^\w-]+/g, '')     // eliminar cualquier carácter no alfanumérico
-      .replace(/-+/g, '-')         // múltiples guiones → uno solo
-      .replace(/^-|-$/g, '');      // quitar guiones al inicio/fin
+      .replace(/\s+/g, '-') // múltiples espacios → un guión
+      .replace(/[^\w-]+/g, '') // eliminar cualquier carácter no alfanumérico
+      .replace(/-+/g, '-') // múltiples guiones → uno solo
+      .replace(/^-|-$/g, ''); // quitar guiones al inicio/fin
 
     if (slug.length < 3) {
       throw new BadRequestException(
@@ -191,7 +191,9 @@ export class AuthService {
       name: registerDto.companyName,
       slug,
       status: false,
-      ...(registerDto.referrer_code ? { referrer_code: registerDto.referrer_code.toUpperCase() } : {}),
+      ...(registerDto.referrer_code
+        ? { referrer_code: registerDto.referrer_code.toUpperCase() }
+        : {}),
     } as any);
 
     // Establecer el contexto de la organización
@@ -408,6 +410,32 @@ export class AuthService {
       subject: 'Activa tu cuenta de Nitro',
       html,
     });
+
+    // Notificar al admin sobre el nuevo registro
+    const notifyEmail = this.configService.get<string>('ERROR_NOTIFY_EMAIL');
+    if (notifyEmail) {
+      try {
+        await this.emailService.sendSystemEmail(
+          notifyEmail,
+          '🆕 Nuevo registro en Nitro',
+          `
+            <h2>Nuevo usuario registrado</h2>
+            <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;">
+              <tr><td style="padding:8px;font-weight:bold;color:#555;">Nombre</td><td style="padding:8px;">${newUser.name}</td></tr>
+              <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555;">Email</td><td style="padding:8px;">${newUser.email}</td></tr>
+              <tr><td style="padding:8px;font-weight:bold;color:#555;">Empresa</td><td style="padding:8px;">${registerDto.companyName}</td></tr>
+              <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555;">Slug</td><td style="padding:8px;">${slug}</td></tr>
+              <tr><td style="padding:8px;font-weight:bold;color:#555;">Organización ID</td><td style="padding:8px;">${organization.id}</td></tr>
+              <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555;">Referido por</td><td style="padding:8px;">${registerDto.referrer_code || '—'}</td></tr>
+              <tr><td style="padding:8px;font-weight:bold;color:#555;">Fecha</td><td style="padding:8px;">${new Date().toLocaleString('es-MX', { timeZone: 'America/Hermosillo' })}</td></tr>
+            </table>
+          `,
+        );
+      } catch (err: any) {
+        // No bloquear el registro si falla la notificación al admin
+        console.warn('[Auth] Failed to send admin registration notification:', err?.message);
+      }
+    }
   }
 
   async activate(
@@ -425,7 +453,7 @@ export class AuthService {
       }
 
       await this.userService.update(user.id, { status: true } as any);
-      
+
       let subscription: any = null;
       if (user.organization_id) {
         await this.organizationService.update(user.organization_id, {
@@ -438,7 +466,10 @@ export class AuthService {
             user.email,
           );
         } catch (subscriptionError) {
-          console.error('Failed to create trial subscription:', subscriptionError);
+          console.error(
+            'Failed to create trial subscription:',
+            subscriptionError,
+          );
         }
 
         // Crear monedas por defecto para la organización
@@ -467,13 +498,14 @@ export class AuthService {
       }
 
       const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
 
-      const trialEndDate = subscription?.trial_end_date 
+      const trialEndDate = subscription?.trial_end_date
         ? new Date(subscription.trial_end_date).toLocaleDateString('es-MX', {
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
           })
         : 'N/A';
 

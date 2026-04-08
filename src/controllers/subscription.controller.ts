@@ -45,8 +45,13 @@ export class SubscriptionController {
   }
 
   @Post('confirm-payment/:subscriptionId')
-  async confirmPayment(@Req() request: any, @Body() body: { subscriptionId: string }) {
-    return this.subscriptionService.confirmSubscriptionPayment(body.subscriptionId);
+  async confirmPayment(
+    @Req() request: any,
+    @Body() body: { subscriptionId: string },
+  ) {
+    return this.subscriptionService.confirmSubscriptionPayment(
+      body.subscriptionId,
+    );
   }
 
   @Get('plans')
@@ -67,8 +72,10 @@ export class SubscriptionController {
   }
 
   @Put('plans/:id')
-  async updatePlan(@Param('id') id: string, @Body() data: Partial<CreatePlanDto>) {
+  async updatePlan(
+    @Param('id') id: string,
+    @Body() data: Partial<CreatePlanDto>,
+  ) {
     return this.subscriptionService.updatePlan(id, data);
   }
 }
-

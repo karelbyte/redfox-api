@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateProductTaxesTable1716400000085 implements MigrationInterface {
+export class CreateProductTaxesTable1716400000085
+  implements MigrationInterface
+{
   name = 'CreateProductTaxesTable1716400000085';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

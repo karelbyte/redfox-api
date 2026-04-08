@@ -1,6 +1,13 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
-export class CreateSubscriptionPaymentsTable1716400000520 implements MigrationInterface {
+export class CreateSubscriptionPaymentsTable1716400000520
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 
@@ -105,7 +112,7 @@ export class CreateSubscriptionPaymentsTable1716400000520 implements MigrationIn
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('subscription_payments');
-    
+
     if (table) {
       const foreignKey = table.foreignKeys.find(
         (fk) => fk.columnNames.indexOf('subscription_id') !== -1,

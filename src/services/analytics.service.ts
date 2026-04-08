@@ -16,8 +16,18 @@ export interface SalesAnalytics {
   salesGrowth: number;
   salesByMonth: Array<{ month: string; sales: number; revenue: number }>;
   salesByDay: Array<{ date: string; sales: number; revenue: number }>;
-  topProducts: Array<{ productId: string; productName: string; totalSold: number; revenue: number }>;
-  topClients: Array<{ clientId: string; clientName: string; totalPurchases: number; totalSpent: number }>;
+  topProducts: Array<{
+    productId: string;
+    productName: string;
+    totalSold: number;
+    revenue: number;
+  }>;
+  topClients: Array<{
+    clientId: string;
+    clientName: string;
+    totalPurchases: number;
+    totalSpent: number;
+  }>;
 }
 
 export interface InventoryAnalytics {
@@ -25,8 +35,17 @@ export interface InventoryAnalytics {
   lowStockProducts: number;
   outOfStockProducts: number;
   totalInventoryValue: number;
-  productsByCategory: Array<{ categoryName: string; count: number; value: number }>;
-  lowStockItems: Array<{ productId: string; productName: string; currentStock: number; warehouseName: string }>;
+  productsByCategory: Array<{
+    categoryName: string;
+    count: number;
+    value: number;
+  }>;
+  lowStockItems: Array<{
+    productId: string;
+    productName: string;
+    currentStock: number;
+    warehouseName: string;
+  }>;
 }
 
 export interface FinancialAnalytics {
@@ -42,7 +61,11 @@ export interface OperationalAnalytics {
   pendingReceptions: number;
   completedReceptions: number;
   averageReceptionTime: number;
-  receptionsByMonth: Array<{ month: string; count: number; totalAmount: number }>;
+  receptionsByMonth: Array<{
+    month: string;
+    count: number;
+    totalAmount: number;
+  }>;
 }
 
 @Injectable()
@@ -63,10 +86,15 @@ export class AnalyticsService {
     private readonly tenantContext: TenantContext,
   ) {}
 
-  async getSalesAnalytics(startDate?: string, endDate?: string): Promise<SalesAnalytics> {
+  async getSalesAnalytics(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<SalesAnalytics> {
     const organizationId = this.tenantContext.getOrganizationId() ?? '';
 
-    const conditions: string[] = ['withdrawal.organization_id = :organizationId'];
+    const conditions: string[] = [
+      'withdrawal.organization_id = :organizationId',
+    ];
     const params: Record<string, any> = { organizationId };
 
     if (startDate) {
@@ -84,19 +112,34 @@ export class AnalyticsService {
       .createQueryBuilder('withdrawal')
       .select([
         'COUNT(withdrawal.id) as "totalSales"',
-        "SUM(CASE WHEN withdrawal.status = 'CLOSED' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE 0 END) as \"totalRevenue\"",
-        "AVG(CASE WHEN withdrawal.status = 'CLOSED' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE NULL END) as \"averageTicket\"",
+        'SUM(CASE WHEN withdrawal.status = \'CLOSED\' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE 0 END) as "totalRevenue"',
+        'AVG(CASE WHEN withdrawal.status = \'CLOSED\' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE NULL END) as "averageTicket"',
       ])
       .where(where, params)
       .getRawOne();
 
-    const previousPeriodData = await this.getPreviousPeriodSales(organizationId, startDate, endDate);
-    const salesGrowth = this.calculateGrowth(parseFloat(salesData?.totalRevenue || '0'), previousPeriodData);
+    const previousPeriodData = await this.getPreviousPeriodSales(
+      organizationId,
+      startDate,
+      endDate,
+    );
+    const salesGrowth = this.calculateGrowth(
+      parseFloat(salesData?.totalRevenue || '0'),
+      previousPeriodData,
+    );
 
     const salesByMonth = await this.getSalesByMonth(organizationId);
     const salesByDay = await this.getSalesByDay(organizationId);
-    const topProducts = await this.getTopProducts(organizationId, startDate, endDate);
-    const topClients = await this.getTopClients(organizationId, startDate, endDate);
+    const topProducts = await this.getTopProducts(
+      organizationId,
+      startDate,
+      endDate,
+    );
+    const topClients = await this.getTopClients(
+      organizationId,
+      startDate,
+      endDate,
+    );
 
     return {
       totalSales: parseInt(salesData?.totalSales || '0'),
@@ -118,12 +161,15 @@ export class AnalyticsService {
       where: { organization_id: organizationId, is_active: true },
     });
 
-    console.log(organizationId, totalProducts) 
+    console.log(organizationId, totalProducts);
     // Productos por categoría — todos los tipos (tangible, service, digital)
     const allProducts = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
-      .where('product.organization_id = :organizationId AND product.is_active = true', { organizationId })
+      .where(
+        'product.organization_id = :organizationId AND product.is_active = true',
+        { organizationId },
+      )
       .getMany();
 
     const categoryMap = new Map<string, { count: number; value: number }>();
@@ -136,11 +182,13 @@ export class AnalyticsService {
       });
     });
 
-    const productsByCategory = Array.from(categoryMap.entries()).map(([categoryName, data]) => ({
-      categoryName,
-      count: data.count,
-      value: data.value,
-    }));
+    const productsByCategory = Array.from(categoryMap.entries()).map(
+      ([categoryName, data]) => ({
+        categoryName,
+        count: data.count,
+        value: data.value,
+      }),
+    );
 
     // Stock bajo y sin stock — solo aplica a productos tangibles con inventario
     const inventoryData = await this.inventoryRepository
@@ -153,7 +201,15 @@ export class AnalyticsService {
       .getMany();
 
     // Agrupar por producto (multi-almacén)
-    const productStockMap = new Map<string, { quantity: number; price: number; productName: string; warehouseName: string }>();
+    const productStockMap = new Map<
+      string,
+      {
+        quantity: number;
+        price: number;
+        productName: string;
+        warehouseName: string;
+      }
+    >();
     inventoryData.forEach((item) => {
       const productId = item.product?.id;
       if (!productId) return;
@@ -171,9 +227,16 @@ export class AnalyticsService {
     });
 
     const productStocks = Array.from(productStockMap.values());
-    const lowStockProducts = productStocks.filter((p) => p.quantity > 0 && p.quantity < 10).length;
-    const outOfStockProducts = productStocks.filter((p) => p.quantity === 0).length;
-    const totalInventoryValue = productStocks.reduce((sum, p) => sum + p.quantity * p.price, 0);
+    const lowStockProducts = productStocks.filter(
+      (p) => p.quantity > 0 && p.quantity < 10,
+    ).length;
+    const outOfStockProducts = productStocks.filter(
+      (p) => p.quantity === 0,
+    ).length;
+    const totalInventoryValue = productStocks.reduce(
+      (sum, p) => sum + p.quantity * p.price,
+      0,
+    );
 
     const lowStockItems = productStocks
       .filter((p) => p.quantity > 0 && p.quantity < 10)
@@ -185,12 +248,27 @@ export class AnalyticsService {
         warehouseName: p.warehouseName,
       }));
 
-    return { totalProducts, lowStockProducts, outOfStockProducts, totalInventoryValue, productsByCategory, lowStockItems };
+    return {
+      totalProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      totalInventoryValue,
+      productsByCategory,
+      lowStockItems,
+    };
   }
 
-  async getFinancialAnalytics(startDate?: string, endDate?: string): Promise<FinancialAnalytics> {
+  async getFinancialAnalytics(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<FinancialAnalytics> {
     const organizationId = this.tenantContext.getOrganizationId() ?? '';
-    const { where, params } = this.buildWhereClause(organizationId, startDate, endDate, 'invoice');
+    const { where, params } = this.buildWhereClause(
+      organizationId,
+      startDate,
+      endDate,
+      'invoice',
+    );
 
     const totalInvoices = await this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -213,8 +291,10 @@ export class AnalyticsService {
       .filter((item) => item.status !== 'CANCELLED')
       .reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
 
-    const pendingInvoices = invoicesByStatus.find((item) => item.status === 'DRAFT')?.count || 0;
-    const paidInvoices = invoicesByStatus.find((item) => item.status === 'PAID')?.count || 0;
+    const pendingInvoices =
+      invoicesByStatus.find((item) => item.status === 'DRAFT')?.count || 0;
+    const paidInvoices =
+      invoicesByStatus.find((item) => item.status === 'PAID')?.count || 0;
 
     const monthlyRevenue = await this.getMonthlyRevenue(organizationId);
 
@@ -246,15 +326,25 @@ export class AnalyticsService {
     // Calcular tiempo promedio real entre fecha de creación y última actualización en recepciones completadas
     const avgResult = await this.receptionRepository
       .createQueryBuilder('reception')
-      .select("AVG(EXTRACT(EPOCH FROM (reception.updated_at - reception.created_at)) / 86400) as avgDays")
-      .where('reception.organization_id = :organizationId AND reception.status = true', { organizationId })
+      .select(
+        'AVG(EXTRACT(EPOCH FROM (reception.updated_at - reception.created_at)) / 86400) as avgDays',
+      )
+      .where(
+        'reception.organization_id = :organizationId AND reception.status = true',
+        { organizationId },
+      )
       .getRawOne();
 
     const averageReceptionTime = parseFloat(avgResult?.avgDays || '0');
 
     const receptionsByMonth = await this.getReceptionsByMonth(organizationId);
 
-    return { pendingReceptions, completedReceptions, averageReceptionTime, receptionsByMonth };
+    return {
+      pendingReceptions,
+      completedReceptions,
+      averageReceptionTime,
+      receptionsByMonth,
+    };
   }
 
   /**
@@ -299,7 +389,11 @@ export class AnalyticsService {
       .select('SUM(CAST(withdrawal.amount AS DECIMAL(10,2))) as totalRevenue')
       .where(
         "withdrawal.organization_id = :organizationId AND withdrawal.status = 'CLOSED' AND withdrawal.created_at >= :prevStart AND withdrawal.created_at <= :prevEnd",
-        { organizationId, prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() },
+        {
+          organizationId,
+          prevStart: prevStart.toISOString(),
+          prevEnd: prevEnd.toISOString(),
+        },
       )
       .getRawOne();
 
@@ -357,7 +451,11 @@ export class AnalyticsService {
     }));
   }
 
-  private async getTopProducts(organizationId: string, startDate?: string, endDate?: string) {
+  private async getTopProducts(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
     const qb = this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .innerJoin('withdrawal.details', 'detail')
@@ -390,8 +488,17 @@ export class AnalyticsService {
     }));
   }
 
-  private async getTopClients(organizationId: string, startDate?: string, endDate?: string) {
-    const { where, params } = this.buildWhereClause(organizationId, startDate, endDate, 'withdrawal');
+  private async getTopClients(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    const { where, params } = this.buildWhereClause(
+      organizationId,
+      startDate,
+      endDate,
+      'withdrawal',
+    );
 
     const result = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')

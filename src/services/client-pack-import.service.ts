@@ -126,8 +126,13 @@ export class ClientPackImportService {
     try {
       customers = await packService.listCustomers();
     } catch (error: any) {
-      this.logger.error(`listCustomers failed: ${error?.message}`, error?.stack);
-      throw new BadRequestException(error?.message || 'Error listing customers from pack');
+      this.logger.error(
+        `listCustomers failed: ${error?.message}`,
+        error?.stack,
+      );
+      throw new BadRequestException(
+        error?.message || 'Error listing customers from pack',
+      );
     }
 
     let created = 0;
@@ -137,7 +142,10 @@ export class ClientPackImportService {
     for (const customer of customers) {
       try {
         const existing = await this.clientRepository.findOne({
-          where: { pack_client_id: customer.id, organization_id: organizationId },
+          where: {
+            pack_client_id: customer.id,
+            organization_id: organizationId,
+          },
           relations: ['addresses', 'taxData'],
           withDeleted: false,
         });
@@ -154,14 +162,14 @@ export class ClientPackImportService {
           // Actualizar dirección principal si existe, o agregar si no hay
           if (data.addresses?.length > 0) {
             const newAddr = data.addresses[0];
-            const mainAddr = existing.addresses?.find(a => a.is_main);
+            const mainAddr = existing.addresses?.find((a) => a.is_main);
             if (mainAddr) {
               Object.assign(mainAddr, { ...newAddr, client_id: existing.id });
             } else {
               // No hay dirección principal — agregar con client_id ya asignado
               existing.addresses = [
                 ...(existing.addresses || []),
-                { ...newAddr, client_id: existing.id } as any,
+                { ...newAddr, client_id: existing.id },
               ];
             }
           }
@@ -175,7 +183,7 @@ export class ClientPackImportService {
             } else {
               existing.taxData = [
                 ...(existing.taxData || []),
-                { ...newTax, client_id: existing.id } as any,
+                { ...newTax, client_id: existing.id },
               ];
             }
           }

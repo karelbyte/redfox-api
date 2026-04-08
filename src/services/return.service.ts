@@ -53,7 +53,7 @@ export class ReturnService {
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
     private tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -65,7 +65,11 @@ export class ReturnService {
   ): Promise<ReturnResponseDto> {
     // Validar que el almacén exista y esté abierto
     const sourceWarehouse = await this.warehouseRepository.findOne({
-      where: { id: createDto.sourceWarehouseId, isOpen: false, organization_id: this.organizationId },
+      where: {
+        id: createDto.sourceWarehouseId,
+        isOpen: false,
+        organization_id: this.organizationId,
+      },
     });
     if (!sourceWarehouse) {
       throw new NotFoundException(
@@ -78,7 +82,10 @@ export class ReturnService {
 
     // Validar que el proveedor exista
     const targetProvider = await this.providerRepository.findOne({
-      where: { id: createDto.targetProviderId, organization_id: this.organizationId },
+      where: {
+        id: createDto.targetProviderId,
+        organization_id: this.organizationId,
+      },
     });
     if (!targetProvider) {
       throw new NotFoundException(
@@ -127,7 +134,10 @@ export class ReturnService {
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.productId, organization_id: this.organizationId },
+      where: {
+        id: createDetailDto.productId,
+        organization_id: this.organizationId,
+      },
     });
     if (!product) {
       throw new NotFoundException(
@@ -141,7 +151,10 @@ export class ReturnService {
     const existingDetail = await this.returnDetailRepository.findOne({
       where: {
         return: { id: returnId, organization_id: this.organizationId },
-        product: { id: createDetailDto.productId, organization_id: this.organizationId },
+        product: {
+          id: createDetailDto.productId,
+          organization_id: this.organizationId,
+        },
       },
       relations: [
         'product',

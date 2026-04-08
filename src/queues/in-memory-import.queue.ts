@@ -20,7 +20,9 @@ export class InMemoryImportQueue implements OnModuleDestroy {
       clearTimeout(this.timeoutRef);
       this.timeoutRef = null;
     }
-    this.logger.log(`🛑 Import queue shutting down. ${this.queue.length} jobs pending.`);
+    this.logger.log(
+      `🛑 Import queue shutting down. ${this.queue.length} jobs pending.`,
+    );
   }
 
   /**
@@ -34,7 +36,9 @@ export class InMemoryImportQueue implements OnModuleDestroy {
 
   async addImportJob(job: ImportJob): Promise<void> {
     this.queue.push(job);
-    this.logger.log(`📥 Import job queued: type=${job.type} rows=${job.rows.length} org=${job.organizationId}`);
+    this.logger.log(
+      `📥 Import job queued: type=${job.type} rows=${job.rows.length} org=${job.organizationId}`,
+    );
     this.scheduleProcessing();
   }
 
@@ -61,12 +65,17 @@ export class InMemoryImportQueue implements OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`⚙️ Processing import job: type=${job.type} rows=${job.rows.length}`);
+    this.logger.log(
+      `⚙️ Processing import job: type=${job.type} rows=${job.rows.length}`,
+    );
     try {
       await this.processor(job);
       this.logger.log(`✅ Import job completed: type=${job.type}`);
     } catch (error: any) {
-      this.logger.error(`❌ Import job failed: ${error?.message}`, error?.stack);
+      this.logger.error(
+        `❌ Import job failed: ${error?.message}`,
+        error?.stack,
+      );
     }
   }
 }

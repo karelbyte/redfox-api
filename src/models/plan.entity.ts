@@ -10,10 +10,15 @@ import {
 import { Subscription } from './subscription.entity';
 
 const featuresTransformer = {
-  to: (value: string[]) => (value && value.length > 0 ? JSON.stringify(value) : null),
+  to: (value: string[]) =>
+    value && value.length > 0 ? JSON.stringify(value) : null,
   from: (value: string | null) => {
     if (!value) return [];
-    try { return JSON.parse(value); } catch { return []; }
+    try {
+      return JSON.parse(value);
+    } catch {
+      return [];
+    }
   },
 };
 @Entity('plans')

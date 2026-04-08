@@ -28,7 +28,7 @@ export class InventoryService {
     private translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -319,12 +319,13 @@ export class InventoryService {
     // Solo si no se filtra por warehouse específico
     let serviceDigitalItems: InventoryListResponseDto[] = [];
     if (!warehouse_id) {
-      const nonTangibleProducts = await this.productService.findNonTangibleActive(
-        this.organizationId,
-      );
+      const nonTangibleProducts =
+        await this.productService.findNonTangibleActive(this.organizationId);
 
       // Excluir los que ya están en inventario (por si alguien los metió)
-      const inventoryProductIds = new Set(filteredInventory.map((i) => i.product.id));
+      const inventoryProductIds = new Set(
+        filteredInventory.map((i) => i.product.id),
+      );
 
       serviceDigitalItems = nonTangibleProducts
         .filter((p) => !inventoryProductIds.has(p.id))
@@ -346,7 +347,8 @@ export class InventoryService {
         (item) =>
           item.product.name.toLowerCase().includes(searchTerm) ||
           item.product.sku.toLowerCase().includes(searchTerm) ||
-          (item.product.barcode && item.product.barcode.toLowerCase().includes(searchTerm)) ||
+          (item.product.barcode &&
+            item.product.barcode.toLowerCase().includes(searchTerm)) ||
           (item.product.description &&
             item.product.description.toLowerCase().includes(searchTerm)),
       );
@@ -354,7 +356,8 @@ export class InventoryService {
         (item) =>
           item.product.name.toLowerCase().includes(searchTerm) ||
           item.product.sku.toLowerCase().includes(searchTerm) ||
-          (item.product.barcode && item.product.barcode.toLowerCase().includes(searchTerm)) ||
+          (item.product.barcode &&
+            item.product.barcode.toLowerCase().includes(searchTerm)) ||
           (item.product.description &&
             item.product.description.toLowerCase().includes(searchTerm)),
       );

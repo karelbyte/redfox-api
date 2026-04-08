@@ -70,18 +70,33 @@ export class SubscriptionEmailService {
     paymentIntentId?: string;
   }) {
     const {
-      to, userName, organizationName, planName, billingPeriod,
-      amount, currency, periodStart, periodEnd, paymentIntentId,
+      to,
+      userName,
+      organizationName,
+      planName,
+      billingPeriod,
+      amount,
+      currency,
+      periodStart,
+      periodEnd,
+      paymentIntentId,
     } = params;
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const year = new Date().getFullYear();
 
     const fmt = (d: Date) =>
-      d.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+      d.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
 
-    const periodLabel = billingPeriod === 'yearly' || billingPeriod === 'annual'
-      ? 'Anual' : 'Mensual';
+    const periodLabel =
+      billingPeriod === 'yearly' || billingPeriod === 'annual'
+        ? 'Anual'
+        : 'Mensual';
 
     const content = `
       <div style="text-align:center;margin-bottom:28px;">
@@ -147,9 +162,14 @@ export class SubscriptionEmailService {
           },
         ],
       });
-      this.logger.log(`[SUBSCRIPTION] Payment confirmation + receipt PDF sent to ${to}`);
+      this.logger.log(
+        `[SUBSCRIPTION] Payment confirmation + receipt PDF sent to ${to}`,
+      );
     } catch (error) {
-      this.logger.error(`[SUBSCRIPTION] Failed to send payment confirmation to ${to}`, error);
+      this.logger.error(
+        `[SUBSCRIPTION] Failed to send payment confirmation to ${to}`,
+        error,
+      );
     }
   }
 
@@ -162,16 +182,23 @@ export class SubscriptionEmailService {
     daysRemaining: number;
     trialEndDate: Date;
   }) {
-    const { to, userName, organizationSlug, daysRemaining, trialEndDate } = params;
+    const { to, userName, organizationSlug, daysRemaining, trialEndDate } =
+      params;
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
     const year = new Date().getFullYear();
 
     const fmt = (d: Date) =>
-      d.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+      d.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
 
-    const urgency = daysRemaining === 1 ? '¡Último día!' : `${daysRemaining} días restantes`;
+    const urgency =
+      daysRemaining === 1 ? '¡Último día!' : `${daysRemaining} días restantes`;
 
     const content = `
       <div style="text-align:center;margin-bottom:28px;">
@@ -200,9 +227,14 @@ export class SubscriptionEmailService {
         subject: `⏰ Tu prueba de Nitro finaliza en ${daysRemaining} ${daysRemaining === 1 ? 'día' : 'días'}`,
         html: nitroShell(content, year),
       });
-      this.logger.log(`[SUBSCRIPTION] Trial reminder sent to ${to} (${daysRemaining} days left)`);
+      this.logger.log(
+        `[SUBSCRIPTION] Trial reminder sent to ${to} (${daysRemaining} days left)`,
+      );
     } catch (error) {
-      this.logger.error(`[SUBSCRIPTION] Failed to send trial reminder to ${to}`, error);
+      this.logger.error(
+        `[SUBSCRIPTION] Failed to send trial reminder to ${to}`,
+        error,
+      );
     }
   }
 
@@ -217,14 +249,27 @@ export class SubscriptionEmailService {
     currency: string;
     expirationDate: Date;
   }) {
-    const { to, userName, organizationSlug, planName, amount, currency, expirationDate } = params;
+    const {
+      to,
+      userName,
+      organizationSlug,
+      planName,
+      amount,
+      currency,
+      expirationDate,
+    } = params;
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
     const year = new Date().getFullYear();
 
     const fmt = (d: Date) =>
-      d.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+      d.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
 
     const content = `
       <div style="text-align:center;margin-bottom:28px;">
@@ -259,7 +304,10 @@ export class SubscriptionEmailService {
       });
       this.logger.log(`[SUBSCRIPTION] Renewal reminder sent to ${to}`);
     } catch (error) {
-      this.logger.error(`[SUBSCRIPTION] Failed to send renewal reminder to ${to}`, error);
+      this.logger.error(
+        `[SUBSCRIPTION] Failed to send renewal reminder to ${to}`,
+        error,
+      );
     }
   }
 
@@ -273,9 +321,11 @@ export class SubscriptionEmailService {
     amount: number;
     currency: string;
   }) {
-    const { to, userName, organizationSlug, planName, amount, currency } = params;
+    const { to, userName, organizationSlug, planName, amount, currency } =
+      params;
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const paymentUrl = `${frontendUrl}/${organizationSlug}/es/dashboard/suscripcion/pago`;
     const year = new Date().getFullYear();
 
@@ -311,7 +361,10 @@ export class SubscriptionEmailService {
       });
       this.logger.log(`[SUBSCRIPTION] Expired notification sent to ${to}`);
     } catch (error) {
-      this.logger.error(`[SUBSCRIPTION] Failed to send expired notification to ${to}`, error);
+      this.logger.error(
+        `[SUBSCRIPTION] Failed to send expired notification to ${to}`,
+        error,
+      );
     }
   }
 }

@@ -7,7 +7,8 @@ import {
 } from 'typeorm';
 
 export class CreateAccountsPayableTable1716400000370
-  implements MigrationInterface {
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     const isPostgres = queryRunner.connection.options.type === 'postgres';
 

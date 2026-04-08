@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
-import { InvoicePayment, InvoicePaymentStatus } from '../models/invoice-payment.entity';
+import {
+  InvoicePayment,
+  InvoicePaymentStatus,
+} from '../models/invoice-payment.entity';
 import { Client } from '../models/client.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { Product } from '../models/product.entity';
@@ -60,7 +63,7 @@ export class InvoiceService {
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -69,7 +72,8 @@ export class InvoiceService {
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
   ): InvoiceDetailResponseDto {
-    const subtotal = Math.round(Number(detail.quantity) * Number(detail.price) * 100) / 100;
+    const subtotal =
+      Math.round(Number(detail.quantity) * Number(detail.price) * 100) / 100;
     const taxRate = (detail.product as any)?.taxes?.length
       ? (detail.product as any).taxes.reduce((acc: number, tax: any) => {
           if (tax.type === 'PERCENTAGE') return acc + Number(tax.value);
@@ -97,9 +101,15 @@ export class InvoiceService {
       this.mapDetailToResponseDto(detail),
     );
 
-    const subtotal = mappedDetails?.reduce((s, d) => s + Number(d.subtotal), 0) ?? Number(invoice.subtotal);
-    const tax_amount = mappedDetails?.reduce((s, d) => s + Number(d.tax_amount), 0) ?? Number(invoice.tax_amount);
-    const total_amount = mappedDetails?.reduce((s, d) => s + Number(d.total), 0) ?? Number(invoice.total_amount);
+    const subtotal =
+      mappedDetails?.reduce((s, d) => s + Number(d.subtotal), 0) ??
+      Number(invoice.subtotal);
+    const tax_amount =
+      mappedDetails?.reduce((s, d) => s + Number(d.tax_amount), 0) ??
+      Number(invoice.tax_amount);
+    const total_amount =
+      mappedDetails?.reduce((s, d) => s + Number(d.total), 0) ??
+      Number(invoice.total_amount);
 
     return {
       id: invoice.id,
@@ -185,7 +195,10 @@ export class InvoiceService {
     }
 
     const existingInvoice = await this.invoiceRepository.findOne({
-      where: { code: createInvoiceDto.code, organization_id: this.organizationId },
+      where: {
+        code: createInvoiceDto.code,
+        organization_id: this.organizationId,
+      },
     });
     if (existingInvoice) {
       const message = await this.translationService.translate(
@@ -216,15 +229,18 @@ export class InvoiceService {
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
     // Batch load de productos — evita N+1 (1 query en lugar de N)
-    const productIds = details.map(d => d.product_id);
+    const productIds = details.map((d) => d.product_id);
     const products = await this.productRepository.find({
       where: { id: In(productIds) },
     });
-    const productMap = new Map(products.map(p => [p.id, p]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const detailEntities = details.map(detailDto => {
+    const detailEntities = details.map((detailDto) => {
       const product = productMap.get(detailDto.product_id);
-      if (!product) throw new BadRequestException(`Producto ${detailDto.product_id} no encontrado`);
+      if (!product)
+        throw new BadRequestException(
+          `Producto ${detailDto.product_id} no encontrado`,
+        );
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
@@ -379,7 +395,10 @@ export class InvoiceService {
 
     if (updateInvoiceDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateInvoiceDto.client_id, organization_id: this.organizationId },
+        where: {
+          id: updateInvoiceDto.client_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -515,7 +534,8 @@ export class InvoiceService {
     const details: CreateInvoiceDetailDto[] = withdrawal.details.map(
       (detail) => {
         const taxRate = (detail.product.taxes || []).reduce((acc, tax) => {
-          if ((tax as any).type === 'PERCENTAGE') return acc + Number(tax.value);
+          if ((tax as any).type === 'PERCENTAGE')
+            return acc + Number(tax.value);
           return acc;
         }, 0);
         return {
@@ -548,15 +568,18 @@ export class InvoiceService {
     await this.withdrawalRepository.save(withdrawal);
 
     // Batch load de productos — evita N+1
-    const productIds2 = details.map(d => d.product_id);
+    const productIds2 = details.map((d) => d.product_id);
     const products2 = await this.productRepository.find({
       where: { id: In(productIds2) },
     });
-    const productMap2 = new Map(products2.map(p => [p.id, p]));
+    const productMap2 = new Map(products2.map((p) => [p.id, p]));
 
-    const detailEntities2 = details.map(detailDto => {
+    const detailEntities2 = details.map((detailDto) => {
       const product = productMap2.get(detailDto.product_id);
-      if (!product) throw new BadRequestException(`Producto ${detailDto.product_id} no encontrado`);
+      if (!product)
+        throw new BadRequestException(
+          `Producto ${detailDto.product_id} no encontrado`,
+        );
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
@@ -641,7 +664,9 @@ export class InvoiceService {
       toDate.setHours(23, 59, 59, 999);
       withdrawals = await this.withdrawalRepository
         .createQueryBuilder('w')
-        .where('w.organization_id = :organizationId', { organizationId: this.organizationId })
+        .where('w.organization_id = :organizationId', {
+          organizationId: this.organizationId,
+        })
         .andWhere('w.created_at >= :from', { from: fromDate })
         .andWhere('w.created_at <= :to', { to: toDate })
         .andWhere('w.invoice_id IS NULL')
@@ -661,24 +686,38 @@ export class InvoiceService {
     }
 
     // Calcular el total real de las ventas del período
-    const totalAmount = withdrawals.reduce((sum, w) => sum + Number(w.amount), 0);
+    const totalAmount = withdrawals.reduce(
+      (sum, w) => sum + Number(w.amount),
+      0,
+    );
 
     const packService = await this.certificationPackFactory.getPackService();
     if (!packService.createGlobalInvoice) {
-      const message = await this.translationService.translate('invoice.pac_no_global', userId);
+      const message = await this.translationService.translate(
+        'invoice.pac_no_global',
+        userId,
+      );
       throw new BadRequestException(message);
     }
 
-    const from = dto.from ?? withdrawals.reduce(
-      (min, w) => !min || new Date(w.created_at) < new Date(min)
-        ? w.created_at.toISOString().split('T')[0] : min,
-      null as string | null,
-    );
-    const to = dto.to ?? withdrawals.reduce(
-      (max, w) => !max || new Date(w.created_at) > new Date(max)
-        ? w.created_at.toISOString().split('T')[0] : max,
-      null as string | null,
-    );
+    const from =
+      dto.from ??
+      withdrawals.reduce(
+        (min, w) =>
+          !min || new Date(w.created_at) < new Date(min)
+            ? w.created_at.toISOString().split('T')[0]
+            : min,
+        null as string | null,
+      );
+    const to =
+      dto.to ??
+      withdrawals.reduce(
+        (max, w) =>
+          !max || new Date(w.created_at) > new Date(max)
+            ? w.created_at.toISOString().split('T')[0]
+            : max,
+        null as string | null,
+      );
 
     const cfdiResult = await packService.createGlobalInvoice({
       from: from ?? undefined,
@@ -711,7 +750,7 @@ export class InvoiceService {
       date: new Date(),
       client: publicClient,
       withdrawal: undefined,
-      subtotal: Math.round(totalAmount / 1.16 * 100) / 100,
+      subtotal: Math.round((totalAmount / 1.16) * 100) / 100,
       tax_amount: Math.round((totalAmount - totalAmount / 1.16) * 100) / 100,
       total_amount: Math.round(totalAmount * 100) / 100,
       status: InvoiceStatus.SENT,
@@ -780,7 +819,9 @@ export class InvoiceService {
       // Auto-sincronizar productos que no tengan product_pack_id
       for (const detail of invoice.details) {
         if (detail.product && !detail.product.product_pack_id) {
-          const result = await this.productPackSyncService.syncProduct(detail.product);
+          const result = await this.productPackSyncService.syncProduct(
+            detail.product,
+          );
           if (result.packSyncSuccess) {
             detail.product.product_pack_id = result.product.product_pack_id;
           } else {
@@ -817,7 +858,7 @@ export class InvoiceService {
           'details.product.category',
           'details.product.tax',
           'details.product.measurement_unit',
-        'details.product.currency',
+          'details.product.currency',
         ],
       });
 
@@ -846,12 +887,17 @@ export class InvoiceService {
             userId,
           );
         }
-      } catch { /* no bloquear el flujo */ }
+      } catch {
+        /* no bloquear el flujo */
+      }
 
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
       console.error('Error generating CFDI:', error);
-      const message = await this.translationService.translate('invoice.error_generating_cfdi', userId);
+      const message = await this.translationService.translate(
+        'invoice.error_generating_cfdi',
+        userId,
+      );
       throw new BadRequestException(message);
     }
   }
@@ -894,7 +940,7 @@ export class InvoiceService {
     if (activePayments.length > 0) {
       throw new BadRequestException(
         `No se puede cancelar la factura porque tiene ${activePayments.length} complemento(s) de pago timbrado(s). ` +
-        `Cancela los complementos de pago primero.`,
+          `Cancela los complementos de pago primero.`,
       );
     }
 
@@ -910,10 +956,13 @@ export class InvoiceService {
         .createQueryBuilder()
         .update()
         .set({ invoiceId: null })
-        .where('invoice_id = :invoiceId AND organization_id = :organizationId', {
-          invoiceId: invoiceId,
-          organizationId: this.organizationId,
-        })
+        .where(
+          'invoice_id = :invoiceId AND organization_id = :organizationId',
+          {
+            invoiceId: invoiceId,
+            organizationId: this.organizationId,
+          },
+        )
         .execute();
 
       const invoiceWithDetails = await this.invoiceRepository.findOne({
@@ -949,7 +998,9 @@ export class InvoiceService {
     } catch (error: any) {
       console.error('Error canceling CFDI:', error);
       // Propagar el mensaje original del PAC
-      throw new BadRequestException(error.message || 'Error al cancelar el CFDI');
+      throw new BadRequestException(
+        error.message || 'Error al cancelar el CFDI',
+      );
     }
   }
 
@@ -1102,7 +1153,10 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'invoice.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -1136,7 +1190,10 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'invoice.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -1224,7 +1281,10 @@ export class InvoiceService {
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('invoice.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'invoice.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -1295,10 +1355,18 @@ export class InvoiceService {
    * Crea una factura directamente desde una venta (withdrawal) cerrada.
    * Copia los productos de la venta al invoice automáticamente.
    */
-  async createFromWithdrawal(withdrawalId: string, userId?: string): Promise<InvoiceResponseDto | null> {
+  async createFromWithdrawal(
+    withdrawalId: string,
+    userId?: string,
+  ): Promise<InvoiceResponseDto | null> {
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
-      relations: ['client', 'details', 'details.product', 'details.product.tax'],
+      relations: [
+        'client',
+        'details',
+        'details.product',
+        'details.product.tax',
+      ],
     });
 
     if (!withdrawal) return null;
@@ -1311,7 +1379,7 @@ export class InvoiceService {
       client_id: withdrawal.client.id,
       withdrawal_id: withdrawalId,
       payment_method: (withdrawal.paymentMethod as any) || 'cash',
-      details: (withdrawal.details || []).map(d => ({
+      details: (withdrawal.details || []).map((d) => ({
         product_id: d.product.id,
         quantity: Number(d.quantity),
         price: Number(d.price),

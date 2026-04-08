@@ -32,7 +32,7 @@ export class CategoryService {
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
     private readonly unifiedUploadService: UnifiedUploadService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -149,7 +149,11 @@ export class CategoryService {
     // Garantizar unicidad añadiendo sufijo numérico si ya existe
     let slug = baseSlug;
     let suffix = 1;
-    while (await this.categoryRepository.findOne({ where: { slug, organization_id: this.organizationId } })) {
+    while (
+      await this.categoryRepository.findOne({
+        where: { slug, organization_id: this.organizationId },
+      })
+    ) {
       slug = `${baseSlug}-${suffix++}`;
     }
 
@@ -180,25 +184,25 @@ export class CategoryService {
 
     const whereConditions: FindManyOptions<Category> = term
       ? {
-        ...baseConditions,
-        where: [
-          {
-            name: Like(`%${term}%`),
-            organization_id: this.organizationId,
-            parentId: IsNull(),
-          },
-          {
-            slug: Like(`%${term}%`),
-            organization_id: this.organizationId,
-            parentId: IsNull(),
-          },
-          {
-            description: Like(`%${term}%`),
-            organization_id: this.organizationId,
-            parentId: IsNull(),
-          },
-        ],
-      }
+          ...baseConditions,
+          where: [
+            {
+              name: Like(`%${term}%`),
+              organization_id: this.organizationId,
+              parentId: IsNull(),
+            },
+            {
+              slug: Like(`%${term}%`),
+              organization_id: this.organizationId,
+              parentId: IsNull(),
+            },
+            {
+              description: Like(`%${term}%`),
+              organization_id: this.organizationId,
+              parentId: IsNull(),
+            },
+          ],
+        }
       : baseConditions;
 
     if (!page && !limit) {

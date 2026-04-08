@@ -57,7 +57,18 @@ import { NotificationModule } from './notification.module';
     UploadsModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, ProductMapper, CurrencyMapper, ProductPackImportService, ProductPackSyncService],
-  exports: [ProductService, ProductMapper, CurrencyMapper, ProductPackSyncService],
+  providers: [
+    ProductService,
+    ProductMapper,
+    CurrencyMapper,
+    ProductPackImportService,
+    ProductPackSyncService,
+  ],
+  exports: [
+    ProductService,
+    ProductMapper,
+    CurrencyMapper,
+    ProductPackSyncService,
+  ],
 })
 export class ProductModule {}

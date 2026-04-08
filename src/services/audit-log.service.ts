@@ -56,16 +56,20 @@ export class AuditLogService {
     }
 
     if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeData(item));
+      return data.map((item) => this.sanitizeData(item));
     }
 
     const sanitized: any = {};
-    
+
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
-      
+
       // Verificar si el campo es sensible
-      if (this.SENSITIVE_FIELDS.some(sensitiveField => lowerKey.includes(sensitiveField))) {
+      if (
+        this.SENSITIVE_FIELDS.some((sensitiveField) =>
+          lowerKey.includes(sensitiveField),
+        )
+      ) {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
         // Recursivamente sanitizar objetos anidados
@@ -109,8 +113,12 @@ export class AuditLogService {
     let finalIp = ipAddress;
 
     try {
-      const entityOrgId = newValues?.organization_id || oldValues?.organization_id;
-      const organizationId = entityOrgId || this.tenantContext.getOrganizationId() || organizationIdFallback;
+      const entityOrgId =
+        newValues?.organization_id || oldValues?.organization_id;
+      const organizationId =
+        entityOrgId ||
+        this.tenantContext.getOrganizationId() ||
+        organizationIdFallback;
 
       if (!userId || userId === 'SYSTEM') {
         const contextUser = this.tenantContext.getUserId();
@@ -120,7 +128,7 @@ export class AuditLogService {
           finalUserId = null;
         }
       }
-      
+
       if (!finalUserId) {
         this.logger.debug(
           `Skipping audit log for ${action} ${entityType}: No user context.`,
@@ -144,8 +152,12 @@ export class AuditLogService {
       }
 
       // Sanitizar datos sensibles antes de guardar
-      const sanitizedOldValues = oldValues ? this.sanitizeData(oldValues) : undefined;
-      const sanitizedNewValues = newValues ? this.sanitizeData(newValues) : undefined;
+      const sanitizedOldValues = oldValues
+        ? this.sanitizeData(oldValues)
+        : undefined;
+      const sanitizedNewValues = newValues
+        ? this.sanitizeData(newValues)
+        : undefined;
 
       const log = this.auditLogRepository.create({
         organization_id: organizationId || organizationIdFallback,
@@ -160,7 +172,10 @@ export class AuditLogService {
       });
       return await this.auditLogRepository.save(log);
     } catch (error) {
-      this.logger.error(`[AuditLogService] Error saving audit log: ${error.message}`, error.stack);
+      this.logger.error(
+        `[AuditLogService] Error saving audit log: ${error.message}`,
+        error.stack,
+      );
       // Si falla por foreign key (usuario no existe), solo logueamos el warning
       if (error.code === '23503' || error.code === 'ER_NO_REFERENCED_ROW_2') {
         console.warn(
@@ -190,7 +205,9 @@ export class AuditLogService {
       .leftJoinAndSelect('log.organization', 'organization');
 
     if (organizationId) {
-      query.andWhere('log.organization_id = :organizationId', { organizationId });
+      query.andWhere('log.organization_id = :organizationId', {
+        organizationId,
+      });
     }
 
     if (entityType) {
@@ -216,7 +233,7 @@ export class AuditLogService {
     if (search) {
       query.andWhere(
         '(LOWER(log.description) LIKE LOWER(:search) OR LOWER(log.entityId) LIKE LOWER(:search) OR LOWER(user.name) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search))',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -250,7 +267,15 @@ export class AuditLogService {
 
     if (!organizationId) {
       this.logger.warn('No organization context for findAll audit logs');
-      return { data: [], meta: { currentPage: page, totalPages: 0, totalItems: 0, itemsPerPage: limit } };
+      return {
+        data: [],
+        meta: {
+          currentPage: page,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: limit,
+        },
+      };
     }
 
     const query = this.auditLogRepository

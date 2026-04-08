@@ -31,7 +31,7 @@ export class MeasurementUnitService {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -96,15 +96,15 @@ export class MeasurementUnitService {
     };
     const whereConditions = term
       ? {
-        ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`), organization_id: this.organizationId },
-          {
-            description: Like(`%${term}%`),
-            organization_id: this.organizationId,
-          },
-        ],
-      }
+          ...baseConditions,
+          where: [
+            { code: Like(`%${term}%`), organization_id: this.organizationId },
+            {
+              description: Like(`%${term}%`),
+              organization_id: this.organizationId,
+            },
+          ],
+        }
       : baseConditions;
 
     // Si no se proporciona paginación, devolver toda la data
@@ -358,7 +358,7 @@ export class MeasurementUnitService {
 
     const lowerTerm = term.toLowerCase();
     return units.filter(
-      u =>
+      (u) =>
         u.key.toLowerCase().includes(lowerTerm) ||
         u.description.toLowerCase().includes(lowerTerm),
     );

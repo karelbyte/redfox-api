@@ -27,7 +27,7 @@ export class AccountReceivableService {
     @Inject(forwardRef(() => ClientService))
     private readonly clientService: ClientService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();
@@ -47,7 +47,7 @@ export class AccountReceivableService {
     const existingAccount = await this.accountReceivableRepository.findOne({
       where: {
         referenceNumber: createAccountReceivableDto.referenceNumber,
-        organization_id: organizationId
+        organization_id: organizationId,
       },
     });
 
@@ -75,7 +75,8 @@ export class AccountReceivableService {
     accountReceivable.paidAmount = paidAmount;
     accountReceivable.status = status;
 
-    const savedAccount = await this.accountReceivableRepository.save(accountReceivable);
+    const savedAccount =
+      await this.accountReceivableRepository.save(accountReceivable);
 
     // Update denormalized client balance (increase debt)
     await this.clientService.updateBalance(
@@ -360,8 +361,8 @@ export class AccountReceivableService {
       const daysOverdue =
         account.status !== AccountReceivableStatus.PAID && dueDate < today
           ? Math.floor(
-            (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
-          )
+              (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+            )
           : 0;
 
       if (daysOverdue > 0) {

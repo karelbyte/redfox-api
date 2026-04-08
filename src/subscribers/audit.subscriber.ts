@@ -22,11 +22,9 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     dataSource.subscribers.push(this);
   }
 
-
-
   async afterInsert(event: InsertEvent<any>) {
     if (event.metadata.name === 'AuditLog') return;
-    
+
     await this.auditLogService.log(
       event.entity?.created_by || 'SYSTEM', // Usamos campos comunes si existen
       event.metadata.name,
@@ -39,7 +37,9 @@ export class AuditSubscriber implements EntitySubscriberInterface {
   }
 
   async afterUpdate(event: UpdateEvent<any>) {
-    console.log(`[AuditSubscriber] afterUpdate fired for entity: ${event.metadata.name}`);
+    console.log(
+      `[AuditSubscriber] afterUpdate fired for entity: ${event.metadata.name}`,
+    );
     if (event.metadata.name === 'AuditLog') return;
 
     await this.auditLogService.log(
@@ -48,7 +48,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
       event.entity?.id || 'N/A',
       AuditAction.UPDATE,
       event.databaseEntity, // Valores anteriores
-      event.entity,         // Valores nuevos
+      event.entity, // Valores nuevos
       `Updated ${event.metadata.name}`,
     );
   }

@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Organization } from './organization.entity';
 
@@ -34,7 +39,11 @@ export class ImportLog {
   @Column({ type: 'enum', enum: ImportLogType })
   type: ImportLogType;
 
-  @Column({ type: 'enum', enum: ImportLogStatus, default: ImportLogStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: ImportLogStatus,
+    default: ImportLogStatus.PENDING,
+  })
   status: ImportLogStatus;
 
   @Column({ type: 'int', default: 0 })

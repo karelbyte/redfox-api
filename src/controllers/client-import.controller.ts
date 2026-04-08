@@ -1,6 +1,13 @@
 import {
-  Controller, Post, Get, UseGuards, UseInterceptors,
-  UploadedFile, BadRequestException, Request, Query,
+  Controller,
+  Post,
+  Get,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Request,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '../guards/auth.guard';
@@ -24,7 +31,9 @@ export class ClientImportController {
   ) {}
 
   @Post('csv')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   async importCSV(
     @UploadedFile() file: Express.Multer.File,
     @UserId() userId: string,
@@ -33,15 +42,19 @@ export class ClientImportController {
 
     const ext = file.originalname.split('.').pop()?.toLowerCase();
     if (!['csv', 'txt'].includes(ext || '')) {
-      throw new BadRequestException('Solo se aceptan archivos CSV (.csv, .txt)');
+      throw new BadRequestException(
+        'Solo se aceptan archivos CSV (.csv, .txt)',
+      );
     }
 
     // Parsear el CSV de forma síncrona (rápido — solo lectura de texto)
     const rows = this.importService.parseCSV(file.buffer);
-    if (rows.length === 0) throw new BadRequestException('El archivo no contiene filas de datos');
+    if (rows.length === 0)
+      throw new BadRequestException('El archivo no contiene filas de datos');
 
     const organizationId = this.tenantContext.getOrganizationId();
-    if (!organizationId) throw new BadRequestException('Contexto de organización requerido');
+    if (!organizationId)
+      throw new BadRequestException('Contexto de organización requerido');
 
     // Encolar el job — responde inmediatamente
     await this.importQueue.addImportJob({
@@ -65,9 +78,14 @@ export class ClientImportController {
   @Get('history')
   async getHistory(@Query('limit') limit?: string) {
     const organizationId = this.tenantContext.getOrganizationId();
-    if (!organizationId) throw new BadRequestException('Contexto de organización requerido');
+    if (!organizationId)
+      throw new BadRequestException('Contexto de organización requerido');
 
     const take = Math.min(parseInt(limit || '10', 10) || 10, 50);
-    return this.importLogService.findByOrg(organizationId, ImportLogType.CLIENT, take);
+    return this.importLogService.findByOrg(
+      organizationId,
+      ImportLogType.CLIENT,
+      take,
+    );
   }
 }

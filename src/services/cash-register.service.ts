@@ -29,7 +29,7 @@ export class CashRegisterService {
     private readonly cashTransactionRepository: Repository<CashTransaction>,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -39,7 +39,10 @@ export class CashRegisterService {
     userId?: string,
   ): Promise<CashRegisterResponseDto> {
     const currentCashRegister = await this.cashRegisterRepository.findOne({
-      where: { status: CashRegisterStatus.OPEN, organization_id: this.organizationId },
+      where: {
+        status: CashRegisterStatus.OPEN,
+        organization_id: this.organizationId,
+      },
       order: { created_at: 'DESC' },
     });
 
@@ -61,7 +64,10 @@ export class CashRegisterService {
     try {
       // Verificar si ya existe una caja con el mismo código
       const existingCashRegister = await this.cashRegisterRepository.findOne({
-        where: { code: createCashRegisterDto.code, organization_id: this.organizationId },
+        where: {
+          code: createCashRegisterDto.code,
+          organization_id: this.organizationId,
+        },
       });
 
       if (existingCashRegister) {
@@ -107,7 +113,10 @@ export class CashRegisterService {
   ): Promise<CashRegisterResponseDto> {
     // Verificar si ya hay una caja abierta
     const existingOpenCashRegister = await this.cashRegisterRepository.findOne({
-      where: { status: CashRegisterStatus.OPEN, organization_id: this.organizationId },
+      where: {
+        status: CashRegisterStatus.OPEN,
+        organization_id: this.organizationId,
+      },
     });
 
     if (existingOpenCashRegister) {
@@ -199,7 +208,10 @@ export class CashRegisterService {
         updateCashRegisterDto.code !== cashRegister.code
       ) {
         const existingCashRegister = await this.cashRegisterRepository.findOne({
-          where: { code: updateCashRegisterDto.code, organization_id: this.organizationId },
+          where: {
+            code: updateCashRegisterDto.code,
+            organization_id: this.organizationId,
+          },
         });
 
         if (existingCashRegister) {

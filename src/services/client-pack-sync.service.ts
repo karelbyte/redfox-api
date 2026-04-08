@@ -46,7 +46,7 @@ export class ClientPackSyncService {
 
     this.logger.log(
       `[extractCustomerData] client.id=${client.id} name="${client.name}" ` +
-      `taxData count=${client.taxData?.length ?? 0} addresses count=${client.addresses?.length ?? 0}`,
+        `taxData count=${client.taxData?.length ?? 0} addresses count=${client.addresses?.length ?? 0}`,
     );
     this.logger.log(
       `[extractCustomerData] → CustomerData: ${JSON.stringify(data, null, 2)}`,
@@ -60,29 +60,41 @@ export class ClientPackSyncService {
     packSyncSuccess: boolean;
     packErrorMessage?: string;
   }> {
-    this.logger.log(`[syncOnCreate] START — client.id=${client.id} name="${client.name}"`);
+    this.logger.log(
+      `[syncOnCreate] START — client.id=${client.id} name="${client.name}"`,
+    );
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
       const customerData = this.extractCustomerData(client);
 
-      this.logger.log(`[syncOnCreate] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+      this.logger.log(
+        `[syncOnCreate] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`,
+      );
 
       const packResponse = await packService.createCustomer(customerData);
 
-      this.logger.log(`[syncOnCreate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+      this.logger.log(
+        `[syncOnCreate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`,
+      );
 
       client.pack_client_id = packResponse.id;
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      this.logger.log(`[syncOnCreate] SUCCESS — pack_client_id=${packResponse.id}`);
+      this.logger.log(
+        `[syncOnCreate] SUCCESS — pack_client_id=${packResponse.id}`,
+      );
 
       return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
       this.logger.warn(`[syncOnCreate] FAILED — ${error?.message}`);
-      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
+      return {
+        client,
+        packSyncSuccess: false,
+        packErrorMessage: error?.message,
+      };
     }
   }
 
@@ -96,7 +108,7 @@ export class ClientPackSyncService {
   }> {
     this.logger.log(
       `[syncOnUpdate] START — client.id=${client.id} name="${client.name}" ` +
-      `pack_client_id=${client.pack_client_id ?? 'none'}`,
+        `pack_client_id=${client.pack_client_id ?? 'none'}`,
     );
 
     try {
@@ -106,18 +118,24 @@ export class ClientPackSyncService {
       if (!client.pack_client_id) {
         const customerData = this.extractCustomerData(client);
 
-        this.logger.log(`[syncOnUpdate] No pack_client_id — calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+        this.logger.log(
+          `[syncOnUpdate] No pack_client_id — calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`,
+        );
 
         const packResponse = await packService.createCustomer(customerData);
 
-        this.logger.log(`[syncOnUpdate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+        this.logger.log(
+          `[syncOnUpdate] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`,
+        );
 
         client.pack_client_id = packResponse.id;
         client.pack_client_response = packResponse;
 
         const savedClient = await this.clientRepository.save(client);
 
-        this.logger.log(`[syncOnUpdate] SUCCESS (create) — pack_client_id=${packResponse.id}`);
+        this.logger.log(
+          `[syncOnUpdate] SUCCESS (create) — pack_client_id=${packResponse.id}`,
+        );
 
         return { client: savedClient, packSyncSuccess: true };
       }
@@ -127,7 +145,7 @@ export class ClientPackSyncService {
 
       this.logger.log(
         `[syncOnUpdate] Calling updateCustomer pack_client_id=${client.pack_client_id} ` +
-        `with payload: ${JSON.stringify(customerData, null, 2)}`,
+          `with payload: ${JSON.stringify(customerData, null, 2)}`,
       );
 
       const packResponse = await packService.updateCustomer(
@@ -135,18 +153,26 @@ export class ClientPackSyncService {
         customerData,
       );
 
-      this.logger.log(`[syncOnUpdate] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+      this.logger.log(
+        `[syncOnUpdate] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`,
+      );
 
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      this.logger.log(`[syncOnUpdate] SUCCESS (update) — pack_client_id=${client.pack_client_id}`);
+      this.logger.log(
+        `[syncOnUpdate] SUCCESS (update) — pack_client_id=${client.pack_client_id}`,
+      );
 
       return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
       this.logger.warn(`[syncOnUpdate] FAILED — ${error?.message}`);
-      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
+      return {
+        client,
+        packSyncSuccess: false,
+        packErrorMessage: error?.message,
+      };
     }
   }
 
@@ -157,7 +183,7 @@ export class ClientPackSyncService {
   }> {
     this.logger.log(
       `[syncManually] START — client.id=${client.id} name="${client.name}" ` +
-      `pack_client_id=${client.pack_client_id ?? 'none'}`,
+        `pack_client_id=${client.pack_client_id ?? 'none'}`,
     );
 
     try {
@@ -167,7 +193,7 @@ export class ClientPackSyncService {
       if (client.pack_client_id) {
         this.logger.log(
           `[syncManually] Calling updateCustomer pack_client_id=${client.pack_client_id} ` +
-          `with payload: ${JSON.stringify(customerData, null, 2)}`,
+            `with payload: ${JSON.stringify(customerData, null, 2)}`,
         );
 
         const packResponse = await packService.updateCustomer(
@@ -175,33 +201,47 @@ export class ClientPackSyncService {
           customerData,
         );
 
-        this.logger.log(`[syncManually] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+        this.logger.log(
+          `[syncManually] updateCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`,
+        );
 
         client.pack_client_response = packResponse;
         const savedClient = await this.clientRepository.save(client);
 
-        this.logger.log(`[syncManually] SUCCESS (update) — pack_client_id=${client.pack_client_id}`);
+        this.logger.log(
+          `[syncManually] SUCCESS (update) — pack_client_id=${client.pack_client_id}`,
+        );
 
         return { client: savedClient, packSyncSuccess: true };
       }
 
-      this.logger.log(`[syncManually] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`);
+      this.logger.log(
+        `[syncManually] Calling createCustomer with payload: ${JSON.stringify(customerData, null, 2)}`,
+      );
 
       const packResponse = await packService.createCustomer(customerData);
 
-      this.logger.log(`[syncManually] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`);
+      this.logger.log(
+        `[syncManually] createCustomer RESPONSE: ${JSON.stringify(packResponse, null, 2)}`,
+      );
 
       client.pack_client_id = packResponse.id;
       client.pack_client_response = packResponse;
 
       const savedClient = await this.clientRepository.save(client);
 
-      this.logger.log(`[syncManually] SUCCESS (create) — pack_client_id=${packResponse.id}`);
+      this.logger.log(
+        `[syncManually] SUCCESS (create) — pack_client_id=${packResponse.id}`,
+      );
 
       return { client: savedClient, packSyncSuccess: true };
     } catch (error: any) {
       this.logger.warn(`[syncManually] FAILED — ${error?.message}`);
-      return { client, packSyncSuccess: false, packErrorMessage: error?.message };
+      return {
+        client,
+        packSyncSuccess: false,
+        packErrorMessage: error?.message,
+      };
     }
   }
 }

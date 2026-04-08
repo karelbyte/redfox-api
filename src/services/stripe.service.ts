@@ -66,7 +66,9 @@ export class StripeService {
   }
 
   constructWebhookEvent(body: Buffer, signature: string) {
-    const webhookSecret = this.configService.get<string>('stripe.webhookSecret');
+    const webhookSecret = this.configService.get<string>(
+      'stripe.webhookSecret',
+    );
     if (!webhookSecret) {
       throw new Error('Stripe webhook secret is not configured');
     }

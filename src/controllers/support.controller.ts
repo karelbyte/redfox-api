@@ -1,4 +1,10 @@
-import { Controller, Post, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { IsString, IsNotEmpty, MinLength } from 'class-validator';
 import { AuthGuard } from '../guards/auth.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';

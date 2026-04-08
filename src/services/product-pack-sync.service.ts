@@ -28,7 +28,7 @@ export class ProductPackSyncService {
       | undefined;
     const unitKey = mu?.code ?? 'E48';
     const unitName = mu?.description ?? 'Unidad de servicio';
-    
+
     // Usar el code del producto como clave SAT
     const productKey = product.code || '01010101';
 
@@ -37,7 +37,7 @@ export class ProductPackSyncService {
 
     // Mapear los impuestos reales del producto
     const taxes = product.taxes?.map((tax) => ({
-      type: tax.code,  // code = tipo SAT oficial (IVA, IEPS, ISR)
+      type: tax.code, // code = tipo SAT oficial (IVA, IEPS, ISR)
       rate: Number(tax.value) / 100,
     })) || [{ type: 'IVA', rate: 0.16 }];
 
@@ -45,7 +45,8 @@ export class ProductPackSyncService {
       description: product.description || product.name,
       product_key: productKey,
       unit_key: unitKey,
-      price: price !== undefined ? Number(price) : Number(product.base_price || 0),
+      price:
+        price !== undefined ? Number(price) : Number(product.base_price || 0),
       tax_included: false,
       taxability: '02', // Objeto de impuesto
       taxes,
@@ -149,9 +150,7 @@ export class ProductPackSyncService {
           const packResponse: ProductResponse =
             await packService.createProduct(productData);
           product.product_pack_id = packResponse.id;
-          this.logger.log(
-            `Product created in pack: ${packResponse.id}`,
-          );
+          this.logger.log(`Product created in pack: ${packResponse.id}`);
         }
 
         // Guardar el product_pack_id en la base de datos
@@ -176,9 +175,7 @@ export class ProductPackSyncService {
    * Sincroniza múltiples productos con el pack.
    * Útil para sincronización masiva.
    */
-  async syncProducts(
-    products: Product[],
-  ): Promise<{
+  async syncProducts(products: Product[]): Promise<{
     success: number;
     failed: number;
     errors: Array<{ productId: string; error: string }>;

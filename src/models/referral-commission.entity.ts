@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Referrer } from './referrer.entity';
 import { Organization } from './organization.entity';
@@ -39,7 +44,11 @@ export class ReferralCommission {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   commission_amount: number;
 
-  @Column({ type: 'enum', enum: ['pending', 'approved', 'paid'], default: 'pending' })
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'approved', 'paid'],
+    default: 'pending',
+  })
   status: 'pending' | 'approved' | 'paid';
 
   @Column({ type: 'timestamp', nullable: true })

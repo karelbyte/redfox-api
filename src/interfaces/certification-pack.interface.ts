@@ -244,12 +244,17 @@ export interface ICertificationPackService {
    * Genera un complemento de pago (REP) para una factura PPD.
    * Opcional: no todos los packs soportan complementos de pago.
    */
-  generatePaymentComplement?(data: PaymentComplementData): Promise<PaymentComplementResponse>;
+  generatePaymentComplement?(
+    data: PaymentComplementData,
+  ): Promise<PaymentComplementResponse>;
   /**
    * Cancela un complemento de pago en el PAC.
    * Opcional: no todos los packs soportan cancelación de complementos.
    */
-  cancelPaymentComplement?(complementPackId: string, reason: string): Promise<void>;
+  cancelPaymentComplement?(
+    complementPackId: string,
+    reason: string,
+  ): Promise<void>;
 }
 
 /** Datos para crear factura global en el PAC (ej. FacturaAPI). */

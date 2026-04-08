@@ -2,9 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In } from 'typeorm';
-import { AccountReceivable, AccountReceivableStatus } from '../models/account-receivable.entity';
+import {
+  AccountReceivable,
+  AccountReceivableStatus,
+} from '../models/account-receivable.entity';
 import { Notification } from '../models/notification.entity';
-import { NotificationType, NotificationPriority } from '../models/notification.entity';
+import {
+  NotificationType,
+  NotificationPriority,
+} from '../models/notification.entity';
 import { User } from '../models/user.entity';
 
 @Injectable()
@@ -33,7 +39,10 @@ export class OverdueAccountsSchedulerService {
       const overdueAccounts = await this.accountReceivableRepository.find({
         where: {
           dueDate: LessThan(today),
-          status: In([AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL]),
+          status: In([
+            AccountReceivableStatus.PENDING,
+            AccountReceivableStatus.PARTIAL,
+          ]),
         },
         relations: ['client'],
       });
@@ -50,15 +59,25 @@ export class OverdueAccountsSchedulerService {
         .set({ status: AccountReceivableStatus.OVERDUE })
         .where('dueDate < :today', { today })
         .andWhere('status IN (:...statuses)', {
-          statuses: [AccountReceivableStatus.PENDING, AccountReceivableStatus.PARTIAL],
+          statuses: [
+            AccountReceivableStatus.PENDING,
+            AccountReceivableStatus.PARTIAL,
+          ],
         })
         .execute();
 
       // Agrupar por organización
-      const byOrg = new Map<string, { count: number; totalAmount: number; clients: Set<string> }>();
+      const byOrg = new Map<
+        string,
+        { count: number; totalAmount: number; clients: Set<string> }
+      >();
       for (const account of overdueAccounts) {
         const orgId = account.organization_id;
-        const existing = byOrg.get(orgId) || { count: 0, totalAmount: 0, clients: new Set() };
+        const existing = byOrg.get(orgId) || {
+          count: 0,
+          totalAmount: 0,
+          clients: new Set(),
+        };
         existing.count += 1;
         existing.totalAmount += Number(account.remainingAmount);
         if (account.client?.name) existing.clients.add(account.client.name);
@@ -84,7 +103,9 @@ export class OverdueAccountsSchedulerService {
           .getCount();
 
         if (existingToday > 0) {
-          this.logger.log(`Notificación ya enviada hoy para org ${organizationId}`);
+          this.logger.log(
+            `Notificación ya enviada hoy para org ${organizationId}`,
+          );
           continue;
         }
 
@@ -96,8 +117,12 @@ export class OverdueAccountsSchedulerService {
         if (users.length === 0) continue;
 
         const clientList = Array.from(data.clients).slice(0, 3).join(', ');
-        const moreClients = data.clients.size > 3 ? ` y ${data.clients.size - 3} más` : '';
-        const amount = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(data.totalAmount);
+        const moreClients =
+          data.clients.size > 3 ? ` y ${data.clients.size - 3} más` : '';
+        const amount = new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
+        }).format(data.totalAmount);
 
         const title = `${data.count} cuenta${data.count > 1 ? 's' : ''} por cobrar vencida${data.count > 1 ? 's' : ''}`;
         const message = `Tienes ${data.count} cuenta${data.count > 1 ? 's' : ''} vencida${data.count > 1 ? 's' : ''} por un total de ${amount}. Clientes: ${clientList}${moreClients}.`;
@@ -108,7 +133,10 @@ export class OverdueAccountsSchedulerService {
             title,
             message,
             type: NotificationType.WARNING,
-            priority: data.count >= 5 ? NotificationPriority.HIGH : NotificationPriority.MEDIUM,
+            priority:
+              data.count >= 5
+                ? NotificationPriority.HIGH
+                : NotificationPriority.MEDIUM,
             userId: user.id,
             organization_id: organizationId,
             actionUrl: '/dashboard/finanzas/cuentas-por-cobrar',
@@ -122,7 +150,9 @@ export class OverdueAccountsSchedulerService {
         );
 
         await this.notificationRepository.save(notifications);
-        this.logger.log(`Notificaciones enviadas a ${users.length} usuarios de org ${organizationId} — ${data.count} cuentas vencidas`);
+        this.logger.log(
+          `Notificaciones enviadas a ${users.length} usuarios de org ${organizationId} — ${data.count} cuentas vencidas`,
+        );
       }
 
       this.logger.log('Revisión de cuentas vencidas completada.');

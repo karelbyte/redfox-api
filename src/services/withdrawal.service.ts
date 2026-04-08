@@ -80,7 +80,7 @@ export class WithdrawalService {
     private readonly accountReceivableService: AccountReceivableService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -94,7 +94,9 @@ export class WithdrawalService {
       quantity: detail.quantity,
       price: detail.price,
       product: this.productMapper.mapToResponseDto(detail.product),
-      warehouse: detail.warehouse ? this.warehouseMapper.mapToResponseDto(detail.warehouse) : null,
+      warehouse: detail.warehouse
+        ? this.warehouseMapper.mapToResponseDto(detail.warehouse)
+        : null,
       created_at: detail.created_at,
     };
   }
@@ -121,8 +123,14 @@ export class WithdrawalService {
       destination: withdrawal.destination,
       amount: withdrawal.details?.length
         ? Math.round(
-            withdrawal.details.reduce((sum, d) =>
-              sum + this.calculateAmountWithTaxes(Number(d.quantity), Number(d.price), d.product?.taxes || []),
+            withdrawal.details.reduce(
+              (sum, d) =>
+                sum +
+                this.calculateAmountWithTaxes(
+                  Number(d.quantity),
+                  Number(d.price),
+                  d.product?.taxes || [],
+                ),
               0,
             ) * 100,
           ) / 100
@@ -153,7 +161,11 @@ export class WithdrawalService {
   }
 
   // Función helper para calcular el monto total incluyendo impuestos del producto
-  private calculateAmountWithTaxes(quantity: number, price: number, taxes: import('../models/tax.entity').Tax[]): number {
+  private calculateAmountWithTaxes(
+    quantity: number,
+    price: number,
+    taxes: import('../models/tax.entity').Tax[],
+  ): number {
     const taxMultiplier = (taxes || []).reduce((acc, tax) => {
       if (tax.type === 'PERCENTAGE') {
         return acc + Number(tax.value) / 100;
@@ -182,7 +194,10 @@ export class WithdrawalService {
     userId?: string,
   ): Promise<WithdrawalResponseDto> {
     const client = await this.clientRepository.findOne({
-      where: { id: createWithdrawalDto.client_id, organization_id: this.organizationId },
+      where: {
+        id: createWithdrawalDto.client_id,
+        organization_id: this.organizationId,
+      },
       relations: ['credit'],
     });
     if (!client) {
@@ -197,7 +212,10 @@ export class WithdrawalService {
     // Validar si el cliente tiene crédito activo cuando se selecciona pago a crédito
     if (createWithdrawalDto.payment_method === WithdrawalPaymentMethod.CREDIT) {
       if (!client.credit || !client.credit.is_active) {
-        const message = await this.translationService.translate('withdrawal.no_active_credit', userId);
+        const message = await this.translationService.translate(
+          'withdrawal.no_active_credit',
+          userId,
+        );
         throw new BadRequestException(message);
       }
     }
@@ -325,7 +343,10 @@ export class WithdrawalService {
 
     if (updateWithdrawalDto.client_id) {
       const client = await this.clientRepository.findOne({
-        where: { id: updateWithdrawalDto.client_id, organization_id: this.organizationId },
+        where: {
+          id: updateWithdrawalDto.client_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!client) {
         const message = await this.translationService.translate(
@@ -409,11 +430,17 @@ export class WithdrawalService {
 
     if (isTangible) {
       if (!createDetailDto.warehouse_id) {
-        const message = await this.translationService.translate('withdrawal.warehouse_required', userId);
+        const message = await this.translationService.translate(
+          'withdrawal.warehouse_required',
+          userId,
+        );
         throw new BadRequestException(message);
       }
       warehouse = await this.warehouseRepository.findOne({
-        where: { id: createDetailDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: createDetailDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
         const message = await this.translationService.translate(
@@ -453,7 +480,11 @@ export class WithdrawalService {
 
       // Calcular el monto anterior para restarlo del total
       const productTaxes = existingDetail.product?.taxes || [];
-      const oldAmount = this.calculateAmountWithTaxes(oldQuantity, oldPrice, productTaxes);
+      const oldAmount = this.calculateAmountWithTaxes(
+        oldQuantity,
+        oldPrice,
+        productTaxes,
+      );
 
       // Sumar cantidades
       const totalQuantity = oldQuantity + newQuantity;
@@ -469,7 +500,11 @@ export class WithdrawalService {
       detailToSave = existingDetail;
 
       // Calcular el nuevo monto total para la withdrawal (con taxes)
-      const newAmount = this.calculateAmountWithTaxes(totalQuantity, averagePrice, productTaxes);
+      const newAmount = this.calculateAmountWithTaxes(
+        totalQuantity,
+        averagePrice,
+        productTaxes,
+      );
       const currentAmount = withdrawal.amount || 0;
       const newTotalAmount = currentAmount - oldAmount + newAmount;
 
@@ -546,7 +581,12 @@ export class WithdrawalService {
 
     const [details, total] = await this.withdrawalDetailRepository.findAndCount(
       {
-        where: { withdrawal: { id: withdrawalId, organization_id: this.organizationId } },
+        where: {
+          withdrawal: {
+            id: withdrawalId,
+            organization_id: this.organizationId,
+          },
+        },
         relations: [
           'product',
           'product.brand',
@@ -658,7 +698,11 @@ export class WithdrawalService {
     }
 
     // Guardar el monto anterior del detalle para restarlo del total (con taxes)
-    const oldAmount = this.calculateAmountWithTaxes(detail.quantity, detail.price, detail.product?.taxes || []);
+    const oldAmount = this.calculateAmountWithTaxes(
+      detail.quantity,
+      detail.price,
+      detail.product?.taxes || [],
+    );
 
     if (updateDetailDto.product_id) {
       const product = await this.productService.findOneEntity(
@@ -669,7 +713,10 @@ export class WithdrawalService {
 
     if (updateDetailDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updateDetailDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: updateDetailDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
         throw new NotFoundException(
@@ -690,7 +737,11 @@ export class WithdrawalService {
     const updatedDetail = await this.withdrawalDetailRepository.save(detail);
 
     // Calcular el nuevo monto del detalle (con taxes)
-    const newAmount = this.calculateAmountWithTaxes(detail.quantity, detail.price, detail.product?.taxes || []);
+    const newAmount = this.calculateAmountWithTaxes(
+      detail.quantity,
+      detail.price,
+      detail.product?.taxes || [],
+    );
 
     // Actualizar el monto total de la withdrawal: restar el monto anterior y sumar el nuevo
     const currentAmount = withdrawal.amount || 0;
@@ -727,7 +778,11 @@ export class WithdrawalService {
     }
 
     // Calcular el monto del detalle a eliminar con precisión decimal (con taxes)
-    const detailAmount = this.calculateAmountWithTaxes(detail.quantity, detail.price, detail.product?.taxes || []);
+    const detailAmount = this.calculateAmountWithTaxes(
+      detail.quantity,
+      detail.price,
+      detail.product?.taxes || [],
+    );
 
     // Restar el monto del detalle del total de la withdrawal
     const currentAmount = withdrawal.amount || 0;
@@ -767,7 +822,9 @@ export class WithdrawalService {
 
     // Obtener todos los detalles de la withdrawal
     const withdrawalDetails = await this.withdrawalDetailRepository.find({
-      where: { withdrawal: { id: withdrawalId, organization_id: this.organizationId } },
+      where: {
+        withdrawal: { id: withdrawalId, organization_id: this.organizationId },
+      },
       relations: ['product', 'warehouse'],
     });
 
@@ -778,9 +835,9 @@ export class WithdrawalService {
     }
 
     // Batch load de productos — evita N+1 (1 query en lugar de N)
-    const productIds = withdrawalDetails.map(d => d.product.id);
+    const productIds = withdrawalDetails.map((d) => d.product.id);
     const products = await this.productService.findManyEntities(productIds);
-    const productMap = new Map(products.map(p => [p.id, p]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
 
     let withdrawnProducts = 0;
     let totalQuantity = 0;
@@ -788,7 +845,9 @@ export class WithdrawalService {
     for (const detail of withdrawalDetails) {
       const product = productMap.get(detail.product.id);
       if (!product) {
-        throw new BadRequestException(`Producto ${detail.product.id} no encontrado`);
+        throw new BadRequestException(
+          `Producto ${detail.product.id} no encontrado`,
+        );
       }
 
       // Productos service/digital no tienen inventario físico — solo registrar historia
@@ -859,17 +918,19 @@ export class WithdrawalService {
         remainingToDeduct -= deduction;
         lotsToSave.push(lot);
 
-        historyEntities.push(this.productHistoryRepository.create({
-          product: detail.product,
-          warehouse: detail.warehouse,
-          operation_type: OperationType.WITHDRAWAL,
-          operation_id: withdrawal.id,
-          quantity: deduction,
-          current_stock: lot.quantity,
-          batch_number: lot.batch_number,
-          expiration_date: lot.expiration_date,
-          organization_id: this.organizationId,
-        }));
+        historyEntities.push(
+          this.productHistoryRepository.create({
+            product: detail.product,
+            warehouse: detail.warehouse,
+            operation_type: OperationType.WITHDRAWAL,
+            operation_id: withdrawal.id,
+            quantity: deduction,
+            current_stock: lot.quantity,
+            batch_number: lot.batch_number,
+            expiration_date: lot.expiration_date,
+            organization_id: this.organizationId,
+          }),
+        );
       }
 
       // Batch save lotes e historial — evita N saves individuales
@@ -924,7 +985,10 @@ export class WithdrawalService {
     // Notificar al usuario que cerró la venta
     try {
       if (userId) {
-        const amount = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(closedWithdrawal.amount));
+        const amount = new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
+        }).format(Number(closedWithdrawal.amount));
         await this.notificationService.createSaleNotification(
           `✅ Venta cerrada: ${closedWithdrawal.code}`,
           `La venta ${closedWithdrawal.code} por ${amount} fue procesada exitosamente. ${withdrawnProducts} producto(s) descontados del inventario.`,
@@ -932,7 +996,9 @@ export class WithdrawalService {
           userId,
         );
       }
-    } catch { /* no bloquear el flujo */ }
+    } catch {
+      /* no bloquear el flujo */
+    }
 
     // Retornar resumen de la operación
     const resMessage =
@@ -983,7 +1049,10 @@ export class WithdrawalService {
       }
 
       if (withdrawal.status === WithdrawalStatus.RETURNED) {
-        const message = await this.translationService.translate('withdrawal.already_returned', userId);
+        const message = await this.translationService.translate(
+          'withdrawal.already_returned',
+          userId,
+        );
         throw new BadRequestException(message);
       }
 

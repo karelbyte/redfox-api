@@ -23,7 +23,7 @@ import { AccountReceivableStatus } from '../models/account-receivable.entity';
 export class AccountReceivableController {
   constructor(
     private readonly accountReceivableService: AccountReceivableService,
-  ) { }
+  ) {}
 
   @Post()
   create(@Body() createAccountReceivableDto: CreateAccountReceivableDto) {
@@ -79,10 +79,7 @@ export class AccountReceivableController {
     @Param('id') id: string,
     @Body() updateAccountReceivableDto: UpdateAccountReceivableDto,
   ) {
-    return this.accountReceivableService.update(
-      id,
-      updateAccountReceivableDto,
-    );
+    return this.accountReceivableService.update(id, updateAccountReceivableDto);
   }
 
   @Delete(':id')

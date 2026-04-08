@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Organization } from '../models/organization.entity';
@@ -34,13 +38,18 @@ export class AdminService {
     // No permitir eliminar la organización landlord
     const org = await this.orgRepository.findOne({ where: { id } });
     if (!org) throw new Error('Organización no encontrada');
-    if (org.slug === 'landlord') throw new Error('No se puede eliminar la organización principal del sistema');
+    if (org.slug === 'landlord')
+      throw new Error(
+        'No se puede eliminar la organización principal del sistema',
+      );
 
     // Usar el Stored Procedure para una eliminación escalonada y segura (Multi-DB)
     const connectionType = this.orgRepository.manager.connection.options.type;
-    
+
     if (connectionType === 'postgres') {
-      await this.orgRepository.query('SELECT delete_organization_data($1)', [id]);
+      await this.orgRepository.query('SELECT delete_organization_data($1)', [
+        id,
+      ]);
     } else {
       await this.orgRepository.query('CALL delete_organization_data(?)', [id]);
     }
@@ -48,7 +57,10 @@ export class AdminService {
 
   async toggleOrganization(id: string, status: boolean) {
     await this.orgRepository.update(id, { status });
-    return this.orgRepository.findOne({ where: { id }, relations: ['subscription', 'subscription.plan'] });
+    return this.orgRepository.findOne({
+      where: { id },
+      relations: ['subscription', 'subscription.plan'],
+    });
   }
 
   async getSubscriptions(page = 1, limit = 10, search?: string) {
@@ -60,13 +72,19 @@ export class AdminService {
       .orderBy('sub.created_at', 'DESC');
 
     if (search) {
-      query.andWhere('LOWER(org.name) LIKE :search OR LOWER(org.slug) LIKE :search', {
-        search: `%${search.toLowerCase()}%`,
-      });
+      query.andWhere(
+        'LOWER(org.name) LIKE :search OR LOWER(org.slug) LIKE :search',
+        {
+          search: `%${search.toLowerCase()}%`,
+        },
+      );
     }
 
     const total = await query.getCount();
-    const data = await query.skip((page - 1) * limit).take(limit).getMany();
+    const data = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
 
     return {
       data,
@@ -82,10 +100,14 @@ export class AdminService {
     subscription_start_date?: string;
     subscription_end_date?: string;
   }) {
-    const org = await this.orgRepository.findOne({ where: { id: data.organization_id } });
+    const org = await this.orgRepository.findOne({
+      where: { id: data.organization_id },
+    });
     if (!org) throw new NotFoundException('Organización no encontrada');
 
-    const plan = await this.planRepository.findOne({ where: { id: data.plan_id } });
+    const plan = await this.planRepository.findOne({
+      where: { id: data.plan_id },
+    });
     if (!plan) throw new NotFoundException('Plan no encontrado');
 
     // Si ya tiene suscripción activa, cancelar la anterior
@@ -95,12 +117,15 @@ export class AdminService {
     if (existing) {
       existing.status = 'cancelled';
       existing.canceled_at = new Date();
-      existing.canceled_reason = 'Reemplazada por nueva suscripción desde admin';
+      existing.canceled_reason =
+        'Reemplazada por nueva suscripción desde admin';
       await this.subRepository.save(existing);
     }
 
     const now = new Date();
-    const trialEnd = data.trial_end_date ? new Date(data.trial_end_date) : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const trialEnd = data.trial_end_date
+      ? new Date(data.trial_end_date)
+      : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const subscription = this.subRepository.create({
       organization_id: data.organization_id,
@@ -108,11 +133,17 @@ export class AdminService {
       status: data.status,
       trial_start_date: now,
       trial_end_date: trialEnd,
-      subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : (data.status === 'active' ? now : undefined),
-      subscription_end_date: data.subscription_end_date ? new Date(data.subscription_end_date) : undefined,
+      subscription_start_date: data.subscription_start_date
+        ? new Date(data.subscription_start_date)
+        : data.status === 'active'
+          ? now
+          : undefined,
+      subscription_end_date: data.subscription_end_date
+        ? new Date(data.subscription_end_date)
+        : undefined,
     } as any);
 
-    const saved = await this.subRepository.save(subscription) as any;
+    const saved = (await this.subRepository.save(subscription)) as any;
 
     // Actualizar la organización con el nuevo plan y suscripción
     await this.orgRepository.update(data.organization_id, {
@@ -129,14 +160,18 @@ export class AdminService {
 
   async toggleUser(id: string, status: boolean) {
     await this.userRepository.update(id, { status });
-    return this.userRepository.findOne({ where: { id }, relations: ['roles', 'organization'] });
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['roles', 'organization'],
+    });
   }
 
   async deleteUser(id: string) {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new Error('Usuario no encontrado');
     // No permitir eliminar el usuario master
-    if (user.email === 'master@nitro.com') throw new Error('No se puede eliminar el usuario master del sistema');
+    if (user.email === 'master@nitro.com')
+      throw new Error('No se puede eliminar el usuario master del sistema');
     await this.userRepository.delete(id);
   }
 
@@ -148,7 +183,10 @@ export class AdminService {
       skip,
       take: limit,
     });
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getMetrics() {
@@ -157,17 +195,30 @@ export class AdminService {
       this.userRepository.count(),
     ]);
 
-    const activeSubscriptions = await this.subRepository.count({ where: { status: 'active' } });
-    const trialSubscriptions = await this.subRepository.count({ where: { status: 'trial' } });
+    const activeSubscriptions = await this.subRepository.count({
+      where: { status: 'active' },
+    });
+    const trialSubscriptions = await this.subRepository.count({
+      where: { status: 'trial' },
+    });
 
     // Ingresos del mes actual (suscripciones activas * precio del plan)
     const activeSubs = await this.subRepository.find({
       where: { status: 'active' },
       relations: ['plan'],
     });
-    const revenueThisMonth = activeSubs.reduce((sum, s) => sum + Number(s.plan?.price ?? 0), 0);
+    const revenueThisMonth = activeSubs.reduce(
+      (sum, s) => sum + Number(s.plan?.price ?? 0),
+      0,
+    );
 
-    return { totalOrganizations, activeSubscriptions, trialSubscriptions, totalUsers, revenueThisMonth };
+    return {
+      totalOrganizations,
+      activeSubscriptions,
+      trialSubscriptions,
+      totalUsers,
+      revenueThisMonth,
+    };
   }
 
   async deleteSubscription(id: string) {
@@ -187,19 +238,24 @@ export class AdminService {
     });
   }
 
-  async updateSubscription(id: string, data: {
-    plan_id?: string;
-    trial_end_date?: string;
-    status?: string;
-    subscription_end_date?: string;
-    current_period_end?: string;
-  }) {
+  async updateSubscription(
+    id: string,
+    data: {
+      plan_id?: string;
+      trial_end_date?: string;
+      status?: string;
+      subscription_end_date?: string;
+      current_period_end?: string;
+    },
+  ) {
     const subscription = await this.subRepository.findOne({ where: { id } });
     if (!subscription) throw new Error('Suscripción no encontrada');
 
     if (data.plan_id) {
       subscription.plan_id = data.plan_id;
-      await this.orgRepository.update(subscription.organization_id, { plan_id: data.plan_id });
+      await this.orgRepository.update(subscription.organization_id, {
+        plan_id: data.plan_id,
+      });
     }
 
     if (data.status) {
@@ -242,6 +298,16 @@ export class AdminService {
     organizationId?: string,
     search?: string,
   ) {
-    return this.auditLogService.findAllGlobal(page, limit, entityType, action, userId, startDate, endDate, organizationId, search);
+    return this.auditLogService.findAllGlobal(
+      page,
+      limit,
+      entityType,
+      action,
+      userId,
+      startDate,
+      endDate,
+      organizationId,
+      search,
+    );
   }
 }

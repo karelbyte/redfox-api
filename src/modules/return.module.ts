@@ -47,7 +47,13 @@ import { OrganizationModule } from './organization.module';
     OrganizationModule,
   ],
   controllers: [ReturnController],
-  providers: [ReturnService, WarehouseMapper, ProductMapper, ProviderMapper, CurrencyMapper],
+  providers: [
+    ReturnService,
+    WarehouseMapper,
+    ProductMapper,
+    ProviderMapper,
+    CurrencyMapper,
+  ],
   exports: [ReturnService],
 })
 export class ReturnModule {}

@@ -1,6 +1,6 @@
 export interface UploadResult {
-  url: string;  // Path relativo para guardar en DB: /api/uploads/company/org-id/logo.png
-  key: string;  // Identificador del archivo en el storage (ej: company/org-id/logo.png)
+  url: string; // Path relativo para guardar en DB: /api/uploads/company/org-id/logo.png
+  key: string; // Identificador del archivo en el storage (ej: company/org-id/logo.png)
 }
 
 export interface IStorageService {

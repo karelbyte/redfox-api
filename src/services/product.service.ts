@@ -167,7 +167,9 @@ export class ProductService {
 
       // Manejar múltiples impuestos si se proporcionan
       if (createProductDto.tax_ids && createProductDto.tax_ids.length > 0) {
-        product.taxes = createProductDto.tax_ids.map((taxId) => ({ id: taxId } as any));
+        product.taxes = createProductDto.tax_ids.map(
+          (taxId) => ({ id: taxId }) as any,
+        );
       }
 
       const savedProduct = await this.productRepository.save({
@@ -183,7 +185,15 @@ export class ProductService {
 
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+        relations: [
+          'brand',
+          'category',
+          'tax',
+          'measurement_unit',
+          'prices',
+          'taxes',
+          'currency',
+        ],
       });
 
       // Sincronizar con el pack de certificación (si está configurado)
@@ -227,7 +237,15 @@ export class ProductService {
 
     // Construir las condiciones de búsqueda
     const baseConditions = {
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+      relations: [
+        'brand',
+        'category',
+        'tax',
+        'measurement_unit',
+        'prices',
+        'taxes',
+        'currency',
+      ],
     };
 
     // Construir condiciones de búsqueda OR (para el término)
@@ -329,7 +347,15 @@ export class ProductService {
   async findOne(id: string, userId?: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+      relations: [
+        'brand',
+        'category',
+        'tax',
+        'measurement_unit',
+        'prices',
+        'taxes',
+        'currency',
+      ],
     });
 
     if (!product) {
@@ -347,7 +373,15 @@ export class ProductService {
   async findOneEntity(id: string, userId?: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+      relations: [
+        'brand',
+        'category',
+        'tax',
+        'measurement_unit',
+        'prices',
+        'taxes',
+        'currency',
+      ],
     });
 
     if (!product) {
@@ -367,7 +401,15 @@ export class ProductService {
     if (!ids.length) return [];
     return this.productRepository.find({
       where: { id: In(ids), organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+      relations: [
+        'brand',
+        'category',
+        'tax',
+        'measurement_unit',
+        'prices',
+        'taxes',
+        'currency',
+      ],
     });
   }
 
@@ -375,8 +417,16 @@ export class ProductService {
   async findNonTangibleActive(organizationId: string): Promise<Product[]> {
     return this.productRepository.find({
       where: [
-        { organization_id: organizationId, type: ProductType.SERVICE, is_active: true },
-        { organization_id: organizationId, type: ProductType.DIGITAL, is_active: true },
+        {
+          organization_id: organizationId,
+          type: ProductType.SERVICE,
+          is_active: true,
+        },
+        {
+          organization_id: organizationId,
+          type: ProductType.DIGITAL,
+          is_active: true,
+        },
       ],
       relations: ['brand', 'category', 'taxes', 'measurement_unit', 'prices'],
       order: { name: 'ASC' },
@@ -421,17 +471,23 @@ export class ProductService {
         images: updateProductDto.images
           ? JSON.stringify(updateProductDto.images)
           : undefined,
-        currency: updateProductDto.currency_id !== undefined
-          ? (updateProductDto.currency_id ? { id: updateProductDto.currency_id } : null)
-          : undefined,
-        min_stock: updateProductDto.min_stock !== undefined
-          ? updateProductDto.min_stock
-          : undefined,
+        currency:
+          updateProductDto.currency_id !== undefined
+            ? updateProductDto.currency_id
+              ? { id: updateProductDto.currency_id }
+              : null
+            : undefined,
+        min_stock:
+          updateProductDto.min_stock !== undefined
+            ? updateProductDto.min_stock
+            : undefined,
       });
 
       // Manejar actualización de múltiples impuestos
       if (updateProductDto.tax_ids !== undefined) {
-        updatedProduct.taxes = updateProductDto.tax_ids.map((taxId) => ({ id: taxId } as any));
+        updatedProduct.taxes = updateProductDto.tax_ids.map(
+          (taxId) => ({ id: taxId }) as any,
+        );
       }
 
       // Manejar actualización de precios
@@ -476,7 +532,15 @@ export class ProductService {
       const savedProduct = await this.productRepository.save(updatedProduct);
       const productWithRelations = await this.productRepository.findOne({
         where: { id: savedProduct.id, organization_id: this.organizationId },
-        relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+        relations: [
+          'brand',
+          'category',
+          'tax',
+          'measurement_unit',
+          'prices',
+          'taxes',
+          'currency',
+        ],
       });
 
       // Sincronizar con el pack de certificación (si está configurado)
@@ -545,7 +609,9 @@ export class ProductService {
     await this.productRepository.softRemove(product);
   }
 
-  async removeMany(ids: string[]): Promise<{ deleted: number; skipped: string[] }> {
+  async removeMany(
+    ids: string[],
+  ): Promise<{ deleted: number; skipped: string[] }> {
     if (!ids.length) return { deleted: 0, skipped: [] };
 
     // Verificar que todos los productos pertenecen a la organización
@@ -556,17 +622,29 @@ export class ProductService {
 
     if (!products.length) return { deleted: 0, skipped: [] };
 
-    const validIds = products.map(p => p.id);
+    const validIds = products.map((p) => p.id);
 
     // Verificar dependencias usando el entity manager (sin inyectar todos los repos)
     const manager = this.productRepository.manager;
 
     const dependencyTables = [
       { table: 'withdrawal_details', column: 'product_id', label: 'ventas' },
-      { table: 'reception_details', column: 'product_id', label: 'recepciones' },
+      {
+        table: 'reception_details',
+        column: 'product_id',
+        label: 'recepciones',
+      },
       { table: 'invoice_details', column: 'product_id', label: 'facturas' },
-      { table: 'purchase_order_details', column: 'product_id', label: 'órdenes de compra' },
-      { table: 'quotation_details', column: 'product_id', label: 'cotizaciones' },
+      {
+        table: 'purchase_order_details',
+        column: 'product_id',
+        label: 'órdenes de compra',
+      },
+      {
+        table: 'quotation_details',
+        column: 'product_id',
+        label: 'cotizaciones',
+      },
       { table: 'return_details', column: 'product_id', label: 'devoluciones' },
       { table: 'inventory', column: 'product_id', label: 'inventario' },
     ];
@@ -579,11 +657,11 @@ export class ProductService {
         `SELECT DISTINCT product_id FROM "${dep.table}" WHERE product_id = ANY($1) AND deleted_at IS NULL`,
         [validIds],
       );
-      rows.forEach(r => blockedIds.add(r.product_id));
+      rows.forEach((r) => blockedIds.add(r.product_id));
     }
 
-    const deletableIds = validIds.filter(id => !blockedIds.has(id));
-    const skippedIds = validIds.filter(id => blockedIds.has(id));
+    const deletableIds = validIds.filter((id) => !blockedIds.has(id));
+    const skippedIds = validIds.filter((id) => blockedIds.has(id));
 
     if (deletableIds.length > 0) {
       // Soft delete uno por uno para respetar el organizationId y el soft delete de TypeORM
@@ -594,8 +672,8 @@ export class ProductService {
     }
 
     const skippedNames = products
-      .filter(p => skippedIds.includes(p.id))
-      .map(p => p.name);
+      .filter((p) => skippedIds.includes(p.id))
+      .map((p) => p.name);
 
     return { deleted: deletableIds.length, skipped: skippedNames };
   }
@@ -667,7 +745,11 @@ export class ProductService {
       await repo.save(product, { reload: false });
 
       // Verificar stock mínimo para notificaciones
-      if (product.min_stock > 0 && newStock <= product.min_stock && oldStock > product.min_stock) {
+      if (
+        product.min_stock > 0 &&
+        newStock <= product.min_stock &&
+        oldStock > product.min_stock
+      ) {
         await this.triggerLowStockNotification(product);
       }
     }
@@ -699,14 +781,39 @@ export class ProductService {
     const products = [
       { key: '01010101', description: 'No existe en el catálogo' },
       { key: '80141600', description: 'Servicios de consultoría' },
-      { key: '80141601', description: 'Servicios de consultoría de negocios y administración corporativa' },
-      { key: '80141602', description: 'Servicios de consultoría de mercadotecnia' },
-      { key: '80141603', description: 'Servicios de consultoría de administración de recursos humanos' },
-      { key: '80141604', description: 'Servicios de consultoría de producción' },
-      { key: '80141605', description: 'Servicios de consultoría de administración de cadena de suministros' },
+      {
+        key: '80141601',
+        description:
+          'Servicios de consultoría de negocios y administración corporativa',
+      },
+      {
+        key: '80141602',
+        description: 'Servicios de consultoría de mercadotecnia',
+      },
+      {
+        key: '80141603',
+        description:
+          'Servicios de consultoría de administración de recursos humanos',
+      },
+      {
+        key: '80141604',
+        description: 'Servicios de consultoría de producción',
+      },
+      {
+        key: '80141605',
+        description:
+          'Servicios de consultoría de administración de cadena de suministros',
+      },
       { key: '81112000', description: 'Servicios de desarrollo de software' },
-      { key: '81112001', description: 'Servicios de desarrollo de software de aplicación' },
-      { key: '81112002', description: 'Servicios de desarrollo de software de sistemas y aplicaciones de usuario' },
+      {
+        key: '81112001',
+        description: 'Servicios de desarrollo de software de aplicación',
+      },
+      {
+        key: '81112002',
+        description:
+          'Servicios de desarrollo de software de sistemas y aplicaciones de usuario',
+      },
       { key: '81161500', description: 'Servicios de diseño gráfico' },
       { key: '43230000', description: 'Computadoras' },
       { key: '43211500', description: 'Computadoras portátiles' },
@@ -719,7 +826,7 @@ export class ProductService {
     const lowerTerm = term.toLowerCase();
     return products
       .filter(
-        p =>
+        (p) =>
           p.key.includes(term) ||
           p.description.toLowerCase().includes(lowerTerm),
       )
@@ -752,7 +859,15 @@ export class ProductService {
 
     const productWithRelations = await this.productRepository.findOne({
       where: { id: savedProduct.id, organization_id: this.organizationId },
-      relations: ['brand', 'category', 'tax', 'measurement_unit', 'prices', 'taxes', 'currency'],
+      relations: [
+        'brand',
+        'category',
+        'tax',
+        'measurement_unit',
+        'prices',
+        'taxes',
+        'currency',
+      ],
     });
 
     return this.productMapper.mapToResponseDto(

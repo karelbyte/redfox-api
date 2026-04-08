@@ -6,10 +6,7 @@ import { ProductHistoryController } from '../controllers/product-history.control
 import { OrganizationModule } from './organization.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ProductHistory]),
-    OrganizationModule,
-  ],
+  imports: [TypeOrmModule.forFeature([ProductHistory]), OrganizationModule],
   controllers: [ProductHistoryController],
   providers: [ProductHistoryService],
   exports: [ProductHistoryService],

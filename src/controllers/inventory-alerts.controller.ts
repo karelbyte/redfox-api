@@ -8,7 +8,10 @@ import {
   UseInterceptors,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { InventoryAlertsService, InventoryAlertsResponse } from '../services/inventory-alerts.service';
+import {
+  InventoryAlertsService,
+  InventoryAlertsResponse,
+} from '../services/inventory-alerts.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { TenantContext } from '../services/tenant-context.service';
@@ -54,7 +57,9 @@ export class InventoryAlertsController {
   @Post('generate')
   async generateImmediateAlerts(@UserId() userId: string) {
     const organizationId = this.tenantContext.getOrganizationId() as string;
-    await this.inventoryAlertsService.checkAndGenerateImmediateAlerts(organizationId);
+    await this.inventoryAlertsService.checkAndGenerateImmediateAlerts(
+      organizationId,
+    );
     return {
       message: 'Alertas generadas exitosamente',
       timestamp: new Date().toISOString(),

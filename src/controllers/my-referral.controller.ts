@@ -20,7 +20,11 @@ export class MyReferralController {
   @Get('code')
   async getMyCode(@UserId() userId: string) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    return this.referralService.getOrCreateMyCode(userId, user?.name ?? 'Usuario', user?.email);
+    return this.referralService.getOrCreateMyCode(
+      userId,
+      user?.name ?? 'Usuario',
+      user?.email,
+    );
   }
 
   @Get('commissions')

@@ -26,13 +26,15 @@ export class FacturaGreenService implements ICertificationPackService {
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
-  ) { }
+  ) {}
 
   private getConfig() {
     const pacConfig = this.tenantContext.getPacConfig();
 
     return {
-      baseUrl: this.configService.get<string>('FACTURA_GREEN_BASE_URL') || 'https://www',
+      baseUrl:
+        this.configService.get<string>('FACTURA_GREEN_BASE_URL') ||
+        'https://www',
       businessUuid: pacConfig?.business_uuid,
       accountUuid: pacConfig?.account_uuid || '0000',
       tenantId: pacConfig?.tenant_id || 'www',
@@ -44,7 +46,9 @@ export class FacturaGreenService implements ICertificationPackService {
     const pacConfig = this.tenantContext.getPacConfig();
 
     if (!config.businessUuid) {
-      throw new BadRequestException('Factura Green business UUID not configured');
+      throw new BadRequestException(
+        'Factura Green business UUID not configured',
+      );
     }
 
     if (!pacConfig?.api_key) {
@@ -69,7 +73,10 @@ export class FacturaGreenService implements ICertificationPackService {
     return `https://${tenantId}`;
   }
 
-  async generateCFDI(invoice: Invoice, options?: GenerateCFDIOptions): Promise<CFDIResponse> {
+  async generateCFDI(
+    invoice: Invoice,
+    options?: GenerateCFDIOptions,
+  ): Promise<CFDIResponse> {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
@@ -79,12 +86,12 @@ export class FacturaGreenService implements ICertificationPackService {
       }
 
       // Construir items con soporte para casos especiales
-      const items = invoice.details.map(detail => {
+      const items = invoice.details.map((detail) => {
         const productPackId = (detail.product as any)?.product_pack_id;
 
         if (!productPackId) {
           throw new BadRequestException(
-            `Product ${detail.product?.name || detail.product_id} not synced with Factura Green. Please sync products first.`
+            `Product ${detail.product?.name || detail.product_id} not synced with Factura Green. Please sync products first.`,
           );
         }
 
@@ -94,13 +101,17 @@ export class FacturaGreenService implements ICertificationPackService {
           // Siempre enviar el precio para cubrir productos con price.type = 'dynamic' en Factura Green.
           // Para productos 'fixed', Factura Green acepta el precio como override sin problema.
           price: {
-            amount: options?.itemPrices?.[detail.product_id] ?? Number(detail.price),
+            amount:
+              options?.itemPrices?.[detail.product_id] ?? Number(detail.price),
           },
         };
 
         // CASO 2: Descuentos (porcentaje o monto fijo)
         // Los descuentos se pasan a través de las opciones por producto
-        if (options?.itemDiscounts && options.itemDiscounts[detail.product_id]) {
+        if (
+          options?.itemDiscounts &&
+          options.itemDiscounts[detail.product_id]
+        ) {
           const discount = options.itemDiscounts[detail.product_id];
           // Si el descuento es menor a 1, asumimos que es porcentaje (0.10 = 10%)
           if (discount < 1) {
@@ -112,7 +123,10 @@ export class FacturaGreenService implements ICertificationPackService {
         }
 
         // CASO 3: Cambiar descripción del producto
-        if (options?.itemDescriptions && options.itemDescriptions[detail.product_id]) {
+        if (
+          options?.itemDescriptions &&
+          options.itemDescriptions[detail.product_id]
+        ) {
           item.desc = options.itemDescriptions[detail.product_id];
         }
 
@@ -129,24 +143,28 @@ export class FacturaGreenService implements ICertificationPackService {
 
       // Mapear payment_method a forma de pago SAT (cómo se paga)
       const paymentFormMap: Record<string, string> = {
-        cash: '01',      // Efectivo
-        card: '04',      // Tarjeta de crédito
-        transfer: '03',  // Transferencia electrónica
-        check: '02',     // Cheque nominativo
-        credit: '99',    // Por definir (obligatorio en PPD)
+        cash: '01', // Efectivo
+        card: '04', // Tarjeta de crédito
+        transfer: '03', // Transferencia electrónica
+        check: '02', // Cheque nominativo
+        credit: '99', // Por definir (obligatorio en PPD)
       };
 
       // Derivar método de pago SAT (cuándo se paga): PPD para crédito, PUE para el resto
       const isCredit = (invoice.payment_method as string) === 'credit';
       const satPaymentMethod = isCredit ? 'PPD' : 'PUE';
       // Cuando es PPD, la forma de pago DEBE ser '99' (regla SAT CFDI 4.0)
-      const satPaymentForm = isCredit ? '99' : (paymentFormMap[invoice.payment_method as string] || '01');
+      const satPaymentForm = isCredit
+        ? '99'
+        : paymentFormMap[invoice.payment_method as string] || '01';
 
       const payload: any = {
         cfdi: {
           customer: {
             uuid: invoice.client.pack_client_id,
-            ...(process.env.NODE_ENV === 'development' && { email: "karelpuerto78@gmail.com" }),
+            ...(process.env.NODE_ENV === 'development' && {
+              email: 'karelpuerto78@gmail.com',
+            }),
           },
           payment: {
             form: {
@@ -225,8 +243,6 @@ export class FacturaGreenService implements ICertificationPackService {
         payload['@config'] = config;
       }
 
-
-
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
         headers,
@@ -236,7 +252,10 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.message || data.error?.message || 'Error generating CFDI with Factura Green';
+        const message =
+          data.message ||
+          data.error?.message ||
+          'Error generating CFDI with Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -250,7 +269,9 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Error:', error);
-      throw new BadRequestException(error.message || 'Error generating CFDI with Factura Green');
+      throw new BadRequestException(
+        error.message || 'Error generating CFDI with Factura Green',
+      );
     }
   }
 
@@ -275,7 +296,8 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error canceling CFDI with Factura Green';
+        const message =
+          data.error?.message || 'Error canceling CFDI with Factura Green';
         throw new BadRequestException(message);
       }
     } catch (error: any) {
@@ -293,7 +315,9 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Status Error:', error);
-      throw new BadRequestException('Error getting CFDI status from Factura Green');
+      throw new BadRequestException(
+        'Error getting CFDI status from Factura Green',
+      );
     }
   }
 
@@ -302,13 +326,18 @@ export class FacturaGreenService implements ICertificationPackService {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
 
-      const response = await fetch(`${baseUrl}/interop/cfdi/${packInvoiceId}/pdf`, {
-        method: 'GET',
-        headers,
-      });
+      const response = await fetch(
+        `${baseUrl}/interop/cfdi/${packInvoiceId}/pdf`,
+        {
+          method: 'GET',
+          headers,
+        },
+      );
 
       if (!response.ok) {
-        throw new BadRequestException('Error downloading PDF from Factura Green');
+        throw new BadRequestException(
+          'Error downloading PDF from Factura Green',
+        );
       }
 
       const arrayBuffer = await response.arrayBuffer();
@@ -324,13 +353,18 @@ export class FacturaGreenService implements ICertificationPackService {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
 
-      const response = await fetch(`${baseUrl}/interop/cfdi/${packInvoiceId}/xml`, {
-        method: 'GET',
-        headers,
-      });
+      const response = await fetch(
+        `${baseUrl}/interop/cfdi/${packInvoiceId}/xml`,
+        {
+          method: 'GET',
+          headers,
+        },
+      );
 
       if (!response.ok) {
-        throw new BadRequestException('Error downloading XML from Factura Green');
+        throw new BadRequestException(
+          'Error downloading XML from Factura Green',
+        );
       }
 
       return await response.text();
@@ -351,22 +385,53 @@ export class FacturaGreenService implements ICertificationPackService {
     return [
       { key: '601', description: 'General de Ley Personas Morales' },
       { key: '603', description: 'Personas Morales con Fines no Lucrativos' },
-      { key: '605', description: 'Sueldos y Salarios e Ingresos Asimilados a Salarios' },
+      {
+        key: '605',
+        description: 'Sueldos y Salarios e Ingresos Asimilados a Salarios',
+      },
       { key: '606', description: 'Arrendamiento' },
-      { key: '607', description: 'Régimen de Enajenación o Adquisición de Bienes' },
+      {
+        key: '607',
+        description: 'Régimen de Enajenación o Adquisición de Bienes',
+      },
       { key: '608', description: 'Demás ingresos' },
-      { key: '610', description: 'Residentes en el Extranjero sin Establecimiento Permanente en México' },
-      { key: '611', description: 'Ingresos por Dividendos (socios y accionistas)' },
-      { key: '612', description: 'Personas Físicas con Actividades Empresariales y Profesionales' },
+      {
+        key: '610',
+        description:
+          'Residentes en el Extranjero sin Establecimiento Permanente en México',
+      },
+      {
+        key: '611',
+        description: 'Ingresos por Dividendos (socios y accionistas)',
+      },
+      {
+        key: '612',
+        description:
+          'Personas Físicas con Actividades Empresariales y Profesionales',
+      },
       { key: '614', description: 'Ingresos por intereses' },
-      { key: '615', description: 'Régimen de los ingresos por obtención de premios' },
+      {
+        key: '615',
+        description: 'Régimen de los ingresos por obtención de premios',
+      },
       { key: '616', description: 'Sin obligaciones fiscales' },
-      { key: '620', description: 'Sociedades Cooperativas de Producción que optan por diferir sus ingresos' },
+      {
+        key: '620',
+        description:
+          'Sociedades Cooperativas de Producción que optan por diferir sus ingresos',
+      },
       { key: '621', description: 'Incorporación Fiscal' },
-      { key: '622', description: 'Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras' },
+      {
+        key: '622',
+        description: 'Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras',
+      },
       { key: '623', description: 'Opcional para Grupos de Sociedades' },
       { key: '624', description: 'Coordinados' },
-      { key: '625', description: 'Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas' },
+      {
+        key: '625',
+        description:
+          'Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas',
+      },
       { key: '626', description: 'Régimen Simplificado de Confianza' },
     ];
   }
@@ -408,23 +473,49 @@ export class FacturaGreenService implements ICertificationPackService {
       { key: 'G02', description: 'Devoluciones, descuentos o bonificaciones' },
       { key: 'G03', description: 'Gastos en general' },
       { key: 'I01', description: 'Construcciones' },
-      { key: 'I02', description: 'Mobiliario y equipo de oficina por inversiones' },
+      {
+        key: 'I02',
+        description: 'Mobiliario y equipo de oficina por inversiones',
+      },
       { key: 'I03', description: 'Equipo de transporte' },
       { key: 'I04', description: 'Equipo de cómputo y accesorios' },
-      { key: 'I05', description: 'Dados, troqueles, moldes, matrices y herramental' },
+      {
+        key: 'I05',
+        description: 'Dados, troqueles, moldes, matrices y herramental',
+      },
       { key: 'I06', description: 'Comunicaciones telefónicas' },
       { key: 'I07', description: 'Comunicaciones satelitales' },
       { key: 'I08', description: 'Otra maquinaria y equipo' },
-      { key: 'D01', description: 'Honorarios médicos, dentales y gastos hospitalarios' },
-      { key: 'D02', description: 'Gastos médicos por incapacidad o discapacidad' },
+      {
+        key: 'D01',
+        description: 'Honorarios médicos, dentales y gastos hospitalarios',
+      },
+      {
+        key: 'D02',
+        description: 'Gastos médicos por incapacidad o discapacidad',
+      },
       { key: 'D03', description: 'Gastos funerales' },
       { key: 'D04', description: 'Donativos' },
-      { key: 'D05', description: 'Intereses reales efectivamente pagados por créditos hipotecarios (casa habitación)' },
+      {
+        key: 'D05',
+        description:
+          'Intereses reales efectivamente pagados por créditos hipotecarios (casa habitación)',
+      },
       { key: 'D06', description: 'Aportaciones voluntarias al SAR' },
       { key: 'D07', description: 'Primas por seguros de gastos médicos' },
-      { key: 'D08', description: 'Gastos de transportación escolar obligatoria' },
-      { key: 'D09', description: 'Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones' },
-      { key: 'D10', description: 'Pagos por servicios educativos (colegiaturas)' },
+      {
+        key: 'D08',
+        description: 'Gastos de transportación escolar obligatoria',
+      },
+      {
+        key: 'D09',
+        description:
+          'Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones',
+      },
+      {
+        key: 'D10',
+        description: 'Pagos por servicios educativos (colegiaturas)',
+      },
       { key: 'P01', description: 'Por definir' },
       { key: 'S01', description: 'Sin efectos fiscales' },
       { key: 'CP01', description: 'Pagos' },
@@ -432,7 +523,9 @@ export class FacturaGreenService implements ICertificationPackService {
     ];
   }
 
-  async searchMeasurementUnits(term: string): Promise<MeasurementUnitSuggestion[]> {
+  async searchMeasurementUnits(
+    term: string,
+  ): Promise<MeasurementUnitSuggestion[]> {
     return this.satCatalogService.searchMeasurementUnits(term);
   }
 
@@ -469,7 +562,7 @@ export class FacturaGreenService implements ICertificationPackService {
 
     const lowerTerm = term.toLowerCase();
     return units.filter(
-      u =>
+      (u) =>
         u.key.toLowerCase().includes(lowerTerm) ||
         u.description.toLowerCase().includes(lowerTerm),
     );
@@ -479,14 +572,39 @@ export class FacturaGreenService implements ICertificationPackService {
     const products = [
       { key: '01010101', description: 'No existe en el catálogo' },
       { key: '80141600', description: 'Servicios de consultoría' },
-      { key: '80141601', description: 'Servicios de consultoría de negocios y administración corporativa' },
-      { key: '80141602', description: 'Servicios de consultoría de mercadotecnia' },
-      { key: '80141603', description: 'Servicios de consultoría de administración de recursos humanos' },
-      { key: '80141604', description: 'Servicios de consultoría de producción' },
-      { key: '80141605', description: 'Servicios de consultoría de administración de cadena de suministros' },
+      {
+        key: '80141601',
+        description:
+          'Servicios de consultoría de negocios y administración corporativa',
+      },
+      {
+        key: '80141602',
+        description: 'Servicios de consultoría de mercadotecnia',
+      },
+      {
+        key: '80141603',
+        description:
+          'Servicios de consultoría de administración de recursos humanos',
+      },
+      {
+        key: '80141604',
+        description: 'Servicios de consultoría de producción',
+      },
+      {
+        key: '80141605',
+        description:
+          'Servicios de consultoría de administración de cadena de suministros',
+      },
       { key: '81112000', description: 'Servicios de desarrollo de software' },
-      { key: '81112001', description: 'Servicios de desarrollo de software de aplicación' },
-      { key: '81112002', description: 'Servicios de desarrollo de software de sistemas y aplicaciones de usuario' },
+      {
+        key: '81112001',
+        description: 'Servicios de desarrollo de software de aplicación',
+      },
+      {
+        key: '81112002',
+        description:
+          'Servicios de desarrollo de software de sistemas y aplicaciones de usuario',
+      },
       { key: '81161500', description: 'Servicios de diseño gráfico' },
       { key: '43230000', description: 'Computadoras' },
       { key: '43211500', description: 'Computadoras portátiles' },
@@ -499,7 +617,7 @@ export class FacturaGreenService implements ICertificationPackService {
     const lowerTerm = term.toLowerCase();
     return products
       .filter(
-        p =>
+        (p) =>
           p.key.includes(term) ||
           p.description.toLowerCase().includes(lowerTerm),
       )
@@ -534,7 +652,10 @@ export class FacturaGreenService implements ICertificationPackService {
 
       console.log('[FacturaGreen] createCustomer → REQUEST');
       console.log('[FacturaGreen]   URL:', url);
-      console.log('[FacturaGreen]   Payload:', JSON.stringify(payload, null, 2));
+      console.log(
+        '[FacturaGreen]   Payload:',
+        JSON.stringify(payload, null, 2),
+      );
 
       const response = await fetch(url, {
         method: 'POST',
@@ -544,11 +665,15 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      console.log('[FacturaGreen] createCustomer → RESPONSE status:', response.status);
+      console.log(
+        '[FacturaGreen] createCustomer → RESPONSE status:',
+        response.status,
+      );
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.message || 'Error creating customer in Factura Green';
+        const message =
+          data.message || 'Error creating customer in Factura Green';
         console.error('[FacturaGreen] createCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
@@ -569,7 +694,8 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('[FacturaGreen] createCustomer - Error:', error);
-      const message = error?.message ?? 'Error creating customer in Factura Green';
+      const message =
+        error?.message ?? 'Error creating customer in Factura Green';
       throw new BadRequestException(message);
     }
   }
@@ -609,7 +735,10 @@ export class FacturaGreenService implements ICertificationPackService {
       console.log('[FacturaGreen] updateCustomer → REQUEST');
       console.log('[FacturaGreen]   URL:', url);
       console.log('[FacturaGreen]   customerId:', customerId);
-      console.log('[FacturaGreen]   Payload:', JSON.stringify(payload, null, 2));
+      console.log(
+        '[FacturaGreen]   Payload:',
+        JSON.stringify(payload, null, 2),
+      );
 
       const response = await fetch(url, {
         method: 'POST',
@@ -619,11 +748,15 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      console.log('[FacturaGreen] updateCustomer → RESPONSE status:', response.status);
+      console.log(
+        '[FacturaGreen] updateCustomer → RESPONSE status:',
+        response.status,
+      );
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.message || 'Error updating customer in Factura Green';
+        const message =
+          data.message || 'Error updating customer in Factura Green';
         console.error('[FacturaGreen] updateCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
@@ -644,7 +777,8 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('[FacturaGreen] updateCustomer - Error:', error);
-      const message = error?.message ?? 'Error updating customer in Factura Green';
+      const message =
+        error?.message ?? 'Error updating customer in Factura Green';
       throw new BadRequestException(message);
     }
   }
@@ -689,7 +823,9 @@ export class FacturaGreenService implements ICertificationPackService {
     } catch (error: any) {
       console.error('Factura Green List Customers Error:', error);
       // 🔥 Forzamos la excepción global para que envíe el Email de Error alertando al Admin 🔥
-      throw new BadRequestException(error.message || 'Error listing customers in Factura Green');
+      throw new BadRequestException(
+        error.message || 'Error listing customers in Factura Green',
+      );
     }
   }
 
@@ -713,12 +849,14 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error deleting customer in Factura Green';
+        const message =
+          data.error?.message || 'Error deleting customer in Factura Green';
         throw new BadRequestException(message);
       }
     } catch (error: any) {
       console.error('Factura Green Delete Customer Error:', error);
-      const message = error?.message ?? 'Error deleting customer in Factura Green';
+      const message =
+        error?.message ?? 'Error deleting customer in Factura Green';
       throw new BadRequestException(message);
     }
   }
@@ -744,7 +882,10 @@ export class FacturaGreenService implements ICertificationPackService {
         if (tax.type === 'IVA' && !tax.type.includes('RET')) {
           taxes.iva_ta = true;
           taxes.iva_tr = rate;
-        } else if (tax.type === 'IVA_RET' || (tax.type === 'IVA' && tax.type.includes('RET'))) {
+        } else if (
+          tax.type === 'IVA_RET' ||
+          (tax.type === 'IVA' && tax.type.includes('RET'))
+        ) {
           taxes.iva_ra = true;
           taxes.iva_rr = rate;
         } else if (tax.type === 'ISR' || tax.type.includes('ISR')) {
@@ -753,7 +894,10 @@ export class FacturaGreenService implements ICertificationPackService {
         } else if (tax.type === 'IEPS' && !tax.type.includes('RET')) {
           taxes.ieps_ta = true;
           taxes.ieps_tr = rate;
-        } else if (tax.type === 'IEPS_RET' || (tax.type === 'IEPS' && tax.type.includes('RET'))) {
+        } else if (
+          tax.type === 'IEPS_RET' ||
+          (tax.type === 'IEPS' && tax.type.includes('RET'))
+        ) {
           taxes.ieps_ra = true;
           taxes.ieps_rr = rate;
         }
@@ -788,7 +932,10 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.message || data.error?.message || 'Error creating product in Factura Green';
+        const message =
+          data.message ||
+          data.error?.message ||
+          'Error creating product in Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -808,7 +955,8 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('[FacturaGreen] createProduct - Error:', error);
-      const message = error?.message ?? 'Error creating product in Factura Green';
+      const message =
+        error?.message ?? 'Error creating product in Factura Green';
       throw new BadRequestException(message);
     }
   }
@@ -836,7 +984,9 @@ export class FacturaGreenService implements ICertificationPackService {
         // En Factura Green, un status de no éxito en GET a menudo implica que no existe
         // Pero si es un error estructural o 500, deberíamos alertar.
         if (response.status >= 500) {
-           throw new BadRequestException('Factura Green service unavailable while searching SKU');
+          throw new BadRequestException(
+            'Factura Green service unavailable while searching SKU',
+          );
         }
         return null;
       }
@@ -856,7 +1006,9 @@ export class FacturaGreenService implements ICertificationPackService {
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Find Product by SKU Error:', error);
-      throw new BadRequestException(error.message || 'Error finding product by SKU in Factura Green');
+      throw new BadRequestException(
+        error.message || 'Error finding product by SKU in Factura Green',
+      );
     }
   }
 
@@ -874,9 +1026,12 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
-      if (productData.description) payload.product.name = productData.description;
-      if (productData.product_key) payload.product.satKey = { k: productData.product_key.toString() };
-      if (productData.unit_key) payload.product.unit = { k: productData.unit_key };
+      if (productData.description)
+        payload.product.name = productData.description;
+      if (productData.product_key)
+        payload.product.satKey = { k: productData.product_key.toString() };
+      if (productData.unit_key)
+        payload.product.unit = { k: productData.unit_key };
       if (productData.price !== undefined) {
         payload.product.price = {
           type: 'fixed',
@@ -885,7 +1040,7 @@ export class FacturaGreenService implements ICertificationPackService {
       }
       if (productData.taxes) {
         payload.product.taxes = {
-          transferred: productData.taxes.map(tax => ({
+          transferred: productData.taxes.map((tax) => ({
             type: tax.type === 'IVA' ? '002' : tax.type,
             rate: tax.rate,
             factor: 'Tasa',
@@ -902,7 +1057,8 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error updating product in Factura Green';
+        const message =
+          data.error?.message || 'Error updating product in Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -922,13 +1078,16 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Update Product Error:', error);
-      const message = error?.message ?? 'Error updating product in Factura Green';
+      const message =
+        error?.message ?? 'Error updating product in Factura Green';
       throw new BadRequestException(message);
     }
   }
 
   async createReceipt(data: ReceiptData): Promise<ReceiptResponse> {
-    throw new BadRequestException('Receipts not supported by Factura Green. Use generateCFDI instead.');
+    throw new BadRequestException(
+      'Receipts not supported by Factura Green. Use generateCFDI instead.',
+    );
   }
 
   async cancelReceipt(receiptId: string): Promise<void> {
@@ -950,7 +1109,8 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.message || 'Error listing products from Factura Green';
+        const message =
+          data.message || 'Error listing products from Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -972,7 +1132,8 @@ export class FacturaGreenService implements ICertificationPackService {
       }));
     } catch (error: any) {
       console.error('[FacturaGreen] listProducts - Error:', error);
-      const message = error?.message ?? 'Error listing products from Factura Green';
+      const message =
+        error?.message ?? 'Error listing products from Factura Green';
       throw new BadRequestException(message);
     }
   }
@@ -1052,10 +1213,10 @@ export class FacturaGreenService implements ICertificationPackService {
 
       // Mapeo de periodicidad frontend → clave SAT c_Periodicidad
       const periodicityMap: Record<string, string> = {
-        day: '01',        // Diario
-        week: '02',       // Semanal
-        fortnight: '03',  // Quincenal
-        month: '04',      // Mensual
+        day: '01', // Diario
+        week: '02', // Semanal
+        fortnight: '03', // Quincenal
+        month: '04', // Mensual
         two_months: '05', // Bimestral
       };
 
@@ -1075,9 +1236,11 @@ export class FacturaGreenService implements ICertificationPackService {
       // Buscar el cliente XAXX010101000 (Público en General) en el PAC
       let publicCustomerUuid: string | null = null;
       try {
-        const customers = await this.listCustomers?.() ?? [];
+        const customers = (await this.listCustomers?.()) ?? [];
         const publicCustomer = customers.find(
-          (c) => c.tax_id === 'XAXX010101000' || c.legal_name?.toUpperCase().includes('PUBLICO EN GENERAL'),
+          (c) =>
+            c.tax_id === 'XAXX010101000' ||
+            c.legal_name?.toUpperCase().includes('PUBLICO EN GENERAL'),
         );
         if (publicCustomer) {
           publicCustomerUuid = publicCustomer.id;
@@ -1089,7 +1252,7 @@ export class FacturaGreenService implements ICertificationPackService {
       if (!publicCustomerUuid) {
         throw new BadRequestException(
           'No se encontró el cliente "PÚBLICO EN GENERAL" (XAXX010101000) en Factura Green. ' +
-          'Verifica que el cliente esté registrado en el PAC.',
+            'Verifica que el cliente esté registrado en el PAC.',
         );
       }
 
@@ -1108,7 +1271,7 @@ export class FacturaGreenService implements ICertificationPackService {
       // Necesitamos un producto registrado en el PAC — buscamos uno con clave 01010101
       let ventaProductUuid: string | null = null;
       try {
-        const products = await this.listProducts?.() ?? [];
+        const products = (await this.listProducts?.()) ?? [];
         const ventaProduct = products.find(
           (p) => String(p.product_key) === '01010101',
         );
@@ -1122,7 +1285,7 @@ export class FacturaGreenService implements ICertificationPackService {
       if (!ventaProductUuid) {
         throw new BadRequestException(
           'No se encontró un producto con clave SAT "01010101" (VENTA) en Factura Green. ' +
-          'Crea un producto con esa clave en el PAC para poder emitir facturas globales.',
+            'Crea un producto con esa clave en el PAC para poder emitir facturas globales.',
         );
       }
 
@@ -1160,7 +1323,10 @@ export class FacturaGreenService implements ICertificationPackService {
       const result = await response.json();
 
       if (!response.ok || result.response !== 'success') {
-        const message = result.message || result.error?.message || 'Error al emitir la factura global en Factura Green';
+        const message =
+          result.message ||
+          result.error?.message ||
+          'Error al emitir la factura global en Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -1174,11 +1340,15 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Global Invoice Error:', error);
-      throw new BadRequestException(error.message || 'Error al emitir la factura global');
+      throw new BadRequestException(
+        error.message || 'Error al emitir la factura global',
+      );
     }
   }
 
-  async generatePaymentComplement(data: PaymentComplementData): Promise<PaymentComplementResponse> {
+  async generatePaymentComplement(
+    data: PaymentComplementData,
+  ): Promise<PaymentComplementResponse> {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
@@ -1186,10 +1356,12 @@ export class FacturaGreenService implements ICertificationPackService {
       const payload = {
         cfdi: {
           uuid: data.cfdi_uuid,
-          // delete 
+          // delete
           customer: {
-            ...(process.env.NODE_ENV === 'development' && { email: "karelpuerto78@gmail.com" })
-          }
+            ...(process.env.NODE_ENV === 'development' && {
+              email: 'karelpuerto78@gmail.com',
+            }),
+          },
         },
         payment: {
           number: data.payment_number,
@@ -1217,7 +1389,9 @@ export class FacturaGreenService implements ICertificationPackService {
       const result = await response.json();
 
       if (!response.ok || result.response !== 'success') {
-        const message = result.message || 'Error generating payment complement with Factura Green';
+        const message =
+          result.message ||
+          'Error generating payment complement with Factura Green';
         throw new BadRequestException(message);
       }
 
@@ -1230,11 +1404,16 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('Factura Green Payment Complement Error:', error);
-      throw new BadRequestException(error.message || 'Error generating payment complement');
+      throw new BadRequestException(
+        error.message || 'Error generating payment complement',
+      );
     }
   }
 
-  async cancelPaymentComplement(complementPackId: string, reason: string): Promise<void> {
+  async cancelPaymentComplement(
+    complementPackId: string,
+    reason: string,
+  ): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl();
       const headers = this.getHeaders();
@@ -1255,12 +1434,15 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message = data.error?.message || 'Error canceling payment complement';
+        const message =
+          data.error?.message || 'Error canceling payment complement';
         throw new BadRequestException(message);
       }
     } catch (error: any) {
       console.error('Factura Green Cancel Complement Error:', error);
-      throw new BadRequestException(error.message || 'Error canceling payment complement');
+      throw new BadRequestException(
+        error.message || 'Error canceling payment complement',
+      );
     }
   }
 }

@@ -1,6 +1,17 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../guards/auth.guard';
-import { InvoicePaymentService, CreateInvoicePaymentDto } from '../services/invoice-payment.service';
+import {
+  InvoicePaymentService,
+  CreateInvoicePaymentDto,
+} from '../services/invoice-payment.service';
 
 @Controller('invoices/:invoiceId/payments')
 @UseGuards(AuthGuard)
@@ -26,6 +37,10 @@ export class InvoicePaymentController {
     @Param('paymentId') paymentId: string,
     @Body() body: { reason?: string },
   ) {
-    return this.invoicePaymentService.cancelPayment(invoiceId, paymentId, body?.reason);
+    return this.invoicePaymentService.cancelPayment(
+      invoiceId,
+      paymentId,
+      body?.reason,
+    );
   }
 }

@@ -28,9 +28,16 @@ export class LocalStorageService implements IStorageService {
     this.uploadsDir = join(process.cwd(), 'uploads');
   }
 
-  async upload(file: Buffer, key: string, mimeType: string): Promise<UploadResult> {
+  async upload(
+    file: Buffer,
+    key: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
     const fullPath = join(this.uploadsDir, key);
-    const dir = fullPath.substring(0, Math.max(fullPath.lastIndexOf('/'), fullPath.lastIndexOf('\\')));
+    const dir = fullPath.substring(
+      0,
+      Math.max(fullPath.lastIndexOf('/'), fullPath.lastIndexOf('\\')),
+    );
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

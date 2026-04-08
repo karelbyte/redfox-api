@@ -2,7 +2,10 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Provider } from '../models/provider.entity';
-import { ProviderAddress, ProviderAddressType } from '../models/provider-address.entity';
+import {
+  ProviderAddress,
+  ProviderAddressType,
+} from '../models/provider-address.entity';
 import { ProviderTaxData } from '../models/provider-tax-data.entity';
 import { TenantContext } from './tenant-context.service';
 
@@ -51,13 +54,22 @@ export class ProviderImportService {
   }
 
   parseCSV(buffer: Buffer): ImportProviderRow[] {
-    const text = buffer.toString('utf-8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const lines = text.split('\n').filter(l => l.trim());
-    if (lines.length < 2) throw new BadRequestException('El archivo no tiene datos suficientes');
+    const text = buffer
+      .toString('utf-8')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+    const lines = text.split('\n').filter((l) => l.trim());
+    if (lines.length < 2)
+      throw new BadRequestException('El archivo no tiene datos suficientes');
 
     const sep = lines[0].includes(';') ? ';' : ',';
-    const headers = lines[0].split(sep).map(h =>
-      h.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/^"(.*)"$/, '$1')
+    const headers = lines[0].split(sep).map((h) =>
+      h
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
+        .replace(/^"(.*)"$/, '$1'),
     );
 
     const rows: ImportProviderRow[] = [];
@@ -65,8 +77,12 @@ export class ProviderImportService {
       const line = lines[i].trim();
       if (!line) continue;
       const values = this.splitCSVLine(line, sep);
+      const firstVal = (values[0] || '').trim().replace(/^"(.*)"$/, '$1').toLowerCase();
+      if (this.isMetadataRow(firstVal)) continue;
       const obj: Record<string, string> = {};
-      headers.forEach((h, idx) => { obj[h] = (values[idx] || '').trim().replace(/^"(.*)"$/, '$1'); });
+      headers.forEach((h, idx) => {
+        obj[h] = (values[idx] || '').trim().replace(/^"(.*)"$/, '$1');
+      });
 
       rows.push({
         row: i + 1,
@@ -80,7 +96,8 @@ export class ProviderImportService {
         tax_name: obj['tax_name'] || obj['razon_social'] || '',
         tax_system: obj['tax_system'] || obj['regimen_fiscal'] || '',
         invoice_use: obj['invoice_use'] || obj['uso_cfdi'] || '',
-        address_zip: obj['address_zip'] || obj['codigo_postal'] || obj['cp'] || '',
+        address_zip:
+          obj['address_zip'] || obj['codigo_postal'] || obj['cp'] || '',
         address_street: obj['address_street'] || obj['calle'] || '',
         address_city: obj['address_city'] || obj['ciudad'] || '',
         address_state: obj['address_state'] || obj['estado_dir'] || '',
@@ -90,46 +107,89 @@ export class ProviderImportService {
     return rows;
   }
 
+  private isMetadataRow(firstVal: string): boolean {
+    const metaValues = ['requerido', 'opcional', 'required', 'optional', '必填', '可选'];
+    return metaValues.includes(firstVal) || firstVal.startsWith('tipo:') || firstVal.startsWith('type:');
+  }
+
   private splitCSVLine(line: string, sep: string): string[] {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
-      if (ch === '"') { inQuotes = !inQuotes; }
-      else if (ch === sep && !inQuotes) { result.push(current); current = ''; }
-      else { current += ch; }
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === sep && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
     }
     result.push(current);
     return result;
   }
 
-  async importRows(rows: ImportProviderRow[], overrideOrgId?: string): Promise<ProviderImportResult> {
+  async importRows(
+    rows: ImportProviderRow[],
+    overrideOrgId?: string,
+  ): Promise<ProviderImportResult> {
     const orgId = overrideOrgId || this.organizationId;
-    const result: ProviderImportResult = { created: 0, skipped: 0, errors: [], summary: '' };
+    const result: ProviderImportResult = {
+      created: 0,
+      skipped: 0,
+      errors: [],
+      summary: '',
+    };
 
     for (const row of rows) {
       try {
         if (!row.code?.trim()) {
-          result.errors.push({ row: row.row, code: '', name: row.name, reason: 'El campo "code" es requerido' });
+          result.errors.push({
+            row: row.row,
+            code: '',
+            name: row.name,
+            reason: 'El campo "code" es requerido',
+          });
           continue;
         }
         if (row.code.trim().length < 3 || row.code.trim().length > 50) {
-          result.errors.push({ row: row.row, code: row.code, name: row.name, reason: `El campo "code" debe tener entre 3 y 50 caracteres (tiene ${row.code.trim().length})` });
+          result.errors.push({
+            row: row.row,
+            code: row.code,
+            name: row.name,
+            reason: `El campo "code" debe tener entre 3 y 50 caracteres (tiene ${row.code.trim().length})`,
+          });
           continue;
         }
         if (!row.name?.trim()) {
-          result.errors.push({ row: row.row, code: row.code, name: '', reason: 'El campo "name" es requerido' });
+          result.errors.push({
+            row: row.row,
+            code: row.code,
+            name: '',
+            reason: 'El campo "name" es requerido',
+          });
           continue;
         }
         if (row.name.trim().length < 3 || row.name.trim().length > 100) {
-          result.errors.push({ row: row.row, code: row.code, name: row.name, reason: `El campo "name" debe tener entre 3 y 100 caracteres (tiene ${row.name.trim().length})` });
+          result.errors.push({
+            row: row.row,
+            code: row.code,
+            name: row.name,
+            reason: `El campo "name" debe tener entre 3 y 100 caracteres (tiene ${row.name.trim().length})`,
+          });
           continue;
         }
         if (row.email?.trim()) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(row.email.trim())) {
-            result.errors.push({ row: row.row, code: row.code, name: row.name, reason: `El email "${row.email}" no tiene un formato válido` });
+            result.errors.push({
+              row: row.row,
+              code: row.code,
+              name: row.name,
+              reason: `El email "${row.email}" no tiene un formato válido`,
+            });
             continue;
           }
         }
@@ -138,13 +198,23 @@ export class ProviderImportService {
           where: { code: row.code.trim(), organization_id: orgId },
         });
         if (existing) {
-          result.errors.push({ row: row.row, code: row.code, name: row.name, reason: `Código "${row.code}" ya existe — omitido para evitar duplicado` });
+          result.errors.push({
+            row: row.row,
+            code: row.code,
+            name: row.name,
+            reason: `Código "${row.code}" ya existe — omitido para evitar duplicado`,
+          });
           result.skipped++;
           continue;
         }
 
         const statusStr = (row.status || 'true').toLowerCase().trim();
-        const status = !(statusStr === 'false' || statusStr === '0' || statusStr === 'inactivo' || statusStr === 'inactive');
+        const status = !(
+          statusStr === 'false' ||
+          statusStr === '0' ||
+          statusStr === 'inactivo' ||
+          statusStr === 'inactive'
+        );
 
         const provider = this.providerRepo.create({
           code: row.code.trim(),

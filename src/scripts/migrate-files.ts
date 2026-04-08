@@ -5,7 +5,10 @@ import { Product } from '../models/product.entity';
 import { Category } from '../models/category.entity';
 import { CompanySettings } from '../models/company-settings.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { IStorageService, STORAGE_SERVICE } from '../services/storage/storage.interface';
+import {
+  IStorageService,
+  STORAGE_SERVICE,
+} from '../services/storage/storage.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -17,12 +20,18 @@ interface MigrationStats {
 
 async function migrateFiles() {
   console.log('🚀 Iniciando migración de archivos...');
-  
+
   const app = await NestFactory.createApplicationContext(AppModule);
-  
-  const productRepository = app.get<Repository<Product>>(getRepositoryToken(Product));
-  const categoryRepository = app.get<Repository<Category>>(getRepositoryToken(Category));
-  const companySettingsRepository = app.get<Repository<CompanySettings>>(getRepositoryToken(CompanySettings));
+
+  const productRepository = app.get<Repository<Product>>(
+    getRepositoryToken(Product),
+  );
+  const categoryRepository = app.get<Repository<Category>>(
+    getRepositoryToken(Category),
+  );
+  const companySettingsRepository = app.get<Repository<CompanySettings>>(
+    getRepositoryToken(CompanySettings),
+  );
   const storageService = app.get<IStorageService>(STORAGE_SERVICE);
 
   const stats: MigrationStats = {
@@ -53,7 +62,12 @@ async function migrateFiles() {
         }
 
         const filename = match[1];
-        const oldPath = path.join(process.cwd(), 'uploads', 'products', filename);
+        const oldPath = path.join(
+          process.cwd(),
+          'uploads',
+          'products',
+          filename,
+        );
 
         if (!fs.existsSync(oldPath)) {
           console.warn(`⚠️  Archivo no encontrado: ${oldPath}`);
@@ -68,7 +82,11 @@ async function migrateFiles() {
         const newKey = `${product.organization_id}/products/${product.id}/${Date.now()}-${filename}`;
 
         // Subir al storage
-        const { url } = await storageService.upload(fileBuffer, newKey, mimeType);
+        const { url } = await storageService.upload(
+          fileBuffer,
+          newKey,
+          mimeType,
+        );
         newImages.push(url);
 
         console.log(`✅ Migrado: ${filename} -> ${newKey}`);
@@ -106,7 +124,12 @@ async function migrateFiles() {
       }
 
       const filename = match[1];
-      const oldPath = path.join(process.cwd(), 'uploads', 'categories', filename);
+      const oldPath = path.join(
+        process.cwd(),
+        'uploads',
+        'categories',
+        filename,
+      );
 
       if (!fs.existsSync(oldPath)) {
         console.warn(`⚠️  Archivo no encontrado: ${oldPath}`);
@@ -146,14 +169,16 @@ async function migrateFiles() {
       if (!settings.logoUrl) continue;
 
       // Las URLs de company ya tienen la estructura correcta, solo verificar
-      const match = settings.logoUrl.match(/\/api\/uploads\/company\/([^\/]+)\/(.+)$/);
+      const match = settings.logoUrl.match(
+        /\/api\/uploads\/company\/([^\/]+)\/(.+)$/,
+      );
       if (!match) {
         console.warn(`⚠️  URL no reconocida: ${settings.logoUrl}`);
         continue;
       }
 
       const [, orgId, filename] = match;
-      
+
       // Verificar si necesita migración a nueva estructura
       if (orgId === settings.organization_id) {
         // Ya tiene la estructura correcta, pero mover a nueva ubicación
@@ -163,10 +188,14 @@ async function migrateFiles() {
         try {
           // Obtener el archivo del storage actual
           const { buffer, contentType } = await storageService.getFile(oldKey);
-          
+
           // Subirlo con la nueva key
-          const { url } = await storageService.upload(buffer, newKey, contentType);
-          
+          const { url } = await storageService.upload(
+            buffer,
+            newKey,
+            contentType,
+          );
+
           // Actualizar la URL
           settings.logoUrl = url;
           await companySettingsRepository.save(settings);
@@ -177,7 +206,10 @@ async function migrateFiles() {
           console.log(`✅ Migrado: ${oldKey} -> ${newKey}`);
           stats.company.migrated++;
         } catch (error) {
-          console.warn(`⚠️  No se pudo migrar logo de empresa ${settings.id}:`, error);
+          console.warn(
+            `⚠️  No se pudo migrar logo de empresa ${settings.id}:`,
+            error,
+          );
           stats.company.skipped++;
         }
       } else {

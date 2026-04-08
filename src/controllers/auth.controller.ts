@@ -58,14 +58,16 @@ export class AuthController {
     const token = req.headers.authorization?.split(' ')[1];
     if (token) {
       try {
-        const payload = this.jwtService.decode(token) as { exp?: number };
+        const payload = this.jwtService.decode(token);
         const ttl = payload?.exp
           ? payload.exp - Math.floor(Date.now() / 1000)
           : 3600; // 1h por defecto
         if (ttl > 0) {
           await this.redisService.blacklistToken(token, ttl);
         }
-      } catch { /* ignorar errores de decode */ }
+      } catch {
+        /* ignorar errores de decode */
+      }
     }
     return { message: 'Logged out successfully' };
   }

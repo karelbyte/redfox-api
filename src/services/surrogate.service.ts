@@ -17,7 +17,7 @@ export class SurrogateService {
     @InjectRepository(Surrogate)
     private surrogateRepository: Repository<Surrogate>,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     const orgId = this.tenantContext.getOrganizationId();

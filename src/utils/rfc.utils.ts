@@ -35,14 +35,23 @@ export function isValidRFC(rfc: string): boolean {
   const personaFisicaRegex = /^[A-ZÑ&]{4}[0-9]{6}[A-Z0-9]{3}$/;
   const personaMoralRegex = /^[A-ZÑ&]{3}[0-9]{6}[A-Z0-9]{3}$/;
 
-  if (!personaFisicaRegex.test(cleanedRFC) && !personaMoralRegex.test(cleanedRFC)) {
+  if (
+    !personaFisicaRegex.test(cleanedRFC) &&
+    !personaMoralRegex.test(cleanedRFC)
+  ) {
     return false;
   }
 
   // Validar fecha dentro del RFC
-  const year = parseInt(cleanedRFC.substring(cleanedRFC.length - 9, cleanedRFC.length - 7));
-  const month = parseInt(cleanedRFC.substring(cleanedRFC.length - 7, cleanedRFC.length - 5));
-  const day = parseInt(cleanedRFC.substring(cleanedRFC.length - 5, cleanedRFC.length - 3));
+  const year = parseInt(
+    cleanedRFC.substring(cleanedRFC.length - 9, cleanedRFC.length - 7),
+  );
+  const month = parseInt(
+    cleanedRFC.substring(cleanedRFC.length - 7, cleanedRFC.length - 5),
+  );
+  const day = parseInt(
+    cleanedRFC.substring(cleanedRFC.length - 5, cleanedRFC.length - 3),
+  );
 
   // Ajustar año
   const fullYear = year <= 29 ? 2000 + year : 1900 + year;
@@ -59,7 +68,8 @@ export function isValidRFC(rfc: string): boolean {
 
   // Validar febrero en años no bisiestos
   if (month === 2 && day === 29) {
-    const isLeapYear = (fullYear % 4 === 0 && fullYear % 100 !== 0) || (fullYear % 400 === 0);
+    const isLeapYear =
+      (fullYear % 4 === 0 && fullYear % 100 !== 0) || fullYear % 400 === 0;
     if (!isLeapYear) {
       return false;
     }
@@ -75,7 +85,7 @@ export function isValidRFC(rfc: string): boolean {
  */
 export function formatRFC(rfc: string): string {
   const cleanedRFC = cleanRFC(rfc);
-  
+
   if (!cleanedRFC) {
     return '';
   }

@@ -14,7 +14,10 @@ export interface SatUnitKey {
 }
 
 const SAT_CACHE_TTL = 60 * 60 * 24; // 24 horas
-const SAT_FETCH_HEADERS = { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' };
+const SAT_FETCH_HEADERS = {
+  'Content-Type': 'application/json',
+  'User-Agent': 'Mozilla/5.0',
+};
 
 @Injectable()
 export class SatCatalogService {
@@ -49,7 +52,9 @@ export class SatCatalogService {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch { /* ignorar error de parse */ }
+      } catch {
+        /* ignorar error de parse */
+      }
     }
 
     try {
@@ -59,21 +64,30 @@ export class SatCatalogService {
       );
 
       if (!response.ok) {
-        this.logger.warn(`SAT product search failed (${response.status}) for term: ${term}`);
+        this.logger.warn(
+          `SAT product search failed (${response.status}) for term: ${term}`,
+        );
         return this.getStaticProductKeys(term);
       }
 
       const data = await response.json();
       const items = data.rows || data.data || data || [];
-      const results: SatProductKey[] = items.map((item: any) => ({
-        key: item.clavesat || item.clave || item.code || item.key,
-        description: item.descripcion || item.description || item.name,
-        score: 0,
-      })).sort((a: SatProductKey, b: SatProductKey) =>
-        (a.description?.length || 0) - (b.description?.length || 0),
-      );
+      const results: SatProductKey[] = items
+        .map((item: any) => ({
+          key: item.clavesat || item.clave || item.code || item.key,
+          description: item.descripcion || item.description || item.name,
+          score: 0,
+        }))
+        .sort(
+          (a: SatProductKey, b: SatProductKey) =>
+            (a.description?.length || 0) - (b.description?.length || 0),
+        );
 
-      await this.redisService.set(cacheKey, JSON.stringify(results), SAT_CACHE_TTL);
+      await this.redisService.set(
+        cacheKey,
+        JSON.stringify(results),
+        SAT_CACHE_TTL,
+      );
       return results;
     } catch (error: any) {
       this.logger.warn(`SAT product search error: ${error?.message}`);
@@ -93,7 +107,9 @@ export class SatCatalogService {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch { /* ignorar error de parse */ }
+      } catch {
+        /* ignorar error de parse */
+      }
     }
 
     try {
@@ -103,20 +119,29 @@ export class SatCatalogService {
       );
 
       if (!response.ok) {
-        this.logger.warn(`SAT units search failed (${response.status}) for term: ${term}`);
+        this.logger.warn(
+          `SAT units search failed (${response.status}) for term: ${term}`,
+        );
         return this.getStaticUnits(term);
       }
 
       const data = await response.json();
       const items = data.rows || data.data || data || [];
-      const results: SatUnitKey[] = items.map((item: any) => ({
-        key: item.clavesat || item.clave || item.code || item.key,
-        description: item.descripcion || item.description || item.name,
-      })).sort((a: SatUnitKey, b: SatUnitKey) =>
-        (a.description?.length || 0) - (b.description?.length || 0),
-      );
+      const results: SatUnitKey[] = items
+        .map((item: any) => ({
+          key: item.clavesat || item.clave || item.code || item.key,
+          description: item.descripcion || item.description || item.name,
+        }))
+        .sort(
+          (a: SatUnitKey, b: SatUnitKey) =>
+            (a.description?.length || 0) - (b.description?.length || 0),
+        );
 
-      await this.redisService.set(cacheKey, JSON.stringify(results), SAT_CACHE_TTL);
+      await this.redisService.set(
+        cacheKey,
+        JSON.stringify(results),
+        SAT_CACHE_TTL,
+      );
       return results;
     } catch (error: any) {
       this.logger.warn(`SAT units search error: ${error?.message}`);
@@ -129,7 +154,10 @@ export class SatCatalogService {
       { key: '01010101', description: 'No existe en el catálogo' },
       { key: '80141600', description: 'Servicios de consultoría' },
       { key: '81112000', description: 'Servicios de desarrollo de software' },
-      { key: '81112001', description: 'Servicios de desarrollo de software de aplicación' },
+      {
+        key: '81112001',
+        description: 'Servicios de desarrollo de software de aplicación',
+      },
       { key: '81161500', description: 'Servicios de diseño gráfico' },
       { key: '43230000', description: 'Computadoras' },
       { key: '43211500', description: 'Computadoras portátiles' },
@@ -139,13 +167,16 @@ export class SatCatalogService {
     ];
     if (!term) return products;
     const lower = term.toLowerCase();
-    return products.filter(p => p.key.includes(term) || p.description.toLowerCase().includes(lower));
+    return products.filter(
+      (p) =>
+        p.key.includes(term) || p.description.toLowerCase().includes(lower),
+    );
   }
 
   private getStaticUnits(term: string): SatUnitKey[] {
     const units: SatUnitKey[] = [
       { key: 'H87', description: 'Pieza' },
-      { key: 'EA',  description: 'Elemento' },
+      { key: 'EA', description: 'Elemento' },
       { key: 'E48', description: 'Unidad de Servicio' },
       { key: 'ACT', description: 'Actividad' },
       { key: 'KGM', description: 'Kilogramo' },
@@ -154,7 +185,7 @@ export class SatCatalogService {
       { key: 'MTK', description: 'Metro cuadrado' },
       { key: 'MTQ', description: 'Metro cúbico' },
       { key: 'GRM', description: 'Gramo' },
-      { key: 'KT',  description: 'Kit' },
+      { key: 'KT', description: 'Kit' },
       { key: 'SET', description: 'Conjunto' },
       { key: 'XBX', description: 'Caja' },
       { key: 'HUR', description: 'Hora' },
@@ -162,6 +193,10 @@ export class SatCatalogService {
     ];
     if (!term) return units;
     const lower = term.toLowerCase();
-    return units.filter(u => u.key.toLowerCase().includes(lower) || u.description.toLowerCase().includes(lower));
+    return units.filter(
+      (u) =>
+        u.key.toLowerCase().includes(lower) ||
+        u.description.toLowerCase().includes(lower),
+    );
   }
 }

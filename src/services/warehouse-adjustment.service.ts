@@ -49,7 +49,7 @@ export class WarehouseAdjustmentService {
     private productMapper: ProductMapper,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -141,7 +141,10 @@ export class WarehouseAdjustmentService {
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.productId, organization_id: this.organizationId },
+      where: {
+        id: createDetailDto.productId,
+        organization_id: this.organizationId,
+      },
     });
     if (!product) {
       throw new NotFoundException(

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  ParseUUIDPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { ReferralService } from '../services/referral.service';
 import { AuthGuard } from '../guards/auth.guard';
 
@@ -28,18 +39,33 @@ export class ReferralController {
   }
 
   @Post('referrers')
-  createReferrer(@Body() body: {
-    name: string; email?: string; phone?: string;
-    type?: 'internal' | 'external'; user_id?: string;
-    commission_rate?: number; notes?: string;
-  }) {
+  createReferrer(
+    @Body()
+    body: {
+      name: string;
+      email?: string;
+      phone?: string;
+      type?: 'internal' | 'external';
+      user_id?: string;
+      commission_rate?: number;
+      notes?: string;
+    },
+  ) {
     return this.referralService.createReferrer(body);
   }
 
   @Put('referrers/:id')
   updateReferrer(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: Partial<{ name: string; email: string; phone: string; commission_rate: number; is_active: boolean; notes: string }>,
+    @Body()
+    body: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+      commission_rate: number;
+      is_active: boolean;
+      notes: string;
+    }>,
   ) {
     return this.referralService.updateReferrer(id, body);
   }
@@ -71,7 +97,11 @@ export class ReferralController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { status: 'approved' | 'paid'; payment_notes?: string },
   ) {
-    return this.referralService.updateCommissionStatus(id, body.status, body.payment_notes);
+    return this.referralService.updateCommissionStatus(
+      id,
+      body.status,
+      body.payment_notes,
+    );
   }
 
   @Get('stats')

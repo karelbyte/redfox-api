@@ -33,7 +33,8 @@ export class NotificationService {
       ...(organizationId && { organization_id: organizationId }),
     });
 
-    const savedNotification = await this.notificationRepository.save(notification);
+    const savedNotification =
+      await this.notificationRepository.save(notification);
     return this.mapToResponseDto(savedNotification);
   }
 
@@ -42,7 +43,12 @@ export class NotificationService {
     userId: string,
   ): Promise<{
     data: NotificationResponseDto[];
-    meta: { total: number; unreadCount: number; page: number; totalPages: number };
+    meta: {
+      total: number;
+      unreadCount: number;
+      page: number;
+      totalPages: number;
+    };
   }> {
     const organizationId = this.tenantContext.getOrganizationId();
 
@@ -51,7 +57,9 @@ export class NotificationService {
       .where('notification.userId = :userId', { userId });
 
     if (organizationId) {
-      queryBuilder.andWhere('notification.organization_id = :organizationId', { organizationId });
+      queryBuilder.andWhere('notification.organization_id = :organizationId', {
+        organizationId,
+      });
     }
 
     if (query.type) {
@@ -59,22 +67,31 @@ export class NotificationService {
     }
 
     if (query.priority) {
-      queryBuilder.andWhere('notification.priority = :priority', { priority: query.priority });
+      queryBuilder.andWhere('notification.priority = :priority', {
+        priority: query.priority,
+      });
     }
 
     if (query.isRead !== undefined) {
-      queryBuilder.andWhere('notification.isRead = :isRead', { isRead: query.isRead });
+      queryBuilder.andWhere('notification.isRead = :isRead', {
+        isRead: query.isRead,
+      });
     }
 
     const total = await queryBuilder.getCount();
 
     const unreadWhere: any = { userId, isRead: false };
     if (organizationId) unreadWhere.organization_id = organizationId;
-    const unreadCount = await this.notificationRepository.count({ where: unreadWhere });
+    const unreadCount = await this.notificationRepository.count({
+      where: unreadWhere,
+    });
 
     const page = query.page || 1;
     const limit = query.limit || 20;
-    queryBuilder.orderBy('notification.createdAt', 'DESC').skip((page - 1) * limit).take(limit);
+    queryBuilder
+      .orderBy('notification.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
     const notifications = await queryBuilder.getMany();
 
@@ -90,7 +107,10 @@ export class NotificationService {
     });
 
     if (!notification) {
-      const message = await this.translationService.translate('notification.not_found', userId);
+      const message = await this.translationService.translate(
+        'notification.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -107,7 +127,10 @@ export class NotificationService {
     });
 
     if (!notification) {
-      const message = await this.translationService.translate('notification.not_found', userId);
+      const message = await this.translationService.translate(
+        'notification.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -124,7 +147,10 @@ export class NotificationService {
     });
 
     if (!notification) {
-      const message = await this.translationService.translate('notification.not_found', userId);
+      const message = await this.translationService.translate(
+        'notification.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 

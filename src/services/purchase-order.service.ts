@@ -50,7 +50,7 @@ export class PurchaseOrderService {
     private readonly notificationService: NotificationService,
     private readonly receptionService: ReceptionService,
     private readonly emailService: EmailService,
-  ) { }
+  ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -119,7 +119,10 @@ export class PurchaseOrderService {
       where: { id: provider_id, organization_id: this.organizationId },
     });
     if (!provider) {
-      const message = await this.translationService.translate('purchase_order.provider_not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.provider_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -128,16 +131,25 @@ export class PurchaseOrderService {
       where: { id: warehouse_id, organization_id: this.organizationId },
     });
     if (!warehouse) {
-      const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.warehouse_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
     // Verificar que el código es único
     const existingPurchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { code: createPurchaseOrderDto.code, organization_id: this.organizationId },
+      where: {
+        code: createPurchaseOrderDto.code,
+        organization_id: this.organizationId,
+      },
     });
     if (existingPurchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.code_exists', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.code_exists',
+        userId,
+      );
       throw new BadRequestException(message);
     }
 
@@ -162,7 +174,9 @@ export class PurchaseOrderService {
           userId,
         );
       }
-    } catch { /* no bloquear el flujo */ }
+    } catch {
+      /* no bloquear el flujo */
+    }
 
     return this.mapToResponseDto(savedPurchaseOrder);
   }
@@ -208,7 +222,10 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -226,7 +243,10 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -236,10 +256,16 @@ export class PurchaseOrderService {
       updatePurchaseOrderDto.code !== purchaseOrder.code
     ) {
       const existingPurchaseOrder = await this.purchaseOrderRepository.findOne({
-        where: { code: updatePurchaseOrderDto.code, organization_id: this.organizationId },
+        where: {
+          code: updatePurchaseOrderDto.code,
+          organization_id: this.organizationId,
+        },
       });
       if (existingPurchaseOrder) {
-        const message = await this.translationService.translate('purchase_order.code_exists', userId);
+        const message = await this.translationService.translate(
+          'purchase_order.code_exists',
+          userId,
+        );
         throw new BadRequestException(message);
       }
     }
@@ -247,10 +273,16 @@ export class PurchaseOrderService {
     // Verificar proveedor si se está actualizando
     if (updatePurchaseOrderDto.provider_id) {
       const provider = await this.providerRepository.findOne({
-        where: { id: updatePurchaseOrderDto.provider_id, organization_id: this.organizationId },
+        where: {
+          id: updatePurchaseOrderDto.provider_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!provider) {
-        const message = await this.translationService.translate('purchase_order.provider_not_found', userId);
+        const message = await this.translationService.translate(
+          'purchase_order.provider_not_found',
+          userId,
+        );
         throw new NotFoundException(message);
       }
       purchaseOrder.provider = provider;
@@ -259,10 +291,16 @@ export class PurchaseOrderService {
     // Verificar almacén si se está actualizando
     if (updatePurchaseOrderDto.warehouse_id) {
       const warehouse = await this.warehouseRepository.findOne({
-        where: { id: updatePurchaseOrderDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: updatePurchaseOrderDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
-        const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+        const message = await this.translationService.translate(
+          'purchase_order.warehouse_not_found',
+          userId,
+        );
         throw new NotFoundException(message);
       }
       purchaseOrder.warehouse = warehouse;
@@ -276,11 +314,14 @@ export class PurchaseOrderService {
 
   async remove(id: string, userId?: string): Promise<void> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id, organization_id: this.organizationId }
+      where: { id, organization_id: this.organizationId },
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -313,13 +354,19 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
     // Verificar que el producto existe
     const product = await this.productRepository.findOne({
-      where: { id: createDetailDto.product_id, organization_id: this.organizationId },
+      where: {
+        id: createDetailDto.product_id,
+        organization_id: this.organizationId,
+      },
     });
     if (!product) {
       const message = await this.translationService.translate(
@@ -332,8 +379,14 @@ export class PurchaseOrderService {
     // Verificar que no existe ya un detalle para este producto
     const existingDetail = await this.purchaseOrderDetailRepository.findOne({
       where: {
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
-        product: { id: createDetailDto.product_id, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
+        product: {
+          id: createDetailDto.product_id,
+          organization_id: this.organizationId,
+        },
       },
     });
 
@@ -347,10 +400,16 @@ export class PurchaseOrderService {
     let warehouse: Warehouse | null = null;
     if (createDetailDto.warehouse_id) {
       warehouse = await this.warehouseRepository.findOne({
-        where: { id: createDetailDto.warehouse_id, organization_id: this.organizationId },
+        where: {
+          id: createDetailDto.warehouse_id,
+          organization_id: this.organizationId,
+        },
       });
       if (!warehouse) {
-        const message = await this.translationService.translate('purchase_order.warehouse_not_found', userId);
+        const message = await this.translationService.translate(
+          'purchase_order.warehouse_not_found',
+          userId,
+        );
         throw new NotFoundException(message);
       }
     }
@@ -391,7 +450,10 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -436,7 +498,10 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
       },
       relations: [
         'product',
@@ -448,7 +513,10 @@ export class PurchaseOrderService {
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -464,13 +532,19 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
       },
       relations: ['product'],
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -489,7 +563,10 @@ export class PurchaseOrderService {
     // Actualizar el monto total de la orden de compra
     const allDetails = await this.purchaseOrderDetailRepository.find({
       where: {
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
       },
     });
 
@@ -512,12 +589,18 @@ export class PurchaseOrderService {
     const detail = await this.purchaseOrderDetailRepository.findOne({
       where: {
         id: detailId,
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
       },
     });
 
     if (!detail) {
-      const message = await this.translationService.translate('purchase_order.detail_not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.detail_not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -526,7 +609,10 @@ export class PurchaseOrderService {
     // Actualizar el monto total de la orden de compra
     const allDetails = await this.purchaseOrderDetailRepository.find({
       where: {
-        purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId },
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
       },
     });
 
@@ -550,18 +636,29 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
     if (purchaseOrder.status !== 'PENDING') {
-      const message = await this.translationService.translate('purchase_order.not_pending', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_pending',
+        userId,
+      );
       throw new BadRequestException(message);
     }
 
     // Verificar que tenga detalles
     const details = await this.purchaseOrderDetailRepository.find({
-      where: { purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId } },
+      where: {
+        purchaseOrder: {
+          id: purchaseOrderId,
+          organization_id: this.organizationId,
+        },
+      },
     });
 
     if (details.length === 0) {
@@ -575,10 +672,16 @@ export class PurchaseOrderService {
 
     // Generar recepciones agrupadas por almacén destino
     try {
-      const detailsWithRelations = await this.purchaseOrderDetailRepository.find({
-        where: { purchaseOrder: { id: purchaseOrderId, organization_id: this.organizationId } },
-        relations: ['product', 'warehouse'],
-      });
+      const detailsWithRelations =
+        await this.purchaseOrderDetailRepository.find({
+          where: {
+            purchaseOrder: {
+              id: purchaseOrderId,
+              organization_id: this.organizationId,
+            },
+          },
+          relations: ['product', 'warehouse'],
+        });
 
       // Agrupar detalles por warehouse_id (null = sin almacén asignado)
       const byWarehouse = new Map<string, typeof detailsWithRelations>();
@@ -595,49 +698,74 @@ export class PurchaseOrderService {
         const warehouseId = warehouseKey;
         const receptionCode = `REC-${purchaseOrder.code}-${warehouseId.slice(0, 4).toUpperCase()}`;
 
-        const reception = await this.receptionService.create({
-          code: receptionCode,
-          date: new Date().toISOString().split('T')[0],
-          provider_id: purchaseOrder.provider.id,
-          warehouse_id: warehouseId,
-          document: purchaseOrder.document || purchaseOrder.code,
-          amount: groupDetails.reduce((s, d) => s + Number(d.quantity) * Number(d.price), 0),
-          purchase_order_id: purchaseOrder.id,
-        } as any, userId);
+        const reception = await this.receptionService.create(
+          {
+            code: receptionCode,
+            date: new Date().toISOString().split('T')[0],
+            provider_id: purchaseOrder.provider.id,
+            warehouse_id: warehouseId,
+            document: purchaseOrder.document || purchaseOrder.code,
+            amount: groupDetails.reduce(
+              (s, d) => s + Number(d.quantity) * Number(d.price),
+              0,
+            ),
+            purchase_order_id: purchaseOrder.id,
+          } as any,
+          userId,
+        );
 
         // Agregar los productos a la recepción
         for (const d of groupDetails) {
-          await this.receptionService.createDetail(reception.id, {
-            product_id: d.product.id,
-            quantity: Number(d.quantity),
-            price: Number(d.price),
-          }, userId);
+          await this.receptionService.createDetail(
+            reception.id,
+            {
+              product_id: d.product.id,
+              quantity: Number(d.quantity),
+              price: Number(d.price),
+            },
+            userId,
+          );
         }
       }
     } catch (error) {
       // No bloquear la aprobación si falla la generación de recepciones
-      console.warn('[PurchaseOrder] Could not generate receptions:', error?.message);
+      console.warn(
+        '[PurchaseOrder] Could not generate receptions:',
+        error?.message,
+      );
     }
 
     if (sendEmail) {
       try {
         const providerEmail = purchaseOrder.provider?.email;
         if (providerEmail && userId) {
-          const detailsWithRelations = await this.purchaseOrderDetailRepository.find({
-            where: { purchaseOrder: { id: purchaseOrder.id, organization_id: this.organizationId } },
-            relations: ['product'],
-          });
+          const detailsWithRelations =
+            await this.purchaseOrderDetailRepository.find({
+              where: {
+                purchaseOrder: {
+                  id: purchaseOrder.id,
+                  organization_id: this.organizationId,
+                },
+              },
+              relations: ['product'],
+            });
 
-          const rows = detailsWithRelations.map(d =>
-            `<tr>
+          const rows = detailsWithRelations
+            .map(
+              (d) =>
+                `<tr>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${d.product?.name || '—'}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${Number(d.quantity)}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${Number(d.price).toFixed(2)}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${(Number(d.quantity) * Number(d.price)).toFixed(2)}</td>
-            </tr>`
-          ).join('');
+            </tr>`,
+            )
+            .join('');
 
-          const total = detailsWithRelations.reduce((s, d) => s + Number(d.quantity) * Number(d.price), 0);
+          const total = detailsWithRelations.reduce(
+            (s, d) => s + Number(d.quantity) * Number(d.price),
+            0,
+          );
 
           const html = `
             <!DOCTYPE html>
@@ -688,18 +816,25 @@ export class PurchaseOrderService {
             html,
           });
 
-          console.log(`[PurchaseOrder] Email enviado a proveedor ${providerEmail} para orden ${purchaseOrder.code}`);
+          console.log(
+            `[PurchaseOrder] Email enviado a proveedor ${providerEmail} para orden ${purchaseOrder.code}`,
+          );
         }
       } catch (emailError: any) {
         // No bloquear la aprobación si falla el email
-        console.warn(`[PurchaseOrder] No se pudo enviar email al proveedor: ${emailError?.message}`);
+        console.warn(
+          `[PurchaseOrder] No se pudo enviar email al proveedor: ${emailError?.message}`,
+        );
       }
     }
 
     return {
       id: purchaseOrder.id,
       status: purchaseOrder.status,
-      message: await this.translationService.translate('general.success', userId),
+      message: await this.translationService.translate(
+        'general.success',
+        userId,
+      ),
     };
   }
 
@@ -712,12 +847,18 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
     if (purchaseOrder.status !== 'PENDING') {
-      const message = await this.translationService.translate('purchase_order.not_pending', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_pending',
+        userId,
+      );
       throw new BadRequestException(message);
     }
 
@@ -740,7 +881,10 @@ export class PurchaseOrderService {
     });
 
     if (!purchaseOrder) {
-      const message = await this.translationService.translate('purchase_order.not_found', userId);
+      const message = await this.translationService.translate(
+        'purchase_order.not_found',
+        userId,
+      );
       throw new NotFoundException(message);
     }
 
@@ -758,7 +902,10 @@ export class PurchaseOrderService {
     return {
       id: purchaseOrder.id,
       status: purchaseOrder.status,
-      message: await this.translationService.translate('general.success', userId),
+      message: await this.translationService.translate(
+        'general.success',
+        userId,
+      ),
     };
   }
 }

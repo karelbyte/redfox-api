@@ -6,14 +6,17 @@ import Redis from 'ioredis';
  * Servicio de Redis para operaciones directas:
  * - Blacklist de tokens JWT (logout real)
  * - Rate limiting distribuido
- * 
+ *
  * Si Redis no está configurado, usa un Map en memoria como fallback.
  */
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis | null = null;
-  private readonly memoryStore = new Map<string, { value: string; expiresAt: number }>();
+  private readonly memoryStore = new Map<
+    string,
+    { value: string; expiresAt: number }
+  >();
 
   constructor(private readonly configService: ConfigService) {
     const redisHost = this.configService.get<string>('REDIS_HOST');
@@ -34,9 +37,13 @@ export class RedisService implements OnModuleDestroy {
       });
 
       this.client.on('connect', () => this.logger.log('✅ Redis conectado'));
-      this.client.on('error', (err) => this.logger.warn(`⚠️ Redis error: ${err.message}`));
+      this.client.on('error', (err) =>
+        this.logger.warn(`⚠️ Redis error: ${err.message}`),
+      );
     } else {
-      this.logger.warn('⚠️ REDIS_HOST no configurado — usando fallback en memoria');
+      this.logger.warn(
+        '⚠️ REDIS_HOST no configurado — usando fallback en memoria',
+      );
     }
   }
 
@@ -122,7 +129,10 @@ export class RedisService implements OnModuleDestroy {
     const entry = this.memoryStore.get(key);
     const now = Date.now();
     if (!entry || now > entry.expiresAt) {
-      this.memoryStore.set(key, { value: '1', expiresAt: now + ttlSeconds * 1000 });
+      this.memoryStore.set(key, {
+        value: '1',
+        expiresAt: now + ttlSeconds * 1000,
+      });
       return 1;
     }
     const newVal = parseInt(entry.value) + 1;

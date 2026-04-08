@@ -111,7 +111,9 @@ export class CertificationPackService {
     const pack = await this.findOne(id);
 
     if (!pack.is_active) {
-      const message = await this.translationService.translate('pack.cannot_set_inactive');
+      const message = await this.translationService.translate(
+        'pack.cannot_set_inactive',
+      );
       throw new BadRequestException(message);
     }
 

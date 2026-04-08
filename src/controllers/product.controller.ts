@@ -65,8 +65,11 @@ export class ProductController {
     files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
     // Log temporal para debug
-    console.log('🔍 CreateProductDto received:', JSON.stringify(createProductDto, null, 2));
-    
+    console.log(
+      '🔍 CreateProductDto received:',
+      JSON.stringify(createProductDto, null, 2),
+    );
+
     // Primero crear el producto para obtener su ID
     const product = await this.productService.create(createProductDto, userId);
 
@@ -78,13 +81,19 @@ export class ProductController {
         product.id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 10,
-        }
+        },
       );
 
-      const imageUrls = uploadResults.map(result => result.url);
-      
+      const imageUrls = uploadResults.map((result) => result.url);
+
       // Actualizar el producto con las URLs de las imágenes
       return this.productService.updateImages(product.id, imageUrls, userId);
     }
@@ -147,13 +156,19 @@ export class ProductController {
         id,
         {
           maxSize: 5 * 1024 * 1024,
-          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+          allowedTypes: [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ],
           maxFiles: 10,
-        }
+        },
       );
 
-      const newImageUrls = uploadResults.map(result => result.url);
-      
+      const newImageUrls = uploadResults.map((result) => result.url);
+
       // Si se especifican imágenes existentes, combinarlas con las nuevas
       if (updateProductDto.images) {
         updateProductDto.images = [...updateProductDto.images, ...newImageUrls];
@@ -182,9 +197,7 @@ export class ProductController {
   }
 
   @Post('bulk-delete')
-  removeMany(
-    @Body() bulkDeleteProductDto: BulkDeleteProductDto,
-  ) {
+  removeMany(@Body() bulkDeleteProductDto: BulkDeleteProductDto) {
     return this.productService.removeMany(bulkDeleteProductDto.ids);
   }
 

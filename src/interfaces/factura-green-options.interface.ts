@@ -45,19 +45,19 @@ export interface GenerateCFDIOptions {
 }
 
 export interface IEDUStudentData {
-  student_name: string;  // Nombre completo del estudiante
+  student_name: string; // Nombre completo del estudiante
   student_popid: string; // CURP del estudiante
 }
 
 export interface DonatariasData {
-  auth_number: string;   // Número de autorización del oficio
-  auth_date: string;     // Fecha de autorización (formato: dd/mm/yyyy)
-  legend?: string;       // Leyenda personalizada (opcional, usa default si no se proporciona)
+  auth_number: string; // Número de autorización del oficio
+  auth_date: string; // Fecha de autorización (formato: dd/mm/yyyy)
+  legend?: string; // Leyenda personalizada (opcional, usa default si no se proporciona)
 }
 
 export interface GlobalInvoiceData {
-  period: string;        // Clave del mes (c_Meses): '01' a '12'
-  periodicity: string;   // Clave de periodicidad (c_Periodicidad): '01' = Diario, '02' = Semanal, etc.
-  year: string;          // Año de causación: '2024', '2025', etc.
+  period: string; // Clave del mes (c_Meses): '01' a '12'
+  periodicity: string; // Clave de periodicidad (c_Periodicidad): '01' = Diario, '02' = Semanal, etc.
+  year: string; // Año de causación: '2024', '2025', etc.
   enforceGlobal?: boolean; // Si es false, no aplica reglas de producto global (default: true)
 }

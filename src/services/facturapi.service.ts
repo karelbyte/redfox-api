@@ -107,9 +107,10 @@ export class FacturaAPIService implements ICertificationPackService {
       const lookupId = data.pack_invoice_id || data.cfdi_uuid;
 
       if (!lookupId) {
-        throw new BadRequestException('No se proporcionó un ID o UUID válido para la factura original');
+        throw new BadRequestException(
+          'No se proporcionó un ID o UUID válido para la factura original',
+        );
       }
-
 
       const originalInvoice = await client.invoices.retrieve(lookupId);
 
@@ -120,7 +121,9 @@ export class FacturaAPIService implements ICertificationPackService {
       }
 
       // --- Lógica de Impuestos Proporcionales para CFDI 4.0 ---
-      const invoiceTotal = Number(originalInvoice.total || originalInvoice.total_amount || 0);
+      const invoiceTotal = Number(
+        originalInvoice.total || originalInvoice.total_amount || 0,
+      );
       const paymentAmount = Number(data.amount);
       const ratio = invoiceTotal > 0 ? paymentAmount / invoiceTotal : 1;
 
@@ -149,7 +152,7 @@ export class FacturaAPIService implements ICertificationPackService {
         });
       });
 
-      const proportionalTaxes = Array.from(taxesMap.values()).map(t => ({
+      const proportionalTaxes = Array.from(taxesMap.values()).map((t) => ({
         ...t,
         base: Math.round(t.base * 100) / 100,
       }));
@@ -157,7 +160,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
       const paymentPayload = {
         type: 'P', // Tipo Pago (REP)
-        customer: (originalInvoice.customer as any).id || originalInvoice.customer,
+        customer: originalInvoice.customer.id || originalInvoice.customer,
         complements: [
           {
             type: 'pago',
@@ -168,7 +171,10 @@ export class FacturaAPIService implements ICertificationPackService {
                 currency: originalInvoice.currency || 'MXN',
                 related_documents: [
                   {
-                    uuid: originalInvoice.uuid || originalInvoice.cfdi_uuid || data.cfdi_uuid,
+                    uuid:
+                      originalInvoice.uuid ||
+                      originalInvoice.cfdi_uuid ||
+                      data.cfdi_uuid,
                     amount: data.amount,
                     last_balance: data.balance_before,
                     installment: data.payment_number,
@@ -359,10 +365,9 @@ export class FacturaAPIService implements ICertificationPackService {
 
   private buildCustomerData(client: any): any {
     // Obtener el tax_document del taxData (es un array, usar el primero o el marcado como main)
-    const taxData = client.taxData && client.taxData.length > 0 
-      ? client.taxData[0] 
-      : null;
-    
+    const taxData =
+      client.taxData && client.taxData.length > 0 ? client.taxData[0] : null;
+
     const taxDocument = taxData?.tax_document || client.tax_document || '';
     const taxSystem = taxData?.tax_system || '616';
 

@@ -18,4 +18,4 @@ import { AuthModule } from './auth.module';
   controllers: [AdminController],
   providers: [AdminService, SuperAdminGuard],
 })
- export class AdminModule {}
+export class AdminModule {}

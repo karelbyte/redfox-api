@@ -42,7 +42,12 @@ import { OrganizationModule } from './organization.module';
     OrganizationModule,
   ],
   controllers: [WarehouseAdjustmentController],
-  providers: [WarehouseAdjustmentService, WarehouseMapper, ProductMapper, CurrencyMapper],
+  providers: [
+    WarehouseAdjustmentService,
+    WarehouseMapper,
+    ProductMapper,
+    CurrencyMapper,
+  ],
   exports: [WarehouseAdjustmentService],
 })
 export class WarehouseAdjustmentModule {}

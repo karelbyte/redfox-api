@@ -48,16 +48,20 @@ export class AuditLogController {
     }
 
     if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeResponseData(item));
+      return data.map((item) => this.sanitizeResponseData(item));
     }
 
     const sanitized: any = {};
-    
+
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
-      
+
       // Verificar si el campo es sensible
-      if (this.SENSITIVE_FIELDS.some(sensitiveField => lowerKey.includes(sensitiveField))) {
+      if (
+        this.SENSITIVE_FIELDS.some((sensitiveField) =>
+          lowerKey.includes(sensitiveField),
+        )
+      ) {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
         // Recursivamente sanitizar objetos anidados
@@ -76,8 +80,12 @@ export class AuditLogController {
   private sanitizeAuditLog(log: any): any {
     return {
       ...log,
-      oldValues: log.oldValues ? this.sanitizeResponseData(log.oldValues) : null,
-      newValues: log.newValues ? this.sanitizeResponseData(log.newValues) : null,
+      oldValues: log.oldValues
+        ? this.sanitizeResponseData(log.oldValues)
+        : null,
+      newValues: log.newValues
+        ? this.sanitizeResponseData(log.newValues)
+        : null,
     };
   }
 
@@ -87,8 +95,12 @@ export class AuditLogController {
     @Param('entityId') entityId: string,
     @Query('limit') limit: number = 50,
   ) {
-    const logs = await this.auditLogService.findByEntity(entityType, entityId, limit);
-    return logs.map(log => this.sanitizeAuditLog(log));
+    const logs = await this.auditLogService.findByEntity(
+      entityType,
+      entityId,
+      limit,
+    );
+    return logs.map((log) => this.sanitizeAuditLog(log));
   }
 
   @Get('user')
@@ -97,7 +109,7 @@ export class AuditLogController {
     @Query('limit') limit: number = 100,
   ) {
     const logs = await this.auditLogService.findByUser(userId, limit);
-    return logs.map(log => this.sanitizeAuditLog(log));
+    return logs.map((log) => this.sanitizeAuditLog(log));
   }
 
   @Get('action/:action')
@@ -106,7 +118,7 @@ export class AuditLogController {
     @Query('limit') limit: number = 100,
   ) {
     const logs = await this.auditLogService.findByAction(action, limit);
-    return logs.map(log => this.sanitizeAuditLog(log));
+    return logs.map((log) => this.sanitizeAuditLog(log));
   }
 
   @Get('stats/:entityType')
@@ -136,7 +148,7 @@ export class AuditLogController {
 
     return {
       ...result,
-      data: result.data.map(log => this.sanitizeAuditLog(log)),
+      data: result.data.map((log) => this.sanitizeAuditLog(log)),
     };
   }
 }

@@ -63,7 +63,11 @@ import { TenantContext } from '../services/tenant-context.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [ClientImportController, ProductImportController, ProviderImportController],
+  controllers: [
+    ClientImportController,
+    ProductImportController,
+    ProviderImportController,
+  ],
   providers: [
     ClientImportService,
     ProductImportService,
@@ -75,6 +79,11 @@ import { TenantContext } from '../services/tenant-context.service';
     ImportProcessor,
     TenantContext,
   ],
-  exports: [ImportQueue, ClientImportService, ProductImportService, ProviderImportService],
+  exports: [
+    ImportQueue,
+    ClientImportService,
+    ProductImportService,
+    ProviderImportService,
+  ],
 })
 export class ImportModule {}

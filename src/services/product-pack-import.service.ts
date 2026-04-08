@@ -1,7 +1,11 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Product, ProductType, InventoryStrategy } from '../models/product.entity';
+import {
+  Product,
+  ProductType,
+  InventoryStrategy,
+} from '../models/product.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
@@ -22,8 +26,6 @@ export class ProductPackImportService {
   private readonly logger = new Logger(ProductPackImportService.name);
   private taxCache: Map<string, Tax> = new Map();
   private measurementUnitCache: Map<string, string> = new Map();
-
-
 
   constructor(
     @InjectRepository(Product)
@@ -50,7 +52,10 @@ export class ProductPackImportService {
   /**
    * Trunca un string al tamaño máximo especificado
    */
-  private truncate(value: string | undefined | null, maxLength: number): string {
+  private truncate(
+    value: string | undefined | null,
+    maxLength: number,
+  ): string {
     if (!value) return '';
     return value.length > maxLength ? value.substring(0, maxLength) : value;
   }
@@ -61,12 +66,12 @@ export class ProductPackImportService {
       .replace(/[^a-z0-9\s-]/g, '') // Remover caracteres especiales
       .replace(/\s+/g, '-') // Reemplazar espacios con guiones
       .slice(0, 100);
-    
+
     const existing = await this.productRepository.findOne({
       where: { slug: normalized, organization_id: this.organizationId },
       withDeleted: true,
     });
-    
+
     if (!existing) return normalized;
 
     // Si existe, agregar un sufijo único
@@ -192,7 +197,11 @@ export class ProductPackImportService {
 
       // Buscar por code + value — si ya existe (creado manualmente o en import anterior), reutilizar
       let tax = await this.taxRepository.findOne({
-        where: { code: taxName, value: taxValue, organization_id: this.organizationId },
+        where: {
+          code: taxName,
+          value: taxValue,
+          organization_id: this.organizationId,
+        },
       });
 
       if (!tax) {
@@ -214,7 +223,11 @@ export class ProductPackImportService {
         } catch (error: any) {
           if (error.code === '23505' || error.code === 'ER_DUP_ENTRY') {
             tax = await this.taxRepository.findOne({
-              where: { code, value: taxValue, organization_id: this.organizationId },
+              where: {
+                code,
+                value: taxValue,
+                organization_id: this.organizationId,
+              },
             });
             if (!tax) throw error;
           } else {
@@ -264,7 +277,9 @@ export class ProductPackImportService {
         'product.pack_list_not_supported',
         userId,
       );
-      throw new BadRequestException(msg || 'Pack does not support listing products');
+      throw new BadRequestException(
+        msg || 'Pack does not support listing products',
+      );
     }
 
     const products: ProductResponse[] = await packService.listProducts();
@@ -281,15 +296,17 @@ export class ProductPackImportService {
     for (const packProduct of products) {
       try {
         const existing = await this.productRepository.findOne({
-          where: { 
+          where: {
             product_pack_id: packProduct.id,
-            organization_id: this.organizationId 
+            organization_id: this.organizationId,
           },
           relations: ['taxes'],
           withDeleted: false,
         });
 
-        const taxes = await this.getOrCreateTaxesFromPackData(packProduct.taxes || []);
+        const taxes = await this.getOrCreateTaxesFromPackData(
+          packProduct.taxes || [],
+        );
 
         // Resolver unidad de medida desde los datos del pack (unit_key / unit_name)
         const measurementUnitId = await this.getOrCreateMeasurementUnit(
@@ -298,9 +315,14 @@ export class ProductPackImportService {
         );
 
         if (existing) {
-          existing.name = this.truncate(packProduct.description, 100) || existing.name;
-          existing.description = this.truncate(packProduct.description, 255) || existing.description;
-          existing.code = this.truncate(String(packProduct.product_key || '01010101'), 20);
+          existing.name =
+            this.truncate(packProduct.description, 100) || existing.name;
+          existing.description =
+            this.truncate(packProduct.description, 255) || existing.description;
+          existing.code = this.truncate(
+            String(packProduct.product_key || '01010101'),
+            20,
+          );
           if (packProduct.sku) {
             existing.sku = this.truncate(packProduct.sku, 50);
           }
@@ -320,15 +342,19 @@ export class ProductPackImportService {
 
         const productKey = String(packProduct.product_key);
         const code = productKey;
-        const sku = await this.generateUniqueSku(packProduct.sku || `PACK-${productKey}`);
+        const sku = await this.generateUniqueSku(
+          packProduct.sku || `PACK-${productKey}`,
+        );
         const slug = await this.generateUniqueSlug(
-          packProduct.description || `product-${productKey}`
+          packProduct.description || `product-${productKey}`,
         );
 
         const product = this.productRepository.create({
-          name: this.truncate(packProduct.description, 100) || 'Producto importado',
+          name:
+            this.truncate(packProduct.description, 100) || 'Producto importado',
           slug,
-          description: this.truncate(packProduct.description, 255) || 'Importado del pack',
+          description:
+            this.truncate(packProduct.description, 255) || 'Importado del pack',
           code,
           sku,
           product_pack_id: packProduct.id,

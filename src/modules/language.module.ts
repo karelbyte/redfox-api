@@ -11,7 +11,12 @@ import { OrganizationModule } from './organization.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Language]), OrganizationModule],
   controllers: [UserLanguageController],
-  providers: [LanguageService, TranslationService, UserContextService, TenantContext],
+  providers: [
+    LanguageService,
+    TranslationService,
+    UserContextService,
+    TenantContext,
+  ],
   exports: [LanguageService, TranslationService, UserContextService],
 })
 export class LanguageModule {}
