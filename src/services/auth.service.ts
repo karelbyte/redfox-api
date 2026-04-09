@@ -89,6 +89,7 @@ export class AuthService {
         email: user.email,
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
+        organization_referrer_code: user.organization?.referrer_code,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -130,6 +131,7 @@ export class AuthService {
         email: user.email,
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
+        organization_referrer_code: user.organization?.referrer_code,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,

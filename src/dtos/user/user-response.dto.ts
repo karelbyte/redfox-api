@@ -6,6 +6,7 @@ export class UserResponseDto {
   email: string;
   organization_id?: string;
   organization_slug?: string;
+  organization_referrer_code?: string;
   roles: RoleResponseDto[];
   permissions: string[];
   status: boolean;
@@ -18,6 +19,7 @@ export class UserWithPermissionDescriptionsDto {
   email: string;
   organization_id?: string;
   organization_slug?: string;
+  organization_referrer_code?: string;
   roles: RoleResponseDto[];
   permission_descriptions: string[];
   status: boolean;
