@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "🧪 Running tests before commit..."
-npx jest test/ --no-coverage --forceExit
+npm run test:all
 if [ $? -ne 0 ]; then
   echo "❌ Tests failed. Commit blocked."
   exit 1
