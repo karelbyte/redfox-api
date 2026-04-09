@@ -13,6 +13,7 @@ import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { SuperAdminGuard } from '../guards/super-admin.guard';
+import { PartialOrganizationCleanupDto } from '../dtos/admin/partial-organization-cleanup.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard, SuperAdminGuard)
@@ -129,6 +130,14 @@ export class AdminController {
   @Delete('organizations/:id')
   deleteOrganization(@Param('id') id: string) {
     return this.adminService.deleteOrganization(id);
+  }
+
+  @Post('organizations/:id/partial-cleanup')
+  partialCleanupOrganization(
+    @Param('id') id: string,
+    @Body() body: PartialOrganizationCleanupDto,
+  ) {
+    return this.adminService.partialCleanupOrganization(id, body.targets);
   }
 
   @Get('subscriptions')

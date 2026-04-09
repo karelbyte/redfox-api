@@ -123,7 +123,7 @@ export class ProductService {
       const product = this.productRepository.create({
         name: createProductDto.name,
         slug: createProductDto.slug,
-        description: createProductDto.description,
+        description: createProductDto.description?.trim() || createProductDto.name,
         sku: createProductDto.sku,
         code: createProductDto.code,
         barcode: createProductDto.barcode,

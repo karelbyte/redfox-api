@@ -19,7 +19,6 @@
     "test:cov": "jest --coverage",
     "test:import": "jest test/import --no-coverage --forceExit --clearCache && jest test/import --no-coverage --forceExit",
     "test:products": "jest test/products --no-coverage --forceExit",
-    "test:all": "jest test/ --no-coverage --forceExit",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:unit": "jest --testPathIgnorePatterns=e2e",
@@ -34,10 +33,10 @@
     "migration:drop": "npm run typeorm -- schema:drop -d src/config/typeorm-cli.config.ts",
     "db:reset": "npm run migration:drop && npm run migration:run",
     "seed": "ts-node -r tsconfig-paths/register src/db/seeds/seed.ts",
+    "seed:demo": "ts-node -r tsconfig-paths/register -r dotenv/config src/db/seeds/demo-data.seed.ts",
     "seed-js": "node dist/db/seeds/seed.js",
     "seed:permissions": "ts-node -r tsconfig-paths/register src/db/seeds/permissions-only.seed.ts",
-    "db:setup": "npm run migration:run && npm run seed-js",
-    "prepare": "husky"
+    "db:setup": "npm run migration:run && npm run seed-js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1015.0",

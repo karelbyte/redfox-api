@@ -44,16 +44,12 @@ export class EmailService {
     return orgId;
   }
 
-  async getConfig(userId: string): Promise<EmailConfigResponseDto> {
+  async getConfig(userId: string): Promise<EmailConfigResponseDto | null> {
     const config = await this.emailConfigRepository.findOne({
       where: { userId, organization_id: this.organizationId, isActive: true },
     });
 
-    if (!config) {
-      throw new BadRequestException(
-        'Email configuration not found. Please configure your email settings.',
-      );
-    }
+    if (!config) return null;
 
     return this.mapToResponseDto(config);
   }

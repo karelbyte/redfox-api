@@ -22,7 +22,7 @@ export class EmailConfigController {
   constructor(private readonly emailService: EmailService) {}
 
   @Get()
-  getConfig(@UserId() userId: string): Promise<EmailConfigResponseDto> {
+  getConfig(@UserId() userId: string): Promise<EmailConfigResponseDto | null> {
     return this.emailService.getConfig(userId);
   }
 

@@ -11,6 +11,11 @@ import { Plan } from '../models/plan.entity';
 import { User } from '../models/user.entity';
 import { AuditLogService } from './audit-log.service';
 import { AuditAction } from '../models/audit-log.entity';
+import {
+  PARTIAL_CLEANUP_RULES,
+  PARTIAL_CLEANUP_TARGET_ORDER,
+} from '../admin/partial-cleanup.config';
+import { PartialOrganizationCleanupTarget } from '../dtos/admin/partial-organization-cleanup.dto';
 
 @Injectable()
 export class AdminService {
@@ -53,6 +58,122 @@ export class AdminService {
     } else {
       await this.orgRepository.query('CALL delete_organization_data(?)', [id]);
     }
+  }
+
+  private ensurePartialCleanupIsAllowed(
+    targets: PartialOrganizationCleanupTarget[],
+  ) {
+    const selected = new Set(targets);
+    const violations = PARTIAL_CLEANUP_TARGET_ORDER.flatMap((target) => {
+      if (!selected.has(target)) {
+        return [];
+      }
+
+      const missing = PARTIAL_CLEANUP_RULES[target].requires.filter(
+        (requiredTarget) => !selected.has(requiredTarget),
+      );
+
+      if (!missing.length) {
+        return [];
+      }
+
+      return [
+        `${target} requiere también limpiar ${missing.join(', ')}`,
+      ];
+    });
+
+    if (violations.length) {
+      throw new BadRequestException(violations);
+    }
+  }
+
+  async partialCleanupOrganization(
+    id: string,
+    targets: PartialOrganizationCleanupTarget[],
+  ) {
+    const org = await this.orgRepository.findOne({ where: { id } });
+    if (!org) {
+      throw new NotFoundException('Organización no encontrada');
+    }
+    if (org.slug === 'landlord') {
+      throw new BadRequestException(
+        'No se puede limpiar parcialmente la organización principal del sistema',
+      );
+    }
+
+    const normalizedTargets = Array.from(new Set(targets));
+    if (!normalizedTargets.length) {
+      throw new BadRequestException(
+        'Debes seleccionar al menos un tipo de dato para limpiar',
+      );
+    }
+
+    this.ensurePartialCleanupIsAllowed(normalizedTargets);
+
+    const connectionType = this.orgRepository.manager.connection.options.type;
+    const cleanProducts = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.PRODUCTS,
+    );
+    const cleanClients = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.CLIENTS,
+    );
+    const cleanProviders = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.PROVIDERS,
+    );
+    const cleanQuotations = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.QUOTATIONS,
+    );
+    const cleanReceptions = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.RECEPTIONS,
+    );
+    const cleanInventoryStock = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.INVENTORY_STOCK,
+    );
+    const cleanSales = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.SALES,
+    );
+    const cleanInvoices = normalizedTargets.includes(
+      PartialOrganizationCleanupTarget.INVOICES,
+    );
+
+    if (connectionType === 'postgres') {
+      await this.orgRepository.query(
+        'SELECT partial_cleanup_organization_data($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [
+          id,
+          cleanProducts,
+          cleanClients,
+          cleanProviders,
+          cleanQuotations,
+          cleanReceptions,
+          cleanInventoryStock,
+          cleanSales,
+          cleanInvoices,
+        ],
+      );
+    } else {
+      await this.orgRepository.query(
+        'CALL partial_cleanup_organization_data(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          id,
+          cleanProducts,
+          cleanClients,
+          cleanProviders,
+          cleanQuotations,
+          cleanReceptions,
+          cleanInventoryStock,
+          cleanSales,
+          cleanInvoices,
+        ],
+      );
+    }
+
+    return {
+      organizationId: id,
+      cleanedTargets: normalizedTargets,
+      message:
+        'La limpieza parcial se completó correctamente para la organización seleccionada.',
+    };
   }
 
   async toggleOrganization(id: string, status: boolean) {
