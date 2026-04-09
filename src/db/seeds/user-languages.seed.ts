@@ -18,14 +18,17 @@ export class UserLanguagesSeed {
       });
 
       if (adminUser) {
-        // Look for the Spanish language
-        const spanishLanguage = await languageRepository.findOne({
-          where: { code: 'es' },
+        const existingAdminLanguage = await languageRepository.findOne({
+          where: {
+            organization_id: adminUser.organization_id,
+            userId: adminUser.id,
+          },
         });
 
-        if (spanishLanguage) {
+        if (!existingAdminLanguage) {
           // Create a specific entry for the admin user with Spanish
           const adminUserLanguage = languageRepository.create({
+            organization_id: adminUser.organization_id,
             userId: adminUser.id,
             code: 'es',
           });
@@ -33,9 +36,7 @@ export class UserLanguagesSeed {
           await languageRepository.save(adminUserLanguage);
           console.log('✅ Admin user language set to Spanish');
         } else {
-          console.log(
-            '⚠️  Spanish language not found, skipping admin user language setup',
-          );
+          console.log('ℹ️  Admin user language already configured, skipping');
         }
       }
 
