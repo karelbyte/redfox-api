@@ -1196,6 +1196,36 @@ export class PermissionsSeed {
         description:
           'Allows updating company settings | Permite actualizar configuración de empresa',
       },
+      {
+        code: 'bot_module_view',
+        module: 'bot',
+        description:
+          'Allows viewing the bot module | Permite ver el módulo del bot',
+      },
+      {
+        code: 'bot_read',
+        module: 'bot',
+        description:
+          'Allows reading bot settings | Permite leer la configuración del bot',
+      },
+      {
+        code: 'bot_update',
+        module: 'bot',
+        description:
+          'Allows updating bot settings | Permite actualizar la configuración del bot',
+      },
+      {
+        code: 'bot_connect',
+        module: 'bot',
+        description:
+          'Allows connecting the bot provider | Permite conectar el proveedor del bot',
+      },
+      {
+        code: 'bot_disconnect',
+        module: 'bot',
+        description:
+          'Allows disconnecting the bot provider | Permite desconectar el proveedor del bot',
+      },
 
       // Email Configuration Permissions
       {

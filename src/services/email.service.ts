@@ -25,6 +25,12 @@ interface EmailOptions {
   attachments?: any[];
 }
 
+export interface OrganizationEmailSendResult {
+  configured: boolean;
+  sent: boolean;
+  messageId?: string;
+}
+
 @Injectable()
 export class EmailService {
   constructor(
@@ -158,6 +164,56 @@ export class EmailService {
       };
     } catch (error) {
       throw new BadRequestException(`Failed to send email: ${error.message}`);
+    }
+  }
+
+  async sendOrganizationEmail(
+    organizationId: string,
+    emailOptions: EmailOptions,
+  ): Promise<OrganizationEmailSendResult> {
+    const config = await this.emailConfigRepository.findOne({
+      where: {
+        organization_id: organizationId,
+        isActive: true,
+      },
+      order: {
+        updatedAt: 'DESC',
+      },
+    });
+
+    if (!config) {
+      return {
+        configured: false,
+        sent: false,
+      };
+    }
+
+    try {
+      const transporter = this.createTransporter(config);
+
+      const mailOptions = {
+        from: `${config.fromName || config.user} <${config.fromEmail}>`,
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        html: emailOptions.html,
+        text: emailOptions.text,
+        cc: emailOptions.cc,
+        bcc: emailOptions.bcc,
+        attachments: emailOptions.attachments,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+
+      return {
+        configured: true,
+        sent: true,
+        messageId: info.messageId,
+      };
+    } catch (error) {
+      return {
+        configured: true,
+        sent: false,
+      };
     }
   }
 

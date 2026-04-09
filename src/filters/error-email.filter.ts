@@ -32,19 +32,17 @@ export class ErrorEmailFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.message
-        : exception instanceof Error
-          ? exception.message
-          : 'Unknown error';
+    const message = this.extractMessage(exception);
+    const normalizedMessage = Array.isArray(message)
+      ? message.join(' | ')
+      : message;
 
     const stack =
       exception instanceof Error ? exception.stack : String(exception);
 
     // Registrar el error en consola para monitoreo rápido
     this.logger.error(
-      `❌ [${status}] ${message} en ${request?.method} ${request?.url}`,
+      `❌ [${status}] ${normalizedMessage} en ${request?.method} ${request?.url}`,
       stack,
     );
 
@@ -62,8 +60,43 @@ export class ErrorEmailFilter implements ExceptionFilter {
 
     // Solo enviar email para errores de servidor (5xx)
     if (status >= 500) {
-      await this.sendErrorEmail(request, status, message, stack);
+      await this.sendErrorEmail(request, status, normalizedMessage, stack);
     }
+  }
+
+  private extractMessage(exception: unknown): string | string[] {
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+
+      if (typeof response === 'string') {
+        return response;
+      }
+
+      if (
+        response &&
+        typeof response === 'object' &&
+        'message' in response
+      ) {
+        const nestedMessage = (response as { message?: unknown }).message;
+        if (Array.isArray(nestedMessage)) {
+          return nestedMessage
+            .map((item) => String(item))
+            .filter((item) => item.length > 0);
+        }
+
+        if (typeof nestedMessage === 'string' && nestedMessage.length > 0) {
+          return nestedMessage;
+        }
+      }
+
+      return exception.message;
+    }
+
+    if (exception instanceof Error) {
+      return exception.message;
+    }
+
+    return 'Unknown error';
   }
 
   private async sendErrorEmail(

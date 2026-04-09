@@ -56,6 +56,7 @@ import { ReferralModule } from './modules/referral.module';
 import { SupportModule } from './modules/support.module';
 import { ImportModule } from './modules/import.module';
 import { RedisServiceModule } from './modules/redis-service.module';
+import { BotSettingsModule } from './modules/bot-settings.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -135,6 +136,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     ReferralModule,
     ImportModule,
     RedisServiceModule,
+    BotSettingsModule,
   ],
   controllers: [HomeController],
   providers: [

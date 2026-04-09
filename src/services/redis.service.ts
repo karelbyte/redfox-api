@@ -15,7 +15,7 @@ export class RedisService implements OnModuleDestroy {
   private client: Redis | null = null;
   private readonly memoryStore = new Map<
     string,
-    { value: string; expiresAt: number }
+    { value: string; expiresAt: number | null }
   >();
 
   constructor(private readonly configService: ConfigService) {
@@ -65,6 +65,18 @@ export class RedisService implements OnModuleDestroy {
     }
   }
 
+  /** Guarda un valor sin expiración */
+  async setPersistent(key: string, value: string): Promise<void> {
+    if (this.client) {
+      await this.client.set(key, value);
+    } else {
+      this.memoryStore.set(key, {
+        value,
+        expiresAt: null,
+      });
+    }
+  }
+
   /** Obtiene un valor */
   async get(key: string): Promise<string | null> {
     if (this.client) {
@@ -72,7 +84,7 @@ export class RedisService implements OnModuleDestroy {
     }
     const entry = this.memoryStore.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
+    if (entry.expiresAt !== null && Date.now() > entry.expiresAt) {
       this.memoryStore.delete(key);
       return null;
     }
@@ -86,7 +98,7 @@ export class RedisService implements OnModuleDestroy {
     }
     const entry = this.memoryStore.get(key);
     if (!entry) return false;
-    if (Date.now() > entry.expiresAt) {
+    if (entry.expiresAt !== null && Date.now() > entry.expiresAt) {
       this.memoryStore.delete(key);
       return false;
     }
@@ -99,6 +111,38 @@ export class RedisService implements OnModuleDestroy {
       await this.client.del(key);
     } else {
       this.memoryStore.delete(key);
+    }
+  }
+
+  /** Elimina todas las claves que empiecen con un prefijo */
+  async deleteByPrefix(prefix: string): Promise<void> {
+    if (this.client) {
+      let cursor = '0';
+      const pattern = `${prefix}*`;
+
+      do {
+        const [nextCursor, keys] = await this.client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
+
+        if (keys.length > 0) {
+          await this.client.del(...keys);
+        }
+
+        cursor = nextCursor;
+      } while (cursor !== '0');
+
+      return;
+    }
+
+    for (const key of this.memoryStore.keys()) {
+      if (key.startsWith(prefix)) {
+        this.memoryStore.delete(key);
+      }
     }
   }
 
@@ -128,7 +172,7 @@ export class RedisService implements OnModuleDestroy {
     // Fallback en memoria
     const entry = this.memoryStore.get(key);
     const now = Date.now();
-    if (!entry || now > entry.expiresAt) {
+    if (!entry || entry.expiresAt === null || now > entry.expiresAt) {
       this.memoryStore.set(key, {
         value: '1',
         expiresAt: now + ttlSeconds * 1000,
