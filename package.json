@@ -12,7 +12,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -36,7 +36,7 @@
     "seed:demo": "ts-node -r tsconfig-paths/register -r dotenv/config src/db/seeds/demo-data.seed.ts",
     "seed-js": "node dist/src/db/seeds/seed.js",
     "seed:permissions": "ts-node -r tsconfig-paths/register src/db/seeds/permissions-only.seed.ts",
-    "db:setup": "npm run migration:run && npm run seed-js"
+    "db:setup": "npm run migration:run && npm run seed"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1015.0",

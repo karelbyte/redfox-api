@@ -56,4 +56,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Comando de inicio - ejecutar directamente node
-CMD ["dumb-init", "node", "dist/main.js"]
+CMD ["dumb-init", "node", "dist/src/main.js"]
