@@ -96,7 +96,8 @@ export class ProductPackSyncService {
       }
 
       const productData = this.buildProductData(product, price);
-      console.log(product.product_pack_id) 
+      let packResponse: ProductResponse | null = null;
+
       // Si ya tiene product_pack_id, actualizar en el pack
       if (product.product_pack_id) {
         try {
@@ -110,7 +111,10 @@ export class ProductPackSyncService {
             taxes: productData.taxes,
           };
 
-          await packService.updateProduct(product.product_pack_id, patch);
+          packResponse = await packService.updateProduct(
+            product.product_pack_id,
+            patch,
+          );
           this.logger.log(
             `Product updated in pack: ${product.product_pack_id}`,
           );
@@ -125,35 +129,39 @@ export class ProductPackSyncService {
 
       // Si no tiene product_pack_id, buscar por SKU o crear nuevo
       if (!product.product_pack_id) {
-        let existingProduct: ProductResponse | null = null;
+        const existingProduct: ProductResponse | null = null;
 
         // Buscar por SKU si el pack lo soporta
         if (productData.sku && packService.findProductBySku) {
           try {
-            existingProduct = await packService.findProductBySku(
-              productData.sku,
-            );
+            packResponse = await packService.findProductBySku(productData.sku);
+            if (packResponse) {
+              this.logger.log(
+                `Product found in pack by SKU: ${productData.sku}. ID: ${packResponse.id}`,
+              );
+              product.product_pack_id = packResponse.id;
+            }
           } catch (error) {
-            // Si no encuentra o no soporta búsqueda, continuar
             this.logger.debug(`Product not found by SKU: ${productData.sku}`);
           }
         }
 
-        if (existingProduct) {
-          // Producto encontrado en el pack, vincularlo
-          this.logger.log(
-            `Product found in pack by SKU: ${productData.sku}. ID: ${existingProduct.id}`,
-          );
-          product.product_pack_id = existingProduct.id;
-        } else {
+        if (!product.product_pack_id) {
           // Crear nuevo producto en el pack
-          const packResponse: ProductResponse =
-            await packService.createProduct(productData);
-          product.product_pack_id = packResponse.id;
-          this.logger.log(`Product created in pack: ${packResponse.id}`);
+          const created = await packService.createProduct(productData);
+          packResponse = created;
+          product.product_pack_id = created.id;
+          this.logger.log(`Product created in pack: ${created.id}`);
         }
+      }
 
-        // Guardar el product_pack_id en la base de datos
+      // Guardar el product_pack_id y el payload EXACTO que se mandó al pack (si lo tenemos)
+      if (packResponse?.payload_send) {
+        product.pack_payload = packResponse.payload_send;
+        await this.productRepository.save(product);
+      } else if (product.product_pack_id) {
+        // Fallback: si no tenemos payload_send pero sí ID, al menos guardamos los datos actuales
+        product.pack_payload = productData;
         await this.productRepository.save(product);
       }
 

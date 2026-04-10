@@ -79,7 +79,10 @@ export class ClientImportService {
       const line = lines[i].trim();
       if (!line) continue;
       const values = this.splitCSVLine(line, sep);
-      const firstVal = (values[0] || '').trim().replace(/^"(.*)"$/, '$1').toLowerCase();
+      const firstVal = (values[0] || '')
+        .trim()
+        .replace(/^"(.*)"$/, '$1')
+        .toLowerCase();
       // Saltar filas de metadatos de la plantilla
       if (this.isMetadataRow(firstVal)) continue;
       const obj: Record<string, string> = {};
@@ -113,8 +116,19 @@ export class ClientImportService {
   }
 
   private isMetadataRow(firstVal: string): boolean {
-    const metaValues = ['requerido', 'opcional', 'required', 'optional', '必填', '可选'];
-    return metaValues.includes(firstVal) || firstVal.startsWith('tipo:') || firstVal.startsWith('type:');
+    const metaValues = [
+      'requerido',
+      'opcional',
+      'required',
+      'optional',
+      '必填',
+      '可选',
+    ];
+    return (
+      metaValues.includes(firstVal) ||
+      firstVal.startsWith('tipo:') ||
+      firstVal.startsWith('type:')
+    );
   }
 
   private splitCSVLine(line: string, sep: string): string[] {

@@ -122,7 +122,9 @@ export class AuditSubscriber implements EntitySubscriberInterface {
       }
     }
 
-    return Object.keys(summary).length ? summary : `[${entityName || 'Object'}]`;
+    return Object.keys(summary).length
+      ? summary
+      : `[${entityName || 'Object'}]`;
   }
 
   private getUpdatedKeys(event: UpdateEvent<any>): string[] {

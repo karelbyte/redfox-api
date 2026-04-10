@@ -435,7 +435,10 @@ export class AuthService {
         );
       } catch (err: any) {
         // No bloquear el registro si falla la notificación al admin
-        console.warn('[Auth] Failed to send admin registration notification:', err?.message);
+        console.warn(
+          '[Auth] Failed to send admin registration notification:',
+          err?.message,
+        );
       }
     }
   }

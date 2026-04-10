@@ -120,6 +120,10 @@ export class TranslationService {
       es: 'Proveedor eliminado exitosamente',
       en: 'Provider deleted successfully',
     },
+    'provider.cannot_delete_in_use': {
+      es: 'No se puede eliminar el proveedor porque tiene historial (Órdenes: {purchaseOrderCount}, Recepciones: {receptionCount}, Gastos: {expenseCount}, CxP: {accountPayableCount}, Devoluciones: {returnCount}).',
+      en: 'Cannot delete provider because it has history (Orders: {purchaseOrderCount}, Receptions: {receptionCount}, Expenses: {expenseCount}, AP: {accountPayableCount}, Returns: {returnCount}).',
+    },
 
     // Reception messages
     'reception.not_found': {
@@ -693,8 +697,8 @@ export class TranslationService {
       en: 'Client deleted successfully',
     },
     'client.cannot_delete_in_use': {
-      es: 'No se puede eliminar el cliente porque tiene historial (Facturas: {invoiceCount}, Ventas: {withdrawalCount}).',
-      en: 'Cannot delete client because it has history (Invoices: {invoiceCount}, Sales: {withdrawalCount}).',
+      es: 'No se puede eliminar el cliente porque tiene historial (Facturas: {invoiceCount}, Retiros: {withdrawalCount}, Cotizaciones: {quotationCount}).',
+      en: 'Cannot delete client because it has history (Invoices: {invoiceCount}, Sales: {withdrawalCount}, Quotations: {quotationCount}).',
     },
     'reception.fefo_requires_expiration_date': {
       es: 'El producto usa estrategia FEFO. La fecha de vencimiento es obligatoria.',
@@ -707,6 +711,10 @@ export class TranslationService {
     'client.pack_list_not_supported': {
       es: 'El pack activo no soporta listar clientes para importación.',
       en: 'The active pack does not support listing customers for import.',
+    },
+    'client.pack_delete_error': {
+      es: 'Error al eliminar el cliente en el sistema del PAC: {error}',
+      en: 'Error deleting client from PAC system: {error}',
     },
 
     // Product pack messages
@@ -956,7 +964,6 @@ export class TranslationService {
       es: 'Error al obtener estado del CFDI de Factura Green',
       en: 'Error getting CFDI status from Factura Green',
     },
-
 
     // Quotation messages
     'quotation.not_found': {

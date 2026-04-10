@@ -77,7 +77,10 @@ export class ProviderImportService {
       const line = lines[i].trim();
       if (!line) continue;
       const values = this.splitCSVLine(line, sep);
-      const firstVal = (values[0] || '').trim().replace(/^"(.*)"$/, '$1').toLowerCase();
+      const firstVal = (values[0] || '')
+        .trim()
+        .replace(/^"(.*)"$/, '$1')
+        .toLowerCase();
       if (this.isMetadataRow(firstVal)) continue;
       const obj: Record<string, string> = {};
       headers.forEach((h, idx) => {
@@ -108,8 +111,19 @@ export class ProviderImportService {
   }
 
   private isMetadataRow(firstVal: string): boolean {
-    const metaValues = ['requerido', 'opcional', 'required', 'optional', '必填', '可选'];
-    return metaValues.includes(firstVal) || firstVal.startsWith('tipo:') || firstVal.startsWith('type:');
+    const metaValues = [
+      'requerido',
+      'opcional',
+      'required',
+      'optional',
+      '必填',
+      '可选',
+    ];
+    return (
+      metaValues.includes(firstVal) ||
+      firstVal.startsWith('tipo:') ||
+      firstVal.startsWith('type:')
+    );
   }
 
   private splitCSVLine(line: string, sep: string): string[] {

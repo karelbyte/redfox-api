@@ -69,7 +69,7 @@ export class ProductResponseDto {
   @Expose()
   @Transform(({ value }) => {
     try {
-      return JSON.parse(value);
+      return JSON.parse(value as string) as string[];
     } catch {
       return [];
     }
@@ -94,4 +94,7 @@ export class ProductResponseDto {
 
   @Expose()
   created_at: Date;
+
+  @Expose()
+  isSyncWithPack: boolean;
 }

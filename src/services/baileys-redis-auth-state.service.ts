@@ -21,7 +21,9 @@ export class BaileysRedisAuthStateService {
   }
 
   async clearSession(organizationId: string): Promise<void> {
-    await this.redisService.deleteByPrefix(this.getSessionPrefix(organizationId));
+    await this.redisService.deleteByPrefix(
+      this.getSessionPrefix(organizationId),
+    );
   }
 
   async createAuthState(organizationId: string): Promise<{

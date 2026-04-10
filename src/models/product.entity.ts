@@ -152,6 +152,9 @@ export class Product {
   @Column({ length: 255, nullable: true })
   product_pack_id: string;
 
+  @Column({ name: 'pack_payload', type: 'jsonb', nullable: true })
+  pack_payload: any;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -189,11 +189,19 @@ export class ProductController {
   }
 
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @UserId() userId: string,
-  ): Promise<void> {
+  ) {
     return this.productService.remove(id, userId);
+  }
+
+  @Post('sync/:id')
+  async syncWithPack(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserId() userId: string,
+  ) {
+    return this.productService.syncWithPack(id, userId);
   }
 
   @Post('bulk-delete')

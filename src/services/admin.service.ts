@@ -77,9 +77,7 @@ export class AdminService {
         return [];
       }
 
-      return [
-        `${target} requiere también limpiar ${missing.join(', ')}`,
-      ];
+      return [`${target} requiere también limpiar ${missing.join(', ')}`];
     });
 
     if (violations.length) {

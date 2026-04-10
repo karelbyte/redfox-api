@@ -18,6 +18,7 @@ import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { ClientWithPackStatusResponseDto } from '../dtos/client/client-with-pack-status-response.dto';
 import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
 import { BulkDeleteClientDto } from '../dtos/client/bulk-delete-client.dto';
+import { BulkDeleteClientResponseDto } from '../dtos/client/bulk-delete-client-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
@@ -81,8 +82,11 @@ export class ClientController {
   }
 
   @Post('bulk-delete')
-  removeMany(@Body() bulkDeleteClientDto: BulkDeleteClientDto): Promise<void> {
-    return this.clientService.removeMany(bulkDeleteClientDto.ids);
+  removeMany(
+    @Body() bulkDeleteClientDto: BulkDeleteClientDto,
+    @UserId() userId: string,
+  ): Promise<BulkDeleteClientResponseDto> {
+    return this.clientService.removeMany(bulkDeleteClientDto.ids, userId);
   }
 
   /**

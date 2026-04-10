@@ -15,6 +15,10 @@ import { UpdateClientDto } from '../dtos/client/update-client.dto';
 import { ClientResponseDto } from '../dtos/client/client-response.dto';
 import { ClientWithPackStatusResponseDto } from '../dtos/client/client-with-pack-status-response.dto';
 import { ImportClientsFromPackResponseDto } from '../dtos/client/import-clients-from-pack-response.dto';
+import {
+  BulkDeleteClientResponseDto,
+  BulkDeleteResultDto,
+} from '../dtos/client/bulk-delete-client-response.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { ClientMapper } from './mappers/client.mapper';
@@ -359,6 +363,7 @@ export class ClientService {
       .where('quotation.client_id = :id', { id })
       .getCount();
 
+    // Bloquear si hay CUALQUIER historial (Facturas, Retiros/Ventas o Cotizaciones)
     if (invoiceCount > 0 || withdrawalCount > 0 || quotationCount > 0) {
       const message = await this.translationService.translate(
         'client.cannot_delete_in_use',
@@ -390,9 +395,12 @@ export class ClientService {
           error?.message?.toLowerCase().includes('not configured');
 
         if (!isPackUnavailable) {
-          throw new BadRequestException(
-            error?.message || 'Client cannot be deleted in the pack system.',
+          const packError = await this.translationService.translate(
+            'client.pack_delete_error',
+            userId,
+            { error: error?.message || '' },
           );
+          throw new BadRequestException(packError);
         }
       }
     }
@@ -420,39 +428,54 @@ export class ClientService {
     }
   }
 
-  async removeMany(ids: string[]): Promise<void> {
-    // Obtener los clientes antes de eliminarlos para el log de auditoría
-    const clients = await this.clientRepository.find({
-      where: {
-        id: In(ids),
-        organization_id: this.organizationId,
-      },
-      withDeleted: false,
-    });
+  async removeMany(
+    ids: string[],
+    userId?: string,
+  ): Promise<BulkDeleteClientResponseDto> {
+    const results: BulkDeleteResultDto[] = [];
 
-    await this.clientRepository.softDelete({
-      id: In(ids),
-      organization_id: this.organizationId,
-    });
+    for (const id of ids) {
+      // Intentar obtener el cliente para tener su nombre/código incluso si falla el borrado
+      const client = await this.clientRepository.findOne({
+        where: { id, organization_id: this.organizationId },
+        withDeleted: false,
+      });
 
-    // Log manual de auditoría para cada cliente eliminado
-    for (const client of clients) {
+      if (!client) {
+        results.push({
+          id,
+          code: 'N/A',
+          name: 'N/A',
+          success: false,
+          error: await this.translationService.translate(
+            'client.not_found',
+            userId,
+            { id },
+          ),
+        });
+        continue;
+      }
+
       try {
-        await this.auditLogService.log(
-          'SYSTEM', // No tenemos userId en bulk delete
-          'Client',
-          client.id,
-          AuditAction.DELETE,
-          client,
-          undefined,
-          `Bulk soft deleted client: ${client.name}`,
-        );
+        await this.remove(id, userId);
+        results.push({
+          id: client.id,
+          code: client.code,
+          name: client.name,
+          success: true,
+        });
       } catch (error: any) {
-        this.logger.warn(
-          `Failed to create audit log for bulk client deletion (${client.id}): ${error?.message}`,
-        );
+        results.push({
+          id: client.id,
+          code: client.code,
+          name: client.name,
+          success: false,
+          error: error.message || 'Error deleting client',
+        });
       }
     }
+
+    return { results };
   }
 
   async updateBalance(

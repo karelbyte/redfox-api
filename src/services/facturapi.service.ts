@@ -643,6 +643,7 @@ export class FacturaAPIService implements ICertificationPackService {
           customerAny.created_at instanceof Date
             ? customerAny.created_at.toISOString()
             : String(customerAny.created_at || new Date().toISOString()),
+        payload_send: payload,
       };
       return response;
     } catch (error: any) {
@@ -704,6 +705,7 @@ export class FacturaAPIService implements ICertificationPackService {
           customerAny.created_at instanceof Date
             ? customerAny.created_at.toISOString()
             : String(customerAny.created_at || new Date().toISOString()),
+        payload_send: payload,
       };
       return response;
     } catch (error: any) {
@@ -869,6 +871,7 @@ export class FacturaAPIService implements ICertificationPackService {
             ? created.created_at
             : ((created.created_at as Date)?.toISOString?.() ??
               new Date().toISOString()),
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
@@ -970,6 +973,7 @@ export class FacturaAPIService implements ICertificationPackService {
             ? updated.created_at
             : ((updated.created_at as Date)?.toISOString?.() ??
               new Date().toISOString()),
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;

@@ -82,10 +82,20 @@ export class BotConversation {
   @Column({ name: 'customer_phone', type: 'varchar', length: 40 })
   customer_phone: string;
 
-  @Column({ name: 'customer_jid', type: 'varchar', length: 120, nullable: true })
+  @Column({
+    name: 'customer_jid',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
   customer_jid: string | null;
 
-  @Column({ name: 'customer_name', type: 'varchar', length: 150, nullable: true })
+  @Column({
+    name: 'customer_name',
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
   customer_name: string | null;
 
   @Column({

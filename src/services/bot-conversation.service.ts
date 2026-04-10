@@ -10,10 +10,7 @@ import {
   BotConversationStatus,
   BotConversationStep,
 } from '../models/bot-conversation.entity';
-import {
-  BotMessage,
-  BotMessageDirection,
-} from '../models/bot-message.entity';
+import { BotMessage, BotMessageDirection } from '../models/bot-message.entity';
 import { Client } from '../models/client.entity';
 import { Product } from '../models/product.entity';
 import { CompanySettings } from '../models/company-settings.entity';
@@ -144,8 +141,7 @@ const CONVERSATION_COPY: Record<SupportedBotLocale, ConversationCopy> = {
     welcomeBack: (name) => `Bienvenido otra vez, ${name}.`,
     intro: (assistant, company) => `Hola, soy ${assistant} de ${company}.`,
     quotePdfAttached: 'Te adjunto el PDF de tu cotización por este medio.',
-    quoteEmailSent: (email) =>
-      `También envié una copia al correo ${email}.`,
+    quoteEmailSent: (email) => `También envié una copia al correo ${email}.`,
     quoteEmailFailed:
       'La cotización quedó registrada, pero no pude enviarla por correo en este momento.',
   },
@@ -207,8 +203,7 @@ const CONVERSATION_COPY: Record<SupportedBotLocale, ConversationCopy> = {
     welcomeBack: (name) => `Welcome back, ${name}.`,
     intro: (assistant, company) => `Hi, I am ${assistant} from ${company}.`,
     quotePdfAttached: 'I am attaching the PDF of your quotation here.',
-    quoteEmailSent: (email) =>
-      `I also sent a copy to ${email}.`,
+    quoteEmailSent: (email) => `I also sent a copy to ${email}.`,
     quoteEmailFailed:
       'The quotation was registered, but I could not send it by email right now.',
   },
@@ -217,25 +212,18 @@ const CONVERSATION_COPY: Record<SupportedBotLocale, ConversationCopy> = {
     assistantFallback: '您的销售助手',
     genericHelp:
       '我可以帮你创建正式报价。请发送你要询价的产品，或直接说明需要报价。',
-    askClientName:
-      '在创建报价前，请先告诉我你的姓名，以便把你登记为客户。',
+    askClientName: '在创建报价前，请先告诉我你的姓名，以便把你登记为客户。',
     askClientEmail:
       '现在请告诉我你的电子邮箱，我可以把报价 PDF 发给你。如果你想跳过，请回复 跳过。',
-    askProduct:
-      '好的。现在请发送你要报价的产品名称、代码或 SKU。',
+    askProduct: '好的。现在请发送你要报价的产品名称、代码或 SKU。',
     askQuantity: (productName) => `请告诉我 ${productName} 需要的数量。`,
-    invalidClientName:
-      '我需要更清楚的客户姓名。你可以直接发送完整姓名。',
-    invalidEmail:
-      '这个邮箱看起来无效。请发送正确的邮箱，或回复 跳过 继续。',
+    invalidClientName: '我需要更清楚的客户姓名。你可以直接发送完整姓名。',
+    invalidEmail: '这个邮箱看起来无效。请发送正确的邮箱，或回复 跳过 继续。',
     noProductsFound:
       '我没有找到符合该条件的产品。请换一个名称、代码或 SKU 再试一次。',
-    selectProduct:
-      '我找到了多个选项。请回复正确产品前面的编号：',
-    invalidSelection:
-      '我无法识别你选择的选项。请直接回复产品编号。',
-    invalidQuantity:
-      '数量无效。请发送大于 0 的数字，例如 2 或 1.5。',
+    selectProduct: '我找到了多个选项。请回复正确产品前面的编号：',
+    invalidSelection: '我无法识别你选择的选项。请直接回复产品编号。',
+    invalidQuantity: '数量无效。请发送大于 0 的数字，例如 2 或 1.5。',
     reviewHeader: '这是你当前报价的汇总：',
     reviewOptions: [
       '1. 再添加一个产品',
@@ -248,31 +236,22 @@ const CONVERSATION_COPY: Record<SupportedBotLocale, ConversationCopy> = {
       `你的报价已成功创建，编号为 ${code}。预估总额：$${total.toFixed(2)}。`,
     quoteCreatedNextStep:
       '这份报价已经登记到系统中。如果你还要继续报价，请直接发送下一个产品；如果你需要人工协助，请回复顾问。',
-    quoteFailed:
-      '我暂时无法创建报价。请稍后再试，或联系人工顾问。',
-    handoff:
-      '好的，我会把这段对话转给销售顾问继续跟进。',
-    cancelled:
-      '这次报价已经取消。你想重新开始时，直接告诉我即可。',
-    expired:
-      '之前的会话已经过期。我们重新开始一份新的报价。',
+    quoteFailed: '我暂时无法创建报价。请稍后再试，或联系人工顾问。',
+    handoff: '好的，我会把这段对话转给销售顾问继续跟进。',
+    cancelled: '这次报价已经取消。你想重新开始时，直接告诉我即可。',
+    expired: '之前的会话已经过期。我们重新开始一份新的报价。',
     stockLabel: '库存',
     quantityLabel: '数量',
     totalLabel: '预估总额',
-    addMoreAcknowledgement:
-      '好的，请发送下一个要加入报价的产品。',
-    clientRegistered: (name) =>
-      `好的，${name}，我已经把你登记到本次报价里了。`,
-    emailRegistered: (email) =>
-      `好的，我也记录了你的邮箱：${email}。`,
+    addMoreAcknowledgement: '好的，请发送下一个要加入报价的产品。',
+    clientRegistered: (name) => `好的，${name}，我已经把你登记到本次报价里了。`,
+    emailRegistered: (email) => `好的，我也记录了你的邮箱：${email}。`,
     emailSkipped: '我们先在没有邮箱的情况下继续。',
     welcomeBack: (name) => `欢迎回来，${name}。`,
     intro: (assistant, company) => `你好，我是 ${company} 的${assistant}。`,
     quotePdfAttached: '我会在这里附上你的报价 PDF。',
-    quoteEmailSent: (email) =>
-      `我也已经把一份副本发送到 ${email}。`,
-    quoteEmailFailed:
-      '报价已经登记到系统中，但我暂时无法通过邮件发送。',
+    quoteEmailSent: (email) => `我也已经把一份副本发送到 ${email}。`,
+    quoteEmailFailed: '报价已经登记到系统中，但我暂时无法通过邮件发送。',
   },
 };
 
@@ -492,11 +471,9 @@ export class BotConversationService {
       conversation.customer_name &&
       reply
     ) {
-      reply = [
-        intro,
-        copy.welcomeBack(conversation.customer_name),
-        reply,
-      ].join('\n');
+      reply = [intro, copy.welcomeBack(conversation.customer_name), reply].join(
+        '\n',
+      );
     }
 
     return {
@@ -603,9 +580,11 @@ export class BotConversationService {
     conversation.last_message_at = new Date();
     await this.conversationRepository.save(conversation);
 
-    return [intro, copy.clientRegistered(client.name), copy.askClientEmail].join(
-      '\n',
-    );
+    return [
+      intro,
+      copy.clientRegistered(client.name),
+      copy.askClientEmail,
+    ].join('\n');
   }
 
   private async captureClientEmail(
@@ -661,7 +640,10 @@ export class BotConversationService {
     copy: ConversationCopy,
   ): Promise<string> {
     const query = messageText.trim();
-    const products = await this.searchProducts(conversation.organization_id, query);
+    const products = await this.searchProducts(
+      conversation.organization_id,
+      query,
+    );
     const context = this.ensureContext(conversation);
     context.pendingProductQuery = query;
 
@@ -809,9 +791,10 @@ export class BotConversationService {
       return this.captureProductQuery(conversation, messageText, copy);
     }
 
-    return [this.buildDraftSummary(context.items, copy), copy.askReviewChoice].join(
-      '\n',
-    );
+    return [
+      this.buildDraftSummary(context.items, copy),
+      copy.askReviewChoice,
+    ].join('\n');
   }
 
   private async startConversation(params: {
@@ -977,7 +960,8 @@ export class BotConversationService {
   private async handlePossiblyExpiredConversation(
     conversation: BotConversation,
   ): Promise<BotConversation | null> {
-    const lastMessageTime = conversation.last_message_at ?? conversation.updated_at;
+    const lastMessageTime =
+      conversation.last_message_at ?? conversation.updated_at;
     if (Date.now() - lastMessageTime.getTime() < 24 * 60 * 60 * 1000) {
       return conversation;
     }
@@ -1018,7 +1002,10 @@ export class BotConversationService {
     customerName: string,
     customerPhone: string,
   ): Promise<Client> {
-    const existing = await this.findClientByPhone(organizationId, customerPhone);
+    const existing = await this.findClientByPhone(
+      organizationId,
+      customerPhone,
+    );
     if (existing) {
       return existing;
     }
@@ -1218,9 +1205,7 @@ export class BotConversationService {
     return CONVERSATION_COPY.es;
   }
 
-  private ensureContext(
-    conversation: BotConversation,
-  ): BotConversationContext {
+  private ensureContext(conversation: BotConversation): BotConversationContext {
     if (!conversation.context_json) {
       conversation.context_json = {
         clientName: conversation.customer_name,

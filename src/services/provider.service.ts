@@ -18,6 +18,15 @@ import { ProviderAddress } from '../models/provider-address.entity';
 import { ProviderTaxData } from '../models/provider-tax-data.entity';
 import { ProviderCredit } from '../models/provider-credit.entity';
 import { TenantContext } from './tenant-context.service';
+import { PurchaseOrder } from '../models/purchase-order.entity';
+import { Reception } from '../models/reception.entity';
+import { Expense } from '../models/expense.entity';
+import { AccountPayable } from '../models/account-payable.entity';
+import { Return } from '../models/return.entity';
+import {
+  BulkDeleteProviderResponseDto,
+  BulkDeleteProviderResultDto,
+} from '../dtos/provider/bulk-delete-provider-response.dto';
 
 @Injectable()
 export class ProviderService {
@@ -30,6 +39,16 @@ export class ProviderService {
     private readonly providerTaxDataRepository: Repository<ProviderTaxData>,
     @InjectRepository(ProviderCredit)
     private readonly providerCreditRepository: Repository<ProviderCredit>,
+    @InjectRepository(PurchaseOrder)
+    private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
+    @InjectRepository(Reception)
+    private readonly receptionRepository: Repository<Reception>,
+    @InjectRepository(Expense)
+    private readonly expenseRepository: Repository<Expense>,
+    @InjectRepository(AccountPayable)
+    private readonly accountPayableRepository: Repository<AccountPayable>,
+    @InjectRepository(Return)
+    private readonly returnRepository: Repository<Return>,
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
     private readonly surrogateService: SurrogateService,
@@ -268,14 +287,106 @@ export class ProviderService {
       );
       throw new NotFoundException(message);
     }
+
+    // Strict dependency checks
+    const purchaseOrderCount = await this.purchaseOrderRepository
+      .createQueryBuilder('po')
+      .where('po.provider_id = :id', { id })
+      .getCount();
+
+    const receptionCount = await this.receptionRepository
+      .createQueryBuilder('rc')
+      .where('rc.provider_id = :id', { id })
+      .getCount();
+
+    const expenseCount = await this.expenseRepository
+      .createQueryBuilder('ex')
+      .where('ex.providerId = :id', { id })
+      .getCount();
+
+    const accountPayableCount = await this.accountPayableRepository
+      .createQueryBuilder('ap')
+      .where('ap.providerId = :id', { id })
+      .getCount();
+
+    const returnCount = await this.returnRepository
+      .createQueryBuilder('rt')
+      .where('rt.target_provider_id = :id', { id })
+      .getCount();
+
+    if (
+      purchaseOrderCount > 0 ||
+      receptionCount > 0 ||
+      expenseCount > 0 ||
+      accountPayableCount > 0 ||
+      returnCount > 0
+    ) {
+      const message = await this.translationService.translate(
+        'provider.cannot_delete_in_use',
+        userId,
+        {
+          purchaseOrderCount,
+          receptionCount,
+          expenseCount,
+          accountPayableCount,
+          returnCount,
+        },
+      );
+      throw new BadRequestException(message);
+    }
+
     await this.providerRepository.softDelete(id);
   }
 
-  async removeMany(ids: string[], userId?: string): Promise<void> {
-    await this.providerRepository.softDelete({
-      id: In(ids),
-      organization_id: this.organizationId,
-    });
+  async removeMany(
+    ids: string[],
+    userId?: string,
+  ): Promise<BulkDeleteProviderResponseDto> {
+    const results: BulkDeleteProviderResultDto[] = [];
+    let totalDeleted = 0;
+
+    for (const id of ids) {
+      const provider = await this.providerRepository.findOne({
+        where: { id, organization_id: this.organizationId },
+      });
+
+      if (!provider) {
+        results.push({
+          id,
+          code: 'N/A',
+          name: 'N/A',
+          success: false,
+          error: 'Not found',
+        });
+        continue;
+      }
+
+      try {
+        await this.remove(id, userId);
+        results.push({
+          id,
+          code: provider.code,
+          name: provider.name,
+          success: true,
+        });
+        totalDeleted++;
+      } catch (error) {
+        results.push({
+          id,
+          code: provider.code,
+          name: provider.name,
+          success: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return {
+      results,
+      totalRequested: ids.length,
+      totalDeleted,
+      totalFailed: ids.length - totalDeleted,
+    };
   }
 
   async updateBalance(

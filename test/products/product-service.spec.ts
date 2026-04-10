@@ -3,12 +3,14 @@
  * Se testean los métodos que no requieren infraestructura NestJS.
  */
 
-import { ProductType, InventoryStrategy } from '../../src/models/product.entity';
+import {
+  ProductType,
+  InventoryStrategy,
+} from '../../src/models/product.entity';
 
 // ─── Tests de lógica de negocio ───────────────────────────────────────────────
 
 describe('Product business logic', () => {
-
   describe('ProductType enum', () => {
     it('tiene los tres tipos correctos', () => {
       expect(ProductType.TANGIBLE).toBe('tangible');
@@ -51,7 +53,9 @@ describe('Product business logic', () => {
     });
 
     it('elimina caracteres especiales', () => {
-      expect(generateSlug('Producto (especial) #1')).toBe('producto-especial-1');
+      expect(generateSlug('Producto (especial) #1')).toBe(
+        'producto-especial-1',
+      );
     });
 
     it('trunca a 100 caracteres', () => {

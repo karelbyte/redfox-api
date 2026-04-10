@@ -35,10 +35,8 @@ const BOT_COPY: Record<SupportedBotLocale, BotCopy> = {
       'The connection closed unexpectedly. Try generating a new QR code.',
   },
   zh: {
-    reconnectNeeded:
-      '会话已关闭。请重新扫描二维码以重新连接 WhatsApp。',
-    unexpectedClose:
-      '连接意外中断。请尝试重新生成二维码。',
+    reconnectNeeded: '会话已关闭。请重新扫描二维码以重新连接 WhatsApp。',
+    unexpectedClose: '连接意外中断。请尝试重新生成二维码。',
   },
 };
 
@@ -248,15 +246,15 @@ export class BaileysProviderService implements OnModuleInit {
         return;
       }
 
-      const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
       const wasLoggedOut = statusCode === 401;
       const shouldReconnect =
         typeof statusCode === 'number' &&
         this.reconnectableStatusCodes.has(statusCode);
       const lastError = wasLoggedOut
         ? copy.reconnectNeeded
-        : (lastDisconnect?.error as Error | undefined)?.message ??
-          copy.unexpectedClose;
+        : ((lastDisconnect?.error as Error | undefined)?.message ??
+          copy.unexpectedClose);
 
       if (wasLoggedOut) {
         await this.baileysRedisAuthStateService.clearSession(organizationId);

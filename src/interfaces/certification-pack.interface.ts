@@ -69,6 +69,7 @@ export interface CustomerResponse {
     state?: string;
     country?: string;
   };
+  payload_send?: any;
   [key: string]: any;
 }
 
@@ -99,6 +100,7 @@ export interface ProductResponse {
   taxes?: Array<{ type: string; rate: number }>;
   unit_name?: string;
   sku?: string;
+  payload_send?: any;
   [key: string]: unknown;
 }
 

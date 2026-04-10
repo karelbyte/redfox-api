@@ -10,7 +10,9 @@ import { AddressType } from '../../src/models/client-address.entity';
 const mockClientRepo = {
   findOne: jest.fn().mockResolvedValue(null),
   create: jest.fn().mockImplementation((d: any) => d),
-  save: jest.fn().mockImplementation((d: any) => Promise.resolve({ id: 'cli-1', ...d })),
+  save: jest
+    .fn()
+    .mockImplementation((d: any) => Promise.resolve({ id: 'cli-1', ...d })),
 };
 
 const mockAddressRepo = {
@@ -32,7 +34,9 @@ const mockPackSyncService = {
 };
 
 async function makeService() {
-  const { ClientImportService } = await import('../../src/services/client-import.service');
+  const { ClientImportService } = await import(
+    '../../src/services/client-import.service'
+  );
   return new (ClientImportService as any)(
     mockClientRepo,
     mockAddressRepo,
@@ -69,7 +73,9 @@ describe('ClientImportService.importRows', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     mockClientRepo.findOne.mockResolvedValue(null);
-    mockPackSyncService.syncOnCreate.mockResolvedValue({ packSyncSuccess: true });
+    mockPackSyncService.syncOnCreate.mockResolvedValue({
+      packSyncSuccess: true,
+    });
     service = await makeService();
   });
 
@@ -77,48 +83,72 @@ describe('ClientImportService.importRows', () => {
 
   describe('validaciones', () => {
     it('rechaza fila sin code', async () => {
-      const result = await service.importRows([{ ...baseRow, code: '' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, code: '' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('code');
       expect(result.created).toBe(0);
     });
 
     it('rechaza code menor a 3 caracteres', async () => {
-      const result = await service.importRows([{ ...baseRow, code: 'AB' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, code: 'AB' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('3');
     });
 
     it('rechaza code mayor a 50 caracteres', async () => {
-      const result = await service.importRows([{ ...baseRow, code: 'A'.repeat(51) }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, code: 'A'.repeat(51) }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
     });
 
     it('rechaza fila sin name', async () => {
-      const result = await service.importRows([{ ...baseRow, name: '' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, name: '' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('name');
     });
 
     it('rechaza name menor a 3 caracteres', async () => {
-      const result = await service.importRows([{ ...baseRow, name: 'AB' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, name: 'AB' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
     });
 
     it('rechaza email con formato inválido', async () => {
-      const result = await service.importRows([{ ...baseRow, email: 'no-es-email' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, email: 'no-es-email' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('email');
     });
 
     it('acepta email con formato válido', async () => {
-      const result = await service.importRows([{ ...baseRow, email: 'juan@test.com' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, email: 'juan@test.com' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.created).toBe(1);
     });
 
     it('acepta fila sin email', async () => {
-      const result = await service.importRows([{ ...baseRow, email: '' }], 'org-1');
+      const result = await service.importRows(
+        [{ ...baseRow, email: '' }],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.created).toBe(1);
     });
@@ -128,7 +158,10 @@ describe('ClientImportService.importRows', () => {
 
   describe('duplicados', () => {
     it('omite cliente con código duplicado y lo cuenta como skipped', async () => {
-      mockClientRepo.findOne.mockResolvedValue({ id: 'existing', code: 'CLI001' });
+      mockClientRepo.findOne.mockResolvedValue({
+        id: 'existing',
+        code: 'CLI001',
+      });
       const result = await service.importRows([{ ...baseRow }], 'org-1');
       expect(result.skipped).toBe(1);
       expect(result.created).toBe(0);
@@ -140,7 +173,12 @@ describe('ClientImportService.importRows', () => {
 
   describe('datos fiscales', () => {
     it('crea tax_data si viene tax_document', async () => {
-      const row = { ...baseRow, tax_document: 'PEPJ800101AAA', tax_name: 'Juan Pérez', tax_system: '616' };
+      const row = {
+        ...baseRow,
+        tax_document: 'PEPJ800101AAA',
+        tax_name: 'Juan Pérez',
+        tax_system: '616',
+      };
       await service.importRows([row], 'org-1');
       expect(mockTaxDataRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -177,7 +215,12 @@ describe('ClientImportService.importRows', () => {
 
   describe('dirección', () => {
     it('crea address si viene address_zip', async () => {
-      const row = { ...baseRow, address_zip: '85900', address_street: 'Av. Principal 123', address_city: 'Hermosillo' };
+      const row = {
+        ...baseRow,
+        address_zip: '85900',
+        address_street: 'Av. Principal 123',
+        address_city: 'Hermosillo',
+      };
       await service.importRows([row], 'org-1');
       expect(mockAddressRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -211,14 +254,22 @@ describe('ClientImportService.importRows', () => {
         .mockResolvedValueOnce(null) // no duplicado
         .mockResolvedValueOnce({ id: 'cli-1', addresses: [], taxData: [] }); // reload con relaciones
 
-      const row = { ...baseRow, tax_document: 'PEPJ800101AAA', address_zip: '85900' };
+      const row = {
+        ...baseRow,
+        tax_document: 'PEPJ800101AAA',
+        address_zip: '85900',
+      };
       const result = await service.importRows([row], 'org-1');
       expect(mockPackSyncService.syncOnCreate).toHaveBeenCalled();
       expect(result.pack_synced).toBe(1);
     });
 
     it('NO sincroniza al PAC si solo tiene tax_document sin address_zip', async () => {
-      const row = { ...baseRow, tax_document: 'PEPJ800101AAA', address_zip: '' };
+      const row = {
+        ...baseRow,
+        tax_document: 'PEPJ800101AAA',
+        address_zip: '',
+      };
       await service.importRows([row], 'org-1');
       expect(mockPackSyncService.syncOnCreate).not.toHaveBeenCalled();
     });
@@ -238,7 +289,11 @@ describe('ClientImportService.importRows', () => {
         packErrorMessage: 'RFC inválido',
       });
 
-      const row = { ...baseRow, tax_document: 'PEPJ800101AAA', address_zip: '85900' };
+      const row = {
+        ...baseRow,
+        tax_document: 'PEPJ800101AAA',
+        address_zip: '85900',
+      };
       const result = await service.importRows([row], 'org-1');
       expect(result.pack_failed).toBe(1);
       expect(result.pack_warnings[0].reason).toContain('RFC inválido');

@@ -1,9 +1,4 @@
-import {
-  ArrayNotEmpty,
-  ArrayUnique,
-  IsArray,
-  IsEnum,
-} from 'class-validator';
+import { ArrayNotEmpty, ArrayUnique, IsArray, IsEnum } from 'class-validator';
 
 export enum PartialOrganizationCleanupTarget {
   PRODUCTS = 'products',

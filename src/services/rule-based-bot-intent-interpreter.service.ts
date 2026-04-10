@@ -58,7 +58,13 @@ export class RuleBasedBotIntentInterpreterService
     }
 
     if (
-      this.matchesAny(normalized, ['no', 'nope', 'negativo', 'cancelado', '不要'])
+      this.matchesAny(normalized, [
+        'no',
+        'nope',
+        'negativo',
+        'cancelado',
+        '不要',
+      ])
     ) {
       return { type: 'deny', confidence: 0.7 };
     }

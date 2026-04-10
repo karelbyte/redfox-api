@@ -72,11 +72,7 @@ export class ErrorEmailFilter implements ExceptionFilter {
         return response;
       }
 
-      if (
-        response &&
-        typeof response === 'object' &&
-        'message' in response
-      ) {
+      if (response && typeof response === 'object' && 'message' in response) {
         const nestedMessage = (response as { message?: unknown }).message;
         if (Array.isArray(nestedMessage)) {
           return nestedMessage

@@ -123,7 +123,8 @@ export class ProductService {
       const product = this.productRepository.create({
         name: createProductDto.name,
         slug: createProductDto.slug,
-        description: createProductDto.description?.trim() || createProductDto.name,
+        description:
+          createProductDto.description?.trim() || createProductDto.name,
         sku: createProductDto.sku,
         code: createProductDto.code,
         barcode: createProductDto.barcode,
@@ -873,5 +874,31 @@ export class ProductService {
     return this.productMapper.mapToResponseDto(
       productWithRelations ?? savedProduct,
     );
+  }
+
+  async syncWithPack(
+    id: string,
+    userId?: string,
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    product: ProductResponseDto;
+  }> {
+    const product = await this.findOneEntity(id, userId);
+
+    const result = await this.productPackSyncService.syncProduct(product);
+
+    if (!result.packSyncSuccess) {
+      return {
+        success: false,
+        message: result.packErrorMessage,
+        product: this.productMapper.mapToResponseDto(result.product),
+      };
+    }
+
+    return {
+      success: true,
+      product: this.productMapper.mapToResponseDto(result.product),
+    };
   }
 }

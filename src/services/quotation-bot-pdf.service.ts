@@ -246,7 +246,8 @@ export class QuotationBotPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const contentWidth =
+        doc.page.width - doc.page.margins.left - doc.page.margins.right;
       const leftX = doc.page.margins.left;
       const rightX = doc.page.width - doc.page.margins.right;
       const boxGap = 12;
@@ -260,11 +261,14 @@ export class QuotationBotPdfService {
 
       const formatDate = (value?: Date | string | null) =>
         value
-          ? new Date(value).toLocaleDateString(this.getIntlLocale(resolvedLocale), {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })
+          ? new Date(value).toLocaleDateString(
+              this.getIntlLocale(resolvedLocale),
+              {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              },
+            )
           : copy.notAvailable;
 
       const safe = (value?: string | null) => {
@@ -325,7 +329,12 @@ export class QuotationBotPdfService {
       }
 
       y = Math.max(y, metaY) + 8;
-      doc.moveTo(leftX, y).lineTo(rightX, y).strokeColor('#D7DEE7').lineWidth(1).stroke();
+      doc
+        .moveTo(leftX, y)
+        .lineTo(rightX, y)
+        .strokeColor('#D7DEE7')
+        .lineWidth(1)
+        .stroke();
       y += 14;
 
       const clientLines = [
@@ -377,14 +386,35 @@ export class QuotationBotPdfService {
       const renderTableHeader = () => {
         doc.rect(leftX, y, contentWidth, 22).fill('#0F172A');
         doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8.5);
-        doc.text(copy.productCode, table.code + 4, y + 7, { width: 40, align: 'center' });
-        doc.text(copy.product, table.product + 4, y + 7, { width: 150, align: 'left' });
-        doc.text(copy.unit, table.unit + 2, y + 7, { width: 32, align: 'center' });
-        doc.text(copy.quantity, table.quantity + 2, y + 7, { width: 36, align: 'right' });
-        doc.text(copy.price, table.price + 2, y + 7, { width: 52, align: 'right' });
-        doc.text(copy.discount, table.discount + 2, y + 7, { width: 48, align: 'right' });
+        doc.text(copy.productCode, table.code + 4, y + 7, {
+          width: 40,
+          align: 'center',
+        });
+        doc.text(copy.product, table.product + 4, y + 7, {
+          width: 150,
+          align: 'left',
+        });
+        doc.text(copy.unit, table.unit + 2, y + 7, {
+          width: 32,
+          align: 'center',
+        });
+        doc.text(copy.quantity, table.quantity + 2, y + 7, {
+          width: 36,
+          align: 'right',
+        });
+        doc.text(copy.price, table.price + 2, y + 7, {
+          width: 52,
+          align: 'right',
+        });
+        doc.text(copy.discount, table.discount + 2, y + 7, {
+          width: 48,
+          align: 'right',
+        });
         doc.text(copy.tax, table.tax + 2, y + 7, { width: 34, align: 'right' });
-        doc.text(copy.subtotal, table.subtotal + 2, y + 7, { width: 46, align: 'right' });
+        doc.text(copy.subtotal, table.subtotal + 2, y + 7, {
+          width: 46,
+          align: 'right',
+        });
         y += 22;
       };
 
@@ -399,8 +429,10 @@ export class QuotationBotPdfService {
         const discountAmount = Number(detail.discount_amount || 0);
         const discountPercentage = Number(detail.discount_percentage || 0);
         const taxRate = Number(detail.product?.tax?.value || 0);
-        const code = detail.product?.code || detail.product?.sku || copy.notAvailable;
-        const unit = detail.product?.measurement_unit?.code || copy.notAvailable;
+        const code =
+          detail.product?.code || detail.product?.sku || copy.notAvailable;
+        const unit =
+          detail.product?.measurement_unit?.code || copy.notAvailable;
         const productText = detail.product?.name || copy.product;
 
         const computedDiscount =
@@ -428,12 +460,18 @@ export class QuotationBotPdfService {
         }
 
         doc.fillColor('#1F2937').font('Helvetica').fontSize(8.5);
-        doc.text(safe(code), table.code + 4, y + 7, { width: 40, align: 'center' });
+        doc.text(safe(code), table.code + 4, y + 7, {
+          width: 40,
+          align: 'center',
+        });
         doc.text(productText, table.product + 4, y + 7, {
           width: 150,
           align: 'left',
         });
-        doc.text(safe(unit), table.unit + 2, y + 7, { width: 32, align: 'center' });
+        doc.text(safe(unit), table.unit + 2, y + 7, {
+          width: 32,
+          align: 'center',
+        });
         doc.text(quantity.toFixed(2), table.quantity + 2, y + 7, {
           width: 36,
           align: 'right',
@@ -475,7 +513,9 @@ export class QuotationBotPdfService {
       y += 10;
       const summaryX = rightX - 170;
 
-      doc.roundedRect(summaryX, y, 170, 70, 4).fillAndStroke('#F8FAFC', '#E2E8F0');
+      doc
+        .roundedRect(summaryX, y, 170, 70, 4)
+        .fillAndStroke('#F8FAFC', '#E2E8F0');
       doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(10);
       doc.text(copy.summary, summaryX + 10, y + 10);
 
@@ -496,7 +536,11 @@ export class QuotationBotPdfService {
         summaryY += 14;
       }
 
-      doc.moveTo(summaryX + 10, summaryY - 5).lineTo(summaryX + 160, summaryY - 5).strokeColor('#CBD5E1').stroke();
+      doc
+        .moveTo(summaryX + 10, summaryY - 5)
+        .lineTo(summaryX + 160, summaryY - 5)
+        .strokeColor('#CBD5E1')
+        .stroke();
       doc.font('Helvetica-Bold').fontSize(12).fillColor('#0F172A');
       doc.text(copy.total, summaryX + 10, summaryY + 6);
       doc.text(money(Number(quotation.total || 0)), summaryX, summaryY + 6, {
@@ -522,10 +566,15 @@ export class QuotationBotPdfService {
         width: 0,
         align: 'center',
       });
-      doc.text(copy.generatedBy, doc.page.width / 2 - 90, doc.page.height - 34, {
-        width: 180,
-        align: 'center',
-      });
+      doc.text(
+        copy.generatedBy,
+        doc.page.width / 2 - 90,
+        doc.page.height - 34,
+        {
+          width: 180,
+          align: 'center',
+        },
+      );
 
       doc.end();
     });
@@ -566,10 +615,11 @@ export class QuotationBotPdfService {
     },
   ): number {
     const { x, y, width, title, lines } = params;
-    const lineHeights = lines.map((line) =>
-      doc.heightOfString(line, {
-        width: width - 20,
-      }) + 3,
+    const lineHeights = lines.map(
+      (line) =>
+        doc.heightOfString(line, {
+          width: width - 20,
+        }) + 3,
     );
     const contentHeight = lineHeights.reduce((sum, value) => sum + value, 0);
     const height = Math.max(62, 18 + contentHeight + 10);

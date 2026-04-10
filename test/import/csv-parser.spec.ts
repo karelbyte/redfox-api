@@ -14,7 +14,9 @@ import { ProviderImportService } from '../../src/services/provider-import.servic
 
 function makeClientService(): ClientImportService {
   return new (ClientImportService as any)(
-    {}, {}, {}, // repos vacíos — no se usan en parseCSV
+    {},
+    {},
+    {}, // repos vacíos — no se usan en parseCSV
     { getOrganizationId: () => 'org-1' },
     {},
   );
@@ -22,14 +24,20 @@ function makeClientService(): ClientImportService {
 
 function makeProductService(): ProductImportService {
   return new (ProductImportService as any)(
-    {}, {}, {}, {}, {},
+    {},
+    {},
+    {},
+    {},
+    {},
     { getOrganizationId: () => 'org-1' },
   );
 }
 
 function makeProviderService(): ProviderImportService {
   return new (ProviderImportService as any)(
-    {}, {}, {},
+    {},
+    {},
+    {},
     { getOrganizationId: () => 'org-1' },
   );
 }
@@ -42,7 +50,9 @@ function csv(...rows: string[]): Buffer {
 
 describe('ClientImportService.parseCSV', () => {
   let service: ClientImportService;
-  beforeEach(() => { service = makeClientService(); });
+  beforeEach(() => {
+    service = makeClientService();
+  });
 
   it('parsea filas de datos correctamente', () => {
     const buf = csv(
@@ -59,7 +69,7 @@ describe('ClientImportService.parseCSV', () => {
   it('ignora filas de metadatos REQUERIDO/opcional', () => {
     const buf = csv(
       'code,name,email,status',
-      'REQUERIDO,REQUERIDO,opcional,opcional',   // fila de metadatos
+      'REQUERIDO,REQUERIDO,opcional,opcional', // fila de metadatos
       'Tipo: texto,Tipo: texto,Tipo: email,Tipo: opción', // fila de tipos
       'CLI001,Juan Pérez,juan@test.com,true',
     );
@@ -80,21 +90,13 @@ describe('ClientImportService.parseCSV', () => {
   });
 
   it('ignora filas de metadatos en chino', () => {
-    const buf = csv(
-      'code,name',
-      '必填,必填',
-      '可选,可选',
-      'CLI001,Test',
-    );
+    const buf = csv('code,name', '必填,必填', '可选,可选', 'CLI001,Test');
     const rows = service.parseCSV(buf);
     expect(rows).toHaveLength(1);
   });
 
   it('soporta separador punto y coma', () => {
-    const buf = csv(
-      'code;name;email',
-      'CLI001;Juan;juan@test.com',
-    );
+    const buf = csv('code;name;email', 'CLI001;Juan;juan@test.com');
     const rows = service.parseCSV(buf);
     expect(rows).toHaveLength(1);
     expect(rows[0].code).toBe('CLI001');
@@ -125,7 +127,9 @@ describe('ClientImportService.parseCSV', () => {
 
 describe('ProductImportService.parseCSV', () => {
   let service: ProductImportService;
-  beforeEach(() => { service = makeProductService(); });
+  beforeEach(() => {
+    service = makeProductService();
+  });
 
   it('parsea filas de datos correctamente', () => {
     const buf = csv(
@@ -167,7 +171,9 @@ describe('ProductImportService.parseCSV', () => {
 
 describe('ProviderImportService.parseCSV', () => {
   let service: ProviderImportService;
-  beforeEach(() => { service = makeProviderService(); });
+  beforeEach(() => {
+    service = makeProviderService();
+  });
 
   it('parsea filas de datos correctamente', () => {
     const buf = csv(

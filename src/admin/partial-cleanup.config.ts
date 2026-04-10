@@ -50,10 +50,7 @@ export const PARTIAL_CLEANUP_RULES: Record<
   },
   [PartialOrganizationCleanupTarget.RECEPTIONS]: {
     requires: [PartialOrganizationCleanupTarget.INVENTORY_STOCK],
-    cascadeDeletes: [
-      'detalle de recepciones',
-      'consecutivo de recepciones',
-    ],
+    cascadeDeletes: ['detalle de recepciones', 'consecutivo de recepciones'],
   },
   [PartialOrganizationCleanupTarget.INVENTORY_STOCK]: {
     requires: [],
@@ -68,7 +65,10 @@ export const PARTIAL_CLEANUP_RULES: Record<
   },
   [PartialOrganizationCleanupTarget.SALES]: {
     requires: [],
-    cascadeDeletes: ['detalle de ventas', 'movimientos de caja ligados a ventas'],
+    cascadeDeletes: [
+      'detalle de ventas',
+      'movimientos de caja ligados a ventas',
+    ],
   },
   [PartialOrganizationCleanupTarget.INVOICES]: {
     requires: [],
@@ -80,13 +80,14 @@ export const PARTIAL_CLEANUP_RULES: Record<
   },
 };
 
-export const PARTIAL_CLEANUP_TARGET_ORDER: PartialOrganizationCleanupTarget[] = [
-  PartialOrganizationCleanupTarget.PRODUCTS,
-  PartialOrganizationCleanupTarget.CLIENTS,
-  PartialOrganizationCleanupTarget.PROVIDERS,
-  PartialOrganizationCleanupTarget.QUOTATIONS,
-  PartialOrganizationCleanupTarget.RECEPTIONS,
-  PartialOrganizationCleanupTarget.INVENTORY_STOCK,
-  PartialOrganizationCleanupTarget.SALES,
-  PartialOrganizationCleanupTarget.INVOICES,
-];
+export const PARTIAL_CLEANUP_TARGET_ORDER: PartialOrganizationCleanupTarget[] =
+  [
+    PartialOrganizationCleanupTarget.PRODUCTS,
+    PartialOrganizationCleanupTarget.CLIENTS,
+    PartialOrganizationCleanupTarget.PROVIDERS,
+    PartialOrganizationCleanupTarget.QUOTATIONS,
+    PartialOrganizationCleanupTarget.RECEPTIONS,
+    PartialOrganizationCleanupTarget.INVENTORY_STOCK,
+    PartialOrganizationCleanupTarget.SALES,
+    PartialOrganizationCleanupTarget.INVOICES,
+  ];

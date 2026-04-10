@@ -4,7 +4,10 @@
  */
 
 import { BadRequestException } from '@nestjs/common';
-import { ProductType, InventoryStrategy } from '../../src/models/product.entity';
+import {
+  ProductType,
+  InventoryStrategy,
+} from '../../src/models/product.entity';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -15,7 +18,11 @@ const mockCategory = { id: 'cat-1', name: 'Lácteos' };
 const mockProductRepo = {
   findOne: jest.fn().mockResolvedValue(null), // sin duplicados por defecto
   create: jest.fn().mockImplementation((data: any) => data),
-  save: jest.fn().mockImplementation((data: any) => Promise.resolve({ id: 'new-prod', ...data })),
+  save: jest
+    .fn()
+    .mockImplementation((data: any) =>
+      Promise.resolve({ id: 'new-prod', ...data }),
+    ),
 };
 
 const mockBrandRepo = {
@@ -39,7 +46,9 @@ const mockTenantContext = {
 };
 
 async function makeService() {
-  const { ProductImportService } = await import('../../src/services/product-import.service');
+  const { ProductImportService } = await import(
+    '../../src/services/product-import.service'
+  );
   return new (ProductImportService as any)(
     mockProductRepo,
     mockBrandRepo,
@@ -131,52 +140,109 @@ describe('ProductImportService', () => {
 
   describe('importRows — validaciones', () => {
     it('rechaza fila sin name', async () => {
-      const result = await service._importRows([
-        { row: 2, name: '', sku: 'SKU-1', code: '12345678', measurement_unit: 'LTR' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: '',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'LTR',
+          },
+        ],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('name');
       expect(result.created).toBe(0);
     });
 
     it('rechaza fila sin sku', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: '', code: '12345678', measurement_unit: 'LTR' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: '',
+            code: '12345678',
+            measurement_unit: 'LTR',
+          },
+        ],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('sku');
     });
 
     it('rechaza fila con código SAT menor a 8 caracteres', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '1234', measurement_unit: 'LTR' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '1234',
+            measurement_unit: 'LTR',
+          },
+        ],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('code');
     });
 
     it('rechaza fila sin measurement_unit', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: '' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: '',
+          },
+        ],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
     });
 
     it('rechaza fila con unidad de medida que no existe', async () => {
       mockUnitRepo.find.mockResolvedValue([]); // sin unidades
       service = await makeService();
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'XYZ' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'XYZ',
+          },
+        ],
+        'org-1',
+      );
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].reason).toContain('XYZ');
     });
 
     it('omite fila con SKU duplicado y lo cuenta como skipped', async () => {
-      mockProductRepo.findOne.mockResolvedValue({ id: 'existing', sku: 'LECH-001' });
-      const result = await service._importRows([
-        { row: 2, name: 'Leche', sku: 'LECH-001', code: '50211503', measurement_unit: 'LTR' },
-      ], 'org-1');
+      mockProductRepo.findOne.mockResolvedValue({
+        id: 'existing',
+        sku: 'LECH-001',
+      });
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Leche',
+            sku: 'LECH-001',
+            code: '50211503',
+            measurement_unit: 'LTR',
+          },
+        ],
+        'org-1',
+      );
       expect(result.skipped).toBe(1);
       expect(result.created).toBe(0);
     });
@@ -186,27 +252,61 @@ describe('ProductImportService', () => {
 
   describe('importRows — warnings', () => {
     it('crea el producto pero emite warning si la marca no existe', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr', brand: 'MarcaInexistente' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+            brand: 'MarcaInexistente',
+          },
+        ],
+        'org-1',
+      );
       expect(result.created).toBe(1);
       expect(result.warnings.some((w: any) => w.field === 'brand')).toBe(true);
     });
 
     it('crea el producto pero emite warning si la categoría no existe', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr', category: 'CatInexistente' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+            category: 'CatInexistente',
+          },
+        ],
+        'org-1',
+      );
       expect(result.created).toBe(1);
-      expect(result.warnings.some((w: any) => w.field === 'category')).toBe(true);
+      expect(result.warnings.some((w: any) => w.field === 'category')).toBe(
+        true,
+      );
     });
 
     it('no emite warning si la marca existe', async () => {
-      const result = await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr', brand: 'lala' },
-      ], 'org-1');
+      const result = await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+            brand: 'lala',
+          },
+        ],
+        'org-1',
+      );
       expect(result.created).toBe(1);
-      expect(result.warnings.filter((w: any) => w.field === 'brand')).toHaveLength(0);
+      expect(
+        result.warnings.filter((w: any) => w.field === 'brand'),
+      ).toHaveLength(0);
     });
   });
 
@@ -214,9 +314,20 @@ describe('ProductImportService', () => {
 
   describe('importRows — creación', () => {
     it('crea producto con valores por defecto si type e inventory_strategy son inválidos', async () => {
-      await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr', type: 'invalido', inventory_strategy: 'invalido' },
-      ], 'org-1');
+      await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+            type: 'invalido',
+            inventory_strategy: 'invalido',
+          },
+        ],
+        'org-1',
+      );
       expect(mockProductRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           type: ProductType.TANGIBLE,
@@ -226,18 +337,36 @@ describe('ProductImportService', () => {
     });
 
     it('crea producto con base_price 0 si no se especifica', async () => {
-      await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr' },
-      ], 'org-1');
+      await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+          },
+        ],
+        'org-1',
+      );
       expect(mockProductRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ base_price: 0 }),
       );
     });
 
     it('crea producto con organization_id correcto', async () => {
-      await service._importRows([
-        { row: 2, name: 'Producto', sku: 'SKU-1', code: '12345678', measurement_unit: 'ltr' },
-      ], 'org-custom');
+      await service._importRows(
+        [
+          {
+            row: 2,
+            name: 'Producto',
+            sku: 'SKU-1',
+            code: '12345678',
+            measurement_unit: 'ltr',
+          },
+        ],
+        'org-custom',
+      );
       expect(mockProductRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ organization_id: 'org-custom' }),
       );
@@ -245,9 +374,27 @@ describe('ProductImportService', () => {
 
     it('importa múltiples productos y reporta el resumen correcto', async () => {
       const rows = [
-        { row: 2, name: 'Prod A', sku: 'SKU-A', code: '12345678', measurement_unit: 'ltr' },
-        { row: 3, name: 'Prod B', sku: 'SKU-B', code: '87654321', measurement_unit: 'ltr' },
-        { row: 4, name: '', sku: 'SKU-C', code: '11111111', measurement_unit: 'ltr' }, // error
+        {
+          row: 2,
+          name: 'Prod A',
+          sku: 'SKU-A',
+          code: '12345678',
+          measurement_unit: 'ltr',
+        },
+        {
+          row: 3,
+          name: 'Prod B',
+          sku: 'SKU-B',
+          code: '87654321',
+          measurement_unit: 'ltr',
+        },
+        {
+          row: 4,
+          name: '',
+          sku: 'SKU-C',
+          code: '11111111',
+          measurement_unit: 'ltr',
+        }, // error
       ];
       const result = await service._importRows(rows, 'org-1');
       expect(result.created).toBe(2);

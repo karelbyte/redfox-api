@@ -49,6 +49,7 @@ export class ProductMapper {
       min_stock,
       currency,
       created_at,
+      product_pack_id,
     } = product;
 
     return {
@@ -93,6 +94,7 @@ export class ProductMapper {
         ? this.currencyMapper.mapToResponseDto(currency)
         : null,
       created_at,
+      isSyncWithPack: !!product_pack_id,
     };
   }
 }

@@ -20,6 +20,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { BulkDeleteProviderDto } from '../dtos/provider/bulk-delete-provider.dto';
+import { BulkDeleteProviderResponseDto } from '../dtos/provider/bulk-delete-provider-response.dto';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 @Controller('providers')
@@ -73,7 +74,7 @@ export class ProviderController {
   removeMany(
     @Body() bulkDeleteProviderDto: BulkDeleteProviderDto,
     @UserId() userId: string,
-  ): Promise<void> {
+  ): Promise<BulkDeleteProviderResponseDto> {
     return this.providerService.removeMany(bulkDeleteProviderDto.ids, userId);
   }
 }

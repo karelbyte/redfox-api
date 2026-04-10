@@ -743,6 +743,7 @@ export class FacturaGreenService implements ICertificationPackService {
         phone: customerData.phone,
         default_invoice_use: customerData.default_invoice_use,
         address: customerData.address,
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
@@ -833,6 +834,7 @@ export class FacturaGreenService implements ICertificationPackService {
         phone: customerData.phone,
         default_invoice_use: customerData.default_invoice_use,
         address: customerData.address,
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
@@ -1081,6 +1083,7 @@ export class FacturaGreenService implements ICertificationPackService {
         taxes: productData.taxes,
         unit_name: productData.unit_name,
         sku: productData.sku,
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
@@ -1187,6 +1190,7 @@ export class FacturaGreenService implements ICertificationPackService {
         taxes: productData.taxes,
         unit_name: productData.unit_name,
         sku: productData.sku,
+        payload_send: payload,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;

@@ -47,7 +47,12 @@ export class BotMessage {
   @Column({ name: 'message_text', type: 'text' })
   message_text: string;
 
-  @Column({ name: 'detected_intent', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'detected_intent',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   detected_intent: string | null;
 
   @Column({ type: 'simple-json', nullable: true })

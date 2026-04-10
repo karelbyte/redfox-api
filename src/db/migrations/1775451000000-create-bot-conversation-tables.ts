@@ -116,7 +116,12 @@ export class CreateBotConversationTables1775451000000
         indices: [
           {
             name: 'IDX_bot_conversations_lookup',
-            columnNames: ['organization_id', 'provider', 'customer_phone', 'status'],
+            columnNames: [
+              'organization_id',
+              'provider',
+              'customer_phone',
+              'status',
+            ],
           },
         ],
       }),
