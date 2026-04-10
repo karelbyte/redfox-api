@@ -19,6 +19,7 @@ import {
 import { GenerateCFDIOptions } from '../interfaces/factura-green-options.interface';
 import { TenantContext } from './tenant-context.service';
 import { SatCatalogService } from './sat-catalog.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class FacturaGreenService implements ICertificationPackService {
@@ -26,6 +27,7 @@ export class FacturaGreenService implements ICertificationPackService {
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
+    private readonly translationService: TranslationService,
   ) {}
 
   private getConfig() {
@@ -41,18 +43,24 @@ export class FacturaGreenService implements ICertificationPackService {
     };
   }
 
-  private getHeaders() {
+  private async getHeaders() {
     const config = this.getConfig();
     const pacConfig = this.tenantContext.getPacConfig();
 
     if (!config.businessUuid) {
-      throw new BadRequestException(
-        'Factura Green business UUID not configured',
+      const msg = await this.translationService.translate(
+        'pack.business_uuid_not_configured',
+        this.tenantContext.getUserId() ?? undefined,
       );
+      throw new BadRequestException(msg);
     }
 
     if (!pacConfig?.api_key) {
-      throw new BadRequestException('Factura Green API key not configured');
+      const msg = await this.translationService.translate(
+        'pack.api_key_not_configured_fg',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      throw new BadRequestException(msg);
     }
 
     return {
@@ -79,21 +87,34 @@ export class FacturaGreenService implements ICertificationPackService {
   ): Promise<CFDIResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       if (!invoice.client?.pack_client_id) {
-        throw new BadRequestException('Customer not synced with Factura Green');
+        const msg = await this.translationService.translate(
+          'pack.customer_not_synced',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        throw new BadRequestException(msg);
+      }
+
+      // Validar que todos los productos estén sincronizados antes de construir los items
+      for (const detail of invoice.details) {
+        const productPackId = (detail.product as any)?.product_pack_id;
+        if (!productPackId) {
+          const msg = await this.translationService.translate(
+            'pack.product_not_synced',
+            this.tenantContext.getUserId() ?? undefined,
+            {
+              name: detail.product?.name || detail.product_id,
+            },
+          );
+          throw new BadRequestException(msg);
+        }
       }
 
       // Construir items con soporte para casos especiales
       const items = invoice.details.map((detail) => {
         const productPackId = (detail.product as any)?.product_pack_id;
-
-        if (!productPackId) {
-          throw new BadRequestException(
-            `Product ${detail.product?.name || detail.product_id} not synced with Factura Green. Please sync products first.`,
-          );
-        }
 
         const item: any = {
           uuid: productPackId,
@@ -266,11 +287,17 @@ export class FacturaGreenService implements ICertificationPackService {
         pdf_url: data.data.pdf_url,
         xml_url: data.data.xml_url,
         message: 'CFDI generated successfully',
+        payload_send: payload,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Error:', error);
       throw new BadRequestException(
-        error.message || 'Error generating CFDI with Factura Green',
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_generating_cfdi',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
       );
     }
   }
@@ -278,7 +305,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async cancelCFDI(uuid: string, reason: string): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const payload = {
         cancel: {
@@ -296,13 +323,22 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.error?.message || 'Error canceling CFDI with Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_cancelling_cfdi',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.error?.message || fallbackMsg;
         throw new BadRequestException(message);
       }
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Cancel Error:', error);
-      throw new BadRequestException('Error canceling CFDI with Factura Green');
+      throw new BadRequestException(
+        await this.translationService.translate(
+          'pack.error_cancelling_cfdi',
+          this.tenantContext.getUserId() ?? undefined,
+        ),
+      );
     }
   }
 
@@ -314,6 +350,7 @@ export class FacturaGreenService implements ICertificationPackService {
         cancellation_status: 'none',
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Status Error:', error);
       throw new BadRequestException(
         'Error getting CFDI status from Factura Green',
@@ -324,7 +361,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async downloadPDF(packInvoiceId: string): Promise<Buffer> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const response = await fetch(
         `${baseUrl}/interop/cfdi/${packInvoiceId}/pdf`,
@@ -343,15 +380,21 @@ export class FacturaGreenService implements ICertificationPackService {
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('PDF download error:', error);
-      throw new BadRequestException('Error downloading PDF from Factura Green');
+      throw new BadRequestException(
+        await this.translationService.translate(
+          'pack.error_downloading_pdf',
+          this.tenantContext.getUserId() ?? undefined,
+        ),
+      );
     }
   }
 
   async downloadXML(packInvoiceId: string): Promise<string> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const response = await fetch(
         `${baseUrl}/interop/cfdi/${packInvoiceId}/xml`,
@@ -369,8 +412,14 @@ export class FacturaGreenService implements ICertificationPackService {
 
       return await response.text();
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('XML download error:', error);
-      throw new BadRequestException('Error downloading XML from Factura Green');
+      throw new BadRequestException(
+        await this.translationService.translate(
+          'pack.error_downloading_xml',
+          this.tenantContext.getUserId() ?? undefined,
+        ),
+      );
     }
   }
 
@@ -627,7 +676,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
       const url = `${baseUrl}/interop/customer/add`;
 
       const payload = {
@@ -672,8 +721,11 @@ export class FacturaGreenService implements ICertificationPackService {
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.message || 'Error creating customer in Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_creating_customer',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.message || fallbackMsg;
         console.error('[FacturaGreen] createCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
@@ -693,9 +745,13 @@ export class FacturaGreenService implements ICertificationPackService {
         address: customerData.address,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('[FacturaGreen] createCustomer - Error:', error);
-      const message =
-        error?.message ?? 'Error creating customer in Factura Green';
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_creating_customer',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      const message = error?.message ?? fallbackMsg;
       throw new BadRequestException(message);
     }
   }
@@ -706,7 +762,7 @@ export class FacturaGreenService implements ICertificationPackService {
   ): Promise<CustomerResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
       const url = `${baseUrl}/interop/customer/update`;
 
       // Factura Green requiere TODOS los campos en el update, no es parcial
@@ -755,8 +811,11 @@ export class FacturaGreenService implements ICertificationPackService {
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.message || 'Error updating customer in Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_updating_customer',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.message || fallbackMsg;
         console.error('[FacturaGreen] updateCustomer → FAILED:', message);
         throw new BadRequestException(message);
       }
@@ -776,9 +835,13 @@ export class FacturaGreenService implements ICertificationPackService {
         address: customerData.address,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('[FacturaGreen] updateCustomer - Error:', error);
-      const message =
-        error?.message ?? 'Error updating customer in Factura Green';
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_updating_customer',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      const message = error?.message ?? fallbackMsg;
       throw new BadRequestException(message);
     }
   }
@@ -786,7 +849,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async listCustomers(): Promise<CustomerResponse[]> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
       const url = `${baseUrl}/interop/customer/all`;
 
       const response = await fetch(url, {
@@ -821,10 +884,15 @@ export class FacturaGreenService implements ICertificationPackService {
 
       return customers;
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green List Customers Error:', error);
       // 🔥 Forzamos la excepción global para que envíe el Email de Error alertando al Admin 🔥
       throw new BadRequestException(
-        error.message || 'Error listing customers in Factura Green',
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_listing_customers',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
       );
     }
   }
@@ -832,7 +900,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async deleteCustomer(customerId: string): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const payload = {
         customer: {
@@ -849,22 +917,83 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.error?.message || 'Error deleting customer in Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_deleting_customer',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.error?.message || fallbackMsg;
         throw new BadRequestException(message);
       }
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Delete Customer Error:', error);
-      const message =
-        error?.message ?? 'Error deleting customer in Factura Green';
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_deleting_customer',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      const message = error?.message ?? fallbackMsg;
       throw new BadRequestException(message);
     }
   }
 
+  async findProductBySku(sku: string): Promise<ProductResponse | null> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = await this.getHeaders();
+
+      const payload = {
+        product: {
+          id: sku,
+        },
+      };
+
+      const response = await fetch(`${baseUrl}/interop/product/get`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.response !== 'success') {
+        // En Factura Green, un status de no éxito en GET a menudo implica que no existe
+        // Pero si es un error estructural o 500, deberíamos alertar.
+        if (response.status >= 500) {
+          throw new BadRequestException(
+            'Factura Green service unavailable while searching SKU',
+          );
+        }
+        return null;
+      }
+
+      const product = data.data;
+      return {
+        id: product.uuid,
+        created_at: product.createdAt || new Date().toISOString(),
+        livemode: true,
+        description: product.name,
+        product_key: product.satKey?.k || '01010101',
+        unit_key: product.unit?.k || 'E48',
+        price: product.price?.amount || 0,
+        tax_included: false,
+        sku: product.id,
+      };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('Factura Green Find Product by SKU Error:', error);
+      throw new BadRequestException(
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_finding_product',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
+      );
+    }
+  }
   async createProduct(productData: ProductData): Promise<ProductResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       // Construir objeto de impuestos en formato Factura Green
       const taxes: any = {
@@ -916,7 +1045,7 @@ export class FacturaGreenService implements ICertificationPackService {
             k: productData.unit_key || 'E48',
           },
           price: {
-            type: 'fixed',
+            type: 'dynamic',
             amount: productData.price,
           },
           taxes,
@@ -954,61 +1083,14 @@ export class FacturaGreenService implements ICertificationPackService {
         sku: productData.sku,
       };
     } catch (error: any) {
-      console.error('[FacturaGreen] createProduct - Error:', error);
-      const message =
-        error?.message ?? 'Error creating product in Factura Green';
-      throw new BadRequestException(message);
-    }
-  }
-
-  async findProductBySku(sku: string): Promise<ProductResponse | null> {
-    try {
-      const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
-
-      const payload = {
-        product: {
-          id: sku,
-        },
-      };
-
-      const response = await fetch(`${baseUrl}/interop/product/get`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.response !== 'success') {
-        // En Factura Green, un status de no éxito en GET a menudo implica que no existe
-        // Pero si es un error estructural o 500, deberíamos alertar.
-        if (response.status >= 500) {
-          throw new BadRequestException(
-            'Factura Green service unavailable while searching SKU',
-          );
-        }
-        return null;
-      }
-
-      const product = data.data;
-      return {
-        id: product.uuid,
-        created_at: product.createdAt || new Date().toISOString(),
-        livemode: true,
-        description: product.name,
-        product_key: product.satKey?.k || '01010101',
-        unit_key: product.unit?.k || 'E48',
-        price: product.price?.amount || 0,
-        tax_included: false,
-        sku: product.id,
-      };
-    } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
-      console.error('Factura Green Find Product by SKU Error:', error);
-      throw new BadRequestException(
-        error.message || 'Error finding product by SKU in Factura Green',
+      console.error('[FacturaGreen] createProduct - Error:', error);
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_creating_product',
+        this.tenantContext.getUserId() ?? undefined,
       );
+      const message = error?.message ?? fallbackMsg;
+      throw new BadRequestException(message);
     }
   }
 
@@ -1018,7 +1100,7 @@ export class FacturaGreenService implements ICertificationPackService {
   ): Promise<ProductResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const payload: any = {
         product: {
@@ -1027,27 +1109,53 @@ export class FacturaGreenService implements ICertificationPackService {
       };
 
       if (productData.description)
-        payload.product.name = productData.description;
+        payload.product.desc = productData.description;
       if (productData.product_key)
-        payload.product.satKey = { k: productData.product_key.toString() };
+        payload.product.sat_class = { k: productData.product_key.toString() };
       if (productData.unit_key)
-        payload.product.unit = { k: productData.unit_key };
+        payload.product.sat_unit = { k: productData.unit_key };
       if (productData.price !== undefined) {
         payload.product.price = {
-          type: 'fixed',
+          type: 'dynamic',
           amount: productData.price,
         };
       }
       if (productData.taxes) {
-        payload.product.taxes = {
-          transferred: productData.taxes.map((tax) => ({
-            type: tax.type === 'IVA' ? '002' : tax.type,
-            rate: tax.rate,
-            factor: 'Tasa',
-          })),
+        const taxes: any = {
+          iva_ta: false,
+          iva_ra: false,
+          isr_ra: false,
+          ieps_ta: false,
+          ieps_ra: false,
         };
+        for (const tax of productData.taxes) {
+          const rate = (tax.rate * 100).toFixed(2);
+          if (tax.type === 'IVA' && !tax.type.includes('RET')) {
+            taxes.iva_ta = true;
+            taxes.iva_tr = rate;
+          } else if (
+            tax.type === 'IVA_RET' ||
+            (tax.type === 'IVA' && tax.type.includes('RET'))
+          ) {
+            taxes.iva_ra = true;
+            taxes.iva_rr = rate;
+          } else if (tax.type === 'ISR' || tax.type.includes('ISR')) {
+            taxes.isr_ra = true;
+            taxes.isr_rr = rate;
+          } else if (tax.type === 'IEPS' && !tax.type.includes('RET')) {
+            taxes.ieps_ta = true;
+            taxes.ieps_tr = rate;
+          } else if (
+            tax.type === 'IEPS_RET' ||
+            (tax.type === 'IEPS' && tax.type.includes('RET'))
+          ) {
+            taxes.ieps_ra = true;
+            taxes.ieps_rr = rate;
+          }
+        }
+        payload.product.taxes = taxes;
       }
-
+      console.log('enviado', payload);
       const response = await fetch(`${baseUrl}/interop/product/update`, {
         method: 'POST',
         headers,
@@ -1055,10 +1163,14 @@ export class FacturaGreenService implements ICertificationPackService {
       });
 
       const data = await response.json();
-
+      console.log('recivido', data);
       if (!response.ok || data.response !== 'success') {
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_updating_product',
+          this.tenantContext.getUserId() ?? undefined,
+        );
         const message =
-          data.error?.message || 'Error updating product in Factura Green';
+          data.error?.message || data.error?.message || fallbackMsg;
         throw new BadRequestException(message);
       }
 
@@ -1077,9 +1189,13 @@ export class FacturaGreenService implements ICertificationPackService {
         sku: productData.sku,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Update Product Error:', error);
-      const message =
-        error?.message ?? 'Error updating product in Factura Green';
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_updating_product',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      const message = error?.message ?? fallbackMsg;
       throw new BadRequestException(message);
     }
   }
@@ -1097,7 +1213,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async listProducts(): Promise<ProductResponse[]> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
       const url = `${baseUrl}/interop/product/all`;
 
       const response = await fetch(url, {
@@ -1109,8 +1225,11 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.message || 'Error listing products from Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_listing_products',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.message || fallbackMsg;
         throw new BadRequestException(message);
       }
 
@@ -1131,9 +1250,13 @@ export class FacturaGreenService implements ICertificationPackService {
         taxes: this.mapFacturaGreenTaxes(product.t),
       }));
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('[FacturaGreen] listProducts - Error:', error);
-      const message =
-        error?.message ?? 'Error listing products from Factura Green';
+      const fallbackMsg = await this.translationService.translate(
+        'pack.error_listing_products',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      const message = error?.message ?? fallbackMsg;
       throw new BadRequestException(message);
     }
   }
@@ -1209,7 +1332,7 @@ export class FacturaGreenService implements ICertificationPackService {
   async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       // Mapeo de periodicidad frontend → clave SAT c_Periodicidad
       const periodicityMap: Record<string, string> = {
@@ -1339,9 +1462,14 @@ export class FacturaGreenService implements ICertificationPackService {
         message: 'Factura global emitida exitosamente',
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Global Invoice Error:', error);
       throw new BadRequestException(
-        error.message || 'Error al emitir la factura global',
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_global_invoice',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
       );
     }
   }
@@ -1351,7 +1479,7 @@ export class FacturaGreenService implements ICertificationPackService {
   ): Promise<PaymentComplementResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const payload = {
         cfdi: {
@@ -1389,9 +1517,11 @@ export class FacturaGreenService implements ICertificationPackService {
       const result = await response.json();
 
       if (!response.ok || result.response !== 'success') {
-        const message =
-          result.message ||
-          'Error generating payment complement with Factura Green';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_payment_complement',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = result.message || fallbackMsg;
         throw new BadRequestException(message);
       }
 
@@ -1403,9 +1533,14 @@ export class FacturaGreenService implements ICertificationPackService {
         xml_url: result.data?.xml_url,
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Payment Complement Error:', error);
       throw new BadRequestException(
-        error.message || 'Error generating payment complement',
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_payment_complement',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
       );
     }
   }
@@ -1416,7 +1551,7 @@ export class FacturaGreenService implements ICertificationPackService {
   ): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = this.getHeaders();
+      const headers = await this.getHeaders();
 
       const payload = {
         cancel: {
@@ -1434,14 +1569,22 @@ export class FacturaGreenService implements ICertificationPackService {
       const data = await response.json();
 
       if (!response.ok || data.response !== 'success') {
-        const message =
-          data.error?.message || 'Error canceling payment complement';
+        const fallbackMsg = await this.translationService.translate(
+          'pack.error_canceling_payment_complement',
+          this.tenantContext.getUserId() ?? undefined,
+        );
+        const message = data.error?.message || fallbackMsg;
         throw new BadRequestException(message);
       }
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Factura Green Cancel Complement Error:', error);
       throw new BadRequestException(
-        error.message || 'Error canceling payment complement',
+        error.message ||
+          (await this.translationService.translate(
+            'pack.error_canceling_payment_complement',
+            this.tenantContext.getUserId() ?? undefined,
+          )),
       );
     }
   }

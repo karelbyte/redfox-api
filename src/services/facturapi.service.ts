@@ -66,6 +66,7 @@ export class FacturaAPIService implements ICertificationPackService {
         status: data.status,
         pdf_url: (data as any).pdf_url,
         xml_url: (data as any).xml_url,
+        payload_send: cfdiData,
       };
     } catch (error) {
       console.error('FacturaAPI Error:', error);
@@ -1113,6 +1114,7 @@ export class FacturaAPIService implements ICertificationPackService {
         status: anyInv.status ?? 'valid',
         pdf_url: anyInv.pdf_url,
         xml_url: anyInv.xml_url,
+        payload_send: payload,
       };
     } catch (error: any) {
       console.error('FacturaAPI Create Global Invoice Error:', error);

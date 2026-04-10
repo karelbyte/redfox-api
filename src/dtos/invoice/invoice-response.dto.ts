@@ -43,6 +43,10 @@ export class InvoiceResponseDto {
   pack_invoice_response?: Record<string, unknown> | null;
 
   @Expose()
+  payload_send?: Record<string, unknown> | null;
+
+
+  @Expose()
   payment_method: PaymentMethod;
 
   @Expose()

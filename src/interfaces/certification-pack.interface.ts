@@ -13,6 +13,7 @@ export interface CFDIResponse {
   pdf_url?: string;
   xml_url?: string;
   message?: string;
+  payload_send?: any;
 }
 
 export interface MeasurementUnitSuggestion {

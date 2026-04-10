@@ -9,6 +9,8 @@ import { TenantContext } from './tenant-context.service';
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
+  private readonly MAX_SANITIZE_DEPTH = 5;
+  private readonly MAX_ARRAY_ITEMS = 25;
 
   // Campos sensibles que deben ser filtrados de los logs
   private readonly SENSITIVE_FIELDS = [
@@ -50,18 +52,63 @@ export class AuditLogService {
   /**
    * Filtra campos sensibles de un objeto de forma recursiva
    */
-  private sanitizeData(data: any): any {
-    if (!data || typeof data !== 'object') {
+  private sanitizeData(
+    data: any,
+    seen: WeakSet<object> = new WeakSet(),
+    depth = 0,
+  ): any {
+    if (data === null || data === undefined) {
       return data;
     }
 
+    if (depth > this.MAX_SANITIZE_DEPTH) {
+      return '[MAX_DEPTH_REACHED]';
+    }
+
+    if (data instanceof Date) {
+      return data.toISOString();
+    }
+
+    if (typeof data === 'bigint') {
+      return data.toString();
+    }
+
+    if (Buffer.isBuffer(data)) {
+      return `[Buffer ${data.length} bytes]`;
+    }
+
+    if (typeof data !== 'object') {
+      return data;
+    }
+
+    if (seen.has(data)) {
+      return '[CIRCULAR]';
+    }
+
+    seen.add(data);
+
     if (Array.isArray(data)) {
-      return data.map((item) => this.sanitizeData(item));
+      const sanitizedArray = data
+        .slice(0, this.MAX_ARRAY_ITEMS)
+        .map((item) => this.sanitizeData(item, seen, depth + 1));
+
+      if (data.length > this.MAX_ARRAY_ITEMS) {
+        sanitizedArray.push(
+          `[TRUNCATED ${data.length - this.MAX_ARRAY_ITEMS} ITEMS]`,
+        );
+      }
+
+      seen.delete(data);
+      return sanitizedArray;
     }
 
     const sanitized: any = {};
 
     for (const [key, value] of Object.entries(data)) {
+      if (value === undefined || typeof value === 'function') {
+        continue;
+      }
+
       const lowerKey = key.toLowerCase();
 
       // Verificar si el campo es sensible
@@ -73,12 +120,13 @@ export class AuditLogService {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
         // Recursivamente sanitizar objetos anidados
-        sanitized[key] = this.sanitizeData(value);
+        sanitized[key] = this.sanitizeData(value, seen, depth + 1);
       } else {
         sanitized[key] = value;
       }
     }
 
+    seen.delete(data);
     return sanitized;
   }
 

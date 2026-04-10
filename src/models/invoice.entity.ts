@@ -84,6 +84,9 @@ export class Invoice {
   @Column({ type: 'json', nullable: true })
   pack_invoice_response: Record<string, unknown> | null;
 
+  @Column({ type: 'json', nullable: true })
+  payload_send: Record<string, unknown> | null;
+
   @Column({
     type: 'enum',
     enum: PaymentMethod,

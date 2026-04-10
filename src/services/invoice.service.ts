@@ -126,6 +126,7 @@ export class InvoiceService {
       cfdi_uuid: invoice.cfdi_uuid,
       pack_invoice_id: invoice.pack_invoice_id ?? null,
       pack_invoice_response: invoice.pack_invoice_response ?? null,
+      payload_send: invoice.payload_send ?? null,
       payment_method: invoice.payment_method,
       payment_conditions: invoice.payment_conditions,
       notes: invoice.notes,
@@ -765,6 +766,7 @@ export class InvoiceService {
       },
       payment_method: 'cash' as any,
       organization_id: this.organizationId,
+      payload_send: cfdiResult.payload_send || null,
     });
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
@@ -843,6 +845,9 @@ export class InvoiceService {
         pdf_url: cfdiResult.pdf_url,
         xml_url: cfdiResult.xml_url,
       };
+      if (cfdiResult.payload_send) {
+        invoice.payload_send = cfdiResult.payload_send;
+      }
       invoice.status = InvoiceStatus.SENT;
 
       const updatedInvoice = await this.invoiceRepository.save(invoice);

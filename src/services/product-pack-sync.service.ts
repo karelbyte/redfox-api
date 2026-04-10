@@ -42,7 +42,7 @@ export class ProductPackSyncService {
     })) || [{ type: 'IVA', rate: 0.16 }];
 
     return {
-      description: product.description || product.name,
+      description: product.name || product.description,
       product_key: productKey,
       unit_key: unitKey,
       price:
@@ -96,7 +96,7 @@ export class ProductPackSyncService {
       }
 
       const productData = this.buildProductData(product, price);
-
+      console.log(product.product_pack_id) 
       // Si ya tiene product_pack_id, actualizar en el pack
       if (product.product_pack_id) {
         try {

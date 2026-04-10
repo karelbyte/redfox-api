@@ -896,6 +896,67 @@ export class TranslationService {
       es: 'El UUID de negocio de Factura Green no está configurado.',
       en: 'Factura Green business UUID not configured.',
     },
+    'pack.api_key_not_configured_fg': {
+      es: 'La clave API de Factura Green no está configurada.',
+      en: 'Factura Green API key not configured.',
+    },
+    'pack.customer_not_synced': {
+      es: 'El cliente no está sincronizado con Factura Green. Sincronízalo primero.',
+      en: 'Customer not synced with Factura Green. Please sync first.',
+    },
+    'pack.product_not_synced': {
+      es: 'El producto "{name}" no está sincronizado con Factura Green. Sincronízalo primero.',
+      en: 'Product "{name}" not synced with Factura Green. Please sync products first.',
+    },
+    'pack.error_creating_customer': {
+      es: 'Error al crear cliente en Factura Green',
+      en: 'Error creating customer in Factura Green',
+    },
+    'pack.error_updating_customer': {
+      es: 'Error al actualizar cliente en Factura Green',
+      en: 'Error updating customer in Factura Green',
+    },
+    'pack.error_listing_customers': {
+      es: 'Error al listar clientes de Factura Green',
+      en: 'Error listing customers from Factura Green',
+    },
+    'pack.error_deleting_customer': {
+      es: 'Error al eliminar cliente en Factura Green',
+      en: 'Error deleting customer in Factura Green',
+    },
+    'pack.error_creating_product': {
+      es: 'Error al crear producto en Factura Green',
+      en: 'Error creating product in Factura Green',
+    },
+    'pack.error_updating_product': {
+      es: 'Error al actualizar producto en Factura Green',
+      en: 'Error updating product in Factura Green',
+    },
+    'pack.error_listing_products': {
+      es: 'Error al listar productos de Factura Green',
+      en: 'Error listing products from Factura Green',
+    },
+    'pack.error_finding_product': {
+      es: 'Error al buscar producto por SKU en Factura Green',
+      en: 'Error finding product by SKU in Factura Green',
+    },
+    'pack.error_global_invoice': {
+      es: 'Error al emitir la factura global en Factura Green',
+      en: 'Error generating global invoice in Factura Green',
+    },
+    'pack.error_payment_complement': {
+      es: 'Error al generar complemento de pago en Factura Green',
+      en: 'Error generating payment complement in Factura Green',
+    },
+    'pack.error_canceling_payment_complement': {
+      es: 'Error al cancelar complemento de pago en Factura Green',
+      en: 'Error canceling payment complement in Factura Green',
+    },
+    'pack.error_getting_cfdi_status': {
+      es: 'Error al obtener estado del CFDI de Factura Green',
+      en: 'Error getting CFDI status from Factura Green',
+    },
+
 
     // Quotation messages
     'quotation.not_found': {

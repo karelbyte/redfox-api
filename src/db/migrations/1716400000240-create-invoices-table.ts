@@ -103,6 +103,11 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'payload_send',
+            type: 'json',
+            isNullable: true,
+          },
+          {
             name: 'payment_method',
             type: 'enum',
             enum: ['cash', 'card', 'transfer', 'check', 'credit'],
