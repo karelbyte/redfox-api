@@ -22,6 +22,7 @@ import { ConvertToSaleResponseDto } from '../dtos/quotation/convert-to-sale-resp
 import { CreateQuotationDetailDto } from '../dtos/quotation-detail/create-quotation-detail.dto';
 import { UpdateQuotationDetailDto } from '../dtos/quotation-detail/update-quotation-detail.dto';
 import { QuotationDetailResponseDto } from '../dtos/quotation-detail/quotation-detail-response.dto';
+import { SendQuotationEmailDto } from '../dtos/quotation/send-quotation-email.dto';
 import { QuotationDetailQueryDto } from '../dtos/quotation-detail/quotation-detail-query.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
@@ -197,5 +198,14 @@ export class QuotationController {
     @UserId() userId: string,
   ): Promise<void> {
     return this.quotationService.removeDetail(quotationId, detailId, userId);
+  }
+
+  @Post(':id/send-email')
+  sendEmail(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() sendEmailDto: SendQuotationEmailDto,
+    @UserId() userId: string,
+  ): Promise<{ sent: boolean; message: string }> {
+    return this.quotationService.sendEmail(id, sendEmailDto, userId);
   }
 }

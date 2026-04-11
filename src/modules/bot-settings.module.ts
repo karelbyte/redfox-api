@@ -14,7 +14,6 @@ import { BotSettingsMapper } from '../services/mappers/bot-settings.mapper';
 import { BaileysProviderService } from '../services/baileys-provider.service';
 import { BotConversationService } from '../services/bot-conversation.service';
 import { RuleBasedBotIntentInterpreterService } from '../services/rule-based-bot-intent-interpreter.service';
-import { QuotationBotPdfService } from '../services/quotation-bot-pdf.service';
 import { BaileysRedisAuthStateService } from '../services/baileys-redis-auth-state.service';
 import { OrganizationModule } from './organization.module';
 import { QuotationModule } from './quotation.module';
@@ -43,7 +42,6 @@ import { EmailModule } from './email.module';
     BotSettingsService,
     BotSettingsMapper,
     RuleBasedBotIntentInterpreterService,
-    QuotationBotPdfService,
     BotConversationService,
     BaileysRedisAuthStateService,
     BaileysProviderService,

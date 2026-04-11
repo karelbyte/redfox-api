@@ -18,7 +18,9 @@ import { Organization } from './organization.entity';
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
+  PENDING_CFDI = 'PENDING_CFDI',
   SENT = 'SENT',
+  FAILED_CFDI = 'FAILED_CFDI',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
 }

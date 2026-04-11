@@ -27,6 +27,9 @@ import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
 import { SurrogateService } from './surrogate.service';
+import { QuotationBotPdfService } from './quotation-bot-pdf.service';
+import { EmailService } from './email.service';
+import { SendQuotationEmailDto } from '../dtos/quotation/send-quotation-email.dto';
 
 @Injectable()
 export class QuotationService {
@@ -50,6 +53,8 @@ export class QuotationService {
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
     private readonly surrogateService: SurrogateService,
+    private readonly quotationBotPdfService: QuotationBotPdfService,
+    private readonly emailService: EmailService,
   ) {}
 
   private get organizationId(): string {
@@ -788,5 +793,81 @@ export class QuotationService {
       message,
       convertedAt: new Date(),
     };
+  }
+
+  async sendEmail(
+    quotationId: string,
+    sendEmailDto: SendQuotationEmailDto,
+    userId?: string,
+  ): Promise<{ sent: boolean; message: string }> {
+    const quotation = await this.quotationRepository.findOne({
+      where: { id: quotationId, organization_id: this.organizationId },
+      relations: ['client'],
+    });
+
+    if (!quotation) {
+      const message = await this.translationService.translate(
+        'quotation.not_found',
+        userId,
+        { id: quotationId },
+      );
+      throw new NotFoundException(message);
+    }
+
+    try {
+      const locale = sendEmailDto.locale || 'es';
+      const document = await this.quotationBotPdfService.generate(
+        this.organizationId,
+        quotationId,
+        locale,
+      );
+
+      const clientName = quotation.client?.name || '';
+      const customMessage = sendEmailDto.message 
+        ? `<p>${sendEmailDto.message.replace(/\n/g, '<br/>')}</p>` 
+        : '<p>Se adjunta la cotización solicitada.</p>';
+
+      const emailResult = await this.emailService.sendOrganizationEmail(
+        this.organizationId,
+        {
+          to: sendEmailDto.emails,
+          subject: `Cotización ${document.fileName.replace('.pdf', '')}`,
+          html: `
+            <div style="font-family: sans-serif; color: #333;">
+              <p>Hola ${clientName},</p>
+              ${customMessage}
+            </div>
+          `,
+          attachments: [
+            {
+              filename: document.fileName,
+              content: document.buffer,
+              contentType: 'application/pdf',
+            },
+          ],
+        },
+      );
+
+      if (!emailResult.configured) {
+        return {
+          sent: false,
+          message: 'The organization email is not configured.',
+        };
+      }
+
+      if (!emailResult.sent) {
+        return {
+          sent: false,
+          message: 'Failed to send the email using the configured provider.',
+        };
+      }
+
+      return {
+        sent: true,
+        message: 'Email sent successfully',
+      };
+    } catch (error) {
+      throw new BadRequestException(`Failed to generate or send PDF: ${error.message}`);
+    }
   }
 }

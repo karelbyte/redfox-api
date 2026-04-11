@@ -1,5 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Invoice } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
 import { InvoicePayment } from '../models/invoice-payment.entity';
@@ -28,6 +30,9 @@ import { InvoiceDetailMapper } from '../services/mappers/invoice-detail.mapper';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
+import { CfdiQueue } from '../queues/cfdi.queue';
+import { InMemoryCfdiQueue } from '../queues/in-memory-cfdi.queue';
+import { CfdiProcessor } from '../processors/cfdi.processor';
 
 @Module({
   imports: [
@@ -47,6 +52,19 @@ import { NotificationModule } from './notification.module';
     OrganizationModule,
     forwardRef(() => AccountReceivableModule),
     NotificationModule,
+    BullModule.registerQueueAsync({
+      name: 'generate-cfdi',
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+          password: configService.get<string>('REDIS_PASSWORD') || undefined,
+          db: configService.get<number>('REDIS_DB', 0),
+        },
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [InvoiceController, InvoicePaymentController],
   providers: [
@@ -62,7 +80,10 @@ import { NotificationModule } from './notification.module';
     CurrencyMapper,
     InvoiceMapper,
     InvoiceDetailMapper,
+    CfdiQueue,
+    InMemoryCfdiQueue,
+    CfdiProcessor,
   ],
-  exports: [InvoiceService, InvoicePaymentService],
+  exports: [InvoiceService, InvoicePaymentService, CfdiQueue],
 })
 export class InvoiceModule {}

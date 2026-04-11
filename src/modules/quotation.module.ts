@@ -9,6 +9,7 @@ import { Product } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
+import { CompanySettings } from '../models/company-settings.entity';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
@@ -18,12 +19,14 @@ import { TaxMapper } from '../services/mappers/tax.mapper';
 import { MeasurementUnitMapper } from '../services/mappers/measurement-unit.mapper';
 import { TranslationService } from '../services/translation.service';
 import { UserContextService } from '../services/user-context.service';
+import { QuotationBotPdfService } from '../services/quotation-bot-pdf.service';
 import { Language } from '../models/language.entity';
 import { User } from '../models/user.entity';
 import { OrganizationModule } from './organization.module';
 import { SurrogateModule } from './surrogate.module';
 import { WithdrawalModule } from './withdrawal.module';
 import { InvoiceModule } from './invoice.module';
+import { EmailModule } from './email.module';
 
 @Module({
   imports: [
@@ -37,9 +40,11 @@ import { InvoiceModule } from './invoice.module';
       WithdrawalDetail,
       Language,
       User,
+      CompanySettings,
     ]),
     OrganizationModule,
     SurrogateModule,
+    EmailModule,
     forwardRef(() => WithdrawalModule),
     forwardRef(() => InvoiceModule),
   ],
@@ -55,7 +60,8 @@ import { InvoiceModule } from './invoice.module';
     MeasurementUnitMapper,
     TranslationService,
     UserContextService,
+    QuotationBotPdfService,
   ],
-  exports: [QuotationService],
+  exports: [QuotationService, QuotationBotPdfService],
 })
 export class QuotationModule {}

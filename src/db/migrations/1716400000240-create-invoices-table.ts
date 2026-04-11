@@ -81,7 +81,7 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
           {
             name: 'status',
             type: 'enum',
-            enum: ['DRAFT', 'SENT', 'PAID', 'CANCELLED'],
+            enum: ['DRAFT', 'PENDING_CFDI', 'SENT', 'FAILED_CFDI', 'PAID', 'CANCELLED'],
             default: "'DRAFT'",
             isNullable: false,
           },

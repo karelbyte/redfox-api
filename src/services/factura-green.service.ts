@@ -938,60 +938,19 @@ export class FacturaGreenService implements ICertificationPackService {
     }
   }
 
-  async findProductBySku(sku: string): Promise<ProductResponse | null> {
-    try {
-      const baseUrl = this.getBaseUrl();
-      const headers = await this.getHeaders();
 
-      const payload = {
-        product: {
-          id: sku,
-        },
-      };
-
-      const response = await fetch(`${baseUrl}/interop/product/get`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.response !== 'success') {
-        // En Factura Green, un status de no éxito en GET a menudo implica que no existe
-        // Pero si es un error estructural o 500, deberíamos alertar.
-        if (response.status >= 500) {
-          throw new BadRequestException(
-            'Factura Green service unavailable while searching SKU',
-          );
-        }
-        return null;
-      }
-
-      const product = data.data;
-      return {
-        id: product.uuid,
-        created_at: product.createdAt || new Date().toISOString(),
-        livemode: true,
-        description: product.name,
-        product_key: product.satKey?.k || '01010101',
-        unit_key: product.unit?.k || 'E48',
-        price: product.price?.amount || 0,
-        tax_included: false,
-        sku: product.id,
-      };
-    } catch (error: any) {
-      if (error instanceof BadRequestException) throw error;
-      console.error('Factura Green Find Product by SKU Error:', error);
-      throw new BadRequestException(
-        error.message ||
-          (await this.translationService.translate(
-            'pack.error_finding_product',
-            this.tenantContext.getUserId() ?? undefined,
-          )),
-      );
-    }
+  /**
+   * Factura Green NO soporta búsqueda de productos por SKU de forma nativa.
+   * El endpoint /interop/product/get solo acepta búsqueda por UUID.
+   * Por tanto, este método siempre retorna null para indicar "no encontrado por SKU".
+   *
+   * La sincronización en Factura Green depende exclusivamente del `product_pack_id`
+   * (UUID del PAC) que se persiste en el producto tras la primera creación.
+   */
+  async findProductBySku(_sku: string): Promise<ProductResponse | null> {
+    return null;
   }
+
   async createProduct(productData: ProductData): Promise<ProductResponse> {
     try {
       const baseUrl = this.getBaseUrl();
@@ -1158,7 +1117,7 @@ export class FacturaGreenService implements ICertificationPackService {
         }
         payload.product.taxes = taxes;
       }
-      console.log('enviado', payload);
+
       const response = await fetch(`${baseUrl}/interop/product/update`, {
         method: 'POST',
         headers,
@@ -1166,7 +1125,7 @@ export class FacturaGreenService implements ICertificationPackService {
       });
 
       const data = await response.json();
-      console.log('recivido', data);
+
       if (!response.ok || data.response !== 'success') {
         const fallbackMsg = await this.translationService.translate(
           'pack.error_updating_product',

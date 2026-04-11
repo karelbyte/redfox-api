@@ -36,6 +36,7 @@ import { CertificationPackFactoryService } from './certification-pack-factory.se
 import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
+import { CfdiQueue } from '../queues/cfdi.queue';
 
 @Injectable()
 export class InvoiceService {
@@ -63,6 +64,7 @@ export class InvoiceService {
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
+    private readonly cfdiQueue: CfdiQueue,
   ) {}
 
   private get organizationId(): string {
@@ -816,41 +818,15 @@ export class InvoiceService {
     }
 
     try {
-      const packService = await this.certificationPackFactory.getPackService();
-
-      // Auto-sincronizar productos que no tengan product_pack_id
-      for (const detail of invoice.details) {
-        if (detail.product && !detail.product.product_pack_id) {
-          const result = await this.productPackSyncService.syncProduct(
-            detail.product,
-          );
-          if (result.packSyncSuccess) {
-            detail.product.product_pack_id = result.product.product_pack_id;
-          } else {
-            throw new BadRequestException(
-              `No se pudo sincronizar el producto "${detail.product.name}" con Factura Green: ${result.packErrorMessage}`,
-            );
-          }
-        }
-      }
-
-      // Pasar opciones especiales al servicio de pack (solo Factura Green las usa)
-      const cfdiResult = await packService.generateCFDI(invoice, options);
-
-      invoice.cfdi_uuid = cfdiResult.uuid;
-      invoice.pack_invoice_id = cfdiResult.id;
-      invoice.pack_invoice_response = {
-        uuid: cfdiResult.uuid,
-        status: cfdiResult.status,
-        pdf_url: cfdiResult.pdf_url,
-        xml_url: cfdiResult.xml_url,
-      };
-      if (cfdiResult.payload_send) {
-        invoice.payload_send = cfdiResult.payload_send;
-      }
-      invoice.status = InvoiceStatus.SENT;
-
+      invoice.status = InvoiceStatus.PENDING_CFDI;
       const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+      // Encolar el job para que el processor lo maneje en background
+      await this.cfdiQueue.addCfdiJob({
+        invoiceId: invoice.id,
+        userId,
+        options,
+      });
 
       const invoiceWithDetails = await this.invoiceRepository.findOne({
         where: { id: updatedInvoice.id },
@@ -867,7 +843,6 @@ export class InvoiceService {
         ],
       });
 
-      // Cargar detalles explícitamente sin filtro de soft delete
       if (invoiceWithDetails) {
         invoiceWithDetails.details = await this.invoiceDetailRepository.find({
           where: { invoice_id: invoiceWithDetails.id },
@@ -882,23 +857,9 @@ export class InvoiceService {
         });
       }
 
-      // Notificar al usuario que el CFDI fue generado
-      try {
-        if (userId) {
-          await this.notificationService.createInvoiceNotification(
-            `🧾 CFDI generado: ${invoice.code}`,
-            `La factura ${invoice.code} fue timbrada exitosamente. UUID: ${cfdiResult.uuid}`,
-            updatedInvoice.id,
-            userId,
-          );
-        }
-      } catch {
-        /* no bloquear el flujo */
-      }
-
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error) {
-      console.error('Error generating CFDI:', error);
+      console.error('Error queuing CFDI job:', error);
       const message = await this.translationService.translate(
         'invoice.error_generating_cfdi',
         userId,
