@@ -20,9 +20,9 @@ export class CreatePurchaseOrderDto {
   @IsUUID()
   provider_id: string;
 
-  @IsUUID()
+  /*@IsUUID()
   @IsOptional()
-  warehouse_id?: string;
+  warehouse_id?: string;*/
 
   @IsOptional()
   @IsString()

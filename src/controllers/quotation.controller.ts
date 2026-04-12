@@ -11,6 +11,7 @@ import {
   Put,
   UseInterceptors,
   Logger,
+  Res,
 } from '@nestjs/common';
 import { QuotationService } from '../services/quotation.service';
 import { WithdrawalService } from '../services/withdrawal.service';
@@ -207,5 +208,20 @@ export class QuotationController {
     @UserId() userId: string,
   ): Promise<{ sent: boolean; message: string }> {
     return this.quotationService.sendEmail(id, sendEmailDto, userId);
+  }
+
+  @Get(':id/pdf')
+  async getPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('locale') locale: string = 'es',
+    @Res() res: any,
+  ): Promise<void> {
+    const document = await this.quotationService.getQuotationPdf(id, locale);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=${document.fileName}`,
+      'Content-Length': document.buffer.length,
+    });
+    res.end(document.buffer);
   }
 }

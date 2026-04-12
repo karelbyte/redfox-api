@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InMemoryEmailQueue } from './in-memory-email.queue';
 
 export interface EmailJob {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   from?: string;
@@ -12,6 +12,7 @@ export interface EmailJob {
     content: Buffer | string;
     contentType?: string;
   }>;
+  organizationId?: string;
 }
 
 /**

@@ -28,6 +28,7 @@ import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { ReceptionService } from './reception.service';
 import { EmailService } from './email.service';
+import { SurrogateService } from './surrogate.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -50,6 +51,7 @@ export class PurchaseOrderService {
     private readonly notificationService: NotificationService,
     private readonly receptionService: ReceptionService,
     private readonly emailService: EmailService,
+    private readonly surrogateService: SurrogateService,
   ) {}
 
   private get organizationId(): string {
@@ -112,7 +114,7 @@ export class PurchaseOrderService {
     createPurchaseOrderDto: CreatePurchaseOrderDto,
     userId?: string,
   ): Promise<PurchaseOrderResponseDto> {
-    const { provider_id, warehouse_id, ...rest } = createPurchaseOrderDto;
+    const { provider_id,  ...rest } = createPurchaseOrderDto;
 
     // Verificar que el proveedor existe
     const provider = await this.providerRepository.findOne({
@@ -121,18 +123,6 @@ export class PurchaseOrderService {
     if (!provider) {
       const message = await this.translationService.translate(
         'purchase_order.provider_not_found',
-        userId,
-      );
-      throw new NotFoundException(message);
-    }
-
-    // Verificar que el almacén existe
-    const warehouse = await this.warehouseRepository.findOne({
-      where: { id: warehouse_id, organization_id: this.organizationId },
-    });
-    if (!warehouse) {
-      const message = await this.translationService.translate(
-        'purchase_order.warehouse_not_found',
         userId,
       );
       throw new NotFoundException(message);
@@ -156,13 +146,18 @@ export class PurchaseOrderService {
     const purchaseOrder = this.purchaseOrderRepository.create({
       ...rest,
       provider,
-      warehouse,
       status: rest.status || 'PENDING',
       organization_id: this.organizationId,
     });
 
     const savedPurchaseOrder =
       await this.purchaseOrderRepository.save(purchaseOrder);
+
+    // Incrementar el contador del surrogate si el código coincide con el sugerido
+    await this.surrogateService.useCodeIfMatches(
+      'purchase_order',
+      createPurchaseOrderDto.code,
+    );
 
     // Notificar al usuario que creó la orden
     try {
@@ -286,24 +281,6 @@ export class PurchaseOrderService {
         throw new NotFoundException(message);
       }
       purchaseOrder.provider = provider;
-    }
-
-    // Verificar almacén si se está actualizando
-    if (updatePurchaseOrderDto.warehouse_id) {
-      const warehouse = await this.warehouseRepository.findOne({
-        where: {
-          id: updatePurchaseOrderDto.warehouse_id,
-          organization_id: this.organizationId,
-        },
-      });
-      if (!warehouse) {
-        const message = await this.translationService.translate(
-          'purchase_order.warehouse_not_found',
-          userId,
-        );
-        throw new NotFoundException(message);
-      }
-      purchaseOrder.warehouse = warehouse;
     }
 
     Object.assign(purchaseOrder, updatePurchaseOrderDto);
@@ -629,6 +606,7 @@ export class PurchaseOrderService {
     purchaseOrderId: string,
     userId?: string,
     sendEmail = false,
+    email?: string,
   ): Promise<ApprovePurchaseOrderResponseDto> {
     const purchaseOrder = await this.purchaseOrderRepository.findOne({
       where: { id: purchaseOrderId, organization_id: this.organizationId },
@@ -810,14 +788,14 @@ export class PurchaseOrderService {
             </html>
           `;
 
-          await this.emailService.sendEmail(userId, {
+          await this.emailService.sendOrganizationEmail(this.organizationId, {
             to: providerEmail,
             subject: `Orden de Compra ${purchaseOrder.code} — Aprobada`,
             html,
           });
 
           console.log(
-            `[PurchaseOrder] Email enviado a proveedor ${providerEmail} para orden ${purchaseOrder.code}`,
+            `[PurchaseOrder] Email enviado a ${providerEmail} (Org: ${this.organizationId}) para orden ${purchaseOrder.code}`,
           );
         }
       } catch (emailError: any) {

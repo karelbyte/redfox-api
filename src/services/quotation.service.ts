@@ -12,6 +12,7 @@ import { Product } from '../models/product.entity';
 import { Warehouse } from '../models/warehouse.entity';
 import { Withdrawal, WithdrawalStatus } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
+import { CompanySettings } from '../models/company-settings.entity';
 import { CreateQuotationDto } from '../dtos/quotation/create-quotation.dto';
 import { UpdateQuotationDto } from '../dtos/quotation/update-quotation.dto';
 import { QuotationResponseDto } from '../dtos/quotation/quotation-response.dto';
@@ -27,8 +28,9 @@ import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
 import { SurrogateService } from './surrogate.service';
-import { QuotationBotPdfService } from './quotation-bot-pdf.service';
+import { QuotationBotPdfService, QuotationBotPdfDocument } from './quotation-bot-pdf.service';
 import { EmailService } from './email.service';
+import { EmailQueue } from '../queues/email.queue';
 import { SendQuotationEmailDto } from '../dtos/quotation/send-quotation-email.dto';
 
 @Injectable()
@@ -48,6 +50,8 @@ export class QuotationService {
     private readonly withdrawalRepository: Repository<Withdrawal>,
     @InjectRepository(WithdrawalDetail)
     private readonly withdrawalDetailRepository: Repository<WithdrawalDetail>,
+    @InjectRepository(CompanySettings)
+    private readonly companySettingsRepository: Repository<CompanySettings>,
     private readonly warehouseMapper: WarehouseMapper,
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
@@ -55,6 +59,7 @@ export class QuotationService {
     private readonly surrogateService: SurrogateService,
     private readonly quotationBotPdfService: QuotationBotPdfService,
     private readonly emailService: EmailService,
+    private readonly emailQueue: EmailQueue,
   ) {}
 
   private get organizationId(): string {
@@ -802,7 +807,14 @@ export class QuotationService {
   ): Promise<{ sent: boolean; message: string }> {
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: this.organizationId },
-      relations: ['client'],
+      relations: [
+        'client',
+        'warehouse',
+        'details',
+        'details.product',
+        'details.product.measurement_unit',
+        'details.product.tax',
+      ],
     });
 
     if (!quotation) {
@@ -814,6 +826,10 @@ export class QuotationService {
       throw new NotFoundException(message);
     }
 
+    const company = await this.companySettingsRepository.findOne({
+      where: { organization_id: this.organizationId },
+    });
+
     try {
       const locale = sendEmailDto.locale || 'es';
       const document = await this.quotationBotPdfService.generate(
@@ -822,52 +838,108 @@ export class QuotationService {
         locale,
       );
 
-      const clientName = quotation.client?.name || '';
-      const customMessage = sendEmailDto.message 
-        ? `<p>${sendEmailDto.message.replace(/\n/g, '<br/>')}</p>` 
-        : '<p>Se adjunta la cotización solicitada.</p>';
-
-      const emailResult = await this.emailService.sendOrganizationEmail(
-        this.organizationId,
-        {
-          to: sendEmailDto.emails,
-          subject: `Cotización ${document.fileName.replace('.pdf', '')}`,
-          html: `
-            <div style="font-family: sans-serif; color: #333;">
-              <p>Hola ${clientName},</p>
-              ${customMessage}
-            </div>
-          `,
-          attachments: [
-            {
-              filename: document.fileName,
-              content: document.buffer,
-              contentType: 'application/pdf',
-            },
-          ],
-        },
+      const htmlContent = this.generateQuotationHtml(
+        quotation,
+        company,
+        sendEmailDto.message,
+        locale,
       );
 
-      if (!emailResult.configured) {
-        return {
-          sent: false,
-          message: 'The organization email is not configured.',
-        };
-      }
-
-      if (!emailResult.sent) {
-        return {
-          sent: false,
-          message: 'Failed to send the email using the configured provider.',
-        };
-      }
+      // Encolar el correo en lugar de enviarlo de forma síncrona
+      await this.emailQueue.addEmailJob({
+        to: sendEmailDto.emails,
+        subject: `Cotización ${quotation.code} - ${company?.name || 'Nitro'}`,
+        html: htmlContent,
+        organizationId: this.organizationId,
+        attachments: [
+          {
+            filename: document.fileName,
+            content: document.buffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
 
       return {
         sent: true,
-        message: 'Email sent successfully',
+        message: 'Email queued for delivery successfully',
       };
     } catch (error) {
-      throw new BadRequestException(`Failed to generate or send PDF: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to generate or send PDF: ${error.message}`,
+      );
     }
+  }
+
+  async getQuotationPdf(
+    quotationId: string,
+    locale: string = 'es',
+  ): Promise<QuotationBotPdfDocument> {
+    return this.quotationBotPdfService.generate(
+      this.organizationId,
+      quotationId,
+      locale,
+    );
+  }
+
+  private generateQuotationHtml(
+    quotation: Quotation,
+    company: CompanySettings | null,
+    customMessage: string | undefined,
+    locale: string,
+  ): string {
+    const isEs = locale.startsWith('es');
+    const labels = {
+      greeting: quotation.client?.name 
+        ? (isEs ? `Estimado cliente ${quotation.client.name},` : `Dear client ${quotation.client.name},`)
+        : (isEs ? 'Estimado cliente,' : 'Dear client,'),
+      notification: isEs
+        ? 'Le informamos que se ha generado la cotización solicitada. A continuación encontrará un resumen y el documento oficial adjunto en formato PDF.'
+        : 'Please be informed that the requested quotation has been generated. Below is a summary, and the official document is attached as a PDF.',
+      folio: isEs ? 'Folio de cotización' : 'Quotation code',
+      total: isEs ? 'Monto Total' : 'Total Amount',
+      footer: isEs
+        ? 'Este es un correo automático, por favor no responda directamente a este mensaje.'
+        : 'This is an automated email, please do not reply directly to this message.',
+      noteTitle: isEs ? 'Nota del vendedor:' : 'Sender note:',
+      title: isEs ? 'Cotización Generada' : 'Quotation Generated',
+    };
+
+    const money = (val: number) =>
+      new Intl.NumberFormat(isEs ? 'es-MX' : 'en-US', {
+        style: 'currency',
+        currency: 'MXN',
+      }).format(val);
+
+    return `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #2563eb; text-align: center;">${labels.title}</h2>
+        
+        <p>${labels.greeting}</p>
+        <p>${labels.notification}</p>
+        
+        <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 5px 0;"><strong>${labels.folio}:</strong> ${quotation.code}</p>
+          <p style="margin: 5px 0;"><strong>${labels.total}:</strong> ${money(Number(quotation.total))}</p>
+        </div>
+
+        ${
+          customMessage
+            ? `<div style="margin: 20px 0; padding: 15px; border-left: 4px solid #2563eb; background-color: #eff6ff;">
+               <p style="margin: 0 0 5px; font-weight: bold; color: #1e40af;">${labels.noteTitle}</p>
+               <p style="margin: 0;">${customMessage.replace(/\n/g, '<br/>')}</p>
+             </div>`
+            : ''
+        }
+
+        <p style="margin-top: 30px; font-size: 0.9em; color: #666; text-align: center;">
+          ${labels.footer}
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <div style="text-align: center; font-size: 0.8em; color: #999;">
+          © ${new Date().getFullYear()} ${company?.name || 'Nitro'}
+        </div>
+      </div>
+    `;
   }
 }

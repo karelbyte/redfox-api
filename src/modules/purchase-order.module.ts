@@ -21,6 +21,8 @@ import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
 import { ReceptionModule } from './reception.module';
 import { EmailConfigModule } from './email-config.module';
+import { SurrogateModule } from './surrogate.module';
+
 
 @Module({
   imports: [
@@ -38,6 +40,7 @@ import { EmailConfigModule } from './email-config.module';
     NotificationModule,
     forwardRef(() => ReceptionModule),
     EmailConfigModule,
+    SurrogateModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [

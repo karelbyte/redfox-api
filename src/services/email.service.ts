@@ -144,9 +144,10 @@ export class EmailService {
 
     try {
       const transporter = this.createTransporter(config);
+      const fromName = config.fromName || config.user || config.fromEmail.split('@')[0];
 
       const mailOptions = {
-        from: `${config.fromName || config.user} <${config.fromEmail}>`,
+        from: `"${fromName}" <${config.fromEmail}>`,
         to: emailOptions.to,
         subject: emailOptions.subject,
         html: emailOptions.html,
@@ -190,9 +191,10 @@ export class EmailService {
 
     try {
       const transporter = this.createTransporter(config);
+      const fromName = config.fromName || config.user || config.fromEmail.split('@')[0];
 
       const mailOptions = {
-        from: `${config.fromName || config.user} <${config.fromEmail}>`,
+        from: `"${fromName}" <${config.fromEmail}>`,
         to: emailOptions.to,
         subject: emailOptions.subject,
         html: emailOptions.html,
@@ -210,6 +212,10 @@ export class EmailService {
         messageId: info.messageId,
       };
     } catch (error) {
+      console.error(
+        `[EmailService] ❌ Error sending organization email (Org: ${organizationId}):`,
+        error.message,
+      );
       return {
         configured: true,
         sent: false,
@@ -218,17 +224,88 @@ export class EmailService {
   }
 
   private createTransporter(config: EmailConfig) {
-    return nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      // tls: { family: 4 },
+    const provider = config.provider || 'smtp';
+    let transportConfig: any = {
       family: 4,
-      auth: {
-        user: config.user,
-        pass: config.password,
-      },
-    } as any);
+    };
+
+    switch (provider.toLowerCase()) {
+      case 'sendgrid':
+        transportConfig = {
+          ...transportConfig,
+          host: 'smtp.sendgrid.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'apikey',
+            pass: config.apiKey,
+          },
+        };
+        break;
+      case 'postmark':
+        transportConfig = {
+          ...transportConfig,
+          host: 'smtp.postmarkapp.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: config.apiKey,
+            pass: config.apiKey,
+          },
+        };
+        break;
+      case 'mailgun':
+        transportConfig = {
+          ...transportConfig,
+          host: 'smtp.mailgun.org',
+          port: 587,
+          secure: false,
+          auth: {
+            user: config.user, // Usually postmaster@[domain]
+            pass: config.apiKey,
+          },
+        };
+        break;
+      case 'brevo':
+        transportConfig = {
+          ...transportConfig,
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: config.user, // The Brevo login email
+            pass: config.apiKey,
+          },
+        };
+        break;
+      case 'resend':
+        transportConfig = {
+          ...transportConfig,
+          host: 'smtp.resend.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: 'resend',
+            pass: config.apiKey,
+          },
+        };
+        break;
+      case 'smtp':
+      default:
+        transportConfig = {
+          ...transportConfig,
+          host: config.host,
+          port: config.port,
+          secure: config.secure,
+          auth: {
+            user: config.user,
+            pass: config.password,
+          },
+        };
+        break;
+    }
+
+    return nodemailer.createTransport(transportConfig);
   }
 
   async sendSystemEmail(
@@ -395,6 +472,8 @@ export class EmailService {
   private mapToResponseDto(config: EmailConfig): EmailConfigResponseDto {
     return {
       id: config.id,
+      provider: config.provider,
+      apiKey: config.apiKey,
       host: config.host,
       port: config.port,
       user: config.user,

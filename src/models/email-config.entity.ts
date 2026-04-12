@@ -24,16 +24,22 @@ export class EmailConfig {
   @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 50, default: 'smtp' })
+  provider: string; // smtp, sendgrid, postmark, mailgun, brevo
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  apiKey: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   host: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: true })
   port: number;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   user: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   password: string;
 
   @Column({ type: 'varchar', length: 255 })

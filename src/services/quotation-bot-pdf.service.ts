@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import * as PDFDocument from 'pdfkit';
 import * as QRCode from 'qrcode';
@@ -47,6 +48,7 @@ type BotPdfCopy = {
   generatedBy: string;
   defaultNote: string;
   notAvailable: string;
+  clientAddress: string;
   statusMap: Record<string, string>;
 };
 
@@ -86,6 +88,7 @@ const COPY: Record<SupportedLocale, BotPdfCopy> = {
     generatedBy: 'Documento generado desde Nitro',
     defaultNote: 'Cotización creada automáticamente desde el bot de WhatsApp.',
     notAvailable: '—',
+    clientAddress: 'Dirección',
     statusMap: {
       draft: 'Borrador',
       sent: 'Enviada',
@@ -128,6 +131,7 @@ const COPY: Record<SupportedLocale, BotPdfCopy> = {
     generatedBy: 'Document generated from Nitro',
     defaultNote: 'Quotation created automatically from the WhatsApp bot.',
     notAvailable: '—',
+    clientAddress: 'Address',
     statusMap: {
       draft: 'Draft',
       sent: 'Sent',
@@ -168,8 +172,9 @@ const COPY: Record<SupportedLocale, BotPdfCopy> = {
     notes: '备注',
     siteQrLabel: '网站',
     generatedBy: '由 Nitro 自动生成',
-    defaultNote: '该报价由 WhatsApp 机器人自动创建。',
+    defaultNote: '从 WhatsApp 机器人自动创建的报价单。',
     notAvailable: '—',
+    clientAddress: '地址',
     statusMap: {
       draft: '草稿',
       sent: '已发送',
@@ -190,7 +195,8 @@ export class QuotationBotPdfService {
     private readonly quotationDetailRepository: Repository<QuotationDetail>,
     @InjectRepository(CompanySettings)
     private readonly companySettingsRepository: Repository<CompanySettings>,
-  ) {}
+    private readonly configService: ConfigService,
+  ) { }
 
   async generate(
     organizationId: string,
@@ -202,7 +208,7 @@ export class QuotationBotPdfService {
 
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: organizationId },
-      relations: ['client', 'warehouse'],
+      relations: ['client', 'warehouse', 'client.taxData', 'client.addresses'],
     });
 
     if (!quotation) {
@@ -224,6 +230,26 @@ export class QuotationBotPdfService {
       where: { organization_id: organizationId },
     });
 
+    let logoBuffer: Buffer | null = null;
+    if (company?.logoUrl) {
+      try {
+        let absoluteLogoUrl = company.logoUrl;
+        if (absoluteLogoUrl.startsWith('/')) {
+          const publicUrl = this.configService
+            .get<string>('APP_PUBLIC_URL', 'http://localhost:4010')
+            .replace(/\/$/, '');
+          absoluteLogoUrl = `${publicUrl}${absoluteLogoUrl}`;
+        }
+
+        const response = await fetch(absoluteLogoUrl);
+        if (response.ok) {
+          logoBuffer = Buffer.from(await response.arrayBuffer());
+        }
+      } catch (e) {
+        console.error('Error fetching company logo:', e);
+      }
+    }
+
     const websiteUrl = company?.website?.trim() || DEFAULT_WEBSITE_URL;
     const qrBuffer = await QRCode.toBuffer(websiteUrl, {
       margin: 1,
@@ -234,10 +260,11 @@ export class QuotationBotPdfService {
       const doc = new PDFDocument({
         size: 'A4',
         margin: 40,
+        bufferPages: true,
         info: {
           Title: `${copy.title} ${quotation.code}`,
           Author: company?.name || company?.legalName || 'Nitro',
-          Subject: 'Quotation generated from WhatsApp bot',
+          Subject: 'Quotation generated from Nitro',
         },
       });
 
@@ -246,12 +273,9 @@ export class QuotationBotPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const contentWidth =
-        doc.page.width - doc.page.margins.left - doc.page.margins.right;
-      const leftX = doc.page.margins.left;
-      const rightX = doc.page.width - doc.page.margins.right;
-      const boxGap = 12;
-      const boxWidth = (contentWidth - boxGap) / 2;
+      const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const margin = doc.page.margins.left;
+      const rightEnd = doc.page.width - doc.page.margins.right;
 
       const money = (value: number) =>
         new Intl.NumberFormat(this.getIntlLocale(resolvedLocale), {
@@ -259,384 +283,239 @@ export class QuotationBotPdfService {
           currency: 'MXN',
         }).format(Number(value || 0));
 
-      const formatDate = (value?: Date | string | null) =>
-        value
-          ? new Date(value).toLocaleDateString(
-              this.getIntlLocale(resolvedLocale),
-              {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              },
-            )
-          : copy.notAvailable;
-
-      const safe = (value?: string | null) => {
-        const text = value?.trim();
-        return text ? text : copy.notAvailable;
+      const formatDate = (value?: Date | string | null) => {
+        if (!value) return copy.notAvailable;
+        const parsed = new Date(value);
+        return parsed.toLocaleDateString(this.getIntlLocale(resolvedLocale), {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
       };
 
-      const lineValue = (label: string, value?: string | null) =>
-        `${label}: ${safe(value)}`;
+      const safe = (value?: string | null) => (value?.trim() ? value.trim() : copy.notAvailable);
+      const lineValue = (label: string, value?: string | null) => `${label}: ${safe(value)}`;
 
-      let y = 40;
+      let currentY = 40;
 
-      doc.font('Helvetica-Bold').fontSize(18).fillColor('#0F172A');
-      doc.text(company?.name || company?.legalName || 'Nitro', leftX, y);
-      y += 24;
+      // Header
+      const topY = currentY;
+      const colW = contentWidth / 3;
+      const leftX = margin;
+      const centerX = margin + colW;
+      const rightX = margin + colW * 2;
 
-      doc.font('Helvetica').fontSize(9).fillColor('#475569');
+      doc.font('Helvetica-Bold').fontSize(14).fillColor('#111827').text(company?.name || company?.legalName || 'Nitro', leftX, topY);
+
+      doc.font('Helvetica').fontSize(8).fillColor('#4b5563');
+      let companyY = topY + 16;
       const companyLines = [
-        company?.legalName && company.legalName !== company?.name
-          ? lineValue(copy.legalName, company.legalName)
-          : null,
+        company?.legalName && company.legalName !== company?.name ? lineValue(copy.legalName, company.legalName) : null,
         company?.taxId ? lineValue(copy.taxId, company.taxId) : null,
-        company?.address || null,
+        company?.address,
         company?.phone ? lineValue(copy.phone, company.phone) : null,
         company?.email ? lineValue(copy.email, company.email) : null,
       ].filter(Boolean) as string[];
 
       for (const line of companyLines) {
-        doc.text(line, leftX, y, { width: 220 });
-        y += doc.heightOfString(line, { width: 220 }) + 3;
+        doc.text(line, leftX, companyY, { width: colW - 10 });
+        companyY += doc.heightOfString(line, { width: colW - 10 }) + 2;
       }
 
-      doc.font('Helvetica-Bold').fontSize(20).fillColor('#111827');
-      doc.text(copy.title, rightX - 180, 40, {
-        width: 180,
-        align: 'right',
-      });
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, centerX + (colW - 60) / 2, topY, { fit: [60, 40], align: 'center', valign: 'center' });
+        } catch (e) { /* skip */ }
+      }
 
-      doc.font('Helvetica').fontSize(9).fillColor('#475569');
-      const metaStartY = 66;
+      doc.font('Helvetica-Bold').fontSize(18).fillColor('#111827').text(copy.title, rightX, topY, { align: 'right', width: colW });
+
+      let metaY = topY + 22;
+      doc.font('Helvetica').fontSize(9).fillColor('#374151');
       const metaLines = [
         `${copy.quoteCode}: ${quotation.code}`,
         `${copy.quoteDate}: ${formatDate(quotation.date)}`,
         `${copy.validUntil}: ${formatDate(quotation.valid_until)}`,
-        `${copy.status}: ${copy.statusMap[quotation.status] || quotation.status}`,
-        quotation.warehouse?.name
-          ? `${copy.warehouse}: ${quotation.warehouse.name}`
-          : null,
+        `${copy.status}: ${copy.statusMap[quotation.status] || quotation.status.toUpperCase()}`,
+        quotation.warehouse?.name ? `${copy.warehouse}: ${quotation.warehouse.name}` : null,
       ].filter(Boolean) as string[];
 
-      let metaY = metaStartY;
       for (const line of metaLines) {
-        doc.text(line, rightX - 180, metaY, {
-          width: 180,
-          align: 'right',
-        });
+        doc.text(line, rightX, metaY, { align: 'right', width: colW });
         metaY += 14;
       }
 
-      y = Math.max(y, metaY) + 8;
-      doc
-        .moveTo(leftX, y)
-        .lineTo(rightX, y)
-        .strokeColor('#D7DEE7')
-        .lineWidth(1)
-        .stroke();
-      y += 14;
+      currentY = Math.max(companyY, metaY) + 10;
+      doc.moveTo(leftX, currentY).lineTo(rightEnd, currentY).strokeColor('#d1d5d9').lineWidth(0.5).stroke();
+      currentY += 15;
+
+      // Client Card
+      const boxWidth = contentWidth;
+      const startCardY = currentY;
+      const mainTaxData = quotation.client?.taxData?.find(t => t.is_main) || quotation.client?.taxData?.[0];
+      const mainAddress = quotation.client?.addresses?.find(a => a.is_main) || quotation.client?.addresses?.[0];
+      const addrLines = [
+        mainAddress?.street,
+        mainAddress?.exterior_number ? `${mainAddress.exterior_number}${mainAddress.interior_number ? ' Int. ' + mainAddress.interior_number : ''}` : null,
+        mainAddress?.neighborhood,
+        mainAddress?.city,
+        mainAddress?.state,
+        mainAddress?.zip_code,
+      ].filter(line => line && line.trim().length > 0);
+      const addressString = addrLines.join(', ');
 
       const clientLines = [
-        safe(quotation.client?.name),
         lineValue(copy.clientCode, quotation.client?.code),
-        lineValue(copy.clientEmail, quotation.client?.email),
-        lineValue(copy.clientPhone, quotation.client?.phone),
-      ];
-
-      const quoteLines = [
-        `${copy.quoteCode}: ${quotation.code}`,
-        `${copy.quoteDate}: ${formatDate(quotation.date)}`,
-        `${copy.validUntil}: ${formatDate(quotation.valid_until)}`,
-        `${copy.status}: ${copy.statusMap[quotation.status] || quotation.status}`,
-        quotation.warehouse?.name
-          ? `${copy.warehouse}: ${quotation.warehouse.name}`
-          : null,
+        quotation.client?.email ? lineValue(copy.clientEmail, quotation.client.email) : null,
+        quotation.client?.phone ? lineValue(copy.clientPhone, quotation.client.phone) : null,
+        mainTaxData?.tax_document ? lineValue(copy.taxId, mainTaxData.tax_document) : null,
+        addressString ? lineValue(copy.clientAddress, addressString) : null,
       ].filter(Boolean) as string[];
 
-      const leftBoxHeight = this.drawInfoBox(doc, {
-        x: leftX,
-        y,
-        width: boxWidth,
-        title: copy.clientSection,
-        lines: clientLines,
-      });
+      const leftH = this.drawSyncInfoCard(doc, leftX, startCardY, boxWidth, quotation.client?.name || copy.clientSection, clientLines);
+      currentY = startCardY + leftH + 20;
 
-      const rightBoxHeight = this.drawInfoBox(doc, {
-        x: leftX + boxWidth + boxGap,
-        y,
-        width: boxWidth,
-        title: copy.quoteSection,
-        lines: quoteLines,
-      });
-
-      y += Math.max(leftBoxHeight, rightBoxHeight) + 14;
-
-      const table = {
-        code: leftX,
-        product: leftX + 48,
-        unit: leftX + 210,
-        quantity: leftX + 250,
-        price: leftX + 292,
-        discount: leftX + 352,
-        tax: leftX + 408,
-        subtotal: leftX + 452,
+      // Table
+      const tableX = { code: leftX, product: leftX + 50, qty: leftX + 205, price: leftX + 260, disc: leftX + 325, tax: leftX + 385, total: leftX + 450 };
+      const renderHeader = () => {
+        doc.rect(leftX, currentY, contentWidth, 22).fill('#3b82f6');
+        doc.font('Helvetica-Bold').fontSize(8).fillColor('#FFFFFF');
+        doc.text(copy.productCode, tableX.code + 5, currentY + 7);
+        doc.text(copy.product, tableX.product + 5, currentY + 7);
+        doc.text(copy.quantity, tableX.qty, currentY + 7, { width: 50, align: 'center' });
+        doc.text(copy.price, tableX.price, currentY + 7, { width: 60, align: 'right' });
+        doc.text(copy.discount, tableX.disc, currentY + 7, { width: 55, align: 'right' });
+        doc.text(copy.tax, tableX.tax, currentY + 7, { width: 60, align: 'right' });
+        doc.text(copy.subtotal, tableX.total, currentY + 7, { width: contentWidth - (tableX.total - leftX) - 5, align: 'right' });
+        currentY += 22;
       };
 
-      const renderTableHeader = () => {
-        doc.rect(leftX, y, contentWidth, 22).fill('#0F172A');
-        doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8.5);
-        doc.text(copy.productCode, table.code + 4, y + 7, {
-          width: 40,
-          align: 'center',
-        });
-        doc.text(copy.product, table.product + 4, y + 7, {
-          width: 150,
-          align: 'left',
-        });
-        doc.text(copy.unit, table.unit + 2, y + 7, {
-          width: 32,
-          align: 'center',
-        });
-        doc.text(copy.quantity, table.quantity + 2, y + 7, {
-          width: 36,
-          align: 'right',
-        });
-        doc.text(copy.price, table.price + 2, y + 7, {
-          width: 52,
-          align: 'right',
-        });
-        doc.text(copy.discount, table.discount + 2, y + 7, {
-          width: 48,
-          align: 'right',
-        });
-        doc.text(copy.tax, table.tax + 2, y + 7, { width: 34, align: 'right' });
-        doc.text(copy.subtotal, table.subtotal + 2, y + 7, {
-          width: 46,
-          align: 'right',
-        });
-        y += 22;
-      };
+      renderHeader();
+      let discountSum = 0;
+      details.forEach((item, i) => {
+        const qty = Number(item.quantity || 0);
+        const price = Number(item.price || 0);
+        const subtotal = Number(item.subtotal || 0);
+        const discAmt = Number(item.discount_amount || 0);
+        const discPct = Number(item.discount_percentage || 0);
+        const unitCode = item.product?.measurement_unit?.code || '';
+        const computedDisc = discAmt > 0 ? discAmt : (qty * price * discPct) / 100;
+        discountSum += computedDisc;
 
-      renderTableHeader();
-
-      let discountTotal = 0;
-
-      details.forEach((detail, index) => {
-        const quantity = Number(detail.quantity || 0);
-        const price = Number(detail.price || 0);
-        const subtotal = Number(detail.subtotal || 0);
-        const discountAmount = Number(detail.discount_amount || 0);
-        const discountPercentage = Number(detail.discount_percentage || 0);
-        const taxRate = Number(detail.product?.tax?.value || 0);
-        const code =
-          detail.product?.code || detail.product?.sku || copy.notAvailable;
-        const unit =
-          detail.product?.measurement_unit?.code || copy.notAvailable;
-        const productText = detail.product?.name || copy.product;
-
-        const computedDiscount =
-          discountAmount > 0
-            ? discountAmount
-            : (quantity * price * discountPercentage) / 100;
-
-        discountTotal += computedDiscount;
-
-        const rowHeight = Math.max(
-          22,
-          doc.heightOfString(productText, {
-            width: 150,
-          }) + 8,
-        );
-
-        if (y + rowHeight > doc.page.height - 110) {
-          doc.addPage();
-          y = 40;
-          renderTableHeader();
-        }
-
-        if (index % 2 === 0) {
-          doc.rect(leftX, y, contentWidth, rowHeight).fill('#F8FAFC');
-        }
-
-        doc.fillColor('#1F2937').font('Helvetica').fontSize(8.5);
-        doc.text(safe(code), table.code + 4, y + 7, {
-          width: 40,
-          align: 'center',
-        });
-        doc.text(productText, table.product + 4, y + 7, {
-          width: 150,
-          align: 'left',
-        });
-        doc.text(safe(unit), table.unit + 2, y + 7, {
-          width: 32,
-          align: 'center',
-        });
-        doc.text(quantity.toFixed(2), table.quantity + 2, y + 7, {
-          width: 36,
-          align: 'right',
-        });
-        doc.text(money(price), table.price + 2, y + 7, {
-          width: 52,
-          align: 'right',
-        });
-        doc.text(
-          computedDiscount > 0
-            ? money(computedDiscount)
-            : discountPercentage > 0
-              ? `${discountPercentage.toFixed(2)}%`
-              : copy.notAvailable,
-          table.discount + 2,
-          y + 7,
-          {
-            width: 48,
-            align: 'right',
-          },
-        );
-        doc.text(
-          taxRate > 0 ? `${taxRate.toFixed(2)}%` : copy.notAvailable,
-          table.tax + 2,
-          y + 7,
-          {
-            width: 34,
-            align: 'right',
-          },
-        );
-        doc.text(money(subtotal), table.subtotal + 2, y + 7, {
-          width: 46,
-          align: 'right',
-        });
-
-        y += rowHeight;
+        const rowH = Math.max(20, doc.heightOfString(item.product?.name || '', { width: 150 }) + 8);
+        if (currentY + rowH > doc.page.height - 110) { doc.addPage(); currentY = 40; renderHeader(); }
+        if (i % 2 === 1) doc.rect(leftX, currentY, contentWidth, rowH).fill('#f8fafc');
+        doc.font('Helvetica').fontSize(8).fillColor('#1f2937');
+        doc.text(safe(item.product?.code), tableX.code + 5, currentY + 6);
+        doc.font('Helvetica-Bold').text(item.product?.name || '', tableX.product + 5, currentY + 6, { width: 150 });
+        doc.font('Helvetica').text(`${qty} ${unitCode}`, tableX.qty, currentY + 6, { width: 50, align: 'center' });
+        doc.text(money(price), tableX.price, currentY + 6, { width: 60, align: 'right' });
+        doc.text(computedDisc > 0 ? money(computedDisc) : discPct > 0 ? `-${discPct}%` : copy.notAvailable, tableX.disc, currentY + 6, { width: 55, align: 'right' });
+        doc.text(Number(item.product?.tax?.value || 0) > 0 ? `${item.product?.tax?.value}%` : copy.notAvailable, tableX.tax, currentY + 6, { width: 60, align: 'right' });
+        doc.font('Helvetica-Bold').text(money(subtotal), tableX.total, currentY + 6, { width: contentWidth - (tableX.total - leftX) - 5, align: 'right' });
+        currentY += rowH;
       });
 
-      y += 10;
-      const summaryX = rightX - 170;
-
-      doc
-        .roundedRect(summaryX, y, 170, 70, 4)
-        .fillAndStroke('#F8FAFC', '#E2E8F0');
-      doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(10);
-      doc.text(copy.summary, summaryX + 10, y + 10);
-
-      const summaryRows = [
-        { label: copy.subtotal, value: money(Number(quotation.subtotal || 0)) },
-        {
-          label: copy.discountTotal,
-          value: discountTotal > 0 ? money(discountTotal) : copy.notAvailable,
-        },
-        { label: copy.tax, value: money(Number(quotation.tax || 0)) },
+      // Summary
+      currentY += 15;
+      const sumW = 200, sumX = rightEnd - sumW, sumH = 80;
+      if (currentY + sumH > doc.page.height - 110) { doc.addPage(); currentY = 40; }
+      doc.roundedRect(sumX, currentY, sumW, sumH, 4).fillAndStroke('#f8fafc', '#e2e8f0');
+      let sumY = currentY + 12;
+      const sums = [
+        { l: copy.subtotal, v: money(Number(quotation.subtotal || 0)) },
+        { l: copy.discountTotal, v: discountSum > 0 ? money(discountSum) : money(0) },
+        { l: copy.tax, v: money(Number(quotation.tax || 0)) },
       ];
+      doc.font('Helvetica').fontSize(9).fillColor('#4b5563');
+      for (const s of sums) {
+        doc.text(s.l, sumX + 10, sumY);
+        doc.text(s.v, sumX + 10, sumY, { width: sumW - 20, align: 'right' });
+        sumY += 15;
+      }
+      doc.moveTo(sumX + 10, sumY).lineTo(sumX + sumW - 10, sumY).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+      sumY += 8;
+      doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827').text(copy.total, sumX + 10, sumY);
+      doc.text(money(Number(quotation.total || 0)), sumX + 10, sumY, { width: sumW - 20, align: 'right' });
+      currentY += sumH + 20;
 
-      let summaryY = y + 24;
-      doc.font('Helvetica').fontSize(9).fillColor('#334155');
-      for (const row of summaryRows) {
-        doc.text(row.label, summaryX + 10, summaryY);
-        doc.text(row.value, summaryX, summaryY, { width: 160, align: 'right' });
-        summaryY += 14;
+      // Notes
+      if (quotation.notes?.trim()) {
+        const noteH = doc.heightOfString(quotation.notes, { width: contentWidth }) + 20;
+        if (currentY + noteH > doc.page.height - 110) { doc.addPage(); currentY = 40; }
+        doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text(copy.notes, leftX, currentY);
+        currentY += 14;
+        doc.font('Helvetica').fontSize(9).fillColor('#4b5563').text(quotation.notes, leftX, currentY, { width: contentWidth });
       }
 
-      doc
-        .moveTo(summaryX + 10, summaryY - 5)
-        .lineTo(summaryX + 160, summaryY - 5)
-        .strokeColor('#CBD5E1')
-        .stroke();
-      doc.font('Helvetica-Bold').fontSize(12).fillColor('#0F172A');
-      doc.text(copy.total, summaryX + 10, summaryY + 6);
-      doc.text(money(Number(quotation.total || 0)), summaryX, summaryY + 6, {
-        width: 160,
-        align: 'right',
-      });
+      // ── Footer en cada página (ANTES de doc.end, única forma de escribir con bufferPages) ──
+      const footerPages = doc.bufferedPageRange();
+      for (let fi = 0; fi < footerPages.count; fi++) {
+        doc.switchToPage(fi);
 
-      y = Math.max(y + 82, summaryY + 20);
+        // Eliminar margen inferior para que image/text no creen una página extra
+        doc.page.margins.bottom = 0;
 
-      const notesText = quotation.notes?.trim() || copy.defaultNote;
-      if (notesText) {
-        doc.font('Helvetica-Bold').fontSize(10).fillColor('#0F172A');
-        doc.text(copy.notes, leftX, y);
-        y += 14;
-        doc.font('Helvetica').fontSize(9).fillColor('#475569');
-        doc.text(notesText, leftX, y, { width: contentWidth - 120 });
+        const ph = doc.page.height;
+        const pw = doc.page.width;
+        const fml = 40;
+        const fmr = 40;
+        const fcw = pw - fml - fmr;
+        const fY = ph - 55;
+
+        // Línea separadora
+        doc.moveTo(fml, fY - 8).lineTo(pw - fmr, fY - 8)
+          .strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+
+        // QR en esquina inferior izquierda
+        if (qrBuffer) {
+          try {
+            doc.image(qrBuffer, fml, fY, { width: 28, height: 28 });
+          } catch (_e) { /* skip qr */ }
+        }
+
+        // Texto "Generado por Nitro" centrado
+        doc.font('Helvetica').fontSize(7).fillColor('#94a3b8')
+          .text(copy.generatedBy, fml, fY + 4, { width: fcw, align: 'center', lineBreak: false });
+
+        // Paginación centrada
+        doc.fontSize(7).fillColor('#64748b')
+          .text(`${resolvedLocale.toUpperCase()} | ${fi + 1} / ${footerPages.count}`, fml, fY + 15, { width: fcw, align: 'center', lineBreak: false });
+
+        // Label del QR
+        doc.fontSize(6).fillColor('#94a3b8')
+          .text(copy.siteQrLabel, fml, fY + 30, { width: 28, align: 'center', lineBreak: false });
       }
-
-      const footerY = doc.page.height - 84;
-      doc.image(qrBuffer, leftX, footerY, { fit: [54, 54] });
-      doc.font('Helvetica').fontSize(8).fillColor('#64748B');
-      doc.text(copy.siteQrLabel, leftX + 27, footerY + 62, {
-        width: 0,
-        align: 'center',
-      });
-      doc.text(
-        copy.generatedBy,
-        doc.page.width / 2 - 90,
-        doc.page.height - 34,
-        {
-          width: 180,
-          align: 'center',
-        },
-      );
 
       doc.end();
     });
 
-    return {
-      buffer,
-      fileName: `cotizacion-${quotation.code}.pdf`,
-    };
+    return { buffer, fileName: `cotizacion-${quotation.code}.pdf` };
   }
 
   private resolveLocale(locale?: string): SupportedLocale {
     const normalized = (locale || 'es').split('-')[0].toLowerCase();
-    if (normalized === 'en' || normalized === 'zh') {
-      return normalized;
-    }
-
+    if (normalized === 'en' || normalized === 'zh') return normalized;
     return 'es';
   }
 
   private getIntlLocale(locale: SupportedLocale): string {
-    if (locale === 'en') {
-      return 'en-US';
-    }
-    if (locale === 'zh') {
-      return 'zh-CN';
-    }
+    if (locale === 'en') return 'en-US';
+    if (locale === 'zh') return 'zh-CN';
     return 'es-MX';
   }
 
-  private drawInfoBox(
-    doc: any,
-    params: {
-      x: number;
-      y: number;
-      width: number;
-      title: string;
-      lines: string[];
-    },
-  ): number {
-    const { x, y, width, title, lines } = params;
-    const lineHeights = lines.map(
-      (line) =>
-        doc.heightOfString(line, {
-          width: width - 20,
-        }) + 3,
-    );
-    const contentHeight = lineHeights.reduce((sum, value) => sum + value, 0);
-    const height = Math.max(62, 18 + contentHeight + 10);
-
-    doc.roundedRect(x, y, width, height, 4).fillAndStroke('#F8FAFC', '#E2E8F0');
-    doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(10);
-    doc.text(title, x + 10, y + 10);
-
-    let cursorY = y + 28;
-    doc.fillColor('#475569').font('Helvetica').fontSize(9);
-    lines.forEach((line) => {
-      doc.text(line, x + 10, cursorY, {
-        width: width - 20,
-      });
-      cursorY += doc.heightOfString(line, { width: width - 20 }) + 3;
-    });
-
-    return height;
+  private drawSyncInfoCard(doc: any, x: number, y: number, w: number, title: string, lines: string[]): number {
+    const minH = 40, padding = 10, lineHeight = 12;
+    const h = Math.max(minH, padding * 2 + 15 + lines.length * lineHeight);
+    doc.roundedRect(x, y, w, h, 4).fillAndStroke('#f8fafc', '#e2e8f0');
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a').text(title.toUpperCase(), x + padding, y + padding);
+    let curY = y + padding + 15;
+    doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
+    for (const line of lines) {
+      doc.text(line, x + padding, curY, { width: w - padding * 2 });
+      curY += lineHeight;
+    }
+    return h;
   }
 }

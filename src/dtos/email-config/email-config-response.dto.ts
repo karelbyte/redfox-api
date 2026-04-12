@@ -1,5 +1,7 @@
 export class EmailConfigResponseDto {
   id: string;
+  provider: string;
+  apiKey: string;
   host: string;
   port: number;
   user: string;

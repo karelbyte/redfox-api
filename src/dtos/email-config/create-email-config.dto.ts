@@ -9,19 +9,31 @@ import {
 } from 'class-validator';
 
 export class CreateEmailConfigDto {
+  @IsOptional()
   @IsString()
-  host: string;
+  provider?: string;
 
+  @IsOptional()
+  @IsString()
+  apiKey?: string;
+
+  @IsOptional()
+  @IsString()
+  host?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(65535)
-  port: number;
+  port?: number;
 
+  @IsOptional()
   @IsString()
-  user: string;
+  user?: string;
 
+  @IsOptional()
   @IsString()
-  password: string;
+  password?: string;
 
   @IsEmail()
   fromEmail: string;

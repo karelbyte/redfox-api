@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { EmailService } from '../services/email.service';
 
 export interface EmailJob {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   from?: string;
@@ -11,6 +11,7 @@ export interface EmailJob {
     content: Buffer | string;
     contentType?: string;
   }>;
+  organizationId?: string;
 }
 
 interface InMemoryJob {
@@ -91,15 +92,30 @@ export class InMemoryEmailQueue implements OnModuleDestroy {
     );
 
     try {
-      const success = await this.emailService.sendSystemEmail(
-        job.data.to,
-        job.data.subject,
-        job.data.html,
-        job.data.attachments,
-      );
+      let success = false;
+
+      if (job.data.organizationId) {
+        const result = await this.emailService.sendOrganizationEmail(
+          job.data.organizationId,
+          {
+            to: job.data.to,
+            subject: job.data.subject,
+            html: job.data.html,
+            attachments: job.data.attachments,
+          },
+        );
+        success = result.sent;
+      } else {
+        success = await this.emailService.sendSystemEmail(
+          job.data.to,
+          job.data.subject,
+          job.data.html,
+          job.data.attachments,
+        );
+      }
 
       if (!success) {
-        throw new Error('EmailService returned false');
+        throw new Error('EmailService delivery failed');
       }
 
       this.logger.log(
