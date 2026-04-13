@@ -16,6 +16,7 @@ import { Shipment } from './shipment.entity';
 import { CashTransaction } from './cash-transaction.entity';
 import { Invoice } from './invoice.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 export enum WithdrawalType {
   POS = 'POS',
@@ -101,6 +102,13 @@ export class Withdrawal {
 
   @Column({ name: 'invoice_id', nullable: true })
   invoiceId: string | null;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => WithdrawalDetail, (detail) => detail.withdrawal)
   details: WithdrawalDetail[];

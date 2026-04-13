@@ -29,6 +29,6 @@ export class WithdrawalResponseDto {
   pack_fiscal_status?: PackFiscalStatus;
   /** Código de la factura (para enlace en front). */
   invoice_code?: string | null;
-  /** UUID del CFDI (para verificación SAT). */
   cfdi_uuid?: string | null;
+  created_by?: string | null;
 }

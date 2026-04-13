@@ -33,6 +33,11 @@ export class AnalyticsController {
     return this.analyticsService.getOperationalAnalytics();
   }
 
+  @Get('extended')
+  async getExtendedAnalytics() {
+    return this.analyticsService.getExtendedAnalytics();
+  }
+
   @Get('dashboard')
   async getDashboardData(
     @Query('startDate') startDate?: string,

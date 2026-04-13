@@ -8,6 +8,9 @@ import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Inventory } from '../models/inventory.entity';
 import { Reception } from '../models/reception.entity';
+import { AccountReceivable } from '../models/account-receivable.entity';
+import { Expense } from '../models/expense.entity';
+import { Shipment } from '../models/shipment.entity';
 import { TenantContext } from '../services/tenant-context.service';
 
 @Module({
@@ -19,6 +22,9 @@ import { TenantContext } from '../services/tenant-context.service';
       Invoice,
       Inventory,
       Reception,
+      AccountReceivable,
+      Expense,
+      Shipment,
     ]),
   ],
   controllers: [AnalyticsController],

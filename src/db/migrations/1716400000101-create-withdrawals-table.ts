@@ -81,6 +81,11 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
             name: 'pack_receipt_id',
             type: 'varchar',
             length: '100',

@@ -7,6 +7,9 @@ import { Client } from '../models/client.entity';
 import { Invoice } from '../models/invoice.entity';
 import { Inventory } from '../models/inventory.entity';
 import { Reception } from '../models/reception.entity';
+import { AccountReceivable } from '../models/account-receivable.entity';
+import { Expense } from '../models/expense.entity';
+import { Shipment } from '../models/shipment.entity';
 import { TenantContext } from './tenant-context.service';
 
 export interface SalesAnalytics {
@@ -68,6 +71,20 @@ export interface OperationalAnalytics {
   }>;
 }
 
+export interface ExtendedAnalytics {
+  salesByPaymentMethod: Array<{ method: string; count: number; revenue: number }>;
+  salesByDayOfWeek: Array<{ day: string; sales: number; revenue: number }>;
+  salesByUser: Array<{ userId: string; userName: string; sales: number; revenue: number }>;
+  inventoryByWarehouse: Array<{ warehouseId: string; warehouseName: string; value: number; products: number }>;
+  slowMovingProducts: Array<{ productId: string; productName: string; lastMovement: string | null; stock: number }>;
+  receivablesAging: Array<{ bucket: string; count: number; amount: number }>;
+  expensesByCategory: Array<{ categoryId: string; categoryName: string; amount: number; count: number }>;
+  incomeVsExpenses: Array<{ month: string; income: number; expenses: number }>;
+  topClients: Array<{ clientId: string; clientName: string; totalPurchases: number; totalSpent: number }>;
+  shipmentsByStatus: Array<{ status: string; count: number }>;
+  avgDeliveryTimeByCarrier: Array<{ carrier: string; avgDays: number; shipments: number }>;
+}
+
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -83,6 +100,12 @@ export class AnalyticsService {
     private inventoryRepository: Repository<Inventory>,
     @InjectRepository(Reception)
     private receptionRepository: Repository<Reception>,
+    @InjectRepository(AccountReceivable)
+    private arRepository: Repository<AccountReceivable>,
+    @InjectRepository(Expense)
+    private expenseRepository: Repository<Expense>,
+    @InjectRepository(Shipment)
+    private shipmentRepository: Repository<Shipment>,
     private readonly tenantContext: TenantContext,
   ) {}
 
@@ -347,10 +370,50 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Construye el WHERE base con organization_id + filtros de fecha opcionales.
-   * alias: alias de la entidad en el QueryBuilder (e.g. 'withdrawal', 'invoice')
-   */
+  async getExtendedAnalytics(): Promise<ExtendedAnalytics> {
+    const organizationId = this.tenantContext.getOrganizationId() ?? '';
+
+    const [
+      salesByPaymentMethod,
+      salesByDayOfWeek,
+      salesByUser,
+      inventoryByWarehouse,
+      slowMovingProducts,
+      receivablesAging,
+      expensesByCategory,
+      incomeVsExpenses,
+      topClients,
+      shipmentsByStatus,
+      avgDeliveryTimeByCarrier,
+    ] = await Promise.all([
+      this.getSalesByPaymentMethod(organizationId),
+      this.getSalesByDayOfWeek(organizationId),
+      this.getSalesByUser(organizationId),
+      this.getInventoryByWarehouse(organizationId),
+      this.getSlowMovingProducts(organizationId),
+      this.getReceivablesAging(organizationId),
+      this.getExpensesByCategory(organizationId),
+      this.getIncomeVsExpenses(organizationId),
+      this.getTopClients(organizationId),
+      this.getShipmentsByStatus(organizationId),
+      this.getAvgDeliveryTimeByCarrier(organizationId),
+    ]);
+
+    return {
+      salesByPaymentMethod,
+      salesByDayOfWeek,
+      salesByUser,
+      inventoryByWarehouse,
+      slowMovingProducts,
+      receivablesAging,
+      expensesByCategory,
+      incomeVsExpenses,
+      topClients,
+      shipmentsByStatus,
+      avgDeliveryTimeByCarrier,
+    };
+  }
+
   private buildWhereClause(
     organizationId: string,
     startDate?: string,
@@ -524,18 +587,18 @@ export class AnalyticsService {
   }
 
   private async getMonthlyRevenue(organizationId: string) {
-    const result = await this.invoiceRepository
-      .createQueryBuilder('invoice')
+    const result = await this.withdrawalRepository
+      .createQueryBuilder('withdrawal')
       .select([
-        "TO_CHAR(invoice.created_at, 'YYYY-MM') as month",
-        "SUM(CASE WHEN invoice.status != 'CANCELLED' THEN invoice.total_amount ELSE 0 END) as invoiced",
-        "SUM(CASE WHEN invoice.status = 'PAID' THEN invoice.total_amount ELSE 0 END) as collected",
+        "TO_CHAR(withdrawal.created_at, 'YYYY-MM') as month",
+        "SUM(CASE WHEN withdrawal.status = 'CLOSED' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE 0 END) as invoiced",
+        "SUM(CASE WHEN withdrawal.status = 'CLOSED' AND withdrawal.payment_method != 'credit' THEN CAST(withdrawal.amount AS DECIMAL(10,2)) ELSE 0 END) as collected",
       ])
       .where(
-        "invoice.organization_id = :organizationId AND invoice.created_at >= NOW() - INTERVAL '12 months'",
+        "withdrawal.organization_id = :organizationId AND withdrawal.created_at >= NOW() - INTERVAL '12 months'",
         { organizationId },
       )
-      .groupBy("TO_CHAR(invoice.created_at, 'YYYY-MM')")
+      .groupBy("TO_CHAR(withdrawal.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany();
 
@@ -568,4 +631,237 @@ export class AnalyticsService {
       totalAmount: parseFloat(item.totalAmount || '0'),
     }));
   }
+
+  private async getSalesByPaymentMethod(organizationId: string) {
+    const result = await this.withdrawalRepository
+      .createQueryBuilder('w')
+      .select([
+        'w.payment_method as method',
+        'COUNT(w.id) as count',
+        "SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as revenue",
+      ])
+      .where("w.organization_id = :organizationId AND w.created_at >= NOW() - INTERVAL '12 months'", { organizationId })
+      .groupBy('w.payment_method')
+      .getRawMany();
+
+    return result.map((item) => ({
+      method: item.method,
+      count: parseInt(item.count),
+      revenue: parseFloat(item.revenue || '0'),
+    }));
+  }
+
+  private async getSalesByDayOfWeek(organizationId: string) {
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const result = await this.withdrawalRepository
+      .createQueryBuilder('w')
+      .select([
+        'EXTRACT(DOW FROM w.created_at) as dow',
+        'COUNT(w.id) as sales',
+        "SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as revenue",
+      ])
+      .where("w.organization_id = :organizationId AND w.created_at >= NOW() - INTERVAL '12 months'", { organizationId })
+      .groupBy('EXTRACT(DOW FROM w.created_at)')
+      .orderBy('dow', 'ASC')
+      .getRawMany();
+
+    return result.map((item) => ({
+      day: days[parseInt(item.dow)] || item.dow,
+      sales: parseInt(item.sales),
+      revenue: parseFloat(item.revenue || '0'),
+    }));
+  }
+
+  private async getSalesByUser(organizationId: string) {
+    const result = await this.withdrawalRepository.query(
+      `SELECT
+        w.created_by as "userId",
+        COALESCE(u.name, 'Sin usuario') as "userName",
+        COUNT(w.id) as sales,
+        SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as revenue
+      FROM withdrawals w
+      LEFT JOIN users u ON u.id = w.created_by
+      WHERE w.organization_id = $1
+        AND w.created_at >= NOW() - INTERVAL '12 months'
+      GROUP BY w.created_by, u.name
+      ORDER BY revenue DESC
+      LIMIT 10`,
+      [organizationId],
+    );
+
+    return result.map((item: any) => ({
+      userId: item.userId,
+      userName: item.userName,
+      sales: parseInt(item.sales),
+      revenue: parseFloat(item.revenue || '0'),
+    }));
+  }
+
+  private async getInventoryByWarehouse(organizationId: string) {
+    const result = await this.inventoryRepository
+      .createQueryBuilder('inv')
+      .leftJoin('inv.warehouse', 'w')
+      .select([
+        'w.id as "warehouseId"',
+        'w.name as "warehouseName"',
+        'SUM(CAST(inv.quantity AS DECIMAL(10,2)) * CAST(inv.price AS DECIMAL(10,2))) as value',
+        'COUNT(DISTINCT inv.product_id) as products',
+      ])
+      .where('inv.organization_id = :organizationId', { organizationId })
+      .groupBy('w.id, w.name')
+      .orderBy('value', 'DESC')
+      .getRawMany();
+
+    return result.map((item) => ({
+      warehouseId: item.warehouseId,
+      warehouseName: item.warehouseName,
+      value: parseFloat(item.value || '0'),
+      products: parseInt(item.products),
+    }));
+  }
+
+  private async getSlowMovingProducts(organizationId: string) {
+    const result = await this.inventoryRepository
+      .createQueryBuilder('inv')
+      .leftJoin('inv.product', 'p')
+      .select([
+        'p.id as "productId"',
+        'p.name as "productName"',
+        'p.updated_at as "lastMovement"',
+        'SUM(CAST(inv.quantity AS DECIMAL(10,2))) as stock',
+      ])
+      .where('inv.organization_id = :organizationId AND CAST(inv.quantity AS DECIMAL(10,2)) > 0', { organizationId })
+      .andWhere("p.updated_at < NOW() - INTERVAL '60 days'")
+      .groupBy('p.id, p.name, p.updated_at')
+      .orderBy('p.updated_at', 'ASC')
+      .limit(10)
+      .getRawMany();
+
+    return result.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      lastMovement: item.lastMovement,
+      stock: parseFloat(item.stock || '0'),
+    }));
+  }
+
+  private async getReceivablesAging(organizationId: string) {
+    const result = await this.arRepository
+      .createQueryBuilder('ar')
+      .select([
+        `CASE
+          WHEN NOW() - ar."dueDate"::timestamp <= INTERVAL '30 days' THEN '0-30'
+          WHEN NOW() - ar."dueDate"::timestamp <= INTERVAL '60 days' THEN '31-60'
+          WHEN NOW() - ar."dueDate"::timestamp <= INTERVAL '90 days' THEN '61-90'
+          ELSE '+90'
+        END as bucket`,
+        'COUNT(ar.id) as count',
+        'SUM(ar."remainingAmount") as amount',
+      ])
+      .where("ar.organization_id = :organizationId AND ar.status != 'paid'", { organizationId })
+      .groupBy('bucket')
+      .getRawMany();
+
+    const order = ['0-30', '31-60', '61-90', '+90'];
+    const map = new Map(result.map((r) => [r.bucket, r]));
+    return order.map((bucket) => ({
+      bucket,
+      count: parseInt(map.get(bucket)?.count || '0'),
+      amount: parseFloat(map.get(bucket)?.amount || '0'),
+    }));
+  }
+
+  private async getExpensesByCategory(organizationId: string) {
+    const result = await this.expenseRepository
+      .createQueryBuilder('e')
+      .leftJoin('e.category', 'cat')
+      .select([
+        'COALESCE(cat.id::text, \'sin-categoria\') as "categoryId"',
+        "COALESCE(cat.name, 'Sin categoría') as \"categoryName\"",
+        'SUM(CAST(e.amount AS DECIMAL(10,2))) as amount',
+        'COUNT(e.id) as count',
+      ])
+      .where("e.organization_id = :organizationId AND e.\"createdAt\" >= NOW() - INTERVAL '12 months'", { organizationId })
+      .groupBy('cat.id, cat.name')
+      .orderBy('amount', 'DESC')
+      .getRawMany();
+
+    return result.map((item) => ({
+      categoryId: item.categoryId,
+      categoryName: item.categoryName,
+      amount: parseFloat(item.amount || '0'),
+      count: parseInt(item.count),
+    }));
+  }
+
+  private async getIncomeVsExpenses(organizationId: string) {
+    const [incomeRows, expenseRows] = await Promise.all([
+      this.withdrawalRepository
+        .createQueryBuilder('w')
+        .select([
+          "TO_CHAR(w.created_at, 'YYYY-MM') as month",
+          "SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as income",
+        ])
+        .where("w.organization_id = :organizationId AND w.created_at >= NOW() - INTERVAL '12 months'", { organizationId })
+        .groupBy("TO_CHAR(w.created_at, 'YYYY-MM')")
+        .getRawMany(),
+      this.expenseRepository
+        .createQueryBuilder('e')
+        .select([
+          "TO_CHAR(e.\"createdAt\", 'YYYY-MM') as month",
+          'SUM(CAST(e.amount AS DECIMAL(10,2))) as expenses',
+        ])
+        .where("e.organization_id = :organizationId AND e.\"createdAt\" >= NOW() - INTERVAL '12 months'", { organizationId })
+        .groupBy("TO_CHAR(e.\"createdAt\", 'YYYY-MM')")
+        .getRawMany(),
+    ]);
+
+    const monthMap = new Map<string, { income: number; expenses: number }>();
+    for (const row of incomeRows) {
+      monthMap.set(row.month, { income: parseFloat(row.income || '0'), expenses: 0 });
+    }
+    for (const row of expenseRows) {
+      const existing = monthMap.get(row.month) || { income: 0, expenses: 0 };
+      monthMap.set(row.month, { ...existing, expenses: parseFloat(row.expenses || '0') });
+    }
+
+    return Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, data]) => ({ month, ...data }));
+  }
+
+  private async getShipmentsByStatus(organizationId: string) {
+    const result = await this.shipmentRepository
+      .createQueryBuilder('s')
+      .select(['s.status as status', 'COUNT(s.id) as count'])
+      .where('s.organization_id = :organizationId', { organizationId })
+      .groupBy('s.status')
+      .getRawMany();
+
+    return result.map((item) => ({
+      status: item.status,
+      count: parseInt(item.count),
+    }));
+  }
+
+  private async getAvgDeliveryTimeByCarrier(organizationId: string) {
+    const result = await this.shipmentRepository
+      .createQueryBuilder('s')
+      .select([
+        's.carrier as carrier',
+        'AVG(EXTRACT(EPOCH FROM (s.delivered_at - s.shipped_at)) / 86400) as "avgDays"',
+        'COUNT(s.id) as shipments',
+      ])
+      .where("s.organization_id = :organizationId AND s.status = 'DELIVERED' AND s.shipped_at IS NOT NULL AND s.delivered_at IS NOT NULL", { organizationId })
+      .groupBy('s.carrier')
+      .orderBy('"avgDays"', 'ASC')
+      .getRawMany();
+
+    return result.map((item) => ({
+      carrier: item.carrier,
+      avgDays: parseFloat(item.avgDays || '0'),
+      shipments: parseInt(item.shipments),
+    }));
+  }
 }
+

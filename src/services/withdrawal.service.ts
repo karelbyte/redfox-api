@@ -145,6 +145,7 @@ export class WithdrawalService {
       pack_fiscal_status,
       invoice_code,
       cfdi_uuid,
+      created_by: withdrawal.created_by ?? null,
     };
   }
 
@@ -231,6 +232,7 @@ export class WithdrawalService {
       paymentMethod:
         createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedWithdrawal = await this.withdrawalRepository.save(withdrawal);
