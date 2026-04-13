@@ -448,12 +448,11 @@ export class QuotationBotPdfService {
         doc.font('Helvetica').fontSize(9).fillColor('#4b5563').text(quotation.notes, leftX, currentY, { width: contentWidth });
       }
 
-      // ── Footer en cada página (ANTES de doc.end, única forma de escribir con bufferPages) ──
       const footerPages = doc.bufferedPageRange();
       for (let fi = 0; fi < footerPages.count; fi++) {
         doc.switchToPage(fi);
 
-        // Eliminar margen inferior para que image/text no creen una página extra
+    
         doc.page.margins.bottom = 0;
 
         const ph = doc.page.height;
@@ -463,26 +462,24 @@ export class QuotationBotPdfService {
         const fcw = pw - fml - fmr;
         const fY = ph - 55;
 
-        // Línea separadora
         doc.moveTo(fml, fY - 8).lineTo(pw - fmr, fY - 8)
           .strokeColor('#e2e8f0').lineWidth(0.5).stroke();
 
-        // QR en esquina inferior izquierda
+
         if (qrBuffer) {
           try {
             doc.image(qrBuffer, fml, fY, { width: 28, height: 28 });
           } catch (_e) { /* skip qr */ }
         }
 
-        // Texto "Generado por Nitro" centrado
+
         doc.font('Helvetica').fontSize(7).fillColor('#94a3b8')
           .text(copy.generatedBy, fml, fY + 4, { width: fcw, align: 'center', lineBreak: false });
 
-        // Paginación centrada
+  
         doc.fontSize(7).fillColor('#64748b')
           .text(`${resolvedLocale.toUpperCase()} | ${fi + 1} / ${footerPages.count}`, fml, fY + 15, { width: fcw, align: 'center', lineBreak: false });
 
-        // Label del QR
         doc.fontSize(6).fillColor('#94a3b8')
           .text(copy.siteQrLabel, fml, fY + 30, { width: 28, align: 'center', lineBreak: false });
       }

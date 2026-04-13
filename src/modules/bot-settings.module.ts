@@ -46,6 +46,6 @@ import { EmailModule } from './email.module';
     BaileysRedisAuthStateService,
     BaileysProviderService,
   ],
-  exports: [BotSettingsService],
+  exports: [BotSettingsService, BaileysProviderService],
 })
 export class BotSettingsModule {}

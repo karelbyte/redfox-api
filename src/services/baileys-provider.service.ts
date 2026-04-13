@@ -185,6 +185,19 @@ export class BaileysProviderService implements OnModuleInit {
     return this.getPersistedSettings(organizationId);
   }
 
+  async sendText(organizationId: string, remoteJid: string, text: string): Promise<void> {
+    const session = this.sessions.get(organizationId);
+    if (!session || !session.socket) {
+      this.logger.warn(`WhatsApp session not found for org ${organizationId}`);
+      return;
+    }
+    try {
+      await session.socket.sendMessage(remoteJid, { text });
+    } catch (error) {
+      this.logger.error(`Error sending WhatsApp message for org ${organizationId}: ${String(error)}`);
+    }
+  }
+
   async refreshQr(settings: BotSettings): Promise<BotSettings> {
     await this.disconnect(settings);
     return this.connect(settings);

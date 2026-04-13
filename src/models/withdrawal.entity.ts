@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { Client } from './client.entity';
 import { WithdrawalDetail } from './withdrawal-detail.entity';
+import { Shipment } from './shipment.entity';
 import { CashTransaction } from './cash-transaction.entity';
 import { Invoice } from './invoice.entity';
 import { Organization } from './organization.entity';
@@ -103,6 +104,9 @@ export class Withdrawal {
 
   @OneToMany(() => WithdrawalDetail, (detail) => detail.withdrawal)
   details: WithdrawalDetail[];
+
+  @OneToMany(() => Shipment, (shipment) => shipment.withdrawal)
+  shipments: Shipment[];
 
   @CreateDateColumn()
   created_at: Date;

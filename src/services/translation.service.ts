@@ -541,6 +541,63 @@ export class TranslationService {
       en: 'Withdrawal detail deleted successfully',
     },
 
+    // Shipment messages
+    'shipment.not_found': {
+      es: 'Envío con ID {id} no encontrado',
+      en: 'Shipment with ID {id} not found',
+      zh: '未找到 ID 为 {id} 的货件',
+    },
+    'shipment.withdrawal_not_found': {
+      es: 'No se encontró la venta asociada a este envío',
+      en: 'Associated sale not found for this shipment',
+      zh: '未找到与此货件相关的销售',
+    },
+    'shipment.created_successfully': {
+      es: 'Envío registrado exitosamente',
+      en: 'Shipment registered successfully',
+      zh: '货件注册成功',
+    },
+    'shipment.updated_successfully': {
+      es: 'Envío actualizado exitosamente',
+      en: 'Shipment updated successfully',
+      zh: '货件更新成功',
+    },
+    'shipment.deleted_successfully': {
+      es: 'Envío eliminado exitosamente',
+      en: 'Shipment deleted successfully',
+      zh: '货件删除成功',
+    },
+    'shipment.status_update_title': {
+      es: 'Actualización de Envío',
+      en: 'Shipment Update',
+      zh: '货件更新',
+    },
+    'shipment.status_update_message': {
+      es: 'El envío {id} ha cambiado su estado a {status}.',
+      en: 'Shipment {id} has changed its status to {status}.',
+      zh: '货件 {id} 的状态已更改为 {status}。',
+    },
+    'shipment.delayed_alert_title': {
+      es: 'Alerta de Envío Retrasado ⚠️',
+      en: 'Delayed Shipment Alert ⚠️',
+      zh: '货件延误警报 ⚠️',
+    },
+    'shipment.delayed_alert_message': {
+      es: 'El envío para la venta {code} ({carrier}) está retrasado. Debió llegar el {date}.',
+      en: 'The shipment for sale {code} ({carrier}) is delayed. It should have arrived on {date}.',
+      zh: '销售 {code} ({carrier}) 的货件已延误。应于 {date} 送达。',
+    },
+    'shipment.whatsapp_sent': {
+      es: '🚚 *¡Tu pedido está en camino!*\n\nHola {name}, tu pedido de *{company}* ya fue enviado.\n\n📦 *Paquetería:* {carrier}\n🔢 *Guía:* {tracking}\n🔗 *Rastreo:* {url}\n\n¡Gracias por tu compra!',
+      en: '🚚 *Your order is on its way!*\n\nHi {name}, your order from *{company}* has been shipped.\n\n📦 *Carrier:* {carrier}\n🔢 *Tracking:* {tracking}\n🔗 *Track here:* {url}\n\nThanks for your purchase!',
+      zh: '🚚 *您的订单已发货！*\n\n您好 {name}，您在 *{company}* 的订单已经发货。\n\n📦 *承运商:* {carrier}\n🔢 *单号:* {tracking}\n🔗 *查询链接:* {url}\n\n感谢您的购买！',
+    },
+    'shipment.whatsapp_delivered': {
+      es: '✅ *¡Pedido Entregado!*\n\nHola {name}, tu pedido con la guía *{tracking}* ha sido entregado exitosamente.\n\nEsperamos que lo disfrutes. ¡Vuelve pronto!',
+      en: '✅ *Order Delivered!*\n\nHi {name}, your order with tracking *{tracking}* has been successfully delivered.\n\nWe hope you enjoy it. Come back soon!',
+      zh: '✅ *订单已送达！*\n\n您好 {name}，您的订单（单号 *{tracking}*）已成功送达。\n\n希望您满意。欢迎再次光临！',
+    },
+
     // Warehouse messages
     'warehouse.not_found': {
       es: 'Almacén con ID {id} no encontrado',

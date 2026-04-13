@@ -22,6 +22,7 @@ export enum NotificationType {
   SALE = 'sale',
   QUOTATION = 'quotation',
   INVOICE = 'invoice',
+  SHIPMENT = 'shipment',
 }
 
 export enum NotificationPriority {
