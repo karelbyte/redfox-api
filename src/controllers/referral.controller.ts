@@ -49,6 +49,7 @@ export class ReferralController {
       user_id?: string;
       commission_rate?: number;
       notes?: string;
+      code?: string;
     },
   ) {
     return this.referralService.createReferrer(body);
@@ -65,6 +66,7 @@ export class ReferralController {
       commission_rate: number;
       is_active: boolean;
       notes: string;
+      code: string;
     }>,
   ) {
     return this.referralService.updateReferrer(id, body);

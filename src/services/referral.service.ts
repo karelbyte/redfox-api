@@ -68,18 +68,26 @@ export class ReferralService {
     user_id?: string;
     commission_rate?: number;
     notes?: string;
+    code?: string;
   }) {
-    // Generar código único
     let code: string;
-    let attempts = 0;
-    do {
-      code = generateCode();
-      attempts++;
-      if (attempts > 20)
-        throw new BadRequestException('No se pudo generar un código único');
-    } while (await this.referrerRepo.findOne({ where: { code } }));
 
-    const referrer = this.referrerRepo.create({ ...data, code });
+    if (data.code?.trim()) {
+      code = data.code.trim().toUpperCase();
+      const existing = await this.referrerRepo.findOne({ where: { code } });
+      if (existing) throw new BadRequestException(`El código "${code}" ya está en uso`);
+    } else {
+      let attempts = 0;
+      do {
+        code = generateCode();
+        attempts++;
+        if (attempts > 20)
+          throw new BadRequestException('No se pudo generar un código único');
+      } while (await this.referrerRepo.findOne({ where: { code } }));
+    }
+
+    const { code: _ignored, ...rest } = data;
+    const referrer = this.referrerRepo.create({ ...rest, code });
     return this.referrerRepo.save(referrer);
   }
 
@@ -92,10 +100,20 @@ export class ReferralService {
       commission_rate: number;
       is_active: boolean;
       notes: string;
+      code: string;
     }>,
   ) {
     const r = await this.referrerRepo.findOne({ where: { id } });
     if (!r) throw new NotFoundException('Referente no encontrado');
+
+    if (data.code?.trim()) {
+      const code = data.code.trim().toUpperCase();
+      const existing = await this.referrerRepo.findOne({ where: { code } });
+      if (existing && existing.id !== id)
+        throw new BadRequestException(`El código "${code}" ya está en uso`);
+      data = { ...data, code };
+    }
+
     Object.assign(r, data);
     return this.referrerRepo.save(r);
   }
