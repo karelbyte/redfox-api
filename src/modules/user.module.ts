@@ -8,12 +8,16 @@ import { TranslationService } from '../services/translation.service';
 import { UserContextService } from '../services/user-context.service';
 import { Language } from '../models/language.entity';
 import { OrganizationModule } from './organization.module';
+import { EmailModule } from './email.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Language]),
     RoleModule,
     OrganizationModule,
+    EmailModule,
+    NotificationModule,
   ],
   controllers: [UserController],
   providers: [UserService, TranslationService, UserContextService],

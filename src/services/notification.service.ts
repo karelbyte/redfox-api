@@ -26,7 +26,7 @@ export class NotificationService {
     createNotificationDto: CreateNotificationDto,
     currentUserId?: string,
   ): Promise<NotificationResponseDto> {
-    const organizationId = this.tenantContext.getOrganizationId();
+    const organizationId = createNotificationDto.organization_id || this.tenantContext.getOrganizationId();
     const notification = this.notificationRepository.create({
       ...createNotificationDto,
       userId: createNotificationDto.userId || currentUserId,

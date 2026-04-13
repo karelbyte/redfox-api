@@ -12,6 +12,7 @@ import {
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dtos/user/create-user.dto';
 import { UpdateUserDto } from '../dtos/user/update-user.dto';
+import { SendUserMessageDto } from '../dtos/user/send-user-message.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
@@ -113,5 +114,15 @@ export class UserController {
   async getOnboardingStatus(@UserId() userId: string) {
     const completed = await this.userService.getOnboardingStatus(userId);
     return { onboarding_completed: completed };
+  }
+
+  @Post(':id/send-message')
+  async sendMessage(
+    @Param('id') userId: string,
+    @Body() sendMessageDto: SendUserMessageDto,
+    @UserId() senderUserId: string,
+  ) {
+    await this.userService.sendMessage(userId, sendMessageDto.message, senderUserId);
+    return { message: 'Mensaje enviado exitosamente' };
   }
 }

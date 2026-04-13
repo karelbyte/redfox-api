@@ -23,6 +23,7 @@ export enum NotificationType {
   QUOTATION = 'quotation',
   INVOICE = 'invoice',
   SHIPMENT = 'shipment',
+  ADMIN_MESSAGE = 'admin_message',
 }
 
 export enum NotificationPriority {

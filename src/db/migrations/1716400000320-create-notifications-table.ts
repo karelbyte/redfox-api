@@ -44,6 +44,8 @@ export class CreateNotificationsTable1716400000320
               'sale',
               'quotation',
               'invoice',
+              'shipment',
+              'admin_message',
             ],
             default: "'info'",
           },

@@ -14,6 +14,9 @@ import { RoleService } from './role.service';
 import { TranslationService } from './translation.service';
 import { UserContextService } from './user-context.service';
 import { TenantContext } from './tenant-context.service';
+import { EmailService } from './email.service';
+import { NotificationService } from './notification.service';
+import { NotificationType, NotificationPriority } from '../models/notification.entity';
 import { hash } from 'bcrypt';
 
 @Injectable()
@@ -24,6 +27,8 @@ export class UserService {
     private roleService: RoleService,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private get organizationId(): string {
@@ -460,5 +465,138 @@ export class UserService {
   async getOnboardingStatus(userId: string): Promise<boolean> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     return user?.onboarding_completed || false;
+  }
+
+  /**
+   * Sends an admin message to a user via email and internal notification
+   * @param userId - ID of the user to send message to
+   * @param message - Message content (10-1000 chars)
+   * @param senderUserId - ID of the user sending the message (admin)
+   */
+  async sendMessage(
+    userId: string,
+    message: string,
+    senderUserId: string,
+  ): Promise<void> {
+    // Get target user (without organization filter - admins can message any user)
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['organization'],
+      withDeleted: false,
+    });
+
+    if (!user) {
+      const msg = await this.translationService.translate(
+        'user.not_found',
+        senderUserId,
+        { id: userId },
+      );
+      throw new NotFoundException(msg);
+    }
+
+    // Get sender user
+    const sender = await this.userRepository.findOne({
+      where: { id: senderUserId },
+    });
+
+    try {
+      // Send email with message using system email service
+      const htmlContent = this.buildAdminMessageHtml(
+        user.name,
+        message,
+        sender?.name || 'Administrador de Nitro',
+        user.organization?.name || 'Nitro',
+      );
+
+      // Send email directly using system email service (not via tenant-specific queue)
+      await this.emailService.sendSystemEmail(
+        user.email,
+        `Mensaje de ${sender?.name || 'Administrador'} - Nitro`,
+        htmlContent,
+      );
+    } catch (error) {
+      // Log error but don't fail - app continues even if email fails
+      console.error(
+        `Failed to send email to user ${userId}: ${error.message}`,
+      );
+    }
+
+    // Always create the notification with correct organization_id
+    try {
+      await this.notificationService.create({
+        title: `Mensaje de ${sender?.name || 'Administrador'}`,
+        message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
+        type: NotificationType.ADMIN_MESSAGE,
+        priority: NotificationPriority.HIGH,
+        userId: userId,
+        organization_id: user.organization_id,
+        actionUrl: '#',
+        actionLabel: 'Ver mensaje',
+        metadata: {
+          type: 'admin_message',
+          message: message,
+          sentBy: senderUserId,
+          sentByName: sender?.name || 'Admin',
+        },
+      }, userId);
+    } catch (notificationError) {
+      console.error('Failed to create notification:', notificationError);
+      throw notificationError;
+    }
+  }
+
+  private buildAdminMessageHtml(
+    userName: string,
+    message: string,
+    senderName: string,
+    organizationName: string,
+  ): string {
+    const timestamp = new Date().toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    return `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); padding: 24px 32px; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 20px;">💬 Nuevo mensaje</h1>
+          <p style="color: #dbeafe; margin: 8px 0 0; font-size: 13px;">De: ${senderName}</p>
+        </div>
+        
+        <div style="background: #fff; border: 1px solid #e5e7eb; border-top: none; padding: 32px;">
+          <p style="color: #6b7280; font-size: 14px; margin: 0 0 16px;">Hola ${userName},</p>
+          
+          <div style="background: #f3f4f6; border-left: 4px solid #3b82f6; padding: 20px; margin: 24px 0; border-radius: 4px;">
+            <p style="color: #111827; font-size: 15px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${this.escapeHtml(message)}</p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 12px; margin: 24px 0 0;">
+            <strong>Enviado por:</strong> ${senderName}<br>
+            <strong>Organización:</strong> ${organizationName}<br>
+            <strong>Fecha:</strong> ${timestamp}
+          </p>
+        </div>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; padding: 16px 32px;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
+            Este es un mensaje enviado desde el panel de administración de Nitro.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private escapeHtml(text: string): string {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 }

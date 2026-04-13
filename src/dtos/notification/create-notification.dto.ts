@@ -31,6 +31,10 @@ export class CreateNotificationDto {
 
   @IsOptional()
   @IsString()
+  organization_id?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(255)
   actionUrl?: string;
 

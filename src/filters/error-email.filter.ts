@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { EmailService } from '../services/email.service';
 import { RedisService } from '../services/redis.service';
+import { TenantContext } from '../services/tenant-context.service';
 
 @Catch()
 export class ErrorEmailFilter implements ExceptionFilter {
@@ -20,6 +21,7 @@ export class ErrorEmailFilter implements ExceptionFilter {
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly tenantContext: TenantContext,
   ) {}
 
   async catch(exception: unknown, host: ArgumentsHost) {
@@ -61,6 +63,26 @@ export class ErrorEmailFilter implements ExceptionFilter {
     // Solo enviar email para errores de servidor (5xx)
     if (status >= 500) {
       await this.sendErrorEmail(request, status, normalizedMessage, stack);
+    }
+  }
+
+  private getContextInfo(request: Request): {
+    organizationId?: string;
+    userId?: string;
+    userEmail?: string;
+  } {
+    try {
+      const organizationId = this.tenantContext.getOrganizationId();
+      const user = (request as any).user;
+
+      return {
+        organizationId: organizationId || undefined,
+        userId: user?.sub || user?.id || undefined,
+        userEmail: user?.email || undefined,
+      };
+    } catch (error) {
+      // Si hay error al acceder al contexto, simplemente retornar vacío
+      return {};
     }
   }
 
@@ -123,6 +145,7 @@ export class ErrorEmailFilter implements ExceptionFilter {
     const env = this.configService.get<string>('NODE_ENV') || 'development';
     const appName = 'Nitro API';
     const timestamp = new Date().toISOString();
+    const contextInfo = this.getContextInfo(request);
 
     const html = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -148,6 +171,30 @@ export class ErrorEmailFilter implements ExceptionFilter {
             <tr>
               <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">IP</td>
               <td style="padding: 8px 0;">${request?.ip || request?.headers?.['x-forwarded-for'] || 'N/A'}</td>
+            </tr>
+            ${contextInfo.organizationId ? `
+            <tr style="background: #f3f4f6;">
+              <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">Organization</td>
+              <td style="padding: 8px 0; font-family: monospace; font-size: 12px;">${contextInfo.organizationId}</td>
+            </tr>
+            ` : ''}
+            ${contextInfo.userId ? `
+            <tr style="background: #f3f4f6;">
+              <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">User ID</td>
+              <td style="padding: 8px 0; font-family: monospace; font-size: 12px;">${contextInfo.userId}</td>
+            </tr>
+            ` : ''}
+            ${contextInfo.userEmail ? `
+            <tr style="background: #f3f4f6;">
+              <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">User Email</td>
+              <td style="padding: 8px 0;">${contextInfo.userEmail}</td>
+            </tr>
+            ` : ''}
+            <tr>
+              <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">User-Agent</td>
+              <td style="padding: 8px 0; font-size: 12px; word-break: break-all;">${request?.headers?.['user-agent'] || 'N/A'}</td>
+            </tr>
+          </table>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">User-Agent</td>
