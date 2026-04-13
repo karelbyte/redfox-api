@@ -50,6 +50,24 @@ export class BrandService {
     userId?: string,
   ): Promise<BrandResponseDto> {
     try {
+      // Check if brand code already exists for this organization
+      const existingBrand = await this.brandRepository.findOne({
+        where: {
+          organization_id: this.organizationId,
+          code: createBrandDto.code,
+        },
+        withDeleted: false,
+      });
+
+      if (existingBrand) {
+        const message = await this.translationService.translate(
+          'brand.already_exists',
+          userId,
+          { code: createBrandDto.code },
+        );
+        throw new ConflictException(message);
+      }
+
       const brand = this.brandRepository.create({
         ...createBrandDto,
         organization_id: this.organizationId,
@@ -57,17 +75,19 @@ export class BrandService {
       const savedBrand = await this.brandRepository.save(brand);
       return this.mapToResponseDto(savedBrand);
     } catch (error) {
-      // Handle duplicate code error
+      // Handle duplicate code error from database (PostgreSQL or MySQL)
       if (
-        error.code === 'ER_DUP_ENTRY' &&
-        error.message.includes('brands.UQ_')
+        (error.code === 'ER_DUP_ENTRY' ||
+          error.code === '23505' ||
+          (error.detail && error.detail.includes('IDX_BRAND_ORGANIZATION_CODE'))) &&
+        error.message.includes('IDX_BRAND_ORGANIZATION_CODE')
       ) {
         const message = await this.translationService.translate(
           'brand.already_exists',
           userId,
           { code: createBrandDto.code },
         );
-        throw new BadRequestException(message);
+        throw new ConflictException(message);
       }
       throw error;
     }
@@ -158,23 +178,48 @@ export class BrandService {
         throw new NotFoundException(message);
       }
 
+      // Check if code is being updated and if the new code already exists
+      if (
+        updateBrandDto.code &&
+        updateBrandDto.code !== brand.code
+      ) {
+        const existingBrand = await this.brandRepository.findOne({
+          where: {
+            organization_id: this.organizationId,
+            code: updateBrandDto.code,
+          },
+          withDeleted: false,
+        });
+
+        if (existingBrand) {
+          const message = await this.translationService.translate(
+            'brand.already_exists',
+            userId,
+            { code: updateBrandDto.code },
+          );
+          throw new ConflictException(message);
+        }
+      }
+
       const updatedBrand = await this.brandRepository.save({
         ...brand,
         ...updateBrandDto,
       });
       return this.mapToResponseDto(updatedBrand);
     } catch (error) {
-      // Handle duplicate code error in update
+      // Handle duplicate code error in update (PostgreSQL or MySQL)
       if (
-        error.code === 'ER_DUP_ENTRY' &&
-        error.message.includes('brands.UQ_')
+        (error.code === 'ER_DUP_ENTRY' ||
+          error.code === '23505' ||
+          (error.detail && error.detail.includes('IDX_BRAND_ORGANIZATION_CODE'))) &&
+        error.message.includes('IDX_BRAND_ORGANIZATION_CODE')
       ) {
         const message = await this.translationService.translate(
           'brand.already_exists',
           userId,
           { code: updateBrandDto.code },
         );
-        throw new BadRequestException(message);
+        throw new ConflictException(message);
       }
       throw error;
     }

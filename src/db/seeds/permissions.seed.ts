@@ -1310,6 +1310,38 @@ export class PermissionsSeed {
         description:
           'Allows activating certification packs | Permite activar paquetes de certificación',
       },
+
+      // Shipment Permissions
+      {
+        code: 'shipment_module_view',
+        module: 'shipments',
+        description:
+          'Allows viewing the shipments module | Permite ver el módulo de logística y envíos',
+      },
+      {
+        code: 'shipment_create',
+        module: 'shipments',
+        description:
+          'Allows creating shipments | Permite crear envíos',
+      },
+      {
+        code: 'shipment_read',
+        module: 'shipments',
+        description:
+          'Allows reading shipments | Permite leer envíos',
+      },
+      {
+        code: 'shipment_update',
+        module: 'shipments',
+        description:
+          'Allows updating shipments | Permite actualizar envíos',
+      },
+      {
+        code: 'shipment_delete',
+        module: 'shipments',
+        description:
+          'Allows deleting shipments | Permite eliminar envíos',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

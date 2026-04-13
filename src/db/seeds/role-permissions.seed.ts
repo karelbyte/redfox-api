@@ -19,7 +19,7 @@ export class RolePermissionsSeed {
 
     if (!landlordOrg) {
       console.log(
-        '⚠️ Landlord organization not found. Be sure to run organizations seed first.',
+        'Landlord organization not found. Be sure to run organizations seed first.',
       );
       return;
     }
@@ -41,7 +41,7 @@ export class RolePermissionsSeed {
 
     if (!adminRole || !sellerRole) {
       console.log(
-        '⚠️ Not found roles for landslide organization. Be sure to run roles seed first.',
+        'Not found roles for landslide organization. Be sure to run roles seed first.',
       );
       return;
     }
@@ -89,6 +89,8 @@ export class RolePermissionsSeed {
       'notification_read',
       'notification_update',
       'notification_mark_read',
+      'shipment_module_view',
+      'shipment_read',
     ];
 
     for (const permissionCode of sellerPermissions) {
