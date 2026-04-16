@@ -45,6 +45,7 @@ export class BaileysProviderService implements OnModuleInit {
   private readonly logger = new Logger(BaileysProviderService.name);
   private readonly sessions = new Map<string, RuntimeSession>();
   private readonly lastAutoReplyAt = new Map<string, number>();
+  private readonly processedMessageIds = new Map<string, Set<string>>();
   private readonly intentionalDisconnects = new Set<string>();
   private readonly reconnectableStatusCodes = new Set([408, 428, 503, 515]);
 
@@ -173,6 +174,7 @@ export class BaileysProviderService implements OnModuleInit {
 
     await this.baileysRedisAuthStateService.clearSession(organizationId);
     this.clearAutoReplyCache(organizationId);
+    this.clearProcessedMessageIdsForOrganization(organizationId);
 
     await this.persistState(organizationId, {
       connection_status: BotConnectionStatus.DISCONNECTED,
@@ -201,6 +203,49 @@ export class BaileysProviderService implements OnModuleInit {
   async refreshQr(settings: BotSettings): Promise<BotSettings> {
     await this.disconnect(settings);
     return this.connect(settings);
+  }
+
+  private getProcessedMessageIdsKey(
+    organizationId: string,
+    remoteJid: string,
+  ): string {
+    return `${organizationId}:${remoteJid}`;
+  }
+
+  private markMessageProcessed(
+    organizationId: string,
+    remoteJid: string,
+    messageId: string,
+  ): void {
+    const key = this.getProcessedMessageIdsKey(organizationId, remoteJid);
+    let processed = this.processedMessageIds.get(key);
+    if (!processed) {
+      processed = new Set<string>();
+      this.processedMessageIds.set(key, processed);
+    }
+    processed.add(messageId);
+  }
+
+  private hasMessageBeenProcessed(
+    organizationId: string,
+    remoteJid: string,
+    messageId: string,
+  ): boolean {
+    const key = this.getProcessedMessageIdsKey(organizationId, remoteJid);
+    return this.processedMessageIds.get(key)?.has(messageId) ?? false;
+  }
+
+  private clearProcessedMessageIds(organizationId: string, remoteJid: string) {
+    const key = this.getProcessedMessageIdsKey(organizationId, remoteJid);
+    this.processedMessageIds.delete(key);
+  }
+
+  private clearProcessedMessageIdsForOrganization(organizationId: string) {
+    for (const key of Array.from(this.processedMessageIds.keys())) {
+      if (key.startsWith(`${organizationId}:`)) {
+        this.processedMessageIds.delete(key);
+      }
+    }
   }
 
   private async handleConnectionUpdate(
@@ -321,11 +366,17 @@ export class BaileysProviderService implements OnModuleInit {
 
     for (const message of event.messages) {
       const remoteJid = message?.key?.remoteJid;
+      const messageId = message?.key?.id;
       const fromMe = Boolean(message?.key?.fromMe);
 
-      if (!remoteJid || fromMe || remoteJid.endsWith('@g.us')) {
+      if (!remoteJid || !messageId || fromMe || remoteJid.endsWith('@g.us')) {
         continue;
       }
+
+      if (this.hasMessageBeenProcessed(organizationId, remoteJid, messageId)) {
+        continue;
+      }
+      this.markMessageProcessed(organizationId, remoteJid, messageId);
 
       const text = this.extractMessageText(message);
       if (!text) {

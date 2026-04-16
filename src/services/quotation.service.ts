@@ -116,7 +116,7 @@ export class QuotationService {
   private async updateQuotationTotals(quotationId: string): Promise<void> {
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: this.organizationId },
-      relations: ['details', 'details.product', 'details.product.tax'],
+      relations: ['details', 'details.product', 'details.product.tax', 'details.product.productTaxes', 'details.product.productTaxes.tax'],
     });
 
     if (!quotation) return;
@@ -127,9 +127,16 @@ export class QuotationService {
     for (const detail of quotation.details) {
       subtotal += Number(detail.subtotal);
 
-      if (detail.product.tax) {
-        const taxAmount =
-          (Number(detail.subtotal) * Number(detail.product.tax.value)) / 100;
+      // Calculate tax from productTaxes or legacy tax
+      let taxRate = 0;
+      if (detail.product.productTaxes?.length) {
+        taxRate = detail.product.productTaxes.reduce((sum, pt) => sum + Number(pt.tax?.value || 0), 0);
+      } else if (detail.product.tax) {
+        taxRate = Number(detail.product.tax.value);
+      }
+
+      if (taxRate > 0) {
+        const taxAmount = (Number(detail.subtotal) * taxRate) / 100;
         totalTax += taxAmount;
       }
     }

@@ -33,6 +33,10 @@ export class RuleBasedBotIntentInterpreterService
         'salir',
         'reiniciar',
         'reset',
+        'adios',
+        'chau',
+        'hasta luego',
+        'bye',
         '退出',
       ])
     ) {

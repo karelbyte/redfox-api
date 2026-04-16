@@ -24,12 +24,15 @@ export enum BotConversationStatus {
 }
 
 export enum BotConversationStep {
+  MENU = 'menu',
   CAPTURE_CLIENT_NAME = 'capture_client_name',
   CAPTURE_CLIENT_EMAIL = 'capture_client_email',
   CAPTURE_PRODUCT_QUERY = 'capture_product_query',
   SELECT_PRODUCT = 'select_product',
   CAPTURE_QUANTITY = 'capture_quantity',
   REVIEW = 'review',
+  CONSULT_PRICE = 'consult_price',
+  CONSULT_STOCK = 'consult_stock',
   COMPLETED = 'completed',
 }
 
@@ -40,6 +43,7 @@ export interface BotConversationCandidateProduct {
   sku?: string | null;
   price: number;
   stock: number;
+  tax?: number | null;
 }
 
 export interface BotConversationDraftItem {
@@ -50,6 +54,7 @@ export interface BotConversationDraftItem {
   quantity: number;
   price: number;
   stock: number;
+  tax?: number | null;
 }
 
 export interface BotConversationContext {
@@ -58,6 +63,7 @@ export interface BotConversationContext {
   selectedCandidates?: BotConversationCandidateProduct[] | null;
   selectedProduct?: BotConversationCandidateProduct | null;
   items: BotConversationDraftItem[];
+  consultMode?: 'price' | 'stock' | null;
 }
 
 @Entity('bot_conversations')
