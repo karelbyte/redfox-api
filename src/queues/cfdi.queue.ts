@@ -4,7 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { InMemoryCfdiQueue, CfdiJob } from './in-memory-cfdi.queue';
 import { CfdiProcessor } from '../processors/cfdi.processor';
 
-export { CfdiJob };
+export type { CfdiJob };
 
 /**
  * Facade que delega a Bull/Redis o InMemoryCfdiQueue
