@@ -823,4 +823,30 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token');
     }
   }
+
+  async getCurrentUser(userId: string): Promise<AuthResponseDto['user']> {
+    const user = await this.userService.findOneWithPermissions(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      organization_id: user.organization_id,
+      organization_slug: user.organization?.slug,
+      organization_referrer_code: user.organization?.referrer_code,
+      roles: user.roles.map((role) => ({
+        id: role.id,
+        code: role.code,
+        description: role.description,
+        status: role.status,
+        created_at: role.created_at,
+      })),
+      permissions: user.getPermissionCodes(),
+      status: user.status,
+      created_at: user.created_at,
+    };
+  }
 }

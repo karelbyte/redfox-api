@@ -15,33 +15,33 @@ import { Organization } from './organization.entity';
 @Index(['organization_id', 'code'], { unique: true })
 export class Brand {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
-  organization_id: string;
+  organization_id!: string;
 
   @ManyToOne(() => Organization)
   @JoinColumn({ name: 'organization_id' })
-  organization: Organization;
+  organization!: Organization;
 
   @Column({ length: 50 })
-  code: string;
+  code!: string;
 
   @Column({ length: 255, nullable: true })
-  description: string;
+  description!: string;
 
   @Column({ length: 500, nullable: true })
-  img: string;
+  img!: string;
 
   @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @DeleteDateColumn()
-  deleted_at: Date;
+  deleted_at!: Date;
 }

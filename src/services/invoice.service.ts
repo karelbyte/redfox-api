@@ -78,6 +78,12 @@ export class InvoiceService {
     return this.tenantContext.getOrganizationId() as string;
   }
 
+  private isValidUUID(uuid: string | null | undefined): boolean {
+    if (!uuid || typeof uuid !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid.trim());
+  }
+
   private mapDetailToResponseDto(
     detail: InvoiceDetail,
   ): InvoiceDetailResponseDto {
@@ -786,7 +792,7 @@ export class InvoiceService {
       tax_amount: Math.round((totalAmount - totalAmount / 1.16) * 100) / 100,
       total_amount: Math.round(totalAmount * 100) / 100,
       status: InvoiceStatus.SENT,
-      cfdi_uuid: cfdiResult.uuid,
+      cfdi_uuid: this.isValidUUID(cfdiResult.uuid) ? cfdiResult.uuid : null,
       pack_invoice_id: cfdiResult.id,
       pack_invoice_response: {
         uuid: cfdiResult.uuid,
@@ -838,7 +844,10 @@ export class InvoiceService {
       throw new NotFoundException(message);
     }
 
-    if (invoice.status !== InvoiceStatus.DRAFT) {
+    if (
+      invoice.status !== InvoiceStatus.DRAFT &&
+      invoice.status !== InvoiceStatus.FAILED_CFDI
+    ) {
       const message = await this.translationService.translate(
         'invoice.not_draft',
         userId,
@@ -854,6 +863,7 @@ export class InvoiceService {
       await this.cfdiQueue.addCfdiJob({
         invoiceId: invoice.id,
         userId,
+        organizationId: this.organizationId,
         options,
       });
 

@@ -37,83 +37,83 @@ export enum PaymentMethod {
 @Index(['organization_id', 'code'], { unique: true })
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ name: 'organization_id', type: 'uuid' })
-  organization_id: string;
+  organization_id!: string;
 
   @ManyToOne(() => Organization)
   @JoinColumn({ name: 'organization_id' })
-  organization: Organization;
+  organization!: Organization;
 
   @Column({ length: 50 })
-  code: string;
+  code!: string;
 
   @Column({ type: 'date' })
-  date: Date;
+  date!: Date;
 
   @ManyToOne(() => Client)
   @JoinColumn({ name: 'client_id' })
-  client: Client;
+  client!: Client;
 
   @ManyToOne(() => Withdrawal, { nullable: true })
   @JoinColumn({ name: 'withdrawal_id' })
   withdrawal?: Withdrawal;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  subtotal: number;
+  subtotal!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  tax_amount: number;
+  tax_amount!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  total_amount: number;
+  total_amount!: number;
 
   @Column({
     type: 'enum',
     enum: InvoiceStatus,
     default: InvoiceStatus.DRAFT,
   })
-  status: InvoiceStatus;
+  status!: InvoiceStatus;
 
-  @Column({ length: 36, nullable: true })
-  cfdi_uuid: string;
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  cfdi_uuid!: string | null;
 
   /** ID interno del comprobante en el PAC activo (Facturapi, SAT, etc.). Escalable para cualquier pack. */
-  @Column({ length: 100, nullable: true })
-  pack_invoice_id: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  pack_invoice_id!: string | null;
 
   @Column({ type: 'json', nullable: true })
-  pack_invoice_response: Record<string, unknown> | null;
+  pack_invoice_response!: Record<string, unknown> | null;
 
   @Column({ type: 'json', nullable: true })
-  payload_send: Record<string, unknown> | null;
+  payload_send!: Record<string, unknown> | null;
 
   @Column({
     type: 'enum',
     enum: PaymentMethod,
     default: PaymentMethod.CASH,
   })
-  payment_method: PaymentMethod;
+  payment_method!: PaymentMethod;
 
   @Column({ length: 100, nullable: true })
-  payment_conditions: string;
+  payment_conditions!: string;
 
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes!: string;
 
   @OneToMany(() => InvoiceDetail, (detail) => detail.invoice)
-  details: InvoiceDetail[];
+  details!: InvoiceDetail[];
 
   @OneToMany(() => InvoicePayment, (payment) => payment.invoice)
-  payments: InvoicePayment[];
+  payments!: InvoicePayment[];
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @DeleteDateColumn()
-  deleted_at: Date;
+  deleted_at!: Date;
 }

@@ -25,6 +25,7 @@ export interface ImportProductRow {
   category?: string;
   measurement_unit: string;
   tax?: string;
+  iva16?: number;
   barcode?: string;
   min_stock?: number;
   weight?: number;
@@ -97,6 +98,23 @@ export class ProductImportService {
     return this.ensureUniqueSlugForOrg(base, this.organizationId);
   }
 
+  private async ensureUniqueSlugForCategory(
+    name: string,
+    orgId: string,
+  ): Promise<string> {
+    const baseSlug = this.generateSlug(name);
+    let slug = baseSlug;
+    let i = 1;
+    while (
+      await this.categoryRepo.findOne({
+        where: { slug, organization_id: orgId },
+      })
+    ) {
+      slug = `${baseSlug}-${i++}`;
+    }
+    return slug;
+  }
+
   /**
    * Parsea un buffer CSV o XLSX y devuelve filas normalizadas.
    * Soporta separadores , y ;
@@ -158,6 +176,10 @@ export class ProductImportService {
           obj['unidad'] ||
           '',
         tax: obj['tax'] || obj['impuesto'] || obj['tax_code'] || '',
+        iva16:
+          obj['iva16'] || obj['iva_16']
+            ? Number(obj['iva16'] || obj['iva_16'])
+            : undefined,
         barcode: obj['barcode'] || obj['codigo_barras'] || '',
         min_stock:
           obj['min_stock'] || obj['stock_minimo']
@@ -330,36 +352,103 @@ export class ProductImportService {
           continue;
         }
 
-        // Marca — opcional, advertencia si se especificó pero no existe
-        const brand = row.brand?.trim()
-          ? brandMap.get(row.brand.toLowerCase())
-          : undefined;
-        if (row.brand?.trim() && !brand) {
-          result.warnings.push({
-            row: row.row,
-            sku: row.sku,
-            name: row.name,
-            field: 'brand',
-            reason: `Marca "${row.brand}" no encontrada — el producto se creó sin marca. Créala en Productos > Marcas.`,
-          });
+        // Marca — opcional, se crea automáticamente si no existe
+        let brand: Brand | undefined;
+        if (row.brand?.trim()) {
+          const brandName = row.brand.trim();
+          const brandKey = brandName.toLowerCase();
+          brand = brandMap.get(brandKey);
+
+          if (!brand) {
+            // Crear nueva marca
+            try {
+              brand = this.brandRepo.create({
+                code: brandName.toLocaleLowerCase().replace(/\s+/g, '-'),
+                description: brandName,
+                organization_id: orgId,
+                isActive: true,
+              });
+              await this.brandRepo.save(brand);
+              brandMap.set(brandKey, brand);
+              result.warnings.push({
+                row: row.row,
+                sku: row.sku,
+                name: row.name,
+                field: 'brand',
+                reason: `Marca "${brandName}" creada automáticamente.`,
+              });
+            } catch (error: any) {
+              // Si hay error (ej: código duplicado), buscar si ya existe con otro case
+              const existing = await this.brandRepo.findOne({
+                where: { code: brandName, organization_id: orgId },
+              });
+              if (existing) {
+                brand = existing;
+                brandMap.set(brandKey, brand);
+              } else {
+                result.warnings.push({
+                  row: row.row,
+                  sku: row.sku,
+                  name: row.name,
+                  field: 'brand',
+                  reason: `Error al crear marca "${brandName}": ${error.message}`,
+                });
+              }
+            }
+          }
         }
 
-        // Categoría — opcional, advertencia si se especificó pero no existe
-        const category = row.category?.trim()
-          ? categoryMap.get(row.category.toLowerCase())
-          : undefined;
-        if (row.category?.trim() && !category) {
-          result.warnings.push({
-            row: row.row,
-            sku: row.sku,
-            name: row.name,
-            field: 'category',
-            reason: `Categoría "${row.category}" no encontrada — el producto se creó sin categoría. Créala en Productos > Categorías.`,
-          });
+        // Categoría — opcional, se crea automáticamente si no existe
+        let category: Category | undefined;
+        if (row.category?.trim()) {
+          const categoryName = row.category.trim();
+          const categoryKey = categoryName.toLowerCase();
+          category = categoryMap.get(categoryKey);
+
+          if (!category) {
+            // Crear nueva categoría
+            try {
+              const slug = await this.ensureUniqueSlugForCategory(categoryName, orgId);
+              category = this.categoryRepo.create({
+                name: categoryName,
+                slug,
+                description: categoryName, // Usar el nombre como descripción por defecto
+                organization_id: orgId,
+                isActive: true,
+                position: 0,
+              });
+              await this.categoryRepo.save(category);
+              categoryMap.set(categoryKey, category);
+              result.warnings.push({
+                row: row.row,
+                sku: row.sku,
+                name: row.name,
+                field: 'category',
+                reason: `Categoría "${categoryName}" creada automáticamente.`,
+              });
+            } catch (error: any) {
+              // Si hay error (ej: slug duplicado), buscar si ya existe
+              const existing = await this.categoryRepo.findOne({
+                where: { name: categoryName, organization_id: orgId },
+              });
+              if (existing) {
+                category = existing;
+                categoryMap.set(categoryKey, category);
+              } else {
+                result.warnings.push({
+                  row: row.row,
+                  sku: row.sku,
+                  name: row.name,
+                  field: 'category',
+                  reason: `Error al crear categoría "${categoryName}": ${error.message}`,
+                });
+              }
+            }
+          }
         }
 
         // Impuesto — opcional, advertencia si se especificó pero no existe
-        const tax = row.tax?.trim()
+        let tax = row.tax?.trim()
           ? taxMap.get(row.tax.toLowerCase())
           : undefined;
         if (row.tax?.trim() && !tax) {
@@ -370,6 +459,33 @@ export class ProductImportService {
             field: 'tax',
             reason: `Impuesto "${row.tax}" no encontrado — el producto se creó sin impuesto. Créalo en Productos > Impuestos.`,
           });
+        }
+
+        // IVA16 — si es 1, buscar y asignar IVA 16%
+        if (row.iva16 === 1) {
+          const iva16Tax = taxes.find(
+            (t) =>
+              t.code === 'IVA' &&
+              Number(t.value) === 16,
+          );
+          if (iva16Tax) {
+            tax = iva16Tax; // Sobrescribe cualquier tax anterior
+            result.warnings.push({
+              row: row.row,
+              sku: row.sku,
+              name: row.name,
+              field: 'iva16',
+              reason: `IVA 16% asignado automáticamente al producto.`,
+            });
+          } else {
+            result.warnings.push({
+              row: row.row,
+              sku: row.sku,
+              name: row.name,
+              field: 'iva16',
+              reason: `IVA 16% solicitado pero no encontrado en la organización. Asegúrate de tener un impuesto con código "IVA" y porcentaje 16.`,
+            });
+          }
         }
 
         // Validar type e inventory_strategy

@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 export interface CfdiJob {
   invoiceId: string;
   userId?: string;
+  organizationId: string;
   options?: Record<string, unknown>;
 }
 

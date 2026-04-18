@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Invoice } from '../models/invoice.entity';
 import {
@@ -23,12 +23,20 @@ import { TranslationService } from './translation.service';
 
 @Injectable()
 export class FacturaGreenService implements ICertificationPackService {
+  private readonly logger = new Logger(FacturaGreenService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
     private readonly translationService: TranslationService,
   ) {}
+
+  private isValidUUID(uuid: string | null | undefined): boolean {
+    if (!uuid || typeof uuid !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid.trim());
+  }
 
   private getConfig() {
     const pacConfig = this.tenantContext.getPacConfig();
@@ -264,6 +272,10 @@ export class FacturaGreenService implements ICertificationPackService {
         payload['@config'] = config;
       }
 
+      this.logger.log('[FacturaGreen] createInvoice → REQUEST');
+      this.logger.log('[FacturaGreen]   url: ' + `${baseUrl}/interop/cfdi/emmit`);
+      this.logger.debug('[FacturaGreen]   payload: ' + JSON.stringify(payload, null, 2));
+
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
         headers,
@@ -272,17 +284,45 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
+      this.logger.log(
+        `[FacturaGreen] createInvoice → HTTP status ${response.status} ${response.statusText} ok=${response.ok}`,
+      );
+      this.logger.debug('[FacturaGreen] createInvoice → RESPONSE BODY ' + JSON.stringify(data, null, 2));
+
       if (!response.ok || data.response !== 'success') {
         const message =
           data.message ||
           data.error?.message ||
           'Error generating CFDI with Factura Green';
+        this.logger.error('[FacturaGreen] createInvoice → ERROR RESPONSE ' + JSON.stringify(data, null, 2));
         throw new BadRequestException(message);
+      }
+
+      this.logger.log('[FacturaGreen] createInvoice → RESPONSE');
+      this.logger.debug('[FacturaGreen]   data.data: ' + JSON.stringify(data.data, null, 2));
+      this.logger.log('[FacturaGreen]   folio_tax: ' + (data.data.cfdi?.folio_tax || data.data.folio_tax));
+      this.logger.log('[FacturaGreen]   data.data.uuid: ' + data.data.uuid);
+
+      const folioTax = data.data.cfdi?.folio_tax || data.data.folio_tax;
+      const dataUuid = data.data.uuid;
+
+      // Estrategia de fallback para UUID:
+      // 1. Usar folio_tax si es válido
+      // 2. Usar data.data.uuid si folio_tax no es válido pero data.data.uuid sí lo es
+      // 3. Usar null si ninguno es válido (pero el CFDI se generó correctamente)
+      let uuid = null;
+      if (this.isValidUUID(folioTax)) {
+        uuid = folioTax;
+      } else if (this.isValidUUID(dataUuid)) {
+        uuid = dataUuid;
+        console.log('[FacturaGreen] Using data.data.uuid as fallback UUID:', uuid);
+      } else {
+        console.warn('[FacturaGreen] No valid UUID found in response, but CFDI was generated successfully');
       }
 
       return {
         id: data.data.uuid,
-        uuid: data.data.cfdi?.folio_tax || data.data.folio_tax,
+        uuid: uuid,
         status: 'valid',
         pdf_url: data.data.pdf_url,
         xml_url: data.data.xml_url,
@@ -1400,6 +1440,11 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
+      this.logger.log('[FacturaGreen] createGlobalInvoice → REQUEST');
+      this.logger.log('[FacturaGreen]   url: ' + `${baseUrl}/interop/cfdi/emmit`);
+      this.logger.debug('[FacturaGreen]   payload: ' + JSON.stringify(payload, null, 2));
+      console.log('[FacturaGreen] createGlobalInvoice → REQUEST PAYLOAD', JSON.stringify(payload, null, 2));
+
       const response = await fetch(`${baseUrl}/interop/cfdi/emmit`, {
         method: 'POST',
         headers,
@@ -1407,18 +1452,47 @@ export class FacturaGreenService implements ICertificationPackService {
       });
 
       const result = await response.json();
+      console.log('[FacturaGreen] createGlobalInvoice → RESPONSE RAW', JSON.stringify(result, null, 2));
+
+      this.logger.log(
+        `[FacturaGreen] createGlobalInvoice → HTTP status ${response.status} ${response.statusText} ok=${response.ok}`,
+      );
+      this.logger.debug('[FacturaGreen] createGlobalInvoice → RESPONSE BODY ' + JSON.stringify(result, null, 2));
 
       if (!response.ok || result.response !== 'success') {
         const message =
           result.message ||
           result.error?.message ||
           'Error al emitir la factura global en Factura Green';
+        this.logger.error('[FacturaGreen] createGlobalInvoice → ERROR RESPONSE ' + JSON.stringify(result, null, 2));
         throw new BadRequestException(message);
+      }
+
+      this.logger.log('[FacturaGreen] createGlobalInvoice → RESPONSE');
+      this.logger.debug('[FacturaGreen]   result.data: ' + JSON.stringify(result.data, null, 2));
+      this.logger.log('[FacturaGreen]   folio_tax: ' + (result.data.cfdi?.folio_tax || result.data.folio_tax));
+      this.logger.log('[FacturaGreen]   result.data.uuid: ' + result.data.uuid);
+
+      const folioTax = result.data.cfdi?.folio_tax || result.data.folio_tax;
+      const dataUuid = result.data.uuid;
+
+      // Estrategia de fallback para UUID:
+      // 1. Usar folio_tax si es válido
+      // 2. Usar result.data.uuid si folio_tax no es válido pero result.data.uuid sí lo es
+      // 3. Usar null si ninguno es válido (pero el CFDI se generó correctamente)
+      let uuid = null;
+      if (this.isValidUUID(folioTax)) {
+        uuid = folioTax;
+      } else if (this.isValidUUID(dataUuid)) {
+        uuid = dataUuid;
+        console.log('[FacturaGreen] Using result.data.uuid as fallback UUID:', uuid);
+      } else {
+        console.warn('[FacturaGreen] No valid UUID found in global invoice response, but CFDI was generated successfully');
       }
 
       return {
         id: result.data.uuid,
-        uuid: result.data.cfdi?.folio_tax || result.data.folio_tax,
+        uuid: uuid,
         status: 'valid',
         pdf_url: result.data.pdf_url,
         xml_url: result.data.xml_url,

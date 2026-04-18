@@ -5,6 +5,7 @@ import { Invoice, InvoiceStatus } from '../models/invoice.entity';
 import { CertificationPackFactoryService } from '../services/certification-pack-factory.service';
 import { ProductPackSyncService } from '../services/product-pack-sync.service';
 import { NotificationService } from '../services/notification.service';
+import { TenantContext } from '../services/tenant-context.service';
 import { CfdiJob } from '../queues/cfdi.queue';
 import { In } from 'typeorm';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
@@ -24,7 +25,14 @@ export class CfdiProcessor {
     private readonly certificationPackFactory: CertificationPackFactoryService,
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly notificationService: NotificationService,
+    private readonly tenantContext: TenantContext,
   ) {}
+
+  private isValidUUID(uuid: string | null | undefined): boolean {
+    if (!uuid || typeof uuid !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid.trim());
+  }
 
   /**
    * Bull processor para Redis. En-rutador del Job.
@@ -40,119 +48,148 @@ export class CfdiProcessor {
    * Actualiza el status de la factura a SENT o FAILED_CFDI según el resultado.
    */
   async process(job: CfdiJob): Promise<void> {
-    const { invoiceId, userId, options } = job;
-    this.logger.log(`[CfdiProcessor] Processing CFDI for invoice: ${invoiceId}`);
+    const { invoiceId, userId, organizationId, options } = job;
 
-    // Recargar la factura con todas sus relaciones necesarias
-    const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
-      relations: [
-        'client',
-        'client.taxData',
-        'details',
-        'details.product',
-        'details.product.tax',
-        'details.product.taxes',
-      ],
-    });
+    return this.tenantContext.run(
+      {
+        organizationId,
+        tenantSlug: null,
+        userId: userId || null,
+        ipAddress: null,
+      },
+      async () => {
+        this.logger.log(`[CfdiProcessor] Processing CFDI for invoice: ${invoiceId}`);
 
-    if (!invoice) {
-      this.logger.error(`[CfdiProcessor] Invoice ${invoiceId} not found`);
-      return;
-    }
+        // Recargar la factura con todas sus relaciones necesarias
+        const invoice = await this.invoiceRepository.findOne({
+          where: { id: invoiceId },
+          relations: [
+            'client',
+            'client.taxData',
+            'details',
+            'details.product',
+            'details.product.tax',
+            'details.product.taxes',
+          ],
+        });
 
-    // Verificar que sigue en estado PENDING_CFDI
-    if (invoice.status !== InvoiceStatus.PENDING_CFDI) {
-      this.logger.warn(
-        `[CfdiProcessor] Invoice ${invoiceId} is no longer in PENDING_CFDI status (current: ${invoice.status}). Skipping.`,
-      );
-      return;
-    }
+        if (!invoice) {
+          this.logger.error(`[CfdiProcessor] Invoice ${invoiceId} not found`);
+          return;
+        }
 
-    try {
-      const packService = await this.certificationPackFactory.getPackService();
+        // Verificar que la organización coincida (seguridad adicional)
+        if (invoice.organization_id !== organizationId) {
+          this.logger.error(
+            `[CfdiProcessor] Organization mismatch: job=${organizationId}, invoice=${invoice.organization_id}`,
+          );
+          return;
+        }
 
-      // Asegurar que todos los productos estén sincronizados con el PAC
-      for (const detail of invoice.details) {
-        if (detail.product && !detail.product.product_pack_id) {
+        this.logger.log(
+          `[CfdiProcessor] Tenant context set for organization: ${organizationId}`,
+        );
+
+        // Verificar que sigue en estado PENDING_CFDI
+        if (invoice.status !== InvoiceStatus.PENDING_CFDI) {
+          this.logger.warn(
+            `[CfdiProcessor] Invoice ${invoiceId} is no longer in PENDING_CFDI status (current: ${invoice.status}). Skipping.`,
+          );
+          return;
+        }
+
+        try {
+          const packService = await this.certificationPackFactory.getPackService();
+
+          // Asegurar que todos los productos estén sincronizados con el PAC
+          for (const detail of invoice.details) {
+            if (detail.product && !detail.product.product_pack_id) {
+              this.logger.log(
+                `[CfdiProcessor] Syncing product "${detail.product.name}" with PAC...`,
+              );
+              const result = await this.productPackSyncService.syncProduct(
+                detail.product,
+              );
+              if (result.packSyncSuccess) {
+                detail.product.product_pack_id = result.product.product_pack_id;
+              } else {
+                throw new Error(
+                  `No se pudo sincronizar el producto "${detail.product.name}": ${result.packErrorMessage}`,
+                );
+              }
+            }
+          }
+
+          // Llamar al PAC para timbrar
+          const cfdiResult = await packService.generateCFDI(invoice, options);
+
+          // Actualizar la factura con el resultado del timbrado
+          invoice.cfdi_uuid = this.isValidUUID(cfdiResult.uuid) ? cfdiResult.uuid : null;
+          invoice.pack_invoice_id = cfdiResult.id;
+          invoice.pack_invoice_response = {
+            uuid: cfdiResult.uuid,
+            status: cfdiResult.status,
+            pdf_url: cfdiResult.pdf_url,
+            xml_url: cfdiResult.xml_url,
+            uuid_available: this.isValidUUID(cfdiResult.uuid),
+          };
+          if (cfdiResult.payload_send) {
+            invoice.payload_send = cfdiResult.payload_send;
+          }
+          invoice.status = InvoiceStatus.SENT;
+
+          await this.invoiceRepository.save(invoice);
+
+          const uuidMessage = cfdiResult.uuid ? cfdiResult.uuid : 'UUID no disponible (revisar con PAC)';
           this.logger.log(
-            `[CfdiProcessor] Syncing product "${detail.product.name}" with PAC...`,
+            `[CfdiProcessor] ✅ CFDI generated successfully for invoice ${invoiceId}. UUID: ${uuidMessage}`,
           );
-          const result = await this.productPackSyncService.syncProduct(
-            detail.product,
+
+          // Notificar al usuario
+          try {
+            if (userId) {
+              const notificationMessage = cfdiResult.uuid
+                ? `La factura ${invoice.code} fue timbrada exitosamente. UUID: ${cfdiResult.uuid}`
+                : `La factura ${invoice.code} fue timbrada exitosamente, pero el UUID no está disponible. Consulte con su PAC para obtener el folio fiscal.`;
+
+              await this.notificationService.createInvoiceNotification(
+                `🧾 CFDI generado: ${invoice.code}`,
+                notificationMessage,
+                invoice.id,
+                userId,
+              );
+            }
+          } catch {
+            /* no bloquear el flujo por error de notificación */
+          }
+        } catch (error: any) {
+          this.logger.error(
+            `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
           );
-          if (result.packSyncSuccess) {
-            detail.product.product_pack_id = result.product.product_pack_id;
-          } else {
-            throw new Error(
-              `No se pudo sincronizar el producto "${detail.product.name}": ${result.packErrorMessage}`,
-            );
+
+          // Marcar la factura como FAILED_CFDI para que pueda ser reintentada
+          invoice.status = InvoiceStatus.FAILED_CFDI;
+          invoice.pack_invoice_response = {
+            error: error?.message || 'Unknown error',
+            failed_at: new Date().toISOString(),
+          };
+          await this.invoiceRepository.save(invoice);
+
+          // Notificar al usuario del error
+          try {
+            if (userId) {
+              await this.notificationService.createInvoiceNotification(
+                `❌ Error al timbrar: ${invoice.code}`,
+                `La factura ${invoice.code} no pudo ser timbrada. Puedes reintentarlo desde el módulo de facturas.`,
+                invoice.id,
+                userId,
+              );
+            }
+          } catch {
+            /* no bloquear */
           }
         }
-      }
-
-      // Llamar al PAC para timbrar
-      const cfdiResult = await packService.generateCFDI(invoice, options);
-
-      // Actualizar la factura con el resultado del timbrado
-      invoice.cfdi_uuid = cfdiResult.uuid;
-      invoice.pack_invoice_id = cfdiResult.id;
-      invoice.pack_invoice_response = {
-        uuid: cfdiResult.uuid,
-        status: cfdiResult.status,
-        pdf_url: cfdiResult.pdf_url,
-        xml_url: cfdiResult.xml_url,
-      };
-      if (cfdiResult.payload_send) {
-        invoice.payload_send = cfdiResult.payload_send;
-      }
-      invoice.status = InvoiceStatus.SENT;
-
-      await this.invoiceRepository.save(invoice);
-
-      this.logger.log(
-        `[CfdiProcessor] ✅ CFDI generated successfully for invoice ${invoiceId}. UUID: ${cfdiResult.uuid}`,
-      );
-
-      // Notificar al usuario
-      try {
-        if (userId) {
-          await this.notificationService.createInvoiceNotification(
-            `🧾 CFDI generado: ${invoice.code}`,
-            `La factura ${invoice.code} fue timbrada exitosamente. UUID: ${cfdiResult.uuid}`,
-            invoice.id,
-            userId,
-          );
-        }
-      } catch {
-        /* no bloquear el flujo por error de notificación */
-      }
-    } catch (error: any) {
-      this.logger.error(
-        `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
-      );
-
-      // Marcar la factura como FAILED_CFDI para que pueda ser reintentada
-      invoice.status = InvoiceStatus.FAILED_CFDI;
-      invoice.pack_invoice_response = {
-        error: error?.message || 'Unknown error',
-        failed_at: new Date().toISOString(),
-      };
-      await this.invoiceRepository.save(invoice);
-
-      // Notificar al usuario del error
-      try {
-        if (userId) {
-          await this.notificationService.createInvoiceNotification(
-            `❌ Error al timbrar: ${invoice.code}`,
-            `La factura ${invoice.code} no pudo ser timbrada. Puedes reintentarlo desde el módulo de facturas.`,
-            invoice.id,
-            userId,
-          );
-        }
-      } catch {
-        /* no bloquear */
-      }
-    }
+      },
+    );
   }
-}
+}   

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CertificationPack } from '../models/certification-pack.entity';
@@ -10,6 +10,7 @@ import { TenantContext } from './tenant-context.service';
 
 @Injectable()
 export class CertificationPackFactoryService {
+  private readonly logger = new Logger(CertificationPackFactoryService.name);
   private packServices: Map<string, ICertificationPackService> = new Map();
 
   constructor(
@@ -81,14 +82,20 @@ export class CertificationPackFactoryService {
     }
 
     if (!pack) {
+      this.logger.warn(`Certification pack ${packType || 'active'} not found for organization ${this.organizationId}`);
       throw new NotFoundException(
         `Certification pack ${packType || 'active'} not found`,
       );
     }
 
+    this.logger.log(
+      `Selected certification pack: ${pack.type} (id=${pack.id}) for organization ${this.organizationId}`,
+    );
+
     const service = this.packServices.get(pack.type);
 
     if (!service) {
+      this.logger.error(`Service for pack type ${pack.type} not implemented`);
       throw new NotFoundException(
         `Service for pack type ${pack.type} not implemented`,
       );

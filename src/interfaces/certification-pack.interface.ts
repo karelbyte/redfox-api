@@ -8,7 +8,7 @@ import { Invoice } from '../models/invoice.entity';
  */
 export interface CFDIResponse {
   id: string;
-  uuid: string;
+  uuid: string | null;
   status: string;
   pdf_url?: string;
   xml_url?: string;
@@ -179,7 +179,7 @@ export interface PaymentComplementData {
   /** Clave SAT de forma de pago (01=Efectivo, 03=Transferencia, 04=Tarjeta...) */
   payment_form: string;
   /** ID interno del comprobante en el PAC (opcional, ayuda a Facturapi) */
-  pack_invoice_id?: string;
+  pack_invoice_id?: string | null;
 }
 
 export interface PaymentComplementResponse {

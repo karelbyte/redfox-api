@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dtos/auth/login.dto';
 import { RegisterDto } from '../dtos/auth/register.dto';
@@ -9,6 +9,7 @@ import { RedisService } from '../services/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfig } from '../config';
 import { Request } from 'express';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -70,5 +71,11 @@ export class AuthController {
       }
     }
     return { message: 'Logged out successfully' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('me')
+  async me(@UserId() userId: string): Promise<AuthResponseDto['user']> {
+    return this.authService.getCurrentUser(userId);
   }
 }

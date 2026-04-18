@@ -27,10 +27,16 @@ const mockProductRepo = {
 
 const mockBrandRepo = {
   find: jest.fn().mockResolvedValue([mockBrand]),
+  create: jest.fn().mockImplementation((data: any) => ({ id: 'new-brand', ...data })),
+  save: jest.fn().mockImplementation((data: any) => Promise.resolve(data)),
+  findOne: jest.fn().mockResolvedValue(null),
 };
 
 const mockCategoryRepo = {
   find: jest.fn().mockResolvedValue([mockCategory]),
+  create: jest.fn().mockImplementation((data: any) => ({ id: 'new-cat', ...data })),
+  save: jest.fn().mockImplementation((data: any) => Promise.resolve(data)),
+  findOne: jest.fn().mockResolvedValue(null),
 };
 
 const mockUnitRepo = {
@@ -49,7 +55,7 @@ async function makeService() {
   const { ProductImportService } = await import(
     '../../src/services/product-import.service'
   );
-  return new (ProductImportService as any)(
+  const service = new (ProductImportService as any)(
     mockProductRepo,
     mockBrandRepo,
     mockCategoryRepo,
@@ -57,6 +63,13 @@ async function makeService() {
     mockTaxRepo,
     mockTenantContext,
   );
+  
+  // Mock methods
+  service.ensureUniqueSlugForOrg = jest.fn().mockResolvedValue('unique-slug');
+  service.ensureUniqueSlugForCategory = jest.fn().mockResolvedValue('unique-category-slug');
+  service.generateSlug = jest.fn().mockReturnValue('generated-slug');
+  
+  return service;
 }
 
 function csv(...rows: string[]): Buffer {

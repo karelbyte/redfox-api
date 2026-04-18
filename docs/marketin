@@ -13,3 +13,8 @@ Gestión Multi-tenant: Un espacio seguro, aislado y ultra rápido para tu organi
 NitroStock no es solo un software, es el motor que conecta tus compras, ventas, logística y facturación en una sola plataforma robusta y fácil de usar.
 
 👉 Lleva tu negocio al siguiente nivel hoy mismo: https://nitrostock.work
+
+Nombre o Razón social tal como viene en la cédula fiscal de identificación (CIF).
+Para el caso de personas físicas: Nombre(s), Apellido paterno y Apellido materno. 
+Para el caso de personas morales: Razón Social.
+! IMPORTANTE !: NO se debe capturar en este campo el Régimen de Capital (ej: SA de CV, S de RL, etc)
