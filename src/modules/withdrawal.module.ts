@@ -24,6 +24,7 @@ import { PosPackSyncService } from '../services/pos-pack-sync.service';
 import { AccountReceivableModule } from './account-receivable.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
+import { WebhookModule } from './webhook.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationModule } from './notification.module';
     AccountReceivableModule,
     OrganizationModule,
     NotificationModule,
+    WebhookModule,
   ],
   controllers: [WithdrawalController],
   providers: [

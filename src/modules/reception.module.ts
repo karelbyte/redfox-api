@@ -22,6 +22,7 @@ import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 import { ProviderModule } from './provider.module';
 import { OrganizationModule } from './organization.module';
 import { SurrogateModule } from './surrogate.module';
+import { WebhookModule } from './webhook.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SurrogateModule } from './surrogate.module';
     ProviderModule,
     OrganizationModule,
     SurrogateModule,
+    WebhookModule,
   ],
   controllers: [ReceptionController],
   providers: [

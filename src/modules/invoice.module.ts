@@ -30,6 +30,7 @@ import { InvoiceDetailMapper } from '../services/mappers/invoice-detail.mapper';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
+import { WebhookModule } from './webhook.module';
 import { CfdiQueue } from '../queues/cfdi.queue';
 import { InMemoryCfdiQueue } from '../queues/in-memory-cfdi.queue';
 import { CfdiProcessor } from '../processors/cfdi.processor';
@@ -52,6 +53,7 @@ import { CfdiProcessor } from '../processors/cfdi.processor';
     OrganizationModule,
     forwardRef(() => AccountReceivableModule),
     NotificationModule,
+    WebhookModule,
     BullModule.registerQueueAsync({
       name: 'generate-cfdi',
       imports: [ConfigModule],

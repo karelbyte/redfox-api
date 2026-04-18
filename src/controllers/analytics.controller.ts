@@ -57,4 +57,19 @@ export class AnalyticsController {
       operational,
     };
   }
+
+  @Get('sales-forecasting')
+  async getSalesForecasting() {
+    return this.analyticsService.getSalesForecasting();
+  }
+
+  @Get('product-profitability')
+  async getProductProfitability() {
+    return this.analyticsService.getProductProfitability();
+  }
+
+  @Get('month-over-month')
+  async getMonthOverMonthComparison() {
+    return this.analyticsService.getMonthOverMonthComparison();
+  }
 }

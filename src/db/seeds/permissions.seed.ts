@@ -1342,6 +1342,46 @@ export class PermissionsSeed {
         description:
           'Allows deleting shipments | Permite eliminar envíos',
       },
+
+      // Webhook Permissions
+      {
+        code: 'webhooks_module_view',
+        module: 'webhooks',
+        description:
+          'Allows viewing the webhooks module | Permite ver el módulo de webhooks',
+      },
+      {
+        code: 'webhook_create',
+        module: 'webhooks',
+        description: 'Allows creating webhooks | Permite crear webhooks',
+      },
+      {
+        code: 'webhook_read',
+        module: 'webhooks',
+        description: 'Allows reading webhooks | Permite leer webhooks',
+      },
+      {
+        code: 'webhook_update',
+        module: 'webhooks',
+        description: 'Allows updating webhooks | Permite actualizar webhooks',
+      },
+      {
+        code: 'webhook_delete',
+        module: 'webhooks',
+        description: 'Allows deleting webhooks | Permite eliminar webhooks',
+      },
+      {
+        code: 'webhook_test',
+        module: 'webhooks',
+        description:
+          'Allows testing webhooks | Permite probar webhooks',
+      },
+      {
+        code: 'webhook_view_logs',
+        module: 'webhooks',
+        description:
+          'Allows viewing webhook logs | Permite ver logs de webhooks',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');

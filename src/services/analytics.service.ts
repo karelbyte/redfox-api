@@ -85,6 +85,32 @@ export interface ExtendedAnalytics {
   avgDeliveryTimeByCarrier: Array<{ carrier: string; avgDays: number; shipments: number }>;
 }
 
+export interface SalesForecastingData {
+  historicalSales: Array<{ month: string; sales: number; revenue: number }>;
+  forecast: Array<{ month: string; predictedSales: number; confidence: number }>;
+}
+
+export interface ProductProfitabilityData {
+  products: Array<{
+    productId: string;
+    productName: string;
+    revenue: number;
+    cost: number;
+    margin: number;
+    marginPercentage: number;
+    unitsSold: number;
+  }>;
+}
+
+export interface MonthOverMonthComparisonData {
+  metrics: Array<{
+    metric: string;
+    currentMonth: number;
+    previousMonth: number;
+    growthPercentage: number;
+  }>;
+}
+
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -412,6 +438,97 @@ export class AnalyticsService {
       shipmentsByStatus,
       avgDeliveryTimeByCarrier,
     };
+  }
+
+  async getSalesForecasting(): Promise<SalesForecastingData> {
+    const organizationId = this.tenantContext.getOrganizationId() as string;
+
+    // Get last 12 months of historical data
+    const historicalSales = await this.getHistoricalSalesForForecast(organizationId);
+
+    // Simple linear regression for forecasting (next 3 months)
+    const forecast = this.calculateSalesForecast(historicalSales);
+
+    return {
+      historicalSales,
+      forecast,
+    };
+  }
+
+  async getProductProfitability(): Promise<ProductProfitabilityData> {
+    const organizationId = this.tenantContext.getOrganizationId() as string;
+
+    const products = await this.productRepository.find({
+      where: { organization_id: organizationId },
+      relations: ['category', 'brand'],
+    });
+
+    const profitabilityData = await Promise.all(
+      products.map(async (product) => {
+        const salesData = await this.getProductSalesData(organizationId, product.id);
+        const costData = await this.getProductCostData(organizationId, product.id);
+
+        const revenue = salesData.revenue;
+        const cost = costData.totalCost;
+        const margin = revenue - cost;
+        const marginPercentage = revenue > 0 ? (margin / revenue) * 100 : 0;
+
+        return {
+          productId: product.id,
+          productName: product.name,
+          revenue,
+          cost,
+          margin,
+          marginPercentage,
+          unitsSold: salesData.unitsSold,
+        };
+      }),
+    );
+
+    // Sort by margin percentage descending
+    profitabilityData.sort((a, b) => b.marginPercentage - a.marginPercentage);
+
+    return { products: profitabilityData };
+  }
+
+  async getMonthOverMonthComparison(): Promise<MonthOverMonthComparisonData> {
+    const organizationId = this.tenantContext.getOrganizationId() as string;
+
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const currentMonthData = await this.getMonthlyMetrics(organizationId, currentMonth);
+    const previousMonthData = await this.getMonthlyMetrics(organizationId, previousMonth);
+
+    const metrics = [
+      {
+        metric: 'sales',
+        currentMonth: currentMonthData.sales,
+        previousMonth: previousMonthData.sales,
+        growthPercentage: this.calculateGrowthPercentage(currentMonthData.sales, previousMonthData.sales),
+      },
+      {
+        metric: 'revenue',
+        currentMonth: currentMonthData.revenue,
+        previousMonth: previousMonthData.revenue,
+        growthPercentage: this.calculateGrowthPercentage(currentMonthData.revenue, previousMonthData.revenue),
+      },
+      {
+        metric: 'products_sold',
+        currentMonth: currentMonthData.productsSold,
+        previousMonth: previousMonthData.productsSold,
+        growthPercentage: this.calculateGrowthPercentage(currentMonthData.productsSold, previousMonthData.productsSold),
+      },
+      {
+        metric: 'new_clients',
+        currentMonth: currentMonthData.newClients,
+        previousMonth: previousMonthData.newClients,
+        growthPercentage: this.calculateGrowthPercentage(currentMonthData.newClients, previousMonthData.newClients),
+      },
+    ];
+
+    return { metrics };
   }
 
   private buildWhereClause(
@@ -862,6 +979,146 @@ export class AnalyticsService {
       avgDays: parseFloat(item.avgDays || '0'),
       shipments: parseInt(item.shipments),
     }));
+  }
+
+  private async getHistoricalSalesForForecast(organizationId: string): Promise<Array<{ month: string; sales: number; revenue: number }>> {
+    const result = await this.withdrawalRepository.query(
+      `SELECT
+        TO_CHAR(w.created_at, 'YYYY-MM') as month,
+        COUNT(w.id) as sales,
+        SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as revenue
+      FROM withdrawals w
+      WHERE w.organization_id = $1 AND w.created_at >= NOW() - INTERVAL '12 months'
+      GROUP BY TO_CHAR(w.created_at, 'YYYY-MM')
+      ORDER BY month`,
+      [organizationId],
+    );
+
+    return result.map((row) => ({
+      month: row.month,
+      sales: parseInt(row.sales),
+      revenue: parseFloat(row.revenue || '0'),
+    }));
+  }
+
+  private calculateSalesForecast(historicalData: Array<{ month: string; sales: number; revenue: number }>): Array<{ month: string; predictedSales: number; confidence: number }> {
+    if (historicalData.length < 3) {
+      return [];
+    }
+
+    // Simple linear regression on sales
+    const n = historicalData.length;
+    const sumX = historicalData.reduce((sum, _, i) => sum + i, 0);
+    const sumY = historicalData.reduce((sum, item) => sum + item.sales, 0);
+    const sumXY = historicalData.reduce((sum, item, i) => sum + i * item.sales, 0);
+    const sumXX = historicalData.reduce((sum, _, i) => sum + i * i, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Forecast next 3 months
+    const forecast: Array<{ month: string; predictedSales: number; confidence: number }> = [];
+    for (let i = 1; i <= 3; i++) {
+      const predictedSales = Math.max(0, Math.round(slope * (n + i - 1) + intercept));
+      forecast.push({
+        month: this.getFutureMonthString(i),
+        predictedSales,
+        confidence: 0.7, // Fixed confidence for simplicity
+      });
+    }
+
+    return forecast;
+  }
+
+  private getFutureMonthString(monthsAhead: number): string {
+    const date = new Date();
+    date.setMonth(date.getMonth() + monthsAhead);
+    return date.toISOString().slice(0, 7); // YYYY-MM format
+  }
+
+  private async getProductSalesData(organizationId: string, productId: string): Promise<{ revenue: number; unitsSold: number }> {
+    const result = await this.withdrawalRepository.query(
+      `SELECT
+        SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(wd.price * wd.quantity AS DECIMAL(10,2)) ELSE 0 END) as revenue,
+        SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(wd.quantity AS DECIMAL(10,2)) ELSE 0 END) as units_sold
+      FROM withdrawal_details wd
+      JOIN withdrawals w ON w.id = wd.withdrawal_id
+      WHERE w.organization_id = $1 AND wd.product_id = $2`,
+      [organizationId, productId],
+    );
+
+    return {
+      revenue: parseFloat(result[0]?.revenue || '0'),
+      unitsSold: parseFloat(result[0]?.units_sold || '0'),
+    };
+  }
+
+  private async getProductCostData(organizationId: string, productId: string): Promise<{ totalCost: number }> {
+    // For simplicity, assume cost is stored in product.price or calculate from receptions
+    // In a real implementation, you'd have a proper cost tracking system
+    const product = await this.productRepository.findOne({
+      where: { id: productId, organization_id: organizationId },
+      relations: ['prices'],
+    });
+
+    if (!product) return { totalCost: 0 };
+
+    // Get the most recent price
+    const latestPrice = product.prices?.sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0]?.price || 0;
+
+    // Simple approximation: use product price as cost (this should be improved with actual cost tracking)
+    const salesData = await this.getProductSalesData(organizationId, productId);
+    const estimatedCost = salesData.unitsSold * latestPrice;
+
+    return { totalCost: estimatedCost };
+  }
+
+  private async getMonthlyMetrics(organizationId: string, monthStart: Date): Promise<{
+    sales: number;
+    revenue: number;
+    productsSold: number;
+    newClients: number;
+  }> {
+    const monthEnd = new Date(monthStart);
+    monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+    const [salesResult, productsResult, clientsResult] = await Promise.all([
+      this.withdrawalRepository.query(
+        `SELECT
+          COUNT(w.id) as sales,
+          SUM(CASE WHEN w.status = 'CLOSED' THEN CAST(w.amount AS DECIMAL(10,2)) ELSE 0 END) as revenue
+        FROM withdrawals w
+        WHERE w.organization_id = $1 AND w.created_at >= $2 AND w.created_at < $3`,
+        [organizationId, monthStart.toISOString(), monthEnd.toISOString()],
+      ),
+      this.withdrawalRepository.query(
+        `SELECT SUM(CAST(wd.quantity AS DECIMAL(10,2))) as products_sold
+        FROM withdrawal_details wd
+        JOIN withdrawals w ON w.id = wd.withdrawal_id
+        WHERE w.organization_id = $1 AND w.created_at >= $2 AND w.created_at < $3`,
+        [organizationId, monthStart.toISOString(), monthEnd.toISOString()],
+      ),
+      this.clientRepository.query(
+        `SELECT COUNT(c.id) as new_clients
+        FROM clients c
+        WHERE c.organization_id = $1 AND c.created_at >= $2 AND c.created_at < $3`,
+        [organizationId, monthStart.toISOString(), monthEnd.toISOString()],
+      ),
+    ]);
+
+    return {
+      sales: parseInt(salesResult[0]?.sales || '0'),
+      revenue: parseFloat(salesResult[0]?.revenue || '0'),
+      productsSold: parseFloat(productsResult[0]?.products_sold || '0'),
+      newClients: parseInt(clientsResult[0]?.new_clients || '0'),
+    };
+  }
+
+  private calculateGrowthPercentage(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
   }
 }
 

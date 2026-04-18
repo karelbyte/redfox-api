@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,6 +34,8 @@ import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { ProviderMapper } from './mappers/provider.mapper';
 import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
+import { WebhookService } from './webhook.service';
+import { WebhookEvent } from '../models/webhook.entity';
 
 @Injectable()
 export class ReceptionService {
@@ -59,7 +62,10 @@ export class ReceptionService {
     private readonly providerMapper: ProviderMapper,
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
+    private readonly webhookService: WebhookService,
   ) {}
+
+  private readonly logger = new Logger(ReceptionService.name);
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -177,6 +183,30 @@ export class ReceptionService {
         { id: savedReception.id },
       );
       throw new NotFoundException(message);
+    }
+
+    // Trigger webhook for reception created
+    try {
+      await this.webhookService.triggerWebhooks(
+        this.organizationId,
+        WebhookEvent.RECEPTION_CREATED,
+        {
+          reception_id: receptionWithRelations.id,
+          code: receptionWithRelations.code,
+          amount: receptionWithRelations.amount,
+          provider: {
+            id: provider.id,
+            name: provider.name,
+          },
+          warehouse: {
+            id: warehouse.id,
+            name: warehouse.name,
+          },
+          created_by: userId,
+        },
+      );
+    } catch (error) {
+      this.logger?.error?.('Error triggering reception_created webhook:', error);
     }
 
     return this.mapToResponseDto(receptionWithRelations);

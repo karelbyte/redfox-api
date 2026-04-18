@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
@@ -54,6 +55,8 @@ import { PosPackSyncService } from './pos-pack-sync.service';
 import { AccountReceivableService } from './account-receivable.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
+import { WebhookService } from './webhook.service';
+import { WebhookEvent } from '../models/webhook.entity';
 import { User } from '../models/user.entity';
 
 @Injectable()
@@ -80,7 +83,10 @@ export class WithdrawalService {
     private readonly accountReceivableService: AccountReceivableService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
+    private readonly webhookService: WebhookService,
   ) {}
+
+  private readonly logger = new Logger(WithdrawalService.name);
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -1000,6 +1006,30 @@ export class WithdrawalService {
       }
     } catch {
       /* no bloquear el flujo */
+    }
+
+    // Trigger webhook for sale created
+    try {
+      await this.webhookService.triggerWebhooks(
+        this.organizationId,
+        WebhookEvent.SALE_CREATED,
+        {
+          withdrawal_id: closedWithdrawal.id,
+          code: closedWithdrawal.code,
+          amount: closedWithdrawal.amount,
+          client: closedWithdrawal.client ? {
+            id: closedWithdrawal.client.id,
+            name: closedWithdrawal.client.name,
+          } : null,
+          products_count: withdrawnProducts,
+          total_quantity: totalQuantity,
+          payment_method: closedWithdrawal.paymentMethod,
+          type: closedWithdrawal.type,
+          created_by: userId,
+        },
+      );
+    } catch (error) {
+      this.logger.error('Error triggering sale_created webhook:', error);
     }
 
     // Retornar resumen de la operación

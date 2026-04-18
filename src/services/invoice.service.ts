@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -37,6 +38,8 @@ import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { CfdiQueue } from '../queues/cfdi.queue';
+import { WebhookService } from './webhook.service';
+import { WebhookEvent } from '../models/webhook.entity';
 
 @Injectable()
 export class InvoiceService {
@@ -65,7 +68,11 @@ export class InvoiceService {
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
     private readonly cfdiQueue: CfdiQueue,
+    private readonly webhookService: WebhookService,
   ) {}
+
+
+  private readonly logger = new Logger(InvoiceService.name);
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -293,6 +300,28 @@ export class InvoiceService {
         ],
         withDeleted: false,
       });
+    }
+
+    // Trigger webhook for invoice created
+    try {
+      await this.webhookService.triggerWebhooks(
+        this.organizationId,
+        WebhookEvent.INVOICE_CREATED,
+        {
+          invoice_id: savedInvoice.id,
+          code: savedInvoice.code,
+          total_amount: savedInvoice.total_amount,
+          client: {
+            id: client.id,
+            name: client.name,
+          },
+          withdrawal_id: withdrawal?.id,
+          status: savedInvoice.status,
+          created_by: userId,
+        },
+      );
+    } catch (error) {
+      this.logger.error('Error triggering invoice_created webhook:', error);
     }
 
     return this.mapToResponseDto(invoiceWithDetails!);
