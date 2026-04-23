@@ -69,7 +69,7 @@ export class InvoiceService {
     private readonly notificationService: NotificationService,
     private readonly cfdiQueue: CfdiQueue,
     private readonly webhookService: WebhookService,
-  ) {}
+  ) { }
 
 
   private readonly logger = new Logger(InvoiceService.name);
@@ -91,9 +91,9 @@ export class InvoiceService {
       Math.round(Number(detail.quantity) * Number(detail.price) * 100) / 100;
     const taxRate = (detail.product as any)?.taxes?.length
       ? (detail.product as any).taxes.reduce((acc: number, tax: any) => {
-          if (tax.type === 'PERCENTAGE') return acc + Number(tax.value);
-          return acc;
-        }, 0)
+        if (tax.type === 'PERCENTAGE') return acc + Number(tax.value);
+        return acc;
+      }, 0)
       : Number(detail.tax_rate) || 0;
     const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
     const total = Math.round((subtotal + taxAmount) * 100) / 100;
@@ -945,13 +945,13 @@ export class InvoiceService {
     if (activePayments.length > 0) {
       throw new BadRequestException(
         `No se puede cancelar la factura porque tiene ${activePayments.length} complemento(s) de pago timbrado(s). ` +
-          `Cancela los complementos de pago primero.`,
+        `Cancela los complementos de pago primero.`,
       );
     }
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
-      await packService.cancelCFDI(invoice.pack_invoice_id ?? invoice.cfdi_uuid , reason);
+      await packService.cancelCFDI(invoice.pack_invoice_id ?? invoice.cfdi_uuid, reason);
 
       invoice.status = InvoiceStatus.CANCELLED;
       const updatedInvoice = await this.invoiceRepository.save(invoice);
@@ -1309,11 +1309,17 @@ export class InvoiceService {
   }
 
   async downloadPDF(invoiceId: string, userId?: string): Promise<Buffer> {
-    const invoice = await this.invoiceRepository.findOne({
+    let document: Invoice | InvoicePayment | null = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
     });
 
-    if (!invoice) {
+    if (!document) {
+      document = await this.invoicePaymentRepository.findOne({
+        where: { id: invoiceId },
+      });
+    }
+
+    if (!document) {
       const message = await this.translationService.translate(
         'invoice.not_found',
         userId,
@@ -1321,23 +1327,30 @@ export class InvoiceService {
       );
       throw new NotFoundException(message);
     }
+    const documentId = (document as InvoicePayment).pack_complement_id || (document as Invoice).pack_invoice_id;
 
-    if (!invoice.pack_invoice_id) {
+    if (!documentId) {
       throw new BadRequestException(
         'Invoice has not been generated in certification pack',
       );
     }
 
     const packService = await this.certificationPackFactory.getPackService();
-    return await packService.downloadPDF(invoice.pack_invoice_id);
+    return await packService.downloadPDF(documentId);
   }
 
   async downloadXML(invoiceId: string, userId?: string): Promise<string> {
-    const invoice = await this.invoiceRepository.findOne({
+    let document: Invoice | InvoicePayment | null = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
     });
 
-    if (!invoice) {
+    if (!document) {
+      document = await this.invoicePaymentRepository.findOne({
+        where: { id: invoiceId },
+      });
+    }
+
+    if (!document) {
       const message = await this.translationService.translate(
         'invoice.not_found',
         userId,
@@ -1345,15 +1358,16 @@ export class InvoiceService {
       );
       throw new NotFoundException(message);
     }
+    const documentId = (document as InvoicePayment).pack_complement_id || (document as Invoice).pack_invoice_id;
 
-    if (!invoice.pack_invoice_id) {
+    if (!documentId) {
       throw new BadRequestException(
         'Invoice has not been generated in certification pack',
       );
     }
 
     const packService = await this.certificationPackFactory.getPackService();
-    return await packService.downloadXML(invoice.pack_invoice_id);
+    return await packService.downloadXML(documentId);
   }
 
   /**

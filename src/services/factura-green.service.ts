@@ -928,7 +928,7 @@ export class FacturaGreenService implements ICertificationPackService {
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
       console.error('Factura Green List Customers Error:', error);
-      // 🔥 Forzamos la excepción global para que envíe el Email de Error alertando al Admin 🔥
+      //  Forzamos la excepción global para que envíe el Email de Error alertando al Admin
       throw new BadRequestException(
         error.message ||
           (await this.translationService.translate(
