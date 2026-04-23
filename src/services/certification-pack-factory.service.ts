@@ -101,8 +101,7 @@ export class CertificationPackFactoryService {
       );
     }
 
-    // Almacenar la configuración en el contexto del tenant para que el servicio pueda acceder a ella de forma segura
-    this.tenantContext.setPacConfig(pack.config || {});
+     this.tenantContext.setPacConfig(pack.config || {});
 
     return service;
   }

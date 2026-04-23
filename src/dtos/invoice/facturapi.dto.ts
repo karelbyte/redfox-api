@@ -125,7 +125,7 @@ export class GenerateCFDIDto {
 export class CancelCFDIDto {
   @IsString()
   @IsNotEmpty()
-  @Length(3, 255)
+  @Length(2, 255)
   reason: string;
 }
 

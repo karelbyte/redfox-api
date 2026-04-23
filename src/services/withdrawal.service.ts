@@ -1130,6 +1130,7 @@ export class WithdrawalService {
             current_stock: Number(inventory.quantity),
             batch_number: inventory.batch_number,
             expiration_date: inventory.expiration_date,
+            organization_id: this.organizationId,
           });
           await queryRunner.manager.save(ProductHistory, productHistory);
 

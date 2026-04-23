@@ -395,7 +395,7 @@ export class AuthService {
             <p style="word-break: break-all; font-size: 12px; color: #EAB308; background: #0F172A; padding: 12px; border-radius: 6px; border: 1px solid #334155;">${activationLink}</p>
             
             <div class="expiry-notice">
-              ⚠️ Este enlace de activación es válido por las próximas <strong>72 horas</strong> (3 días).<br><br>
+              Este enlace de activación es válido por las próximas <strong>72 horas</strong> (3 días).<br><br>
               Si no solicitaste esta cuenta, puedes ignorar este correo sin ningún problema.
             </div>
           </div>

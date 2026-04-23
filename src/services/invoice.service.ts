@@ -951,7 +951,7 @@ export class InvoiceService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
-      await packService.cancelCFDI(invoice.cfdi_uuid, reason);
+      await packService.cancelCFDI(invoice.pack_invoice_id ?? invoice.cfdi_uuid , reason);
 
       invoice.status = InvoiceStatus.CANCELLED;
       const updatedInvoice = await this.invoiceRepository.save(invoice);
