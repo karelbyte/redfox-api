@@ -19,7 +19,7 @@ import { WarehouseSimpleResponseDto } from '../dtos/warehouse/warehouse-simple-r
 import { PaginationDto } from '../dtos/common/pagination.dto';
 import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { AuthGuard } from '../guards/auth.guard';
-import { UpdateWarehouseStatusDto } from 'src/dtos/warehouse/update-warehouse-status.dto';
+import { UpdateWarehouseStatusDto } from '../dtos/warehouse/update-warehouse-status.dto';
 import { CloseWarehouseResponseDto } from '../dtos/warehouse/close-warehouse-response.dto';
 import { UserId } from '../decorators/user-id.decorator';
 
