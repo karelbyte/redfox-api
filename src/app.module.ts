@@ -70,6 +70,7 @@ import { TenantMiddleware } from './middlewares/tenant.middleware';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 import { UnverifiedAccountCleanupService } from './services/unverified-account-cleanup.service';
+import { options } from './config/options/config.options';
 
 @Module({
   imports: [
@@ -141,6 +142,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     BotSettingsModule,
     ShipmentModule,
     WebhookModule,
+    ConfigModule.forRoot(options)
   ],
   controllers: [HomeController],
   providers: [
