@@ -50,6 +50,7 @@ import { AuditLogModule } from './modules/audit-log.module';
 import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 import { AppConfig } from './config';
 import { HomeController } from './controllers/home.controller';
+import { options } from './config/options/config.options';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { HomeController } from './controllers/home.controller';
     TagModule,
     TemplateModule,
     AuditLogModule,
+    ConfigModule.forRoot(options)
   ],
   controllers: [HomeController],
   providers: [
