@@ -251,12 +251,16 @@ export class InvoiceService {
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const detailEntities = details.map((detailDto) => {
+    const detailEntities = details.map(async (detailDto) => {
       const product = productMap.get(detailDto.product_id);
-      if (!product)
-        throw new BadRequestException(
-          `Producto ${detailDto.product_id} no encontrado`,
+      if (!product) {
+        const message = await this.translationService.translate(
+          'invoice.product_not_found',
+          userId,
+          { id: detailDto.product_id },
         );
+        throw new BadRequestException(message);
+      }
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
@@ -276,7 +280,8 @@ export class InvoiceService {
       });
     });
 
-    await this.invoiceDetailRepository.save(detailEntities);
+    const entities = await Promise.all(detailEntities);
+    await this.invoiceDetailRepository.save(entities);
 
     const invoiceWithDetails = await this.invoiceRepository.findOne({
       where: { id: savedInvoice.id },
@@ -614,10 +619,9 @@ export class InvoiceService {
 
     const detailEntities2 = details.map((detailDto) => {
       const product = productMap2.get(detailDto.product_id);
-      if (!product)
-        throw new BadRequestException(
-          `Producto ${detailDto.product_id} no encontrado`,
-        );
+      if (!product) {
+        throw new BadRequestException(`Product with id ${detailDto.product_id} not found`);
+      }
 
       const detailSubtotal = detailDto.quantity * detailDto.price;
       const taxRate = detailDto.tax_rate || 0;
@@ -711,19 +715,22 @@ export class InvoiceService {
         .andWhere("w.status = 'CLOSED'")
         .getMany();
     } else {
-      throw new BadRequestException(
-        'Debe enviar withdrawal_ids o from y to para el periodo',
+      const message = await this.translationService.translate(
+        'invoice.global_period_required',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     withdrawals = withdrawals.filter((w) => !w.invoiceId);
     if (!withdrawals.length) {
-      throw new BadRequestException(
-        'No hay ventas cerradas sin facturar en el periodo indicado',
+      const message = await this.translationService.translate(
+        'invoice.no_withdrawals_period',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
-    // Calcular el total real de las ventas del período
     const totalAmount = withdrawals.reduce(
       (sum, w) => sum + Number(w.amount),
       0,
@@ -772,9 +779,11 @@ export class InvoiceService {
     });
 
     if (!publicClient) {
-      throw new BadRequestException(
-        'No hay clientes en el sistema; se requiere al menos uno para la factura global',
+      const message = await this.translationService.translate(
+        'invoice.no_clients_global',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     const globalCode = `GLOBAL-${(to ?? new Date().toISOString().split('T')[0]).replace(/-/g, '')}`;
@@ -943,10 +952,12 @@ export class InvoiceService {
     });
 
     if (activePayments.length > 0) {
-      throw new BadRequestException(
-        `No se puede cancelar la factura porque tiene ${activePayments.length} complemento(s) de pago timbrado(s). ` +
-        `Cancela los complementos de pago primero.`,
+      const message = await this.translationService.translate(
+        'invoice.cannot_cancel_with_payments',
+        userId,
+        { count: activePayments.length },
       );
+      throw new BadRequestException(message);
     }
 
     try {
@@ -956,7 +967,6 @@ export class InvoiceService {
       invoice.status = InvoiceStatus.CANCELLED;
       const updatedInvoice = await this.invoiceRepository.save(invoice);
 
-      // Liberar las ventas asociadas para que puedan volver a facturarse
       await this.withdrawalRepository
         .createQueryBuilder()
         .update()
@@ -1002,10 +1012,12 @@ export class InvoiceService {
       return this.mapToResponseDto(invoiceWithDetails!);
     } catch (error: any) {
       console.error('Error canceling CFDI:', error);
-      // Propagar el mensaje original del PAC
-      throw new BadRequestException(
-        error.message || 'Error al cancelar el CFDI',
+      const message = await this.translationService.translate(
+        'invoice.cancel_error',
+        userId,
+        { error: error.message || '' },
       );
+      throw new BadRequestException(message);
     }
   }
 

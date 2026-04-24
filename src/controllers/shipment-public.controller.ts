@@ -5,6 +5,7 @@ import { Shipment } from '../models/shipment.entity';
 import { Organization } from '../models/organization.entity';
 import { CompanySettings } from '../models/company-settings.entity';
 import { Public } from '../decorators/public.decorator';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('public')
 export class ShipmentPublicController {
@@ -15,13 +16,17 @@ export class ShipmentPublicController {
     private readonly orgRepo: Repository<Organization>,
     @InjectRepository(CompanySettings)
     private readonly settingsRepo: Repository<CompanySettings>,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Public()
   @Get('org/:slug')
   async getOrgBranding(@Param('slug') slug: string) {
     const org = await this.orgRepo.findOne({ where: { slug } });
-    if (!org) throw new NotFoundException('Organización no encontrada');
+    if (!org) {
+      const message = await this.translationService.translateWithLanguage('shipment.org_not_found', 'es');
+      throw new NotFoundException(message);
+    }
 
     const settings = await this.settingsRepo.findOne({ where: { organization_id: org.id } });
 
@@ -42,10 +47,16 @@ export class ShipmentPublicController {
     @Param('trackingNumber') trackingNumber: string,
     @Query('tenant') tenantSlug: string,
   ) {
-    if (!tenantSlug) throw new NotFoundException('Tenant requerido');
+    if (!tenantSlug) {
+      const message = await this.translationService.translateWithLanguage('shipment.tenant_required', 'es');
+      throw new NotFoundException(message);
+    }
 
     const org = await this.orgRepo.findOne({ where: { slug: tenantSlug } });
-    if (!org) throw new NotFoundException('Organización no encontrada');
+    if (!org) {
+      const message = await this.translationService.translateWithLanguage('shipment.org_not_found', 'es');
+      throw new NotFoundException(message);
+    }
 
     const settings = await this.settingsRepo.findOne({ where: { organization_id: org.id } });
 
@@ -54,7 +65,10 @@ export class ShipmentPublicController {
       relations: ['withdrawal', 'withdrawal.client'],
     });
 
-    if (!shipment) throw new NotFoundException('Envío no encontrado');
+    if (!shipment) {
+      const message = await this.translationService.translateWithLanguage('shipment.not_found', 'es');
+      throw new NotFoundException(message);
+    }
 
     return {
       tracking_number: shipment.tracking_number,

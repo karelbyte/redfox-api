@@ -13,7 +13,6 @@ import {
   MaxFileSizeValidator,
   ParseFilePipe,
   UploadedFiles,
-  BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
@@ -28,6 +27,7 @@ import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UnifiedUploadService } from '../services/unified-upload.service';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('products')
 @UseGuards(AuthGuard)
@@ -36,21 +36,13 @@ export class ProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly unifiedUploadService: UnifiedUploadService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Post()
   @UseInterceptors(
     FilesInterceptor('images', 10, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async create(
@@ -64,16 +56,8 @@ export class ProductController {
     )
     files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
-    // Log temporal para debug
-    console.log(
-      '🔍 CreateProductDto received:',
-      JSON.stringify(createProductDto, null, 2),
-    );
-
-    // Primero crear el producto para obtener su ID
     const product = await this.productService.create(createProductDto, userId);
 
-    // Si hay archivos, subirlos con el ID del producto
     if (files && files.length > 0) {
       const uploadResults = await this.unifiedUploadService.uploadFiles(
         files,
@@ -94,7 +78,6 @@ export class ProductController {
 
       const imageUrls = uploadResults.map((result) => result.url);
 
-      // Actualizar el producto con las URLs de las imágenes
       return this.productService.updateImages(product.id, imageUrls, userId);
     }
 
@@ -125,15 +108,6 @@ export class ProductController {
   @UseInterceptors(
     FilesInterceptor('images', 10, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async update(
@@ -148,7 +122,6 @@ export class ProductController {
     )
     files?: Express.Multer.File[],
   ): Promise<ProductResponseDto> {
-    // Si hay archivos nuevos, subirlos
     if (files && files.length > 0) {
       const uploadResults = await this.unifiedUploadService.uploadFiles(
         files,
@@ -169,7 +142,6 @@ export class ProductController {
 
       const newImageUrls = uploadResults.map((result) => result.url);
 
-      // Si se especifican imágenes existentes, combinarlas con las nuevas
       if (updateProductDto.images) {
         updateProductDto.images = [...updateProductDto.images, ...newImageUrls];
       } else {

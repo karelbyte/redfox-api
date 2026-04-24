@@ -14,6 +14,7 @@ import { CreateEmailConfigDto } from '../dtos/email-config/create-email-config.d
 import { UpdateEmailConfigDto } from '../dtos/email-config/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dtos/email-config/email-config-response.dto';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 interface EmailOptions {
   to: string | string[];
@@ -38,21 +39,25 @@ export class EmailService {
     private emailConfigRepository: Repository<EmailConfig>,
     private readonly tenantContext: TenantContext,
     private readonly configService: ConfigService,
+    private readonly translationService: TranslationService,
   ) {}
 
-  private get organizationId(): string {
+  private async getOrganizationId(userId?: string): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException(
-        'Organization context is required for Email Configuration',
+      const message = await this.translationService.translate(
+        'email.config_org_required',
+        userId,
       );
+      throw new BadRequestException(message);
     }
     return orgId;
   }
 
   async getConfig(userId: string): Promise<EmailConfigResponseDto | null> {
+    const orgId = await this.getOrganizationId(userId);
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, organization_id: this.organizationId, isActive: true },
+      where: { userId, organization_id: orgId, isActive: true },
     });
 
     if (!config) return null;
@@ -64,20 +69,23 @@ export class EmailService {
     userId: string,
     createEmailConfigDto: CreateEmailConfigDto,
   ): Promise<EmailConfigResponseDto> {
+    const orgId = await this.getOrganizationId(userId);
     const existingConfig = await this.emailConfigRepository.findOne({
-      where: { userId, organization_id: this.organizationId },
+      where: { userId, organization_id: orgId },
     });
 
     if (existingConfig) {
-      throw new BadRequestException(
-        'Email configuration already exists. Please update it instead.',
+      const message = await this.translationService.translate(
+        'email.config_already_exists',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     const config = this.emailConfigRepository.create({
       ...createEmailConfigDto,
       userId,
-      organization_id: this.organizationId,
+      organization_id: orgId,
       secure: createEmailConfigDto.secure ?? false,
     });
 
@@ -89,12 +97,17 @@ export class EmailService {
     userId: string,
     updateEmailConfigDto: UpdateEmailConfigDto,
   ): Promise<EmailConfigResponseDto> {
+    const orgId = await this.getOrganizationId(userId);
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, organization_id: this.organizationId },
+      where: { userId, organization_id: orgId },
     });
 
     if (!config) {
-      throw new BadRequestException('Email configuration not found.');
+      const message = await this.translationService.translate(
+        'email.config_not_found',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     Object.assign(config, updateEmailConfigDto);
@@ -106,25 +119,37 @@ export class EmailService {
   async testConnection(
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
+    const orgId = await this.getOrganizationId(userId);
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, organization_id: this.organizationId },
+      where: { userId, organization_id: orgId },
     });
 
     if (!config) {
-      throw new BadRequestException('Email configuration not found.');
+      const message = await this.translationService.translate(
+        'email.config_not_found',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     try {
       const transporter = this.createTransporter(config);
       await transporter.verify();
+      const message = await this.translationService.translate(
+        'email.test_connection_success',
+        userId,
+      );
       return {
         success: true,
-        message: 'Email configuration is valid and connection successful.',
+        message,
       };
     } catch (error) {
-      throw new BadRequestException(
-        `Email configuration test failed: ${error.message}`,
+      const message = await this.translationService.translate(
+        'email.test_connection_failed',
+        userId,
+        { error: error.message },
       );
+      throw new BadRequestException(message);
     }
   }
 
@@ -132,19 +157,23 @@ export class EmailService {
     userId: string,
     emailOptions: EmailOptions,
   ): Promise<{ success: boolean; messageId: string }> {
+    const orgId = await this.getOrganizationId(userId);
     const config = await this.emailConfigRepository.findOne({
-      where: { userId, organization_id: this.organizationId, isActive: true },
+      where: { userId, organization_id: orgId, isActive: true },
     });
 
     if (!config) {
-      throw new BadRequestException(
-        'Email configuration not found. Please configure your email settings.',
+      const message = await this.translationService.translate(
+        'email.config_required_for_send',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     try {
       const transporter = this.createTransporter(config);
-      const fromName = config.fromName || config.user || config.fromEmail.split('@')[0];
+      const fromName =
+        config.fromName || config.user || config.fromEmail.split('@')[0];
 
       const mailOptions = {
         from: `"${fromName}" <${config.fromEmail}>`,
@@ -164,7 +193,12 @@ export class EmailService {
         messageId: info.messageId,
       };
     } catch (error) {
-      throw new BadRequestException(`Failed to send email: ${error.message}`);
+      const message = await this.translationService.translate(
+        'email.send_failed',
+        userId,
+        { error: error.message },
+      );
+      throw new BadRequestException(message);
     }
   }
 

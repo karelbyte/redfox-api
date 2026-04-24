@@ -18,6 +18,7 @@ import {
 
 import { TenantContext } from './tenant-context.service';
 import { SatCatalogService } from './sat-catalog.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class FacturaAPIService implements ICertificationPackService {
@@ -25,27 +26,36 @@ export class FacturaAPIService implements ICertificationPackService {
     private readonly configService: ConfigService,
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
+    private readonly translationService: TranslationService,
   ) {}
 
-  private getClient(): Facturapi {
+  private async getClient(): Promise<Facturapi> {
     const pacConfig = this.tenantContext.getPacConfig();
     const apiKey =
       pacConfig?.api_key || this.configService.get<string>('FACTURAPI_API_KEY');
 
     if (!apiKey) {
-      throw new BadRequestException('FacturaAPI API key not configured');
+      const msg = await this.translationService.translate(
+        'pack.api_key_not_configured_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      throw new BadRequestException(msg);
     }
 
     return new Facturapi(apiKey);
   }
 
-  private getApiKey(): string {
+  private async getApiKey(): Promise<string> {
     const pacConfig = this.tenantContext.getPacConfig();
     const apiKey =
       pacConfig?.api_key || this.configService.get<string>('FACTURAPI_API_KEY');
 
     if (!apiKey) {
-      throw new BadRequestException('FacturaAPI API key not configured');
+      const msg = await this.translationService.translate(
+        'pack.api_key_not_configured_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      throw new BadRequestException(msg);
     }
 
     return apiKey;
@@ -53,7 +63,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       const cfdiData = this.buildCFDIData(invoice);
 
       console.dir(cfdiData, { depth: null });
@@ -70,31 +80,41 @@ export class FacturaAPIService implements ICertificationPackService {
       };
     } catch (error) {
       console.error('FacturaAPI Error:', error);
-      throw new BadRequestException('Error generating CFDI with FacturaAPI');
+      const msg = await this.translationService.translate(
+        'pack.error_generating_cfdi_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      throw new BadRequestException(msg);
     }
   }
 
   async cancelCFDI(uuid: string, reason: string): Promise<void> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       await client.invoices.cancel(uuid, {
         motive: reason as any,
       });
     } catch (error) {
       console.error('FacturaAPI Cancel Error:', error);
-      throw new BadRequestException('Error canceling CFDI with FacturaAPI');
+      const msg = await this.translationService.translate(
+        'pack.error_canceling_cfdi_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+      );
+      throw new BadRequestException(msg);
     }
   }
 
   async getCFDIStatus(uuid: string): Promise<any> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       return await client.invoices.retrieve(uuid);
     } catch (error) {
       console.error('FacturaAPI Status Error:', error);
-      throw new BadRequestException(
-        'Error getting CFDI status from FacturaAPI',
+      const msg = await this.translationService.translate(
+        'pack.error_getting_cfdi_status_fapi',
+        this.tenantContext.getUserId() ?? undefined,
       );
+      throw new BadRequestException(msg);
     }
   }
 
@@ -102,23 +122,28 @@ export class FacturaAPIService implements ICertificationPackService {
     data: PaymentComplementData,
   ): Promise<PaymentComplementResponse> {
     try {
-      const client = this.getClient() as any;
+      const client = (await this.getClient()) as any;
 
       // Intentar recuperar usando pack_invoice_id si existe, si no por UUID
       const lookupId = data.pack_invoice_id || data.cfdi_uuid;
 
       if (!lookupId) {
-        throw new BadRequestException(
-          'No se proporcionó un ID o UUID válido para la factura original',
+        const msg = await this.translationService.translate(
+          'pack.fapi_id_or_uuid_required',
+          this.tenantContext.getUserId() ?? undefined,
         );
+        throw new BadRequestException(msg);
       }
 
       const originalInvoice = await client.invoices.retrieve(lookupId);
 
       if (!originalInvoice || !originalInvoice.customer) {
-        throw new BadRequestException(
-          `Factura original o cliente no encontrado en Facturapi (ID: ${lookupId}). Verifica que la factura haya sido emitida con el mismo API Key.`,
+        const msg = await this.translationService.translate(
+          'pack.fapi_original_invoice_not_found',
+          this.tenantContext.getUserId() ?? undefined,
+          { id: lookupId },
         );
+        throw new BadRequestException(msg);
       }
 
       // --- Lógica de Impuestos Proporcionales para CFDI 4.0 ---
@@ -200,9 +225,12 @@ export class FacturaAPIService implements ICertificationPackService {
       };
     } catch (error: any) {
       console.error('FacturaAPI Payment Complement Error:', error);
-      throw new BadRequestException(
-        `Error generating payment complement: ${error.message}`,
+      const msg = await this.translationService.translate(
+        'pack.error_payment_complement_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+        { error: error.message },
       );
+      throw new BadRequestException(msg);
     }
   }
 
@@ -211,21 +239,24 @@ export class FacturaAPIService implements ICertificationPackService {
     reason: string,
   ): Promise<void> {
     try {
-      const client = this.getClient() as any;
+      const client = (await this.getClient()) as any;
       await client.invoices.cancel(complementPackId, {
         motive: reason as any,
       });
     } catch (error: any) {
       console.error('FacturaAPI Cancel Payment Complement Error:', error);
-      throw new BadRequestException(
-        `Error canceling payment complement: ${error.message}`,
+      const msg = await this.translationService.translate(
+        'pack.error_canceling_payment_complement_fapi',
+        this.tenantContext.getUserId() ?? undefined,
+        { error: error.message },
       );
+      throw new BadRequestException(msg);
     }
   }
 
   async downloadPDF(packInvoiceId: string): Promise<Buffer> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       const pdfBuffer = await client.invoices.downloadPdf(packInvoiceId);
 
       // (rest of the logic remains the same, assuming it uses pdfBuffer)
@@ -288,7 +319,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async downloadXML(packInvoiceId: string): Promise<string> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       const xmlContent = await client.invoices.downloadXml(packInvoiceId);
 
       // Manejar diferentes tipos de respuesta
@@ -595,8 +626,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createCustomer(customerData: CustomerData): Promise<CustomerResponse> {
     try {
-      const client = this.getClient();
-
       const payload: any = {
         legal_name: customerData.legal_name,
         tax_id: customerData.tax_id,
@@ -634,6 +663,7 @@ export class FacturaAPIService implements ICertificationPackService {
         }
       }
 
+      const client = await this.getClient();
       const customer = await client.customers.create(payload);
       // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
@@ -658,8 +688,6 @@ export class FacturaAPIService implements ICertificationPackService {
     customerData: Partial<CustomerData>,
   ): Promise<CustomerResponse> {
     try {
-      const client = this.getClient();
-
       const payload: any = {};
       // ... (rest of logic) ...
       if (customerData.legal_name) payload.legal_name = customerData.legal_name;
@@ -696,6 +724,7 @@ export class FacturaAPIService implements ICertificationPackService {
         }
       }
 
+      const client = await this.getClient();
       const customer = await client.customers.update(customerId, payload);
       // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
@@ -985,8 +1014,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createReceipt(data: ReceiptData): Promise<ReceiptResponse> {
     try {
-      const client = this.getClient();
-
       const payload: any = {
         items: data.items,
         payment_form: data.payment_form,
@@ -1005,6 +1032,7 @@ export class FacturaAPIService implements ICertificationPackService {
       if (data.idempotency_key !== undefined)
         payload.idempotency_key = data.idempotency_key;
 
+      const client = await this.getClient();
       const receipt = await client.receipts.create(payload);
       const anyReceipt: any = receipt;
 
@@ -1028,7 +1056,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async cancelReceipt(receiptId: string): Promise<void> {
     try {
-      const client = this.getClient();
+      const client = await this.getClient();
       await (client.receipts as any).cancel(receiptId);
     } catch (error: any) {
       console.error('FacturaAPI Cancel Receipt Error:', error);
@@ -1094,7 +1122,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createGlobalInvoice(data: GlobalInvoiceData): Promise<CFDIResponse> {
     try {
-      const client = this.getClient();
       const payload: Record<string, unknown> = {
         periodicity: data.periodicity,
       };
@@ -1108,6 +1135,7 @@ export class FacturaAPIService implements ICertificationPackService {
         payload.folio_number = data.folio_number;
       if (data.series) payload.series = data.series;
 
+      const client = await this.getClient();
       const invoice = await client.receipts.createGlobalInvoice(
         payload as Record<string, any>,
       );

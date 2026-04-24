@@ -13,11 +13,16 @@ import { BackupService } from '../services/backup.service';
 import { AuthGuard } from '../guards/auth.guard';
 import * as path from 'path';
 import * as fs from 'fs';
+import { TranslationService } from '../services/translation.service';
+import { UserId } from '../decorators/user-id.decorator';
 
 @Controller('backups')
 @UseGuards(AuthGuard)
 export class BackupController {
-  constructor(private readonly backupService: BackupService) {}
+  constructor(
+    private readonly backupService: BackupService,
+    private readonly translationService: TranslationService,
+  ) {}
 
   @Get('config')
   async getConfig() {
@@ -43,6 +48,7 @@ export class BackupController {
   async downloadBackup(
     @Param('filename') filename: string,
     @Res() res: Response,
+    @UserId() userId: string,
   ) {
     const storagePath = path.join(process.cwd(), 'storage', 'backups');
     const filePath = path.join(storagePath, filename);
@@ -50,7 +56,8 @@ export class BackupController {
     if (fs.existsSync(filePath)) {
       res.download(filePath);
     } else {
-      res.status(404).send('File not found');
+      const message = await this.translationService.translate('general.file_not_found', userId);
+      res.status(404).send(message);
     }
   }
 }

@@ -16,6 +16,7 @@ import { SubscriptionController } from '../controllers/subscription.controller';
 import { PublicPlansController } from '../controllers/public-plans.controller';
 import stripeConfig from '../config/stripe.config';
 import { ReferralModule } from './referral.module';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ReferralModule } from './referral.module';
     ConfigModule.forFeature(stripeConfig),
     ThrottlerModule.forRoot([{ ttl: 600000, limit: 3 }]),
     forwardRef(() => ReferralModule),
+    LanguageModule,
   ],
   controllers: [SubscriptionController, PublicPlansController],
   providers: [

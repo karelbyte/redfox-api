@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   MaxFileSizeValidator,
   ParseFilePipe,
+  FileTypeValidator,
   UploadedFiles,
   UseGuards,
   BadRequestException,
@@ -27,6 +28,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { UnifiedUploadService } from '../services/unified-upload.service';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('brands')
 @UseGuards(AuthGuard)
@@ -35,21 +37,13 @@ export class BrandController {
   constructor(
     private readonly brandService: BrandService,
     private readonly unifiedUploadService: UnifiedUploadService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Post()
   @UseInterceptors(
     FilesInterceptor('img', 1, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async create(
@@ -57,7 +51,10 @@ export class BrandController {
     @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\// }),
+        ],
         fileIsRequired: false,
       }),
     )
@@ -107,15 +104,6 @@ export class BrandController {
   @UseInterceptors(
     FilesInterceptor('img', 1, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async update(
@@ -124,7 +112,10 @@ export class BrandController {
     @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\// }),
+        ],
         fileIsRequired: false,
       }),
     )

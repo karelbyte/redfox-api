@@ -7,11 +7,13 @@ import { Product } from '../models/product.entity';
 import { User } from '../models/user.entity';
 import { NotificationModule } from './notification.module';
 import { TenantContext } from '../services/tenant-context.service';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Inventory, Product, User]),
     NotificationModule,
+    LanguageModule,
   ],
   controllers: [InventoryAlertsController],
   providers: [InventoryAlertsService, TenantContext],

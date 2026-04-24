@@ -37,7 +37,6 @@ export class ReceptionController {
     @Body() createReceptionDto: CreateReceptionDto,
     @UserId() userId: string,
   ): Promise<ReceptionResponseDto> {
-    console.log(createReceptionDto);
     return this.receptionService.create(createReceptionDto, userId);
   }
 
@@ -82,7 +81,6 @@ export class ReceptionController {
     return this.receptionService.closeReception(id, userId);
   }
 
-  // Rutas para detalles de recepción
   @Post(':id/details')
   createDetail(
     @Param('id', ParseUUIDPipe) receptionId: string,

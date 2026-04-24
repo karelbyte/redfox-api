@@ -23,12 +23,14 @@ export class CertificationPackService {
     private readonly translationService: TranslationService,
   ) {}
 
-  private get organizationId(): string {
+  private async getOrganizationId(): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException(
-        'Organization context is required for Certification Packs',
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        this.tenantContext.getUserId() || undefined,
       );
+      throw new BadRequestException(message);
     }
     return orgId;
   }
@@ -43,7 +45,7 @@ export class CertificationPackService {
     const pack = this.certificationPackRepository.create({
       ...createDto,
       config: createDto.config || {},
-      organization_id: this.organizationId,
+      organization_id: await this.getOrganizationId(),
     });
 
     return await this.certificationPackRepository.save(pack);
@@ -51,29 +53,35 @@ export class CertificationPackService {
 
   async findAll(): Promise<CertificationPack[]> {
     return await this.certificationPackRepository.find({
-      where: { organization_id: this.organizationId },
+      where: { organization_id: await this.getOrganizationId() },
       order: { created_at: 'DESC' },
     });
   }
 
   async findOne(id: string): Promise<CertificationPack> {
     const pack = await this.certificationPackRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+      where: { id, organization_id: await this.getOrganizationId() },
     });
 
     if (!pack) {
-      throw new NotFoundException(`Certification pack with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'pack.id_not_found',
+        this.tenantContext.getUserId() || undefined,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return pack;
   }
 
   async findActive(): Promise<CertificationPack | null> {
+    const organizationId = await this.getOrganizationId();
     const defaultPack = await this.certificationPackRepository.findOne({
       where: {
         is_default: true,
         is_active: true,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       },
     });
 
@@ -82,7 +90,7 @@ export class CertificationPackService {
     }
 
     return await this.certificationPackRepository.findOne({
-      where: { is_active: true, organization_id: this.organizationId },
+      where: { is_active: true, organization_id: organizationId },
       order: { created_at: 'ASC' },
     });
   }
@@ -125,7 +133,7 @@ export class CertificationPackService {
 
   private async unsetDefaultPacks(): Promise<void> {
     await this.certificationPackRepository.update(
-      { is_default: true, organization_id: this.organizationId },
+      { is_default: true, organization_id: await this.getOrganizationId() },
       { is_default: false },
     );
   }

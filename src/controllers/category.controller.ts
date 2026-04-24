@@ -11,6 +11,7 @@ import {
   UploadedFiles,
   ParseFilePipe,
   MaxFileSizeValidator,
+  FileTypeValidator,
   Put,
   BadRequestException,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { memoryStorage } from 'multer';
 import { UnifiedUploadService } from '../services/unified-upload.service';
+import { TranslationService } from '../services/translation.service';
 
 const formatFileName = (fileName: string): string => {
   return fileName.replace(/\s+/g, '-');
@@ -38,21 +40,13 @@ export class CategoryController {
   constructor(
     private readonly categoryService: CategoryService,
     private readonly unifiedUploadService: UnifiedUploadService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Post()
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async create(
@@ -124,15 +118,6 @@ export class CategoryController {
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async update(
@@ -141,7 +126,10 @@ export class CategoryController {
     @UserId() userId: string,
     @UploadedFiles(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\// }),
+        ],
         fileIsRequired: false,
       }),
     )

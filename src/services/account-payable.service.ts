@@ -17,6 +17,7 @@ import { CreateAccountPayablePaymentDto } from '../dtos/account-payable/create-p
 import { AccountPayablePayment } from '../models/account-payable-payment.entity';
 import { ProviderService } from './provider.service';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class AccountPayableService {
@@ -28,12 +29,17 @@ export class AccountPayableService {
     @Inject(forwardRef(() => ProviderService))
     private readonly providerService: ProviderService,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
-  private get organizationId(): string {
+  private async getOrganizationId(): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required');
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        this.tenantContext.getUserId() || undefined,
+      );
+      throw new BadRequestException(message);
     }
     return orgId;
   }
@@ -41,7 +47,7 @@ export class AccountPayableService {
   async create(
     createAccountPayableDto: CreateAccountPayableDto,
   ): Promise<AccountPayable> {
-    const organizationId = this.organizationId;
+    const organizationId = await this.getOrganizationId();
     const totalAmount = Number(createAccountPayableDto.totalAmount);
     const remainingAmount = Number(createAccountPayableDto.remainingAmount);
     const paidAmount = totalAmount - remainingAmount;
@@ -63,13 +69,6 @@ export class AccountPayableService {
 
     const savedAccount =
       await this.accountPayableRepository.save(accountPayable);
-
-    console.log('Saved Account Result:', {
-      id: savedAccount.id,
-      paidAmount: savedAccount.paidAmount,
-      totalAmount: savedAccount.totalAmount,
-      remainingAmount: savedAccount.remainingAmount,
-    });
 
     // Update denormalized provider balance (increase debt to provider)
     await this.providerService.updateBalance(
@@ -101,7 +100,7 @@ export class AccountPayableService {
       .leftJoinAndSelect('accountPayable.purchaseOrder', 'purchaseOrder')
       .leftJoinAndSelect('accountPayable.payments', 'payments')
       .where('accountPayable.organization_id = :organizationId', {
-        organizationId: this.organizationId,
+        organizationId: await this.getOrganizationId(),
       });
 
     if (search) {
@@ -149,7 +148,7 @@ export class AccountPayableService {
 
   async findOne(id: string): Promise<AccountPayable> {
     const accountPayable = await this.accountPayableRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+      where: { id, organization_id: await this.getOrganizationId() },
       relations: [
         'provider',
         'purchaseOrder',
@@ -159,7 +158,12 @@ export class AccountPayableService {
     });
 
     if (!accountPayable) {
-      throw new NotFoundException(`Account Payable with ID ${id} not found`);
+      const message = await this.translationService.translate(
+        'account_payable.not_found',
+        this.tenantContext.getUserId() || undefined,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
     return accountPayable;
@@ -193,7 +197,7 @@ export class AccountPayableService {
     const queryBuilder = this.accountPayableRepository
       .createQueryBuilder('accountPayable')
       .where('accountPayable.organization_id = :organizationId', {
-        organizationId: this.organizationId,
+        organizationId: await this.getOrganizationId(),
       });
 
     if (startDate && endDate) {
@@ -248,7 +252,7 @@ export class AccountPayableService {
       );
     }
 
-    const organizationId = this.organizationId;
+    const organizationId = await this.getOrganizationId();
 
     const insertResult = await this.paymentRepository.insert({
       organization_id: organizationId,

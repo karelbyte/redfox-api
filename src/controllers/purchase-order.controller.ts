@@ -103,7 +103,6 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.cancelPurchaseOrder(id, userId);
   }
 
-  // Rutas para detalles de orden de compra
   @Post(':id/details')
   createDetail(
     @Param('id', ParseUUIDPipe) purchaseOrderId: string,

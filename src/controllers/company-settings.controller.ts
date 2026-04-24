@@ -26,6 +26,7 @@ import {
   IStorageService,
   STORAGE_SERVICE,
 } from '../services/storage/storage.interface';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('company-settings')
 @UseGuards(AuthGuard)
@@ -35,6 +36,7 @@ export class CompanySettingsController {
     private readonly companySettingsService: CompanySettingsService,
     @Inject(STORAGE_SERVICE)
     private readonly storageService: IStorageService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Get()
@@ -53,15 +55,6 @@ export class CompanySettingsController {
   @UseInterceptors(
     FileInterceptor('logo', {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Solo se permiten archivos de imagen'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
     }),
   )
   async uploadLogo(
@@ -77,9 +70,15 @@ export class CompanySettingsController {
     )
     file: Express.Multer.File,
   ): Promise<CompanySettingsResponseDto> {
-    const organizationId = (req as any)['organizationId'];
+    const user = (req as any).user;
+    const organizationId = user?.organizationId || (req as any)['organizationId'];
+
     if (!organizationId) {
-      throw new BadRequestException('Organization context is required');
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        user?.id,
+      );
+      throw new BadRequestException(message);
     }
 
     const ext = file.originalname.split('.').pop() || 'png';

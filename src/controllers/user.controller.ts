@@ -113,6 +113,7 @@ export class UserController {
     await this.userService.completeOnboarding(userId);
     const message = await this.translationService.translate(
       'general.onboarding_completed_successfully',
+      userId,
     );
     return { message };
   }
@@ -136,6 +137,7 @@ export class UserController {
     );
     const message = await this.translationService.translate(
       'general.send_message_success',
+      senderUserId,
     );
     return { message };
   }

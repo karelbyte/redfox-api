@@ -16,6 +16,7 @@ import { PermissionModule } from './permission.module';
 import { RolePermissionModule } from './role-permission.module';
 import { TaxModule } from './tax.module';
 import { MeasurementUnitModule } from './measurement-unit.module';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MeasurementUnitModule } from './measurement-unit.module';
     RolePermissionModule,
     TaxModule,
     MeasurementUnitModule,
+    LanguageModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],

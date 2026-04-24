@@ -97,7 +97,6 @@ export class QuotationController {
     },
     @UserId() userId: string,
   ): Promise<ConvertToSaleResponseDto> {
-    // 1. Crear la venta (withdrawal en OPEN)
     const result = await this.quotationService.convertToSale(
       id,
       body.items,
@@ -105,7 +104,6 @@ export class QuotationController {
       body.payment_method,
     );
 
-    // 2. Cerrar la venta si se solicitó
     if (body.close_sale) {
       try {
         await this.withdrawalService.closeWithdrawal(result.saleId, userId);
@@ -116,7 +114,6 @@ export class QuotationController {
       }
     }
 
-    // 3. Crear factura si se solicitó (requiere venta cerrada)
     let invoiceId: string | null = null;
     if (body.create_invoice && body.close_sale) {
       try {
@@ -132,7 +129,6 @@ export class QuotationController {
       }
     }
 
-    // 4. Timbrar si se solicitó (requiere factura creada)
     if (body.stamp_invoice && invoiceId) {
       try {
         await this.invoiceService.generateCFDI(invoiceId, userId);

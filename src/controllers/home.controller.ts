@@ -6,13 +6,17 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { TranslationService } from '../services/translation.service';
 
 @Controller()
 export class HomeController {
+  constructor(private readonly translationService: TranslationService) {}
+
   @Get()
-  getHome() {
+  async getHome() {
+    const message = await this.translationService.translateWithLanguage('home.welcome_message', 'es');
     return {
-      message: 'Todas las request se atienden por /api',
+      message,
       status: 'success',
     };
   }
@@ -32,9 +36,8 @@ export class HomeController {
   }
 
   @Get('test-error')
-  testError() {
-    throw new InternalServerErrorException(
-      '🚨 Este es un error provocado para probar el envío de correos por Gmail OAuth2',
-    );
+  async testError() {
+    const message = await this.translationService.translateWithLanguage('home.test_error_message', 'es');
+    throw new InternalServerErrorException(message);
   }
 }

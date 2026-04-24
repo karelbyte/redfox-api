@@ -6,12 +6,14 @@ import { CompanySettingsController } from '../controllers/company-settings.contr
 import { CompanySettingsMapper } from '../services/mappers/company-settings.mapper';
 import { OrganizationModule } from './organization.module';
 import { StorageModule } from './storage.module';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CompanySettings]),
     OrganizationModule,
     StorageModule,
+    LanguageModule,
   ],
   controllers: [CompanySettingsController],
   providers: [CompanySettingsService, CompanySettingsMapper],

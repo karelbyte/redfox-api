@@ -16,6 +16,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { TenantContext } from '../services/tenant-context.service';
 import { UserId } from '../decorators/user-id.decorator';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('inventory-alerts')
 @UseGuards(AuthGuard)
@@ -24,6 +25,7 @@ export class InventoryAlertsController {
   constructor(
     private readonly inventoryAlertsService: InventoryAlertsService,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Get()
@@ -60,8 +62,9 @@ export class InventoryAlertsController {
     await this.inventoryAlertsService.checkAndGenerateImmediateAlerts(
       organizationId,
     );
+    const message = await this.translationService.translate('inventory.alerts_generated', userId);
     return {
-      message: 'Alertas generadas exitosamente',
+      message,
       timestamp: new Date().toISOString(),
     };
   }
@@ -69,14 +72,16 @@ export class InventoryAlertsController {
   @Post('generate/:productId')
   async generateProductAlerts(
     @Param('productId', ParseUUIDPipe) productId: string,
+    @UserId() userId: string,
   ) {
     const organizationId = this.tenantContext.getOrganizationId() as string;
     await this.inventoryAlertsService.checkAndGenerateImmediateAlerts(
       organizationId,
       productId,
     );
+    const message = await this.translationService.translate('inventory.product_alerts_generated', userId);
     return {
-      message: 'Alertas del producto generadas exitosamente',
+      message,
       productId,
       timestamp: new Date().toISOString(),
     };

@@ -93,7 +93,6 @@ export class AccountReceivableController {
     @Body() addPaymentDto: AddPaymentDto,
     @UserId() userId: string,
   ) {
-    // Crear el DTO completo con el accountReceivableId
     const createPaymentDto: CreateAccountReceivablePaymentDto = {
       ...addPaymentDto,
       accountReceivableId: id,

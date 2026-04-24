@@ -29,6 +29,7 @@ import { ImportProcessor } from '../processors/import.processor';
 import { ClientPackSyncService } from '../services/client-pack-sync.service';
 import { CertificationPackModule } from './certification-pack.module';
 import { TenantContext } from '../services/tenant-context.service';
+import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { TenantContext } from '../services/tenant-context.service';
       ImportLog,
     ]),
     CertificationPackModule,
+    LanguageModule,
     BullModule.registerQueueAsync({
       name: 'import',
       imports: [ConfigModule],

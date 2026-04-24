@@ -9,6 +9,7 @@ import { RedisService } from '../services/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { UserId } from '../decorators/user-id.decorator';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('auth')
 export class AuthController {
@@ -16,6 +17,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly redisService: RedisService,
     private readonly jwtService: JwtService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Public()
@@ -55,21 +57,26 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Post('logout')
   async logout(@Req() req: Request): Promise<{ message: string }> {
+    const user = (req as any).user;
     const token = req.headers.authorization?.split(' ')[1];
     if (token) {
       try {
         const payload = this.jwtService.decode(token);
         const ttl = payload?.exp
           ? payload.exp - Math.floor(Date.now() / 1000)
-          : 3600; // 1h por defecto
+          : 3600;
         if (ttl > 0) {
           await this.redisService.blacklistToken(token, ttl);
         }
-      } catch {
-        /* ignorar errores de decode */
-      }
+      } catch {}
     }
-    return { message: 'Logged out successfully' };
+
+    const message = await this.translationService.translate(
+      'auth.logout_successful',
+      user?.id,
+    );
+
+    return { message };
   }
 
   @UseGuards(AuthGuard)

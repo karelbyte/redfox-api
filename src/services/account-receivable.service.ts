@@ -16,6 +16,7 @@ import { CreateAccountReceivablePaymentDto } from '../dtos/account-receivable/cr
 import { ClientService } from './client.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class AccountReceivableService {
@@ -27,12 +28,17 @@ export class AccountReceivableService {
     @Inject(forwardRef(() => ClientService))
     private readonly clientService: ClientService,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
   ) {}
 
-  private get organizationId(): string {
+  private async getOrganizationId(): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required');
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        this.tenantContext.getUserId() || undefined,
+      );
+      throw new BadRequestException(message);
     }
     return orgId;
   }
@@ -40,10 +46,7 @@ export class AccountReceivableService {
   async create(
     createAccountReceivableDto: CreateAccountReceivableDto,
   ): Promise<AccountReceivable> {
-    const organizationId = this.tenantContext.getOrganizationId();
-    if (!organizationId) {
-      throw new BadRequestException('Organization context is missing');
-    }
+    const organizationId = await this.getOrganizationId();
     const existingAccount = await this.accountReceivableRepository.findOne({
       where: {
         referenceNumber: createAccountReceivableDto.referenceNumber,
@@ -52,7 +55,11 @@ export class AccountReceivableService {
     });
 
     if (existingAccount) {
-      throw new BadRequestException('Reference number already exists');
+      const message = await this.translationService.translate(
+        'account_receivable.reference_exists',
+        this.tenantContext.getUserId() || undefined,
+      );
+      throw new BadRequestException(message);
     }
 
     const totalAmount = Number(createAccountReceivableDto.totalAmount);
@@ -101,13 +108,14 @@ export class AccountReceivableService {
     limit: number;
     totalPages: number;
   }> {
+    const organizationId = await this.getOrganizationId();
     const queryBuilder = this.accountReceivableRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.client', 'client')
       .leftJoinAndSelect('account.invoice', 'invoice')
       .leftJoinAndSelect('account.payments', 'payments')
       .where('account.organization_id = :organizationId', {
-        organizationId: this.organizationId,
+        organizationId: organizationId,
       });
 
     if (search) {
@@ -152,16 +160,21 @@ export class AccountReceivableService {
   }
 
   async findOne(id: string): Promise<AccountReceivable> {
-    const account = await this.accountReceivableRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+    const accountReceivable = await this.accountReceivableRepository.findOne({
+      where: { id, organization_id: await this.getOrganizationId() },
       relations: ['client', 'invoice', 'payments', 'payments.createdByUser'],
     });
 
-    if (!account) {
-      throw new NotFoundException(`Account receivable with ID ${id} not found`);
+    if (!accountReceivable) {
+      const message = await this.translationService.translate(
+        'account_receivable.not_found',
+        this.tenantContext.getUserId() || undefined,
+        { id },
+      );
+      throw new NotFoundException(message);
     }
 
-    return account;
+    return accountReceivable;
   }
 
   async update(
@@ -184,13 +197,24 @@ export class AccountReceivableService {
   ): Promise<AccountReceivablePayment> {
     const account = await this.findOne(createPaymentDto.accountReceivableId);
 
-    if (createPaymentDto.amount > account.remainingAmount) {
-      throw new BadRequestException(
-        'Payment amount cannot exceed remaining amount',
+    if (account.status === AccountReceivableStatus.PAID) {
+      const message = await this.translationService.translate(
+        'account_receivable.already_paid',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
-    const organizationId = this.organizationId;
+    const paymentAmount = Number(createPaymentDto.amount);
+    if (paymentAmount > account.remainingAmount) {
+      const message = await this.translationService.translate(
+        'account_receivable.invalid_amount',
+        userId,
+      );
+      throw new BadRequestException(message);
+    }
+
+    const organizationId = await this.getOrganizationId();
 
     // Usar insert en lugar de create + save para evitar problemas con TypeORM
     const insertResult = await this.paymentRepository.insert({
@@ -211,12 +235,15 @@ export class AccountReceivableService {
     });
 
     if (!savedPayment) {
-      throw new NotFoundException('Payment could not be created');
+      const message = await this.translationService.translate(
+        'general.server_error',
+        userId,
+      );
+      throw new BadRequestException(message);
     }
 
     const currentPaidAmount = Number(account.paidAmount);
     const currentRemainingAmount = Number(account.remainingAmount);
-    const paymentAmount = Number(createPaymentDto.amount);
 
     account.paidAmount = Number((currentPaidAmount + paymentAmount).toFixed(2));
     account.remainingAmount = Number(
@@ -252,8 +279,9 @@ export class AccountReceivableService {
     overdueAmount: number;
     overdueCount: number;
   }> {
+    const organizationId = await this.getOrganizationId();
     const accounts = await this.accountReceivableRepository.find({
-      where: { organization_id: this.organizationId },
+      where: { organization_id: organizationId },
     });
     const today = new Date();
 
@@ -289,12 +317,13 @@ export class AccountReceivableService {
 
   async getOverdueAccounts(): Promise<AccountReceivable[]> {
     const today = new Date();
+    const organizationId = await this.getOrganizationId();
 
     return await this.accountReceivableRepository.find({
       where: {
         dueDate: LessThan(today),
         status: AccountReceivableStatus.PENDING,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       },
       relations: ['client'],
       order: { dueDate: 'ASC' },
@@ -303,6 +332,7 @@ export class AccountReceivableService {
 
   async updateOverdueStatus(): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
+    const organizationId = await this.getOrganizationId();
 
     await this.accountReceivableRepository
       .createQueryBuilder()
@@ -310,7 +340,7 @@ export class AccountReceivableService {
       .set({ status: AccountReceivableStatus.OVERDUE })
       .where('dueDate < :today', { today })
       .andWhere('organization_id = :organizationId', {
-        organizationId: this.organizationId,
+        organizationId: organizationId,
       })
       .andWhere('status IN (:...statuses)', {
         statuses: [
@@ -340,8 +370,9 @@ export class AccountReceivableService {
       agingCategory: string;
     }>;
   }> {
+    const organizationId = await this.getOrganizationId();
     const accounts = await this.accountReceivableRepository.find({
-      where: { clientId, organization_id: this.organizationId },
+      where: { clientId, organization_id: organizationId },
       relations: ['client', 'client.credit', 'client.credit.currency'],
       order: { dueDate: 'ASC' },
     });

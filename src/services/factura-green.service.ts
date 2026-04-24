@@ -391,10 +391,12 @@ export class FacturaGreenService implements ICertificationPackService {
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
-      console.error('Factura Green Status Error:', error);
-      throw new BadRequestException(
-        'Error getting CFDI status from Factura Green',
+      this.logger.error('Factura Green Status Error:', error);
+      const msg = await this.translationService.translate(
+        'pack.error_getting_cfdi_status',
+        this.tenantContext.getUserId() ?? undefined,
       );
+      throw new BadRequestException(msg);
     }
   }
 

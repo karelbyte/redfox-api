@@ -16,6 +16,7 @@ import {
   PARTIAL_CLEANUP_TARGET_ORDER,
 } from '../admin/partial-cleanup.config';
 import { PartialOrganizationCleanupTarget } from '../dtos/admin/partial-organization-cleanup.dto';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class AdminService {
@@ -29,6 +30,7 @@ export class AdminService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly auditLogService: AuditLogService,
+    private readonly translationService: TranslationService,
   ) {}
 
   async getOrganizations() {
@@ -39,16 +41,23 @@ export class AdminService {
     return { data, meta: { total } };
   }
 
-  async deleteOrganization(id: string) {
-    // No permitir eliminar la organización landlord
+  async deleteOrganization(id: string, userId?: string) {
     const org = await this.orgRepository.findOne({ where: { id } });
-    if (!org) throw new Error('Organización no encontrada');
-    if (org.slug === 'landlord')
-      throw new Error(
-        'No se puede eliminar la organización principal del sistema',
+    if (!org) {
+      const message = await this.translationService.translate(
+        'admin.org_not_found',
+        userId,
       );
+      throw new NotFoundException(message);
+    }
+    if (org.slug === 'landlord') {
+      const message = await this.translationService.translate(
+        'admin.cannot_delete_landlord',
+        userId,
+      );
+      throw new BadRequestException(message);
+    }
 
-    // Usar el Stored Procedure para una eliminación escalonada y segura (Multi-DB)
     const connectionType = this.orgRepository.manager.connection.options.type;
 
     if (connectionType === 'postgres') {
@@ -60,53 +69,71 @@ export class AdminService {
     }
   }
 
-  private ensurePartialCleanupIsAllowed(
+  private async ensurePartialCleanupIsAllowed(
     targets: PartialOrganizationCleanupTarget[],
+    userId?: string,
   ) {
     const selected = new Set(targets);
-    const violations = PARTIAL_CLEANUP_TARGET_ORDER.flatMap((target) => {
-      if (!selected.has(target)) {
-        return [];
-      }
+    const violations = await Promise.all(
+      PARTIAL_CLEANUP_TARGET_ORDER.flatMap(async (target) => {
+        if (!selected.has(target)) {
+          return [];
+        }
 
-      const missing = PARTIAL_CLEANUP_RULES[target].requires.filter(
-        (requiredTarget) => !selected.has(requiredTarget),
-      );
+        const missing = PARTIAL_CLEANUP_RULES[target].requires.filter(
+          (requiredTarget) => !selected.has(requiredTarget),
+        );
 
-      if (!missing.length) {
-        return [];
-      }
+        if (!missing.length) {
+          return [];
+        }
 
-      return [`${target} requiere también limpiar ${missing.join(', ')}`];
-    });
+        const message = await this.translationService.translate(
+          'admin.partial_cleanup_violation',
+          userId,
+          { target, missing: missing.join(', ') },
+        );
+        return [message];
+      }),
+    );
 
-    if (violations.length) {
-      throw new BadRequestException(violations);
+    const flatViolations = violations.flat();
+    if (flatViolations.length) {
+      throw new BadRequestException(flatViolations);
     }
   }
 
   async partialCleanupOrganization(
     id: string,
     targets: PartialOrganizationCleanupTarget[],
+    userId?: string,
   ) {
     const org = await this.orgRepository.findOne({ where: { id } });
     if (!org) {
-      throw new NotFoundException('Organización no encontrada');
+      const message = await this.translationService.translate(
+        'admin.org_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
     }
     if (org.slug === 'landlord') {
-      throw new BadRequestException(
-        'No se puede limpiar parcialmente la organización principal del sistema',
+      const message = await this.translationService.translate(
+        'admin.cannot_delete_landlord_partial',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
     const normalizedTargets = Array.from(new Set(targets));
     if (!normalizedTargets.length) {
-      throw new BadRequestException(
-        'Debes seleccionar al menos un tipo de dato para limpiar',
+      const message = await this.translationService.translate(
+        'admin.partial_cleanup_no_targets',
+        userId,
       );
+      throw new BadRequestException(message);
     }
 
-    this.ensurePartialCleanupIsAllowed(normalizedTargets);
+    await this.ensurePartialCleanupIsAllowed(normalizedTargets, userId);
 
     const connectionType = this.orgRepository.manager.connection.options.type;
     const cleanProducts = normalizedTargets.includes(
@@ -166,11 +193,15 @@ export class AdminService {
       );
     }
 
+    const successMessage = await this.translationService.translate(
+      'admin.partial_cleanup_success',
+      userId,
+    );
+
     return {
       organizationId: id,
       cleanedTargets: normalizedTargets,
-      message:
-        'La limpieza parcial se completó correctamente para la organización seleccionada.',
+      message: successMessage,
     };
   }
 
@@ -211,23 +242,38 @@ export class AdminService {
     };
   }
 
-  async createSubscription(data: {
-    organization_id: string;
-    plan_id: string;
-    status: string;
-    trial_end_date?: string;
-    subscription_start_date?: string;
-    subscription_end_date?: string;
-  }) {
+  async createSubscription(
+    data: {
+      organization_id: string;
+      plan_id: string;
+      status: string;
+      trial_end_date?: string;
+      subscription_start_date?: string;
+      subscription_end_date?: string;
+    },
+    userId?: string,
+  ) {
     const org = await this.orgRepository.findOne({
       where: { id: data.organization_id },
     });
-    if (!org) throw new NotFoundException('Organización no encontrada');
+    if (!org) {
+      const message = await this.translationService.translate(
+        'admin.org_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
+    }
 
     const plan = await this.planRepository.findOne({
       where: { id: data.plan_id },
     });
-    if (!plan) throw new NotFoundException('Plan no encontrado');
+    if (!plan) {
+      const message = await this.translationService.translate(
+        'admin.plan_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
+    }
 
     // Si ya tiene suscripción activa, cancelar la anterior
     const existing = await this.subRepository.findOne({
@@ -236,8 +282,10 @@ export class AdminService {
     if (existing) {
       existing.status = 'cancelled';
       existing.canceled_at = new Date();
-      existing.canceled_reason =
-        'Reemplazada por nueva suscripción desde admin';
+      existing.canceled_reason = await this.translationService.translate(
+        'admin.sub_replaced_by_admin',
+        userId,
+      );
       await this.subRepository.save(existing);
     }
 
@@ -285,12 +333,23 @@ export class AdminService {
     });
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string, currentUserId?: string) {
     const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) {
+      const message = await this.translationService.translate(
+        'admin.user_not_found',
+        currentUserId,
+      );
+      throw new NotFoundException(message);
+    }
     // No permitir eliminar el usuario master
-    if (user.email === 'master@nitro.com')
-      throw new Error('No se puede eliminar el usuario master del sistema');
+    if (user.email === 'master@nitro.com') {
+      const message = await this.translationService.translate(
+        'admin.cannot_delete_master',
+        currentUserId,
+      );
+      throw new BadRequestException(message);
+    }
     await this.userRepository.delete(id);
   }
 
@@ -340,14 +399,23 @@ export class AdminService {
     };
   }
 
-  async deleteSubscription(id: string) {
+  async deleteSubscription(id: string, userId?: string) {
     const subscription = await this.subRepository.findOne({ where: { id } });
-    if (!subscription) throw new NotFoundException('Suscripción no encontrada');
+    if (!subscription) {
+      const message = await this.translationService.translate(
+        'admin.sub_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
+    }
 
     // Marcar como cancelada y soft delete
     subscription.status = 'cancelled';
     subscription.canceled_at = new Date();
-    subscription.canceled_reason = 'Eliminada manualmente desde admin';
+    subscription.canceled_reason = await this.translationService.translate(
+      'admin.sub_deleted_manually',
+      userId,
+    );
     await this.subRepository.save(subscription);
     await this.subRepository.softDelete(id);
 
@@ -366,9 +434,16 @@ export class AdminService {
       subscription_end_date?: string;
       current_period_end?: string;
     },
+    userId?: string,
   ) {
     const subscription = await this.subRepository.findOne({ where: { id } });
-    if (!subscription) throw new Error('Suscripción no encontrada');
+    if (!subscription) {
+      const message = await this.translationService.translate(
+        'admin.sub_not_found',
+        userId,
+      );
+      throw new NotFoundException(message);
+    }
 
     if (data.plan_id) {
       subscription.plan_id = data.plan_id;
@@ -430,3 +505,4 @@ export class AdminService {
     );
   }
 }
+

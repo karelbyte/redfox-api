@@ -38,7 +38,6 @@ export class AuditLogController {
     'otp',
   ];
 
-  // revisar el sanitize de del controlador analytics
   private sanitizeResponseData(data: any): any {
     if (!data || typeof data !== 'object') {
       return data;

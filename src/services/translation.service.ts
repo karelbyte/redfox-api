@@ -60,6 +60,130 @@ export class TranslationService {
       en: 'Login successful',
       zh: '登录成功',
     },
+    'auth.logout_successful': {
+      es: 'Sesión cerrada exitosamente',
+      en: 'Logged out successfully',
+      zh: '登出成功',
+    },
+    'auth.organization_required': {
+      es: 'Se requiere el contexto de la organización',
+      en: 'Organization context is required',
+      zh: '需要组织上下文',
+    },
+    'auth.user_not_found': {
+      es: 'Usuario no encontrado',
+      en: 'User not found',
+      zh: '未找到用户',
+    },
+    'auth.user_already_active': {
+      es: 'El usuario ya está activo',
+      en: 'User is already active',
+      zh: '用户已激活',
+    },
+    'auth.user_inactive': {
+      es: 'El usuario no está activo. Por favor, revise su correo electrónico para activar su cuenta.',
+      en: 'User is not active. Please check your email to activate your account.',
+      zh: '用户未激活。请检查您的电子邮件以激活您的帐户。',
+    },
+    'auth.user_activated_successfully': {
+      es: 'Usuario activado exitosamente',
+      en: 'User successfully activated',
+      zh: '用户激活成功',
+    },
+    'auth.invalid_activation_token': {
+      es: 'Token de activación inválido o expirado',
+      en: 'Invalid or expired activation token',
+      zh: '激活令牌无效或已过期',
+    },
+    'auth.invalid_token_type': {
+      es: 'Tipo de token inválido',
+      en: 'Invalid token type',
+      zh: '令牌类型无效',
+    },
+    'auth.invalid_reset_token': {
+      es: 'Token de restablecimiento inválido o expirado',
+      en: 'Invalid or expired reset token',
+      zh: '重置令牌无效或已过期',
+    },
+    'auth.email_already_in_use': {
+      es: 'La dirección de correo electrónico ya está en uso',
+      en: 'The email address is already in use',
+      zh: '该邮箱已被使用',
+    },
+    'auth.target_user_not_found': {
+      es: 'Usuario objetivo no encontrado',
+      en: 'Target user not found',
+      zh: '未找到目标用户',
+    },
+    'auth.org_name_too_short': {
+      es: 'El nombre de la organización genera un identificador demasiado corto. Usa un nombre más descriptivo.',
+      en: 'The organization name generates an identifier that is too short. Use a more descriptive name.',
+      zh: '组织名称生成的标识符太短。请使用更具描述性的名称。',
+    },
+    'auth.org_name_already_exists': {
+      es: 'El nombre de la organización ya existe. Por favor elige otro.',
+      en: 'The organization name already exists. Please choose another one.',
+      zh: '组织名称已存在。请选择另一个。',
+    },
+
+    // Email configuration messages
+    'email.config_org_required': {
+      es: 'Se requiere el contexto de la organización para la configuración de correo electrónico',
+      en: 'Organization context is required for email configuration',
+      zh: '电子邮件配置需要组织上下文',
+    },
+    'email.config_already_exists': {
+      es: 'La configuración de correo electrónico ya existe. Por favor, actualícela en su lugar.',
+      en: 'Email configuration already exists. Please update it instead.',
+      zh: '电子邮件配置已存在。请更新它。',
+    },
+    'email.config_not_found': {
+      es: 'Configuración de correo electrónico no encontrada.',
+      en: 'Email configuration not found.',
+      zh: '未找到电子邮件配置。',
+    },
+    'email.test_connection_success': {
+      es: 'La configuración de correo electrónico es válida y la conexión fue exitosa.',
+      en: 'Email configuration is valid and connection successful.',
+      zh: '电子邮件配置有效且连接成功。',
+    },
+    'email.test_connection_failed': {
+      es: 'La prueba de configuración de correo electrónico falló: {error}',
+      en: 'Email configuration test failed: {error}',
+      zh: '电子邮件配置测试失败：{error}',
+    },
+    'email.config_required_for_send': {
+      es: 'Configuración de correo electrónico no encontrada. Por favor, configure sus ajustes de correo electrónico.',
+      en: 'Email configuration not found. Please configure your email settings.',
+      zh: '未找到电子邮件配置。请配置您的电子邮件设置。',
+    },
+    'email.send_failed': {
+      es: 'Error al enviar el correo electrónico: {error}',
+      en: 'Failed to send email: {error}',
+      zh: '发送电子邮件失败：{error}',
+    },
+
+    // Upload messages
+    'uploads.org_required': {
+      es: 'Se requiere el contexto de la organización para subir archivos',
+      en: 'Organization context is required to upload files',
+      zh: '上传文件需要组织上下文',
+    },
+    'uploads.max_files_exceeded': {
+      es: 'Máximo {maxFiles} archivos permitidos',
+      en: 'Maximum {maxFiles} files allowed',
+      zh: '最多允许 {maxFiles} 个文件',
+    },
+    'uploads.file_too_large': {
+      es: 'El archivo {filename} excede el tamaño máximo de {maxSize}MB',
+      en: 'File {filename} exceeds maximum size of {maxSize}MB',
+      zh: '文件 {filename} 超过最大限制 {maxSize}MB',
+    },
+    'uploads.invalid_file_type': {
+      es: 'Tipo de archivo no permitido: {mimetype}. Tipos permitidos: {allowedTypes}',
+      en: 'File type not allowed: {mimetype}. Allowed types: {allowedTypes}',
+      zh: '不允许的文件类型：{mimetype}。允许的类型：{allowedTypes}',
+    },
 
     // Permission messages
     'permission.not_found': {
@@ -150,6 +274,35 @@ export class TranslationService {
       es: 'No se puede eliminar el proveedor porque tiene historial (Órdenes: {purchaseOrderCount}, Recepciones: {receptionCount}, Gastos: {expenseCount}, CxP: {accountPayableCount}, Devoluciones: {returnCount}).',
       en: 'Cannot delete provider because it has history (Orders: {purchaseOrderCount}, Receptions: {receptionCount}, Expenses: {expenseCount}, AP: {accountPayableCount}, Returns: {returnCount}).',
       zh: '无法删除供应商，因为它有历史记录（订单：{purchaseOrderCount}，入库：{receptionCount}，费用：{expenseCount}，应付账款：{accountPayableCount}，退货：{returnCount}）。',
+    },
+
+    // Account Payable messages
+    'account_payable.not_found': {
+      es: 'Cuenta por pagar con ID {id} no encontrada',
+      en: 'Account Payable with ID {id} not found',
+      zh: '未找到 ID 为 {id} 的应付账款',
+    },
+
+    // Account Receivable messages
+    'account_receivable.not_found': {
+      es: 'Cuenta por cobrar con ID {id} no encontrada',
+      en: 'Account Receivable with ID {id} not found',
+      zh: '未找到 ID 为 {id} 的应收账款',
+    },
+    'account_receivable.reference_exists': {
+      es: 'El número de referencia ya existe',
+      en: 'Reference number already exists',
+      zh: '参考编号已存在',
+    },
+    'account_receivable.already_paid': {
+      es: 'La cuenta ya está pagada en su totalidad',
+      en: 'The account is already fully paid',
+      zh: '该账单已全部付清',
+    },
+    'account_receivable.invalid_amount': {
+      es: 'El monto del pago excede el saldo restante',
+      en: 'Payment amount exceeds the remaining balance',
+      zh: '支付金额超过了剩余余额',
     },
 
     // Reception messages
@@ -513,6 +666,16 @@ export class TranslationService {
       es: 'Inventario eliminado exitosamente',
       en: 'Inventory deleted successfully',
       zh: '库存删除成功',
+    },
+    'inventory.alerts_generated': {
+      es: 'Alertas generadas exitosamente',
+      en: 'Alerts generated successfully',
+      zh: '警报生成成功',
+    },
+    'inventory.product_alerts_generated': {
+      es: 'Alertas del producto generadas exitosamente',
+      en: 'Product alerts generated successfully',
+      zh: '产品警报生成成功',
     },
 
     // Measurement Unit messages
@@ -969,6 +1132,11 @@ export class TranslationService {
       en: 'Cannot set an inactive pack as default.',
       zh: '无法将非活跃包设置为默认。',
     },
+    'pack.id_not_found': {
+      es: 'Paquete de certificación con ID {id} no encontrado',
+      en: 'Certification pack with ID {id} not found',
+      zh: '未找到 ID 为 {id} 的认证包',
+    },
     'pack.no_active_found': {
       es: 'No hay un pack de certificación activo configurado.',
       en: 'No active certification pack configured.',
@@ -994,23 +1162,7 @@ export class TranslationService {
       zh: '无法在已取消的发票上登记付款。',
     },
 
-    // Auth messages
-    'auth.email_already_in_use': {
-      es: 'La dirección de correo electrónico ya está en uso.',
-      en: 'The email address is already in use.',
-      zh: '该电子邮件地址已被使用。',
-    },
-    'auth.invalid_or_expired_token': {
-      es: 'Token inválido o expirado.',
-      en: 'Invalid or expired token.',
-      zh: '令牌无效或已过期。',
-    },
-    'auth.invalid_token_type': {
-      es: 'Tipo de token inválido.',
-      en: 'Invalid token type.',
-      zh: '令牌类型无效。',
-    },
-
+    
     // Subscription messages
     'subscription.no_active_plan': {
       es: 'No se encontró un plan activo.',
@@ -1099,7 +1251,42 @@ export class TranslationService {
     'invoice.payment_already_cancelled': {
       es: 'El complemento de pago ya está cancelado.',
       en: 'Payment complement is already cancelled.',
-      zh: '付款补充已取消。',
+      zh: '付款补充已取消',
+    },
+    'invoice.product_not_found': {
+      es: 'Producto {id} no encontrado.',
+      en: 'Product {id} not found.',
+      zh: '产品 {id} 未找到。',
+    },
+    'invoice.global_period_required': {
+      es: 'Debe enviar withdrawal_ids o from y to para el periodo.',
+      en: 'You must send withdrawal_ids or from and to for the period.',
+      zh: '您必须发送 withdrawal_ids 或该期间的 from 和 to。',
+    },
+    'invoice.no_withdrawals_period': {
+      es: 'No hay ventas cerradas sin facturar en el periodo indicado.',
+      en: 'There are no closed unbilled sales in the indicated period.',
+      zh: '指定期间内没有已关闭且未开票的销售。',
+    },
+    'invoice.no_clients_global': {
+      es: 'No hay clientes en el sistema; se requiere al menos uno para la factura global.',
+      en: 'There are no clients in the system; at least one is required for the global invoice.',
+      zh: '系统中没有客户；全局发票至少需要一个客户。',
+    },
+    'invoice.cannot_cancel_with_payments': {
+      es: 'No se puede cancelar la factura porque tiene {count} complemento(s) de pago timbrado(s). Cancela los complementos de pago primero.',
+      en: 'Cannot cancel the invoice because it has {count} stamped payment complement(s). Cancel the payment complements first.',
+      zh: '无法取消发票，因为它有 {count} 个已盖章的付款补充。请先取消付款补充。',
+    },
+    'invoice.not_generated_pack': {
+      es: 'La factura no ha sido generada en el paquete de certificación.',
+      en: 'The invoice has not been generated in the certification pack.',
+      zh: '发票尚未在认证包中生成。',
+    },
+    'invoice.cancel_error': {
+      es: 'Error al cancelar el CFDI.',
+      en: 'Error canceling CFDI.',
+      zh: '取消 CFDI 时出错',
     },
 
     // Withdrawal extended messages
@@ -1245,6 +1432,48 @@ export class TranslationService {
       zh: '从 Factura Green 获取 CFDI 状态时出错',
     },
 
+    // FacturaAPI messages
+    'pack.api_key_not_configured_fapi': {
+      es: 'La clave API de FacturaAPI no está configurada.',
+      en: 'FacturaAPI API key not configured.',
+      zh: 'FacturaAPI API 密钥未配置。',
+    },
+    'pack.error_generating_cfdi_fapi': {
+      es: 'Error al generar el CFDI con FacturaAPI',
+      en: 'Error generating CFDI with FacturaAPI',
+      zh: '通过 FacturaAPI 生成 CFDI 时出错',
+    },
+    'pack.error_canceling_cfdi_fapi': {
+      es: 'Error al cancelar el CFDI con FacturaAPI',
+      en: 'Error canceling CFDI with FacturaAPI',
+      zh: '通过 FacturaAPI 取消 CFDI 时出错',
+    },
+    'pack.error_getting_cfdi_status_fapi': {
+      es: 'Error al obtener estado del CFDI de FacturaAPI',
+      en: 'Error getting CFDI status from FacturaAPI',
+      zh: '从 FacturaAPI 获取 CFDI 状态时出错',
+    },
+    'pack.error_payment_complement_fapi': {
+      es: 'Error al generar complemento de pago con FacturaAPI: {error}',
+      en: 'Error generating payment complement with FacturaAPI: {error}',
+      zh: '通过 FacturaAPI 生成付款补充时出错：{error}',
+    },
+    'pack.error_canceling_payment_complement_fapi': {
+      es: 'Error al cancelar complemento de pago con FacturaAPI: {error}',
+      en: 'Error canceling payment complement with FacturaAPI: {error}',
+      zh: '通过 FacturaAPI 取消付款补充时出错：{error}',
+    },
+    'pack.fapi_id_or_uuid_required': {
+      es: 'No se proporcionó un ID o UUID válido para la factura original',
+      en: 'No valid ID or UUID provided for the original invoice',
+      zh: '未提供原始发票的有效 ID 或 UUID',
+    },
+    'pack.fapi_original_invoice_not_found': {
+      es: 'Factura original o cliente no encontrado en Facturapi (ID: {id}). Verifica que la factura haya sido emitida con el mismo API Key.',
+      en: 'Original invoice or customer not found in Facturapi (ID: {id}). Verify that the invoice was issued with the same API Key.',
+      zh: '在 Facturapi 中未找到原始发票或客户（ID：{id}）。请确认发票是使用相同的 API 密钥开具的。',
+    },
+
     // Quotation messages
     'quotation.not_found': {
       es: 'Cotización con ID {id} no encontrada.',
@@ -1318,12 +1547,62 @@ export class TranslationService {
       en: 'Internal server error',
       zh: '服务器内部错误',
     },
+    'general.no_file': {
+      es: 'No se recibió ningún archivo',
+      en: 'No file received',
+      zh: '未收到文件',
+    },
+    'general.invalid_extension_csv': {
+      es: 'Solo se aceptan archivos CSV (.csv, .txt)',
+      en: 'Only CSV files (.csv, .txt) are allowed',
+      zh: '仅允许 CSV 文件 (.csv, .txt)',
+    },
+    'general.empty_file': {
+      es: 'El archivo no contiene filas de datos',
+      en: 'The file contains no data rows',
+      zh: '文件不包含数据行',
+    },
+    'import.queued_message': {
+      es: 'Importación de {count} {type} en proceso. Recibirás una notificación cuando termine.',
+      en: 'Import of {count} {type} in progress. You will receive a notification when finished.',
+      zh: '{count} 个 {type} 的导入正在处理中。完成后您将收到通知。',
+    },
+    'general.not_found': {
+      es: 'No encontrado',
+      en: 'Not found',
+      zh: '未找到',
+    },
     'general.only_images_allowed': {
       es: 'Solo se permiten archivos de imagen',
       en: 'Only image files are allowed',
       zh: '只允许上传图像文件',
     },
-  };
+    'general.file_not_found': {
+      es: 'Archivo no encontrado',
+      en: 'File not found',
+      zh: '文件未找到',
+    },
+    'shipment.org_not_found': {
+      es: 'Organización no encontrada',
+      en: 'Organization not found',
+      zh: '未找到组织',
+    },
+    'shipment.tenant_required': {
+      es: 'Tenant requerido',
+      en: 'Tenant required',
+      zh: '需要租户',
+    },
+    'home.welcome_message': {
+      es: 'Todas las request se atienden por /api',
+      en: 'All requests are handled via /api',
+      zh: '所有请求均通过 /api 处理',
+    },
+    'home.test_error_message': {
+      es: '🚨 Este es un error provocado para probar el envío de correos por Gmail OAuth2',
+      en: '🚨 This is a triggered error to test Gmail OAuth2 email sending',
+      zh: '🚨 这是一个触发的错误，用于测试 Gmail OAuth2 邮件发送',
+    },
+    };
 
   constructor(
     @InjectRepository(Language)

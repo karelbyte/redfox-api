@@ -12,12 +12,14 @@ import {
   STORAGE_SERVICE,
 } from '../services/storage/storage.interface';
 import { Public } from '../decorators/public.decorator';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('uploads')
 export class UploadsController {
   constructor(
     @Inject(STORAGE_SERVICE)
     private readonly storageService: IStorageService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Public()
@@ -67,7 +69,6 @@ export class UploadsController {
     await this.serveFile(key, res);
   }
 
-  // Rutas legacy para compatibilidad con archivos existentes
   @Public()
   @Get('products/:filename')
   async serveLegacyProductFile(
@@ -88,7 +89,6 @@ export class UploadsController {
     await this.serveFile(key, res);
   }
 
-  // Ruta legacy para company (mantener compatibilidad)
   @Public()
   @Get('company/:orgId/:filename')
   async serveLegacyCompanyFile(
@@ -105,14 +105,22 @@ export class UploadsController {
       const { buffer, contentType } = await this.storageService.getFile(key);
 
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 año
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.setHeader('Content-Length', buffer.length);
       res.end(buffer);
     } catch (error) {
       if (error instanceof NotFoundException) {
-        res.status(404).send('File not found');
+        const message = await this.translationService.translateWithLanguage(
+          'general.not_found',
+          'en',
+        );
+        res.status(404).send(message);
       } else {
-        res.status(500).send('Internal server error');
+        const message = await this.translationService.translateWithLanguage(
+          'general.server_error',
+          'en',
+        );
+        res.status(500).send(message);
       }
     }
   }

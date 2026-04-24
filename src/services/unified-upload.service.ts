@@ -5,6 +5,8 @@ import {
   UploadResult,
 } from './storage/storage.interface';
 import { TenantContext } from './tenant-context.service';
+import { TranslationService } from './translation.service';
+import { UserContextService } from './user-context.service';
 
 export interface UploadOptions {
   maxSize?: number;
@@ -20,22 +22,28 @@ export class UnifiedUploadService {
     @Inject(STORAGE_SERVICE)
     private readonly storageService: IStorageService,
     private readonly tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
+    private readonly userContext: UserContextService,
   ) {}
 
-  private get organizationId(): string {
+  private async getOrganizationId(): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
     if (!orgId) {
-      throw new BadRequestException('Organization context is required');
+      const message = await this.translationService.translate(
+        'uploads.org_required',
+        this.tenantContext.getUserId() || undefined,
+      );
+      throw new BadRequestException(message);
     }
     return orgId;
   }
 
-  private generateKey(
+  private async generateKey(
     category: UploadCategory,
     filename: string,
     entityId?: string,
-  ): string {
-    const orgId = this.organizationId;
+  ): Promise<string> {
+    const orgId = await this.getOrganizationId();
     const timestamp = Date.now();
     const cleanFilename = this.sanitizeFilename(filename);
 
@@ -53,10 +61,10 @@ export class UnifiedUploadService {
       .toLowerCase();
   }
 
-  private validateFiles(
+  private async validateFiles(
     files: Express.Multer.File[],
     options: UploadOptions,
-  ): void {
+  ): Promise<void> {
     const {
       maxSize = 5 * 1024 * 1024,
       allowedTypes = [
@@ -69,21 +77,40 @@ export class UnifiedUploadService {
       maxFiles = 10,
     } = options;
 
+    const userId = this.tenantContext.getUserId() || undefined;
+
     if (files.length > maxFiles) {
-      throw new BadRequestException(`Máximo ${maxFiles} archivos permitidos`);
+      const message = await this.translationService.translate(
+        'uploads.max_files_exceeded',
+        userId,
+        { maxFiles },
+      );
+      throw new BadRequestException(message);
     }
 
     for (const file of files) {
       if (file.size > maxSize) {
-        throw new BadRequestException(
-          `El archivo ${file.originalname} excede el tamaño máximo de ${Math.round(maxSize / 1024 / 1024)}MB`,
+        const message = await this.translationService.translate(
+          'uploads.file_too_large',
+          userId,
+          {
+            filename: file.originalname,
+            maxSize: Math.round(maxSize / 1024 / 1024),
+          },
         );
+        throw new BadRequestException(message);
       }
 
       if (!allowedTypes.includes(file.mimetype)) {
-        throw new BadRequestException(
-          `Tipo de archivo no permitido: ${file.mimetype}. Tipos permitidos: ${allowedTypes.join(', ')}`,
+        const message = await this.translationService.translate(
+          'uploads.invalid_file_type',
+          userId,
+          {
+            mimetype: file.mimetype,
+            allowedTypes: allowedTypes.join(', '),
+          },
         );
+        throw new BadRequestException(message);
       }
     }
   }
@@ -98,10 +125,10 @@ export class UnifiedUploadService {
       return [];
     }
 
-    this.validateFiles(files, options);
+    await this.validateFiles(files, options);
 
     const uploadPromises = files.map(async (file) => {
-      const key = this.generateKey(category, file.originalname, entityId);
+      const key = await this.generateKey(category, file.originalname, entityId);
       return this.storageService.upload(file.buffer, key, file.mimetype);
     });
 

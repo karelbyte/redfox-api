@@ -67,8 +67,16 @@ export class ReceptionService {
 
   private readonly logger = new Logger(ReceptionService.name);
 
-  private get organizationId(): string {
-    return this.tenantContext.getOrganizationId() as string;
+  private async getOrganizationId(): Promise<string> {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        this.tenantContext.getUserId() || undefined,
+      );
+      throw new BadRequestException(message);
+    }
+    return orgId;
   }
 
   private mapDetailToResponseDto(
@@ -97,18 +105,16 @@ export class ReceptionService {
     };
   }
 
-  // Función helper para calcular montos con precisión decimal
   private calculateAmount(quantity: number, price: number): number {
     return quantity * price;
   }
 
-  // Función helper para actualizar el monto total de la recepción
   private async updateReceptionAmount(
     receptionId: string,
     newAmount: number,
   ): Promise<void> {
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: await this.getOrganizationId() },
     });
     if (reception) {
       reception.amount = Math.round(newAmount * 100) / 100;
@@ -120,11 +126,11 @@ export class ReceptionService {
     createReceptionDto: CreateReceptionDto,
     userId?: string,
   ): Promise<ReceptionResponseDto> {
-    // Verificar que el provider existe
+    const organizationId = await this.getOrganizationId();
     const provider = await this.providerRepository.findOne({
       where: {
         id: createReceptionDto.provider_id,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       },
     });
     if (!provider) {
@@ -136,11 +142,10 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Verificar que el warehouse existe
     const warehouse = await this.warehouseRepository.findOne({
       where: {
         id: createReceptionDto.warehouse_id,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       },
     });
     if (!warehouse) {
@@ -159,20 +164,18 @@ export class ReceptionService {
       warehouse: warehouse,
       document: createReceptionDto.document,
       amount: createReceptionDto.amount,
-      organization_id: this.organizationId,
+      organization_id: organizationId,
     });
 
     const savedReception = await this.receptionRepository.save(reception);
 
-    // Incrementar el contador del surrogate si el código coincide con el sugerido
     await this.surrogateService.useCodeIfMatches(
       'reception',
       createReceptionDto.code,
     );
 
-    // Recargar con relaciones para la respuesta
     const receptionWithRelations = await this.receptionRepository.findOne({
-      where: { id: savedReception.id, organization_id: this.organizationId },
+      where: { id: savedReception.id, organization_id: organizationId },
       relations: ['provider', 'warehouse'],
     });
 
@@ -185,10 +188,9 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Trigger webhook for reception created
     try {
       await this.webhookService.triggerWebhooks(
-        this.organizationId,
+        organizationId,
         WebhookEvent.RECEPTION_CREATED,
         {
           reception_id: receptionWithRelations.id,
@@ -218,9 +220,10 @@ export class ReceptionService {
   ): Promise<PaginatedResponseDto<ReceptionResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
+    const organizationId = await this.getOrganizationId();
 
     const [receptions, total] = await this.receptionRepository.findAndCount({
-      where: { organization_id: this.organizationId },
+      where: { organization_id: organizationId },
       relations: ['provider', 'warehouse'],
       skip,
       take: limit,
@@ -244,7 +247,7 @@ export class ReceptionService {
 
   async findOne(id: string, userId?: string): Promise<ReceptionResponseDto> {
     const reception = await this.receptionRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+      where: { id, organization_id: await this.getOrganizationId() },
       relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
@@ -265,8 +268,9 @@ export class ReceptionService {
     updateReceptionDto: UpdateReceptionDto,
     userId?: string,
   ): Promise<ReceptionResponseDto> {
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+      where: { id, organization_id: organizationId },
       relations: ['provider', 'details', 'warehouse', 'warehouse.currency'],
     });
 
@@ -283,7 +287,7 @@ export class ReceptionService {
       const provider = await this.providerRepository.findOne({
         where: {
           id: updateReceptionDto.provider_id,
-          organization_id: this.organizationId,
+          organization_id: organizationId,
         },
       });
       if (!provider) {
@@ -310,8 +314,9 @@ export class ReceptionService {
   }
 
   async remove(id: string, userId?: string): Promise<void> {
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id, organization_id: this.organizationId },
+      where: { id, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -324,7 +329,7 @@ export class ReceptionService {
 
     await this.receptionRepository.softDelete({
       id,
-      organization_id: this.organizationId,
+      organization_id: organizationId,
     });
   }
 
@@ -333,8 +338,9 @@ export class ReceptionService {
     createDetailDto: CreateReceptionDetailDto,
     userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -348,7 +354,7 @@ export class ReceptionService {
     const product = await this.productRepository.findOne({
       where: {
         id: createDetailDto.product_id,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       },
     });
     if (!product) {
@@ -370,7 +376,6 @@ export class ReceptionService {
     const strategy = product.inventory_strategy || InventoryStrategy.AVERAGE;
 
     if (strategy === InventoryStrategy.FEFO) {
-      // FEFO requiere fecha de vencimiento obligatoriamente
       if (!createDetailDto.expiration_date) {
         const message = await this.translationService.translate(
           'reception.fefo_requires_expiration_date',
@@ -381,13 +386,11 @@ export class ReceptionService {
       detailToSave.batch_number = createDetailDto.batch_number || undefined;
       detailToSave.expiration_date = new Date(createDetailDto.expiration_date);
     } else if (strategy === InventoryStrategy.FIFO) {
-      // FIFO: lote recomendado, fecha opcional
       detailToSave.batch_number = createDetailDto.batch_number || undefined;
       detailToSave.expiration_date = createDetailDto.expiration_date
         ? new Date(createDetailDto.expiration_date)
         : undefined;
     } else {
-      // AVERAGE: lote y fecha no aplican — se ignoran
       detailToSave.batch_number = undefined;
       detailToSave.expiration_date = undefined;
     }
@@ -433,10 +436,9 @@ export class ReceptionService {
     queryDto: ReceptionDetailQueryDto,
     userId?: string,
   ): Promise<PaginatedResponseDto<ReceptionDetailResponseDto>> {
-    // Verificar que la recepción existe
-    console.log('receptionId', receptionId);
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -452,7 +454,7 @@ export class ReceptionService {
 
     const [details, total] = await this.receptionDetailRepository.findAndCount({
       where: {
-        reception: { id: receptionId, organization_id: this.organizationId },
+        reception: { id: receptionId, organization_id: organizationId },
       },
       relations: [
         'product',
@@ -487,9 +489,9 @@ export class ReceptionService {
     detailId: string,
     userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
-    // Verificar que la recepción existe
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -503,7 +505,7 @@ export class ReceptionService {
     const detail = await this.receptionDetailRepository.findOne({
       where: {
         id: detailId,
-        reception: { id: receptionId, organization_id: this.organizationId },
+        reception: { id: receptionId, organization_id: organizationId },
       },
       relations: [
         'product',
@@ -533,9 +535,9 @@ export class ReceptionService {
     updateDetailDto: UpdateReceptionDetailDto,
     userId?: string,
   ): Promise<ReceptionDetailResponseDto> {
-    // Verificar que la recepción existe
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -549,7 +551,7 @@ export class ReceptionService {
     const detail = await this.receptionDetailRepository.findOne({
       where: {
         id: detailId,
-        reception: { id: receptionId, organization_id: this.organizationId },
+        reception: { id: receptionId, organization_id: organizationId },
       },
       relations: [
         'product',
@@ -570,14 +572,13 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Guardar el monto anterior del detalle para restarlo del total
     const oldAmount = this.calculateAmount(detail.quantity, detail.price);
 
     if (updateDetailDto.product_id) {
       const product = await this.productRepository.findOne({
         where: {
           id: updateDetailDto.product_id,
-          organization_id: this.organizationId,
+          organization_id: organizationId,
         },
         relations: ['brand', 'category', 'tax', 'measurement_unit'],
       });
@@ -592,7 +593,6 @@ export class ReceptionService {
       detail.product = product;
     }
 
-    // Actualizar los campos del detalle
     if (updateDetailDto.quantity !== undefined) {
       detail.quantity = updateDetailDto.quantity;
     }
@@ -602,10 +602,8 @@ export class ReceptionService {
 
     const updatedDetail = await this.receptionDetailRepository.save(detail);
 
-    // Calcular el nuevo monto del detalle
     const newAmount = this.calculateAmount(detail.quantity, detail.price);
 
-    // Actualizar el monto total de la recepción: restar el monto anterior y sumar el nuevo
     const currentAmount = reception.amount || 0;
     const newTotalAmount =
       Number(currentAmount) - Number(oldAmount) + Number(newAmount);
@@ -619,9 +617,9 @@ export class ReceptionService {
     detailId: string,
     userId?: string,
   ): Promise<void> {
-    // Verificar que la recepción existe
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
     });
     if (!reception) {
       const message = await this.translationService.translate(
@@ -635,7 +633,7 @@ export class ReceptionService {
     const detail = await this.receptionDetailRepository.findOne({
       where: {
         id: detailId,
-        reception: { id: receptionId, organization_id: this.organizationId },
+        reception: { id: receptionId, organization_id: organizationId },
       },
     });
 
@@ -648,15 +646,12 @@ export class ReceptionService {
       throw new NotFoundException(message);
     }
 
-    // Calcular el monto del detalle a eliminar con precisión decimal
     const detailAmount = this.calculateAmount(detail.quantity, detail.price);
 
-    // Restar el monto del detalle del total de la recepción
     const currentAmount = reception.amount || 0;
     const newTotalAmount = Number(currentAmount) - Number(detailAmount);
     await this.updateReceptionAmount(receptionId, newTotalAmount);
 
-    // Eliminar el detalle
     await this.receptionDetailRepository.softDelete(detailId);
   }
 
@@ -664,8 +659,9 @@ export class ReceptionService {
     receptionId: string,
     userId?: string,
   ): Promise<CloseReceptionResponseDto> {
+    const organizationId = await this.getOrganizationId();
     const reception = await this.receptionRepository.findOne({
-      where: { id: receptionId, organization_id: this.organizationId },
+      where: { id: receptionId, organization_id: organizationId },
       relations: ['warehouse', 'details', 'details.product'],
     });
 
@@ -688,7 +684,7 @@ export class ReceptionService {
 
     const receptionDetails = await this.receptionDetailRepository.find({
       where: {
-        reception: { id: receptionId, organization_id: this.organizationId },
+        reception: { id: receptionId, organization_id: organizationId },
       },
       relations: ['product', 'product.measurement_unit'],
     });
@@ -711,18 +707,16 @@ export class ReceptionService {
       let finalInventory: Inventory;
 
       if (strategy === InventoryStrategy.AVERAGE) {
-        // Para AVERAGE: buscar si existe inventario del producto en el almacén
         const existingInventory = await this.inventoryRepository.findOne({
           where: {
             product_id: product.id,
             warehouse_id: reception.warehouse.id,
-            organization_id: this.organizationId,
+            organization_id: organizationId,
           },
           relations: ['product', 'warehouse'],
         });
 
         if (existingInventory) {
-          // Calcular precio promedio ponderado
           const oldQuantity = Number(existingInventory.quantity);
           const newQuantity = Number(detail.quantity);
           const oldPrice = Number(existingInventory.price);
@@ -732,7 +726,6 @@ export class ReceptionService {
             (oldQuantity * oldPrice + newQuantity * newPrice) /
             (oldQuantity + newQuantity);
 
-          // Actualizar el inventario existente
           existingInventory.quantity = oldQuantity + newQuantity;
           existingInventory.price =
             Math.round(weightedAveragePrice * 100) / 100;
@@ -741,7 +734,6 @@ export class ReceptionService {
           finalInventory =
             await this.inventoryRepository.save(existingInventory);
         } else {
-          // Crear nuevo inventario si no existe
           const newInventory = this.inventoryRepository.create({
             product,
             warehouse: reception.warehouse,
@@ -750,13 +742,12 @@ export class ReceptionService {
             batch_number: detail.batch_number,
             expiration_date: detail.expiration_date,
             entry_id: reception.id,
-            organization_id: this.organizationId,
+            organization_id: organizationId,
           });
 
           finalInventory = await this.inventoryRepository.save(newInventory);
         }
       } else {
-        // Para FIFO/FEFO: crear nuevo item siempre
         const newInventory = this.inventoryRepository.create({
           product,
           warehouse: reception.warehouse,
@@ -765,7 +756,7 @@ export class ReceptionService {
           batch_number: detail.batch_number,
           expiration_date: detail.expiration_date,
           entry_id: reception.id,
-          organization_id: this.organizationId,
+          organization_id: organizationId,
         });
 
         finalInventory = await this.inventoryRepository.save(newInventory);
@@ -780,12 +771,11 @@ export class ReceptionService {
         current_stock: Number(finalInventory.quantity),
         batch_number: detail.batch_number,
         expiration_date: detail.expiration_date,
-        organization_id: this.organizationId,
+        organization_id: organizationId,
       });
 
       await this.productHistoryRepository.save(productHistory);
 
-      // Update denormalized total_stock
       await this.productService.updateStock(
         detail.product.id,
         Number(detail.quantity),
@@ -823,13 +813,3 @@ export class ReceptionService {
     };
   }
 }
-
-/*
-await this.productHistoryService.create({
-  product_id: detail.product.id,
-  warehouse_id: warehouseId,
-  operation_type: OperationType.ENTRY,
-  operation_id: reception.id,
-  quantity: detail.quantity,
-});
-}*/

@@ -18,8 +18,6 @@ import { AuthGuard } from '../guards/auth.guard';
 export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}
 
-  // ── Referrers ──────────────────────────────────────────────
-
   @Get('referrers')
   getReferrers(
     @Query('page') page?: string,
@@ -77,8 +75,6 @@ export class ReferralController {
     return this.referralService.deleteReferrer(id);
   }
 
-  // ── Commissions ────────────────────────────────────────────
-
   @Get('commissions')
   getCommissions(
     @Query('page') page?: string,
@@ -110,8 +106,6 @@ export class ReferralController {
   getStats() {
     return this.referralService.getStats();
   }
-
-  // ── Validación pública (registro) ─────────────────────────
 
   @Get('validate/:code')
   validateCode(@Param('code') code: string) {

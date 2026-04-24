@@ -156,7 +156,6 @@ export class AnalyticsService {
     }
     const where = conditions.join(' AND ');
 
-    // Contar todas las ventas (cualquier estado)
     const salesData = await this.withdrawalRepository
       .createQueryBuilder('withdrawal')
       .select([

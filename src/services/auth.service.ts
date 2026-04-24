@@ -25,6 +25,7 @@ import { TaxService } from './tax.service';
 import { MeasurementUnitService } from './measurement-unit.service';
 import { TenantContext } from './tenant-context.service';
 import { TaxType } from '../models/tax.entity';
+import { TranslationService } from './translation.service';
 
 @Injectable()
 export class AuthService {
@@ -42,6 +43,7 @@ export class AuthService {
     private taxService: TaxService,
     private measurementUnitService: MeasurementUnitService,
     private tenantContext: TenantContext,
+    private readonly translationService: TranslationService,
     @InjectRepository(Currency)
     private readonly currencyRepository: Repository<Currency>,
   ) {}
@@ -49,18 +51,27 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.userService.findByEmailForAuth(email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      const message = await this.translationService.translate(
+        'auth.invalid_credentials',
+      );
+      throw new UnauthorizedException(message);
     }
 
     if (!user.status) {
-      throw new UnauthorizedException(
-        'User is not active. Please check your email to activate your account.',
+      const message = await this.translationService.translate(
+        'auth.user_inactive',
+        user.id,
       );
+      throw new UnauthorizedException(message);
     }
 
     const isPasswordValid: boolean = await compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      const message = await this.translationService.translate(
+        'auth.invalid_credentials',
+        user.id,
+      );
+      throw new UnauthorizedException(message);
     }
 
     return user;
@@ -107,7 +118,10 @@ export class AuthService {
   async impersonate(userId: string): Promise<AuthResponseDto> {
     const user = await this.userService.findOneWithPermissions(userId);
     if (!user) {
-      throw new BadRequestException('Target user not found');
+      const message = await this.translationService.translate(
+        'auth.target_user_not_found',
+      );
+      throw new BadRequestException(message);
     }
 
     const payload = {
@@ -151,7 +165,10 @@ export class AuthService {
       registerDto.email,
     );
     if (existingUser) {
-      throw new BadRequestException('The email address is already in use.');
+      const message = await this.translationService.translate(
+        'auth.email_already_in_use',
+      );
+      throw new BadRequestException(message);
     }
 
     const defaultRoleCode = this.configService.get<string>(
@@ -171,22 +188,24 @@ export class AuthService {
     const slug = registerDto.companyName
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, '-') // múltiples espacios → un guión
-      .replace(/[^\w-]+/g, '') // eliminar cualquier carácter no alfanumérico
-      .replace(/-+/g, '-') // múltiples guiones → uno solo
-      .replace(/^-|-$/g, ''); // quitar guiones al inicio/fin
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]+/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
     if (slug.length < 3) {
-      throw new BadRequestException(
-        'El nombre de la organización genera un identificador demasiado corto. Usa un nombre más descriptivo.',
+      const message = await this.translationService.translate(
+        'auth.org_name_too_short',
       );
+      throw new BadRequestException(message);
     }
 
     const existingOrg = await this.organizationService.findBySlug(slug);
     if (existingOrg) {
-      throw new BadRequestException(
-        'The organization name already exists. Please choose another one.',
+      const message = await this.translationService.translate(
+        'auth.org_name_already_exists',
       );
+      throw new BadRequestException(message);
     }
 
     const organization = await this.organizationService.create({
@@ -198,10 +217,8 @@ export class AuthService {
         : {}),
     } as any);
 
-    // Establecer el contexto de la organización
     this.tenantContext.setOrganizationId(organization.id);
 
-    // Crear rol ADMIN para la nueva organización
     const adminRole = await this.roleService.create({
       organization_id: organization.id,
       code: 'ADMIN',
@@ -209,7 +226,6 @@ export class AuthService {
       status: true,
     } as any);
 
-    // Asignar todos los permisos al rol ADMIN
     const allPermissions = await this.permissionService.findAll();
     const permissionIds = allPermissions.map((p) => p.id);
     await this.rolePermissionService.updateRolePermissions(
@@ -217,15 +233,13 @@ export class AuthService {
       permissionIds,
     );
 
-    // Crear el usuario ya asociado a la organización y al rol ADMIN
     const newUser = await this.userService.create({
       ...registerDto,
       organization_id: organization.id,
       role_ids: [adminRole.id],
-      status: false, // El usuario se crea inactivo hasta que se verifique
+      status: false,
     } as any);
 
-    // Crear impuestos por defecto
     await this.taxService.create({
       code: 'IVA',
       name: 'IVA 16%',
@@ -242,7 +256,6 @@ export class AuthService {
       isActive: true,
     });
 
-    // Crear unidades de medida por defecto
     const defaultUnits = [
       { code: 'E48', description: 'Unidad de servicio' },
       { code: 'H87', description: 'Pieza' },
@@ -270,7 +283,6 @@ export class AuthService {
       }
     }
 
-    // Limpiar el contexto para no afectar otras peticiones concurrentes (aunque sea per-request)
     this.tenantContext.clear();
 
     const payload = { sub: newUser.id };
@@ -434,7 +446,6 @@ export class AuthService {
           `,
         );
       } catch (err: any) {
-        // No bloquear el registro si falla la notificación al admin
         console.warn(
           '[Auth] Failed to send admin registration notification:',
           err?.message,
@@ -450,11 +461,20 @@ export class AuthService {
       const payload = this.jwtService.verify(token);
       const userId = payload.sub;
 
-      const user = await this.userService.findOne(userId); // checks if exists
-      if (!user) throw new BadRequestException('User not found');
+      const user = await this.userService.findOne(userId);
+      if (!user) {
+        const message = await this.translationService.translate(
+          'auth.user_not_found',
+        );
+        throw new BadRequestException(message);
+      }
 
       if (user.status) {
-        return { message: 'User is already active', alreadyActive: true };
+        const message = await this.translationService.translate(
+          'auth.user_already_active',
+          user.id,
+        );
+        return { message, alreadyActive: true };
       }
 
       await this.userService.update(user.id, { status: true } as any);
@@ -477,7 +497,6 @@ export class AuthService {
           );
         }
 
-        // Crear monedas por defecto para la organización
         try {
           const defaultCurrencies = [
             { code: 'MXN', name: 'Peso Mexicano' },
@@ -737,19 +756,23 @@ export class AuthService {
         html,
       });
 
-      return { message: 'User successfully activated', alreadyActive: false };
-    } catch (e) {
-      if (e instanceof BadRequestException) {
-        throw e;
-      }
-      throw new BadRequestException('Invalid or expired activation token');
+      const message = await this.translationService.translate(
+        'auth.user_activated_successfully',
+        user.id,
+      );
+      return { message, alreadyActive: false };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      const message = await this.translationService.translate(
+        'auth.invalid_activation_token',
+      );
+      throw new BadRequestException(message);
     }
   }
 
   async forgotPassword(email: string): Promise<void> {
     const user = await this.userService.findByEmailForAuth(email);
     if (!user) {
-      // Security: return success even if user not found to avoid email enumeration
       return;
     }
 
@@ -768,35 +791,86 @@ export class AuthService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Restablecer Contraseña - Nitro</title>
         <style>
-          body { font-family: 'Inter','Segoe UI',Tahoma,Geneva,Verdana,sans-serif; line-height:1.6; color:#E2E8F0; margin:0; padding:0; background-color:#0F172A; }
-          .container { max-width:600px; margin:40px auto; background:#1E293B; border-radius:16px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.5); border:1px solid #334155; }
-          .header { background:#2D3748; padding:40px 20px; text-align:center; border-bottom:2px solid #EAB308; }
-          .header h1 { color:#F8FAFC; margin:0; font-size:32px; font-weight:800; letter-spacing:-.025em; text-transform:uppercase; }
-          .header h1 span { color:#EAB308; }
-          .content { padding:40px; }
-          .footer { background-color:#0F172A; padding:24px; text-align:center; font-size:13px; color:#64748B; border-top:1px solid #334155; }
-          .button { display:inline-block; padding:16px 36px; background-color:#EAB308; color:#0F172A !important; text-decoration:none; border-radius:8px; font-weight:700; margin:30px 0; text-transform:uppercase; font-size:14px; }
-          .welcome-text { font-size:20px; font-weight:600; color:#F8FAFC; margin-bottom:16px; }
-          .instruction-text { color:#CBD5E1; margin-bottom:24px; font-size:15px; }
-          .link-box { word-break:break-all; font-size:12px; color:#EAB308; background:#0F172A; padding:12px; border-radius:6px; border:1px solid #334155; }
-          .expiry-notice { font-size:13px; color:#64748B; border-top:1px solid #334155; padding-top:24px; margin-top:24px; }
+          body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #E2E8F0;
+            margin: 0;
+            padding: 0;
+            background-color: #0F172A;
+          }
+          .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #1E293B;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+          }
+          .header {
+            background: #6B7C6B;
+            padding: 40px 20px;
+            text-align: center;
+          }
+          .header h1 {
+            color: #EEF4EC;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+          }
+          .content {
+            padding: 40px;
+          }
+          .content h2 {
+            color: #F8FAFC;
+            font-size: 20px;
+            margin-top: 0;
+          }
+          .content p {
+            color: #94A3B8;
+            margin-bottom: 24px;
+          }
+          .button-container {
+            text-align: center;
+            margin: 32px 0;
+          }
+          .button {
+            background-color: #6B7C6B;
+            color: #EEF4EC !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.2s;
+          }
+          .footer {
+            background: #0F172A;
+            padding: 24px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748B;
+            border-top: 1px solid #334155;
+          }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>NITRO<span>.</span></h1></div>
+          <div class="header">
+            <h1>NITRO</h1>
+          </div>
           <div class="content">
-            <p class="welcome-text">¡Hola, ${user.name}!</p>
-            <p class="instruction-text">Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para elegir una nueva:</p>
-            <div style="text-align:center;">
-              <a href="${resetLink}" class="button">Restablecer mi contraseña</a>
+            <h2>Restablecer Contraseña</h2>
+            <p>Hola,</p>
+            <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta. Si no hiciste esta solicitud, puedes ignorar este correo.</p>
+            <div class="button-container">
+              <a href="${resetLink}" class="button">Restablecer Contraseña</a>
             </div>
-            <p class="instruction-text">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-            <p class="link-box">${resetLink}</p>
-            <div class="expiry-notice">
-              ⏱ Este enlace es válido por <strong>60 minutos</strong>.<br>
-              Si no solicitaste este cambio, ignora este correo.
-            </div>
+            <p>Este enlace expirará en 1 hora por razones de seguridad.</p>
+            <p>Si tienes problemas con el botón, copia y pega el siguiente enlace en tu navegador:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #64748B;">${resetLink}</p>
           </div>
           <div class="footer">&copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>Todos los derechos reservados.</div>
         </div>
@@ -815,19 +889,29 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(token);
       if (payload.type !== 'password-reset') {
-        throw new BadRequestException('Invalid token type');
+        const message = await this.translationService.translate(
+          'auth.invalid_token_type',
+        );
+        throw new BadRequestException(message);
       }
       const userId = payload.sub;
       await this.userService.update(userId, { password });
     } catch (e) {
-      throw new BadRequestException('Invalid or expired reset token');
+      if (e instanceof BadRequestException) throw e;
+      const message = await this.translationService.translate(
+        'auth.invalid_reset_token',
+      );
+      throw new BadRequestException(message);
     }
   }
 
   async getCurrentUser(userId: string): Promise<AuthResponseDto['user']> {
     const user = await this.userService.findOneWithPermissions(userId);
     if (!user) {
-      throw new BadRequestException('User not found');
+      const message = await this.translationService.translate(
+        'auth.user_not_found',
+      );
+      throw new BadRequestException(message);
     }
 
     return {

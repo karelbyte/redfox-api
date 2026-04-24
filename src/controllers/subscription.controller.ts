@@ -7,23 +7,32 @@ import {
   Param,
   UseGuards,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { Public } from '../decorators/public.decorator';
 import { ConvertTrialDto } from '../dtos/subscription/convert-trial.dto';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
+import { TranslationService } from '../services/translation.service';
 
 @Controller('subscriptions')
 @UseGuards(AuthGuard)
 export class SubscriptionController {
-  constructor(private subscriptionService: SubscriptionService) {}
+  constructor(
+    private subscriptionService: SubscriptionService,
+    private translationService: TranslationService,
+  ) {}
 
   @Get('status')
   async getSubscriptionStatus(@Req() request: any) {
     const organizationId = request.user?.organizationId;
     if (!organizationId) {
-      throw new Error('Organization ID not found');
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        request.user?.id,
+      );
+      throw new BadRequestException(message);
     }
     return this.subscriptionService.getSubscriptionStatus(organizationId);
   }
@@ -35,7 +44,11 @@ export class SubscriptionController {
   ) {
     const organizationId = request.user?.organizationId;
     if (!organizationId) {
-      throw new Error('Organization ID not found');
+      const message = await this.translationService.translate(
+        'auth.organization_required',
+        request.user?.id,
+      );
+      throw new BadRequestException(message);
     }
     return this.subscriptionService.convertTrialToSubscription(
       organizationId,
