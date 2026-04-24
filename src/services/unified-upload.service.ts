@@ -7,9 +7,9 @@ import {
 import { TenantContext } from './tenant-context.service';
 
 export interface UploadOptions {
-  maxSize?: number; // en bytes, default 5MB
-  allowedTypes?: string[]; // mimetypes permitidos
-  maxFiles?: number; // máximo número de archivos
+  maxSize?: number;
+  allowedTypes?: string[];
+  maxFiles?: number;
 }
 
 export type UploadCategory = 'products' | 'categories' | 'brands' | 'company';
@@ -30,9 +30,6 @@ export class UnifiedUploadService {
     return orgId;
   }
 
-  /**
-   * Genera la clave (key) para el storage basada en la organización y categoría
-   */
   private generateKey(
     category: UploadCategory,
     filename: string,
@@ -43,17 +40,12 @@ export class UnifiedUploadService {
     const cleanFilename = this.sanitizeFilename(filename);
 
     if (entityId) {
-      // Para productos, categorías, marcas con ID específico
       return `${orgId}/${category}/${entityId}/${timestamp}-${cleanFilename}`;
     } else {
-      // Para archivos de empresa (logo, favicon, etc.)
       return `${orgId}/${category}/${timestamp}-${cleanFilename}`;
     }
   }
 
-  /**
-   * Sanitiza el nombre del archivo
-   */
   private sanitizeFilename(filename: string): string {
     return filename
       .replace(/\s+/g, '-')
@@ -61,15 +53,12 @@ export class UnifiedUploadService {
       .toLowerCase();
   }
 
-  /**
-   * Valida los archivos según las opciones
-   */
   private validateFiles(
     files: Express.Multer.File[],
     options: UploadOptions,
   ): void {
     const {
-      maxSize = 5 * 1024 * 1024, // 5MB por defecto
+      maxSize = 5 * 1024 * 1024,
       allowedTypes = [
         'image/jpeg',
         'image/jpg',
@@ -99,9 +88,6 @@ export class UnifiedUploadService {
     }
   }
 
-  /**
-   * Sube múltiples archivos para una entidad específica
-   */
   async uploadFiles(
     files: Express.Multer.File[],
     category: UploadCategory,
@@ -122,9 +108,6 @@ export class UnifiedUploadService {
     return Promise.all(uploadPromises);
   }
 
-  /**
-   * Sube un solo archivo
-   */
   async uploadFile(
     file: Express.Multer.File,
     category: UploadCategory,
@@ -135,33 +118,20 @@ export class UnifiedUploadService {
     return results[0];
   }
 
-  /**
-   * Elimina archivos por sus keys
-   */
   async deleteFiles(keys: string[]): Promise<void> {
     const deletePromises = keys.map((key) => this.storageService.delete(key));
     await Promise.all(deletePromises);
   }
 
-  /**
-   * Elimina un archivo por su key
-   */
   async deleteFile(key: string): Promise<void> {
     await this.storageService.delete(key);
   }
 
-  /**
-   * Extrae la key del storage desde una URL
-   * Ejemplo: /api/uploads/org-id/products/product-id/image.jpg -> org-id/products/product-id/image.jpg
-   */
   extractKeyFromUrl(url: string): string | null {
     const match = url.match(/\/api\/uploads\/(.+)$/);
     return match ? match[1] : null;
   }
 
-  /**
-   * Elimina archivos antiguos basándose en URLs
-   */
   async deleteFilesByUrls(urls: string[]): Promise<void> {
     const keys = urls
       .map((url) => this.extractKeyFromUrl(url))

@@ -73,7 +73,6 @@ export class WithdrawalController {
     return this.withdrawalService.remove(id, userId);
   }
 
-  // Rutas para detalles de withdrawal
   @Post(':id/details')
   createDetail(
     @Param('id', ParseUUIDPipe) withdrawalId: string,

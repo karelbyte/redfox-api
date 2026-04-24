@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
+import { TranslationService } from '../services/translation.service';
 import { CreateUserDto } from '../dtos/user/create-user.dto';
 import { UpdateUserDto } from '../dtos/user/update-user.dto';
 import { SendUserMessageDto } from '../dtos/user/send-user-message.dto';
@@ -20,7 +21,10 @@ import { UserId } from '../decorators/user-id.decorator';
 @Controller('users')
 @UseGuards(AuthGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private translationService: TranslationService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto, @UserId() userId: string) {
@@ -107,7 +111,10 @@ export class UserController {
   @Post('onboarding/complete')
   async completeOnboarding(@UserId() userId: string) {
     await this.userService.completeOnboarding(userId);
-    return { message: 'Onboarding completed successfully' };
+    const message = await this.translationService.translate(
+      'general.onboarding_completed_successfully',
+    );
+    return { message };
   }
 
   @Get('onboarding/status')
@@ -122,7 +129,14 @@ export class UserController {
     @Body() sendMessageDto: SendUserMessageDto,
     @UserId() senderUserId: string,
   ) {
-    await this.userService.sendMessage(userId, sendMessageDto.message, senderUserId);
-    return { message: 'Mensaje enviado exitosamente' };
+    await this.userService.sendMessage(
+      userId,
+      sendMessageDto.message,
+      senderUserId,
+    );
+    const message = await this.translationService.translate(
+      'general.send_message_success',
+    );
+    return { message };
   }
 }

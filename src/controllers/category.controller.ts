@@ -66,13 +66,10 @@ export class CategoryController {
     )
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
-    // Primero crear la categoría para obtener su ID
     const category = await this.categoryService.create(
       createCategoryDto,
       userId,
     );
-
-    // Si hay archivo, subirlo con el ID de la categoría
     if (files && files.length > 0) {
       const uploadResult = await this.unifiedUploadService.uploadFile(
         files[0],
@@ -90,8 +87,6 @@ export class CategoryController {
           maxFiles: 1,
         },
       );
-
-      // Actualizar la categoría con la URL de la imagen
       return this.categoryService.updateImage(
         category.id,
         uploadResult.url,
@@ -106,7 +101,6 @@ export class CategoryController {
   async findAll(
     @Query() paginationDto?: PaginationDto,
   ): Promise<PaginatedResponse<CategoryResponseDto>> {
-    //await new Promise(resolve => setTimeout(resolve, 5000));
     return this.categoryService.findAll(paginationDto);
   }
 
@@ -153,7 +147,6 @@ export class CategoryController {
     )
     files?: Express.Multer.File[],
   ): Promise<CategoryResponseDto> {
-    // Si hay archivo nuevo, subirlo
     if (files && files.length > 0) {
       const uploadResult = await this.unifiedUploadService.uploadFile(
         files[0],

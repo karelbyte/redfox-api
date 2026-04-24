@@ -81,7 +81,6 @@ export class WarehouseAdjustmentController {
     return this.warehouseAdjustmentService.processAdjustment(id, userId);
   }
 
-  // Rutas para detalles de ajuste
   @Post(':id/details')
   createDetail(
     @Param('id', ParseUUIDPipe) adjustmentId: string,

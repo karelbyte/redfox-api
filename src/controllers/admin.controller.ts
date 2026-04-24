@@ -23,7 +23,6 @@ export class AdminController {
     private readonly authService: AuthService,
   ) {}
 
-  // Campos sensibles que deben ser filtrados en las respuestas
   private readonly SENSITIVE_FIELDS = [
     'password',
     'token',
@@ -54,9 +53,6 @@ export class AdminController {
     'otp',
   ];
 
-  /**
-   * Sanitiza datos sensibles de forma recursiva
-   */
   private sanitizeResponseData(data: any): any {
     if (!data || typeof data !== 'object') {
       return data;
@@ -70,8 +66,6 @@ export class AdminController {
 
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
-
-      // Verificar si el campo es sensible
       if (
         this.SENSITIVE_FIELDS.some((sensitiveField) =>
           lowerKey.includes(sensitiveField),
@@ -79,7 +73,6 @@ export class AdminController {
       ) {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
-        // Recursivamente sanitizar objetos anidados
         sanitized[key] = this.sanitizeResponseData(value);
       } else {
         sanitized[key] = value;
@@ -89,9 +82,6 @@ export class AdminController {
     return sanitized;
   }
 
-  /**
-   * Sanitiza un log de auditoría completo
-   */
   private sanitizeAuditLog(log: any): any {
     return {
       ...log,

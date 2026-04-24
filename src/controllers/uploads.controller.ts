@@ -20,20 +20,6 @@ export class UploadsController {
     private readonly storageService: IStorageService,
   ) {}
 
-  /**
-   * Proxy de archivos — sirve cualquier archivo del storage configurado.
-   * El frontend siempre llama a /api/uploads/* sin importar si es local o S3.
-   *
-   * Rutas soportadas:
-   * - /api/uploads/{orgId}/products/{productId}/{filename}
-   * - /api/uploads/{orgId}/categories/{categoryId}/{filename}
-   * - /api/uploads/{orgId}/brands/{brandId}/{filename}
-   * - /api/uploads/{orgId}/company/{filename}
-   *
-   * También mantiene compatibilidad con rutas legacy:
-   * - /api/uploads/products/{filename}
-   * - /api/uploads/categories/{filename}
-   */
   @Public()
   @Get(':orgId/products/:productId/:filename')
   async serveProductFile(
@@ -114,9 +100,6 @@ export class UploadsController {
     await this.serveFile(key, res);
   }
 
-  /**
-   * Método helper para servir archivos
-   */
   private async serveFile(key: string, res: Response): Promise<void> {
     try {
       const { buffer, contentType } = await this.storageService.getFile(key);

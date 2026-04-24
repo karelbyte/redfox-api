@@ -31,10 +31,6 @@ export class ProductImportController {
     private readonly tenantContext: TenantContext,
   ) {}
 
-  /**
-   * POST /api/products/import/csv
-   * Encola el job y responde inmediatamente.
-   */
   @Post('csv')
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
@@ -74,10 +70,6 @@ export class ProductImportController {
     };
   }
 
-  /**
-   * GET /api/products/import/history
-   * Devuelve los últimos 10 jobs de importación de productos para la organización.
-   */
   @Get('history')
   async getHistory(@Query('limit') limit?: string) {
     const organizationId = this.tenantContext.getOrganizationId();
@@ -92,10 +84,6 @@ export class ProductImportController {
     );
   }
 
-  /**
-   * GET /api/products/import/template
-   * Descarga el template CSV con los campos, descripciones y ejemplos.
-   */
   @Get('template')
   downloadTemplate(@Res() res: Response) {
     const fields = [

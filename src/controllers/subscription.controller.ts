@@ -56,13 +56,11 @@ export class SubscriptionController {
 
   @Get('plans')
   async getPlans() {
-    // Solo planes públicos — para el front del cliente
     return this.subscriptionService.getAllPlans();
   }
 
   @Get('plans/admin')
   async getPlansAdmin() {
-    // Todos los planes incluyendo privados — para el panel de administración
     return this.subscriptionService.getAllPlansAdmin();
   }
 

@@ -56,7 +56,6 @@ export class ClientImportController {
     if (!organizationId)
       throw new BadRequestException('Contexto de organización requerido');
 
-    // Encolar el job — responde inmediatamente
     await this.importQueue.addImportJob({
       type: 'client',
       rows,
@@ -71,10 +70,6 @@ export class ClientImportController {
     };
   }
 
-  /**
-   * GET /api/clients/import/history
-   * Devuelve los últimos 10 jobs de importación de clientes para la organización.
-   */
   @Get('history')
   async getHistory(@Query('limit') limit?: string) {
     const organizationId = this.tenantContext.getOrganizationId();

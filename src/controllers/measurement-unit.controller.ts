@@ -53,7 +53,6 @@ export class MeasurementUnitController {
     try {
       return await this.measurementUnitService.searchFromPack(term.trim());
     } catch (error: any) {
-      // Si no hay pack activo, retornar array vacío en lugar de error
       console.error(
         'Error searching measurement units from pack:',
         error.message,

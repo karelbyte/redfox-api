@@ -7,7 +7,6 @@ import { Public } from '../decorators/public.decorator';
 import { AuthGuard } from '../guards/auth.guard';
 import { RedisService } from '../services/redis.service';
 import { JwtService } from '@nestjs/jwt';
-import { AppConfig } from '../config';
 import { Request } from 'express';
 import { UserId } from '../decorators/user-id.decorator';
 

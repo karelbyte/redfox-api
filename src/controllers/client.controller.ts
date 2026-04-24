@@ -45,10 +45,6 @@ export class ClientController {
     return this.clientService.findAll(paginationDto);
   }
 
-  /**
-   * Importación inversa: trae todos los clientes desde el pack activo hacia nuestra DB.
-   * (Si el pack no está configurado o no soporta listar customers, responde 400)
-   */
   @Post('import-from-pack')
   importFromPack(
     @UserId() userId: string,
@@ -89,10 +85,6 @@ export class ClientController {
     return this.clientService.removeMany(bulkDeleteClientDto.ids, userId);
   }
 
-  /**
-   * Sincroniza manualmente un cliente existente con el pack activo.
-   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
-   */
   @Post(':id/sync-with-pack')
   syncWithPack(
     @Param('id', ParseUUIDPipe) id: string,

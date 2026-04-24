@@ -8,7 +8,6 @@ import { AuditAction } from '../models/audit-log.entity';
 export class AuditLogController {
   constructor(private auditLogService: AuditLogService) {}
 
-  // Campos sensibles que deben ser filtrados en las respuestas
   private readonly SENSITIVE_FIELDS = [
     'password',
     'token',
@@ -39,9 +38,7 @@ export class AuditLogController {
     'otp',
   ];
 
-  /**
-   * Sanitiza datos sensibles de forma recursiva
-   */
+  // revisar el sanitize de del controlador analytics
   private sanitizeResponseData(data: any): any {
     if (!data || typeof data !== 'object') {
       return data;
@@ -56,7 +53,6 @@ export class AuditLogController {
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
 
-      // Verificar si el campo es sensible
       if (
         this.SENSITIVE_FIELDS.some((sensitiveField) =>
           lowerKey.includes(sensitiveField),
@@ -64,7 +60,6 @@ export class AuditLogController {
       ) {
         sanitized[key] = '[FILTERED]';
       } else if (value && typeof value === 'object') {
-        // Recursivamente sanitizar objetos anidados
         sanitized[key] = this.sanitizeResponseData(value);
       } else {
         sanitized[key] = value;
@@ -74,9 +69,6 @@ export class AuditLogController {
     return sanitized;
   }
 
-  /**
-   * Sanitiza un log de auditoría completo
-   */
   private sanitizeAuditLog(log: any): any {
     return {
       ...log,

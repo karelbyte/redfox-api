@@ -28,10 +28,6 @@ import { UserId } from '../decorators/user-id.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { UnifiedUploadService } from '../services/unified-upload.service';
 
-const formatFileName = (fileName: string): string => {
-  return fileName.replace(/\s+/g, '-');
-};
-
 @Controller('brands')
 @UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
@@ -67,10 +63,8 @@ export class BrandController {
     )
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
-    // Primero crear la marca para obtener su ID
     const brand = await this.brandService.create(createBrandDto, userId);
 
-    // Si hay archivo, subirlo con el ID de la marca
     if (files && files.length > 0) {
       const uploadResult = await this.unifiedUploadService.uploadFile(
         files[0],
@@ -88,8 +82,6 @@ export class BrandController {
           maxFiles: 1,
         },
       );
-
-      // Actualizar la marca con la URL de la imagen
       return this.brandService.updateImage(brand.id, uploadResult.url, userId);
     }
 
@@ -138,7 +130,6 @@ export class BrandController {
     )
     files?: Express.Multer.File[],
   ): Promise<BrandResponseDto> {
-    // Si hay archivo nuevo, subirlo
     if (files && files.length > 0) {
       const uploadResult = await this.unifiedUploadService.uploadFile(
         files[0],

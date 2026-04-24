@@ -54,7 +54,6 @@ export class SupportController {
 
     const organizationId = this.tenantContext.getOrganizationId();
 
-    // Cargar datos del usuario y organización
     const [user, organization] = await Promise.all([
       this.userRepository.findOne({
         where: { id: userId },

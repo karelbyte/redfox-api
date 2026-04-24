@@ -52,7 +52,7 @@ export class CompanySettingsController {
   @Post('logo')
   @UseInterceptors(
     FileInterceptor('logo', {
-      storage: memoryStorage(), // Usamos memoria para pasar el buffer al StorageService
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(
@@ -82,7 +82,6 @@ export class CompanySettingsController {
       throw new BadRequestException('Organization context is required');
     }
 
-    // Usar la nueva estructura: {orgId}/company/logo-{timestamp}.{ext}
     const ext = file.originalname.split('.').pop() || 'png';
     const key = `${organizationId}/company/logo-${Date.now()}.${ext}`;
 
