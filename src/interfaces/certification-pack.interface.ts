@@ -194,7 +194,7 @@ export interface PaymentComplementResponse {
 }
 
 export interface ICertificationPackService {
-  generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse>;
+  generateCFDI(invoice: Invoice, options?: any, emitterId?: string): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
   getCFDIStatus(uuid: string): Promise<any>;
   /** @param packInvoiceId ID interno del comprobante en el PAC (ej. Facturapi id), no el UUID del SAT */

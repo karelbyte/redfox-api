@@ -33,6 +33,12 @@ export enum PaymentMethod {
   CASH = 'cash',
   CARD = 'card',
   CREDIT = 'credit',
+  TRANSFER = 'transfer',
+}
+
+export enum CardType {
+  CREDIT = 'credit',
+  DEBIT = 'debit',
 }
 
 @Entity('withdrawals')
@@ -89,6 +95,14 @@ export class Withdrawal {
     name: 'payment_method',
   })
   paymentMethod: PaymentMethod;
+
+  @Column({
+    type: 'enum',
+    enum: CardType,
+    nullable: true,
+    name: 'card_type',
+  })
+  cardType: CardType | null;
 
   @Column('varchar', { name: 'pack_receipt_id', length: 100, nullable: true })
   pack_receipt_id: string | null;

@@ -76,9 +76,15 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
           {
             name: 'payment_method',
             type: 'enum',
-            enum: ['cash', 'card', 'credit'],
+            enum: ['cash', 'card', 'credit', 'transfer'],
             default: "'cash'",
             isNullable: false,
+          },
+          {
+            name: 'card_type',
+            type: 'enum',
+            enum: ['credit', 'debit'],
+            isNullable: true,
           },
           {
             name: 'created_by',

@@ -61,7 +61,7 @@ export class FacturaAPIService implements ICertificationPackService {
     return apiKey;
   }
 
-  async generateCFDI(invoice: Invoice, options?: any): Promise<CFDIResponse> {
+  async generateCFDI(invoice: Invoice, options?: any, emitterId?: string): Promise<CFDIResponse> {
     try {
       const client = await this.getClient();
       const cfdiData = this.buildCFDIData(invoice);
@@ -384,7 +384,7 @@ export class FacturaAPIService implements ICertificationPackService {
     return {
       customer: customerData,
       items: itemsData,
-      payment_form: this.mapPaymentMethod(invoice.payment_method),
+      payment_form: this.mapPaymentMethod(invoice.payment_method, invoice.card_type),
       payment_method: invoice.payment_method === 'credit' ? 'PPD' : 'PUE',
       use: 'G01',
       type: 'I',
@@ -489,14 +489,21 @@ export class FacturaAPIService implements ICertificationPackService {
     return new Date().toISOString().split('T')[0];
   }
 
-  private mapPaymentMethod(paymentMethod: string): string {
+  private mapPaymentMethod(paymentMethod: string, cardType?: string | null): string {
     const mapping: Record<string, string> = {
       cash: '01',
-      card: '28',
       transfer: '03',
       check: '02',
       credit: '99',
     };
+    
+    if (paymentMethod === 'card') {
+      if (cardType === 'debit') {
+        return '28'; // Tarjeta de débito
+      }
+      return '04'; // Tarjeta de crédito (default para card)
+    }
+    
     return mapping[paymentMethod] || '01';
   }
 

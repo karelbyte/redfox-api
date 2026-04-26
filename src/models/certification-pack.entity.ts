@@ -7,9 +7,11 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { CertificationPackType } from '../constants/certification-packs.constant';
 import { Organization } from './organization.entity';
+import { CertificationPackEmitter } from './certification-pack-emitter.entity';
 
 @Entity('certification_packs')
 export class CertificationPack {
@@ -34,6 +36,9 @@ export class CertificationPack {
 
   @Column({ default: false })
   is_default: boolean;
+
+  @OneToMany(() => CertificationPackEmitter, (emitter) => emitter.pack)
+  emitters: CertificationPackEmitter[];
 
   @CreateDateColumn()
   created_at: Date;

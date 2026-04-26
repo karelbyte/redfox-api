@@ -12,7 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { InvoiceStatus, PaymentMethod } from '../../models/invoice.entity';
+import { InvoiceStatus, PaymentMethod, CardType } from '../../models/invoice.entity';
 
 export class CreateInvoiceDetailDto {
   @IsUUID()
@@ -53,6 +53,10 @@ export class CreateInvoiceDto {
   @IsEnum(PaymentMethod)
   @IsOptional()
   payment_method?: PaymentMethod;
+
+  @IsEnum(CardType)
+  @IsOptional()
+  card_type?: CardType;
 
   @IsString()
   @IsOptional()

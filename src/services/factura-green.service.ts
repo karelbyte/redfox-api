@@ -38,21 +38,21 @@ export class FacturaGreenService implements ICertificationPackService {
     return uuidRegex.test(uuid.trim());
   }
 
-  private getConfig() {
+  private getConfig(emitterId?: string) {
     const pacConfig = this.tenantContext.getPacConfig();
 
     return {
       baseUrl:
         this.configService.get<string>('FACTURA_GREEN_BASE_URL') ||
         'https://www',
-      businessUuid: pacConfig?.business_uuid,
+      businessUuid: emitterId || pacConfig?.business_uuid,
       accountUuid: pacConfig?.account_uuid || '0000',
       tenantId: pacConfig?.tenant_id || 'www',
     };
   }
 
-  private async getHeaders() {
-    const config = this.getConfig();
+  private async getHeaders(emitterId?: string) {
+    const config = this.getConfig(emitterId);
     const pacConfig = this.tenantContext.getPacConfig();
 
     if (!config.businessUuid) {
@@ -92,10 +92,11 @@ export class FacturaGreenService implements ICertificationPackService {
   async generateCFDI(
     invoice: Invoice,
     options?: GenerateCFDIOptions,
+    emitterId?: string,
   ): Promise<CFDIResponse> {
     try {
       const baseUrl = this.getBaseUrl();
-      const headers = await this.getHeaders();
+      const headers = await this.getHeaders(emitterId);
 
       if (!invoice.client?.pack_client_id) {
         const msg = await this.translationService.translate(
@@ -173,7 +174,6 @@ export class FacturaGreenService implements ICertificationPackService {
       // Mapear payment_method a forma de pago SAT (cómo se paga)
       const paymentFormMap: Record<string, string> = {
         cash: '01', // Efectivo
-        card: '04', // Tarjeta de crédito
         transfer: '03', // Transferencia electrónica
         check: '02', // Cheque nominativo
         credit: '99', // Por definir (obligatorio en PPD)
@@ -182,10 +182,20 @@ export class FacturaGreenService implements ICertificationPackService {
       // Derivar método de pago SAT (cuándo se paga): PPD para crédito, PUE para el resto
       const isCredit = (invoice.payment_method as string) === 'credit';
       const satPaymentMethod = isCredit ? 'PPD' : 'PUE';
-      // Cuando es PPD, la forma de pago DEBE ser '99' (regla SAT CFDI 4.0)
-      const satPaymentForm = isCredit
-        ? '99'
-        : paymentFormMap[invoice.payment_method as string] || '01';
+      
+      // Determinar forma de pago SAT
+      let satPaymentForm: string;
+      if (isCredit) {
+        satPaymentForm = '99';
+      } else if (invoice.payment_method === 'card') {
+        if (invoice.card_type === 'debit') {
+          satPaymentForm = '28'; // Tarjeta de débito
+        } else {
+          satPaymentForm = '04'; // Tarjeta de crédito (default para card)
+        }
+      } else {
+        satPaymentForm = paymentFormMap[invoice.payment_method as string] || '01';
+      }
 
       const payload: any = {
         cfdi: {
@@ -763,6 +773,29 @@ export class FacturaGreenService implements ICertificationPackService {
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
+        if (data.message === 'customer_samedata_found') {
+          console.log('[FacturaGreen] createCustomer → customer_samedata_found, searching by RFC');
+          const existingCustomer = await this.searchCustomerByRFC(customerData.tax_id);
+          
+          if (existingCustomer) {
+            console.log('[FacturaGreen] createCustomer → Found existing customer, uuid:', existingCustomer.uuid);
+            return {
+              id: existingCustomer.uuid,
+              created_at: existingCustomer.cd || new Date().toISOString(),
+              livemode: true,
+              legal_name: existingCustomer.name,
+              tax_id: existingCustomer.taxid,
+              tax_system: existingCustomer.taxregime?.k,
+              email: existingCustomer.email,
+              phone: existingCustomer.phone,
+              default_invoice_use: existingCustomer.invoiceuse?.k,
+              address: customerData.address,
+              payload_send: payload,
+              pack_response: existingCustomer,
+            };
+          }
+        }
+        
         const fallbackMsg = await this.translationService.translate(
           'pack.error_creating_customer',
           this.tenantContext.getUserId() ?? undefined,
@@ -808,7 +841,6 @@ export class FacturaGreenService implements ICertificationPackService {
       const headers = await this.getHeaders();
       const url = `${baseUrl}/interop/customer/update`;
 
-      // Factura Green requiere TODOS los campos en el update, no es parcial
       const payload = {
         customer: {
           uuid: customerId,
@@ -854,6 +886,29 @@ export class FacturaGreenService implements ICertificationPackService {
       console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
 
       if (!response.ok || data.response !== 'success') {
+        if (data.message === 'customer_samedata_found') {
+          console.log('[FacturaGreen] updateCustomer → customer_samedata_found, searching by RFC');
+          const existingCustomer = await this.searchCustomerByRFC(customerData.tax_id || '');
+          
+          if (existingCustomer) {
+            console.log('[FacturaGreen] updateCustomer → Found existing customer, uuid:', existingCustomer.uuid);
+            return {
+              id: existingCustomer.uuid,
+              created_at: existingCustomer.cd || new Date().toISOString(),
+              livemode: true,
+              legal_name: existingCustomer.name,
+              tax_id: existingCustomer.taxid,
+              tax_system: existingCustomer.taxregime?.k,
+              email: existingCustomer.email,
+              phone: existingCustomer.phone,
+              default_invoice_use: existingCustomer.invoiceuse?.k,
+              address: customerData.address,
+              payload_send: payload,
+              pack_response: existingCustomer,
+            };
+          }
+        }
+        
         const fallbackMsg = await this.translationService.translate(
           'pack.error_updating_customer',
           this.tenantContext.getUserId() ?? undefined,
@@ -890,6 +945,52 @@ export class FacturaGreenService implements ICertificationPackService {
     }
   }
 
+  async searchCustomerByRFC(rfc: string): Promise<any> {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const headers = await this.getHeaders();
+      const url = `${baseUrl}/interop/customer/list`;
+
+      const payload = {
+        params: {
+          q: rfc,
+        },
+      };
+
+      console.log('[FacturaGreen] searchCustomerByRFC → REQUEST');
+      console.log('[FacturaGreen]   URL:', url);
+      console.log('[FacturaGreen]   Payload:', JSON.stringify(payload, null, 2));
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      console.log(
+        '[FacturaGreen] searchCustomerByRFC → RESPONSE status:',
+        response.status,
+      );
+      console.log('[FacturaGreen]   Body:', JSON.stringify(data, null, 2));
+
+      if (!response.ok || data.response !== 'success') {
+        return null;
+      }
+
+      const customersArray = data.data?.customers || [];
+      if (customersArray.length === 0) {
+        return null;
+      }
+
+      return customersArray[0];
+    } catch (error: any) {
+      console.error('[FacturaGreen] searchCustomerByRFC - Error:', error);
+      return null;
+    }
+  }
+
   async listCustomers(): Promise<CustomerResponse[]> {
     try {
       const baseUrl = this.getBaseUrl();
@@ -904,12 +1005,10 @@ export class FacturaGreenService implements ICertificationPackService {
 
       const data = await response.json();
 
-      // Factura Green usa "response": "success" en lugar de "success": true
       if (!response.ok || data.response !== 'success') {
         return [];
       }
 
-      // Los clientes están en data.data.customers, no en data.data directamente
       const customersArray = data.data?.customers || [];
       const customers = customersArray.map((customer: any) => ({
         id: customer.uuid,

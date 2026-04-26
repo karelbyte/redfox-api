@@ -15,6 +15,8 @@ import { CreateWithdrawalDetailDto } from './create-withdrawal.dto';
 import {
   WithdrawalType,
   WithdrawalStatus,
+  PaymentMethod,
+  CardType,
 } from '../../models/withdrawal.entity';
 
 export class UpdateWithdrawalDto {
@@ -48,6 +50,14 @@ export class UpdateWithdrawalDto {
   @IsEnum(WithdrawalStatus)
   @IsOptional()
   status?: WithdrawalStatus;
+
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  payment_method?: PaymentMethod;
+
+  @IsEnum(CardType)
+  @IsOptional()
+  card_type?: CardType;
 
   @IsArray()
   @IsOptional()

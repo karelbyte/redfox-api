@@ -229,6 +229,7 @@ export class WithdrawalService {
       status: WithdrawalStatus.OPEN,
       paymentMethod:
         createWithdrawalDto.payment_method || WithdrawalPaymentMethod.CASH,
+      cardType: createWithdrawalDto.card_type || null,
       organization_id: this.organizationId,
       created_by: userId || null,
     });
@@ -377,6 +378,12 @@ export class WithdrawalService {
     }
     if (updateWithdrawalDto.status !== undefined) {
       withdrawal.status = updateWithdrawalDto.status as any;
+    }
+    if (updateWithdrawalDto.payment_method !== undefined) {
+      withdrawal.paymentMethod = updateWithdrawalDto.payment_method;
+    }
+    if (updateWithdrawalDto.card_type !== undefined) {
+      withdrawal.cardType = updateWithdrawalDto.card_type;
     }
 
     const updatedWithdrawal = await this.withdrawalRepository.save(withdrawal);

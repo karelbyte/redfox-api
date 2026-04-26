@@ -99,11 +99,11 @@ export class InventoryService {
     queryDto: InventoryQueryDto,
     userId?: string,
   ): Promise<PaginatedResponse<InventoryListResponseDto>> {
-    const { page = 1, limit = 10, warehouse_id, term } = queryDto;
+    const { page = 1, limit = 10, warehouse_id, term, brand_id, category_id } = queryDto;
     const product_id = (queryDto as any).product_id;
     const skip = (page - 1) * limit;
 
-    const whereConditions: FindOptionsWhere<Inventory> = {
+    const whereConditions: any = {
       organization_id: this.organizationId,
     };
     if (warehouse_id) {
@@ -111,6 +111,18 @@ export class InventoryService {
     }
     if (product_id) {
       whereConditions.product = { id: product_id };
+    }
+    if (brand_id) {
+      if (!whereConditions.product) {
+        whereConditions.product = {};
+      }
+      whereConditions.product.brand = { id: brand_id };
+    }
+    if (category_id) {
+      if (!whereConditions.product) {
+        whereConditions.product = {};
+      }
+      whereConditions.product.category = { id: category_id };
     }
 
     const [inventory, total] = await this.inventoryRepository.findAndCount({
@@ -127,19 +139,21 @@ export class InventoryService {
       withDeleted: false,
       skip,
       take: limit,
+      order: { created_at: 'DESC' },
     });
 
-    // Filtrar por término de búsqueda si se proporciona
+    // Filtrar por term si se proporciona
     let filteredInventory = inventory;
     if (term) {
-      const searchTerm = term.toLowerCase();
-      filteredInventory = inventory.filter(
-        (item) =>
-          item.product.name.toLowerCase().includes(searchTerm) ||
-          item.product.sku.toLowerCase().includes(searchTerm) ||
-          (item.product.description &&
-            item.product.description.toLowerCase().includes(searchTerm)),
-      );
+      const lowerTerm = term.toLowerCase();
+      filteredInventory = inventory.filter((item) => {
+        return (
+          item.product.name.toLowerCase().includes(lowerTerm) ||
+          item.product.sku.toLowerCase().includes(lowerTerm) ||
+          (item.product.barcode && item.product.barcode.toLowerCase().includes(lowerTerm)) ||
+          (item.product.description && item.product.description.toLowerCase().includes(lowerTerm))
+        );
+      });
     }
 
     const data = filteredInventory.map((item) =>

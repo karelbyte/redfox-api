@@ -87,6 +87,10 @@ export class GenerateCFDIDto {
   itemPrices?: Record<string, number>;
 
   @IsOptional()
+  @IsString()
+  emitterId?: string;
+
+  @IsOptional()
   @IsObject()
   itemDescriptions?: Record<string, string>;
 

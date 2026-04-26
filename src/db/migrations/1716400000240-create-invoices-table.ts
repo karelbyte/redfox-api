@@ -115,6 +115,12 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'card_type',
+            type: 'enum',
+            enum: ['credit', 'debit'],
+            isNullable: true,
+          },
+          {
             name: 'payment_conditions',
             type: 'varchar',
             length: '100',
@@ -123,6 +129,12 @@ export class CreateInvoicesTable1716400000240 implements MigrationInterface {
           {
             name: 'notes',
             type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'emitter_id',
+            type: 'varchar',
+            length: '100',
             isNullable: true,
           },
           {

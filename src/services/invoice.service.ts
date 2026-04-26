@@ -237,6 +237,7 @@ export class InvoiceService {
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
       payment_method: rest.payment_method,
+      card_type: rest.card_type || null,
       payment_conditions: rest.payment_conditions,
       notes: rest.notes,
       organization_id: this.organizationId,
@@ -832,6 +833,7 @@ export class InvoiceService {
     invoiceId: string,
     userId?: string,
     options?: any,
+    emitterId?: string,
   ): Promise<InvoiceResponseDto> {
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId, organization_id: this.organizationId },
@@ -874,6 +876,7 @@ export class InvoiceService {
         userId,
         organizationId: this.organizationId,
         options,
+        emitterId,
       });
 
       const invoiceWithDetails = await this.invoiceRepository.findOne({

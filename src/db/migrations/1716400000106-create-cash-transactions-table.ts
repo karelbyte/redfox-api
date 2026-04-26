@@ -59,7 +59,7 @@ export class CreateCashTransactionsTable1716400000106
           {
             name: 'payment_method',
             type: 'enum',
-            enum: ['cash', 'card', 'mixed'],
+            enum: ['cash', 'card', 'mixed', 'transfer'],
             default: "'cash'",
             isNullable: false,
           },

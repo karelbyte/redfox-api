@@ -11,4 +11,14 @@ export class InventoryQueryDto extends PaginationDto {
   @IsUUID()
   @IsOptional()
   product_id?: string;
+
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  brand_id?: string;
+
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  category_id?: string;
 }

@@ -33,6 +33,11 @@ export enum PaymentMethod {
   CREDIT = 'credit',
 }
 
+export enum CardType {
+  CREDIT = 'credit',
+  DEBIT = 'debit',
+}
+
 @Entity('invoices')
 @Index(['organization_id', 'code'], { unique: true })
 export class Invoice {
@@ -96,11 +101,21 @@ export class Invoice {
   })
   payment_method!: PaymentMethod;
 
+  @Column({
+    type: 'enum',
+    enum: CardType,
+    nullable: true,
+  })
+  card_type!: CardType | null;
+
   @Column({ length: 100, nullable: true })
   payment_conditions!: string;
 
   @Column({ type: 'text', nullable: true })
   notes!: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  emitter_id!: string | null;
 
   @OneToMany(() => InvoiceDetail, (detail) => detail.invoice)
   details!: InvoiceDetail[];

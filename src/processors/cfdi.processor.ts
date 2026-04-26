@@ -48,7 +48,7 @@ export class CfdiProcessor {
    * Actualiza el status de la factura a SENT o FAILED_CFDI según el resultado.
    */
   async process(job: CfdiJob): Promise<void> {
-    const { invoiceId, userId, organizationId, options } = job;
+    const { invoiceId, userId, organizationId, options, emitterId } = job;
 
     return this.tenantContext.run(
       {
@@ -121,7 +121,7 @@ export class CfdiProcessor {
           }
 
           // Llamar al PAC para timbrar
-          const cfdiResult = await packService.generateCFDI(invoice, options);
+          const cfdiResult = await packService.generateCFDI(invoice, options, emitterId);
 
           // Actualizar la factura con el resultado del timbrado
           invoice.cfdi_uuid = this.isValidUUID(cfdiResult.uuid) ? cfdiResult.uuid : null;
@@ -136,6 +136,7 @@ export class CfdiProcessor {
           if (cfdiResult.payload_send) {
             invoice.payload_send = cfdiResult.payload_send;
           }
+          invoice.emitter_id = emitterId || null;
           invoice.status = InvoiceStatus.SENT;
 
           await this.invoiceRepository.save(invoice);

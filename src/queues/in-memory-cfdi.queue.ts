@@ -5,6 +5,7 @@ export interface CfdiJob {
   userId?: string;
   organizationId: string;
   options?: Record<string, unknown>;
+  emitterId?: string;
 }
 
 /**

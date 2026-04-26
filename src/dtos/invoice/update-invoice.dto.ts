@@ -8,7 +8,7 @@ import {
   IsNumber,
   Min,
 } from 'class-validator';
-import { InvoiceStatus, PaymentMethod } from '../../models/invoice.entity';
+import { InvoiceStatus, PaymentMethod, CardType } from '../../models/invoice.entity';
 
 export class UpdateInvoiceDto {
   @IsString()
@@ -27,6 +27,10 @@ export class UpdateInvoiceDto {
   @IsEnum(PaymentMethod)
   @IsOptional()
   payment_method?: PaymentMethod;
+
+  @IsEnum(CardType)
+  @IsOptional()
+  card_type?: CardType;
 
   @IsString()
   @IsOptional()
