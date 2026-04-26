@@ -44,7 +44,6 @@ export class WarehouseOpeningService {
       const saved =
         await this.warehouseOpeningRepository.save(warehouseOpening);
 
-      // Recargar con relaciones para la respuesta
       const savedWithRelations = await this.warehouseOpeningRepository.findOne({
         where: { id: saved.id, organization_id: this.organizationId },
         relations: [
@@ -66,7 +65,7 @@ export class WarehouseOpeningService {
         throw new NotFoundException(message);
       }
 
-      // Update denormalized total_stock
+
       await this.productService.updateStock(
         createWarehouseOpeningDto.productId,
         Number(createWarehouseOpeningDto.quantity),
@@ -188,7 +187,6 @@ export class WarehouseOpeningService {
         ...updateWarehouseOpeningDto,
       });
 
-      // Recargar con relaciones para la respuesta
       const updatedWithRelations =
         await this.warehouseOpeningRepository.findOne({
           where: { id: updated.id, organization_id: this.organizationId },

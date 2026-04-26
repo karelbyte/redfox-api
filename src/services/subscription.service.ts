@@ -11,7 +11,6 @@ import { SubscriptionEmailService } from './subscription-email.service';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 import { ReferralService } from './referral.service';
 
-// Subscription error messages — inline bilingual (no DB lookup needed for subscriptions)
 const MSG = {
   org_not_found: {
     es: 'Organización no encontrada.',
@@ -194,7 +193,6 @@ export class SubscriptionService {
       throw new BadRequestException(t('sub_not_found'));
     }
 
-    // Permitir pago si está en trial o si está inactiva/expirada
     if (
       subscription.status !== 'trial' &&
       subscription.status !== 'inactive' &&
@@ -203,7 +201,6 @@ export class SubscriptionService {
       throw new BadRequestException(t('already_active'));
     }
 
-    // Si no tiene stripe_customer_id, crearlo ahora
     if (!subscription.stripe_customer_id) {
       const organization = await this.organizationRepository.findOne({
         where: { id: organizationId },
@@ -218,13 +215,11 @@ export class SubscriptionService {
         organization?.name || organizationId,
       );
       subscription.stripe_customer_id = stripeCustomer.id;
-      // Guardar solo el customer_id, sin tocar plan_id
       await this.subscriptionRepository.update(subscription.id, {
         stripe_customer_id: stripeCustomer.id,
       });
     }
 
-    // Si se proporciona un planId, actualizar el plan de la suscripción
     let selectedPlan = subscription.plan;
     if (planId) {
       const newPlan = await this.planRepository.findOne({
@@ -237,25 +232,21 @@ export class SubscriptionService {
 
       selectedPlan = newPlan;
       subscription.plan_id = planId;
-      // Guardar solo el plan_id de forma explícita
       await this.subscriptionRepository.update(subscription.id, {
         plan_id: planId,
       });
     }
 
-    // Crear el PaymentIntent con el payment method adjunto usando el precio del plan seleccionado
     const paymentIntent = await this.stripeService.createPaymentIntent(
       subscription.stripe_customer_id,
       selectedPlan.price,
       paymentMethodId,
     );
 
-    // Guardar el payment_intent_id en la suscripción para referencia
     await this.subscriptionRepository.update(subscription.id, {
       stripe_payment_intent_id: paymentIntent.id,
     });
 
-    // NO cambiar el estado aquí - se cambiará cuando el pago sea confirmado
     return {
       clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id,
@@ -274,15 +265,12 @@ export class SubscriptionService {
 
     const now = new Date();
     const endDate = new Date(now);
-
-    // Calcular duración según el billing_period del plan elegido
     const billingPeriod = subscription.plan?.billing_period || 'monthly';
     if (billingPeriod === 'yearly' || billingPeriod === 'annual') {
       endDate.setFullYear(endDate.getFullYear() + 1);
     } else if (billingPeriod === 'lifetime') {
       endDate.setFullYear(endDate.getFullYear() + 100);
     } else {
-      // monthly por defecto
       endDate.setMonth(endDate.getMonth() + 1);
     }
 
@@ -294,12 +282,10 @@ export class SubscriptionService {
 
     await this.subscriptionRepository.save(subscription);
 
-    // Actualizar la organización con el plan correcto
     await this.organizationRepository.update(subscription.organization_id, {
       plan_id: subscription.plan_id,
     });
 
-    // Registrar el pago en subscription_payments
     try {
       const payment = this.subscriptionPaymentRepository.create({
         subscription_id: subscriptionId,
@@ -312,11 +298,9 @@ export class SubscriptionService {
       });
       await this.subscriptionPaymentRepository.save(payment);
     } catch (e) {
-      // No bloquear el flujo si falla el registro del pago
       console.warn('Error registrando pago de suscripción:', e);
     }
 
-    // Generar comisión de referido si aplica
     try {
       const org = await this.organizationRepository.findOne({
         where: { id: subscription.organization_id },
@@ -333,7 +317,6 @@ export class SubscriptionService {
       console.warn('Error generando comisión de referido:', e);
     }
 
-    // Enviar email de confirmación de pago (sin bloquear el flujo)
     try {
       const user = await this.userRepository.findOne({
         where: { organization_id: subscription.organization_id },
@@ -376,7 +359,6 @@ export class SubscriptionService {
   }
 
   async getAllPlans() {
-    // Solo planes públicos — para la vista del cliente en el front
     const plans = await this.planRepository.find({
       where: { is_active: true, is_public: true },
     });
@@ -384,7 +366,6 @@ export class SubscriptionService {
   }
 
   async getAllPlansAdmin() {
-    // Todos los planes (públicos y privados) — para el admin
     const plans = await this.planRepository.find({
       where: { is_active: true },
     });

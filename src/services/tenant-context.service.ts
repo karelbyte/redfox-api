@@ -10,10 +10,6 @@ interface TenantStore {
   locale?: string | null;
 }
 
-/**
- * TenantContext stores the current tenant's organizationId on a per-request basis
- * using AsyncLocalStorage for thread-safe per-request state isolation.
- */
 @Injectable()
 export class TenantContext {
   private static readonly storage = new AsyncLocalStorage<TenantStore>();

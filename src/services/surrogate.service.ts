@@ -54,14 +54,12 @@ export class SurrogateService {
     });
 
     if (!surrogate) {
-      // Lazy Initialization: Si no existe, crearlo con valores por defecto
       surrogate = await this.lazyInitializeSurrogate(code);
     }
 
     return surrogate;
   }
 
-  // Define defaults for common surrogate codes
   private async lazyInitializeSurrogate(code: string): Promise<Surrogate> {
     const defaults: Record<string, Partial<Surrogate>> = {
       client: {
@@ -177,7 +175,6 @@ export class SurrogateService {
     try {
       return await this.surrogateRepository.save(newSurrogate);
     } catch (error) {
-      // Handle PostgreSQL unique constraint violation (race condition)
       if (error.code === '23505') {
         const existing = await this.surrogateRepository.findOne({
           where: {
@@ -206,19 +203,16 @@ export class SurrogateService {
   async useNextCode(code: string): Promise<NextCodeResponseDto> {
     const surrogate = await this.findByCode(code);
 
-    // Generar el código actual antes de incrementar
     const currentCode = surrogate.generateNext();
 
-    // Incrementar el contador
     surrogate.increment();
 
-    // Guardar en la base de datos
     await this.surrogateRepository.save(surrogate);
 
     return {
       code: surrogate.code,
       next_code: currentCode,
-      current_number: surrogate.next_number - 1, // El número que se usó
+      current_number: surrogate.next_number - 1,
     };
   }
 
@@ -228,7 +222,6 @@ export class SurrogateService {
   ): Promise<SurrogateResponseDto> {
     const surrogate = await this.findByCode(code);
 
-    // Validar que el nuevo next_number sea mayor al actual si se está actualizando
     if (
       updateData.next_number &&
       updateData.next_number < surrogate.next_number
@@ -267,18 +260,14 @@ export class SurrogateService {
     };
   }
 
-  // Método para verificar si un código ya existe en uso
   async isCodeInUse(code: string, generatedCode: string): Promise<boolean> {
-    // Aquí idealmente verificaríamos en la tabla destino (ej. facturas, clientes)
-    // filtrando por organization_id y el código generado
     return false;
   }
 
-  // Método para obtener el siguiente código disponible (saltando códigos en uso)
   async getNextAvailableCode(code: string): Promise<NextCodeResponseDto> {
     const surrogate = await this.findByCode(code);
     let attempts = 0;
-    const maxAttempts = 1000; // Prevenir bucles infinitos
+    const maxAttempts = 1000;
 
     while (attempts < maxAttempts) {
       const nextCode = surrogate.generateNext();
@@ -302,12 +291,9 @@ export class SurrogateService {
   }
 
   async useCodeIfMatches(code: string, value: string): Promise<void> {
-    // Usar UPDATE atómico para evitar race conditions con múltiples requests simultáneos
-    // Solo incrementa si el código generado coincide con el valor esperado
     const surrogate = await this.findByCode(code);
     if (surrogate.generateNext() !== value) return;
 
-    // UPDATE atómico: solo actualiza si next_number no cambió entre el findOne y el UPDATE
     const result = await this.surrogateRepository
       .createQueryBuilder()
       .update(Surrogate)
@@ -318,9 +304,7 @@ export class SurrogateService {
       })
       .execute();
 
-    // Si no actualizó ninguna fila, otro request ya incrementó — no es un error
     if (result.affected === 0) {
-      // Otro proceso ya incrementó el contador, está bien
     }
   }
 }

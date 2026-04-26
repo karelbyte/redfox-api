@@ -20,18 +20,15 @@ export class SubscriptionSchedulerService {
     private subscriptionEmailService: SubscriptionEmailService,
   ) {}
 
-  // Ejecutar todos los días a las 9:00 AM - Recordatorio de trial (3 días antes)
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async sendTrialExpirationReminders() {
     this.logger.log('Starting trial expiration reminder job');
 
     try {
-      // Calcular la fecha de 3 días desde ahora
       const threeDaysFromNow = new Date();
       threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
       threeDaysFromNow.setHours(23, 59, 59, 999);
 
-      // Buscar suscripciones en trial que expiran en 3 días y no se les ha enviado recordatorio
       const subscriptions = await this.subscriptionRepository.find({
         where: {
           status: 'trial',
@@ -49,7 +46,6 @@ export class SubscriptionSchedulerService {
         try {
           await this.sendTrialReminderEmail(subscription);
 
-          // Marcar como enviado
           subscription.trial_reminder_sent = true;
           await this.subscriptionRepository.save(subscription);
 
@@ -117,7 +113,6 @@ export class SubscriptionSchedulerService {
     }
   }
 
-  // Ejecutar todos los días a las 11:00 AM - Marcar como expiradas
   @Cron(CronExpression.EVERY_DAY_AT_11AM)
   async markExpiredSubscriptions() {
     this.logger.log('Starting mark expired subscriptions job');
@@ -125,7 +120,6 @@ export class SubscriptionSchedulerService {
     try {
       const now = new Date();
 
-      // Buscar suscripciones activas que ya vencieron
       const subscriptions = await this.subscriptionRepository.find({
         where: {
           status: 'active',
@@ -138,11 +132,9 @@ export class SubscriptionSchedulerService {
 
       for (const subscription of subscriptions) {
         try {
-          // Cambiar estado a expired
           subscription.status = 'expired';
           await this.subscriptionRepository.save(subscription);
 
-          // Enviar email de notificación de expiración
           await this.sendExpiredEmail(subscription);
 
           this.logger.log(`Subscription ${subscription.id} marked as expired`);
@@ -160,10 +152,13 @@ export class SubscriptionSchedulerService {
     }
   }
 
-  private async sendTrialReminderEmail(subscription: any) {
-    const daysRemaining = Math.ceil(
-      (subscription.trial_end_date.getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24),
+  async sendTrialReminderEmail(subscription: any) {
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil(
+        (subscription.trial_end_date.getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
     );
 
     const user = await this.userRepository.findOne({
@@ -187,7 +182,7 @@ export class SubscriptionSchedulerService {
     });
   }
 
-  private async sendRenewalReminderEmail(subscription: any) {
+  async sendRenewalReminderEmail(subscription: any) {
     const user = await this.userRepository.findOne({
       where: { organization_id: subscription.organization_id },
       order: { created_at: 'ASC' },
@@ -211,7 +206,7 @@ export class SubscriptionSchedulerService {
     });
   }
 
-  private async sendExpiredEmail(subscription: any) {
+  async sendExpiredEmail(subscription: any) {
     const user = await this.userRepository.findOne({
       where: { organization_id: subscription.organization_id },
       order: { created_at: 'ASC' },

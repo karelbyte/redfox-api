@@ -59,7 +59,7 @@ export class WarehouseAdjustmentService {
     createDto: CreateWarehouseAdjustmentDto,
     userId: string,
   ): Promise<WarehouseAdjustmentResponseDto> {
-    // Validar que los almacenes existan (sin importar si están abiertos o cerrados)
+
     const sourceWarehouse = await this.warehouseRepository.findOne({
       where: {
         id: createDto.sourceWarehouseId,
@@ -99,10 +99,8 @@ export class WarehouseAdjustmentService {
       );
     }
 
-    // Generar código único
     const code = createDto.code || (await this.generateUniqueCode());
 
-    // Crear el ajuste
     const adjustment = this.warehouseAdjustmentRepository.create({
       code,
       sourceWarehouseId: createDto.sourceWarehouseId,
@@ -116,7 +114,6 @@ export class WarehouseAdjustmentService {
     const savedAdjustment =
       await this.warehouseAdjustmentRepository.save(adjustment);
 
-    // Retornar el ajuste creado con sus relaciones
     return this.findOne(savedAdjustment.id, userId);
   }
 
@@ -125,7 +122,7 @@ export class WarehouseAdjustmentService {
     createDetailDto: CreateWarehouseAdjustmentDetailDto,
     userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
-    // Verificar que el ajuste existe
+    
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
     });
@@ -139,7 +136,6 @@ export class WarehouseAdjustmentService {
       );
     }
 
-    // Verificar que el producto existe
     const product = await this.productRepository.findOne({
       where: {
         id: createDetailDto.productId,
@@ -154,7 +150,6 @@ export class WarehouseAdjustmentService {
       );
     }
 
-    // Verificar si ya existe un detalle con este producto en el ajuste
     const existingDetail =
       await this.warehouseAdjustmentDetailRepository.findOne({
         where: {
@@ -174,20 +169,17 @@ export class WarehouseAdjustmentService {
     let detailToSave: WarehouseAdjustmentDetail;
 
     if (existingDetail) {
-      // El producto ya existe, actualizar cantidad y promediar precio
+     
       const oldQuantity = Number(existingDetail.quantity);
       const oldPrice = Number(existingDetail.price);
       const newQuantity = Number(createDetailDto.quantity);
       const newPrice = Number(createDetailDto.price);
 
-      // Sumar cantidades
       const totalQuantity = oldQuantity + newQuantity;
 
-      // Calcular precio promedio ponderado
       const totalAmount = oldQuantity * oldPrice + newQuantity * newPrice;
       const averagePrice = totalAmount / totalQuantity;
 
-      // Actualizar el detalle existente
       existingDetail.quantity = totalQuantity;
       existingDetail.price = averagePrice;
 
@@ -206,7 +198,6 @@ export class WarehouseAdjustmentService {
     const savedDetail =
       await this.warehouseAdjustmentDetailRepository.save(detailToSave);
 
-    // Recargar con relaciones para la respuesta
     const detailWithRelations =
       await this.warehouseAdjustmentDetailRepository.findOne({
         where: { id: savedDetail.id },
@@ -237,7 +228,7 @@ export class WarehouseAdjustmentService {
     queryDto: WarehouseAdjustmentDetailQueryDto,
     userId: string,
   ): Promise<PaginatedResponse<WarehouseAdjustmentDetailResponseDto>> {
-    // Verificar que el ajuste existe
+    
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
     });
@@ -297,7 +288,7 @@ export class WarehouseAdjustmentService {
     detailId: string,
     userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
-    // Verificar que el ajuste existe
+    
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
     });
@@ -341,7 +332,7 @@ export class WarehouseAdjustmentService {
     updateDetailDto: UpdateWarehouseAdjustmentDetailDto,
     userId: string,
   ): Promise<WarehouseAdjustmentDetailResponseDto> {
-    // Verificar que el ajuste existe
+    
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
     });
@@ -376,7 +367,6 @@ export class WarehouseAdjustmentService {
       );
     }
 
-    // Actualizar campos si se proporcionan
     if (updateDetailDto.quantity !== undefined) {
       detail.quantity = updateDetailDto.quantity;
     }
@@ -395,7 +385,7 @@ export class WarehouseAdjustmentService {
     detailId: string,
     userId: string,
   ): Promise<void> {
-    // Verificar que el ajuste existe
+    
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
     });
@@ -469,9 +459,9 @@ export class WarehouseAdjustmentService {
         );
       }
 
-      // Procesar cada detalle
+      
       for (const detail of adjustment.details) {
-        // Verificar stock disponible en almacén origen
+        
         const sourceInventory = await this.inventoryRepository.findOne({
           where: {
             product_id: detail.productId,
@@ -493,7 +483,6 @@ export class WarehouseAdjustmentService {
           );
         }
 
-        // Actualizar inventario del almacén origen (reducir)
         await queryRunner.manager.update(
           Inventory,
           { id: sourceInventory.id, organization_id: this.organizationId },
@@ -503,7 +492,7 @@ export class WarehouseAdjustmentService {
           },
         );
 
-        // Actualizar o crear inventario del almacén destino
+        
         const targetInventory = await this.inventoryRepository.findOne({
           where: {
             product_id: detail.productId,
@@ -531,7 +520,7 @@ export class WarehouseAdjustmentService {
           });
         }
 
-        // Registrar en historial de productos
+        
         const sourceHistory = queryRunner.manager.create(ProductHistory, {
           product: { id: detail.productId },
           warehouse: { id: adjustment.sourceWarehouseId },
@@ -557,7 +546,7 @@ export class WarehouseAdjustmentService {
         await queryRunner.manager.save([sourceHistory, targetHistory]);
       }
 
-      // Marcar el ajuste como procesado
+      
       await queryRunner.manager.update(
         WarehouseAdjustment,
         { id: adjustmentId, organization_id: this.organizationId },
@@ -566,7 +555,7 @@ export class WarehouseAdjustmentService {
 
       await queryRunner.commitTransaction();
 
-      // Retornar el ajuste procesado
+      
       return this.findOne(adjustmentId, userId);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -708,7 +697,6 @@ export class WarehouseAdjustmentService {
     const prefix = 'AJU';
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
-    // Buscar el último código del día
     const lastAdjustment = await this.warehouseAdjustmentRepository.findOne({
       where: {
         code: Like(`${prefix}${date}%`),

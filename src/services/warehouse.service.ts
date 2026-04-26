@@ -61,7 +61,6 @@ export class WarehouseService {
       });
       const savedWarehouse = await this.warehouseRepository.save(warehouse);
 
-      // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
         where: { id: savedWarehouse.id, organization_id: this.organizationId },
         relations: ['currency'],
@@ -98,16 +97,13 @@ export class WarehouseService {
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
     const { page, limit, term, isClosed } = paginationDto || {};
 
-    // Construir las condiciones de búsqueda
     const baseConditions = {
       relations: ['currency'],
       withDeleted: false,
     };
 
-    // A base filter: always scope by organization
     const orgFilter = { organization_id: this.organizationId };
 
-    // Construir condiciones de where
     let whereConditions;
 
     if (isClosed !== undefined && term) {
@@ -137,7 +133,6 @@ export class WarehouseService {
       whereConditions = { ...baseConditions, where: orgFilter };
     }
 
-    // Si no se proporciona paginación, devolver toda la data
     if (!page && !limit) {
       const warehouses = await this.warehouseRepository.find(whereConditions);
 
@@ -156,7 +151,6 @@ export class WarehouseService {
       };
     }
 
-    // Si se proporciona paginación, aplicar la lógica de paginación
     const currentPage = page || 1;
     const currentLimit = limit || 10;
     const skip = (currentPage - 1) * currentLimit;
@@ -247,7 +241,6 @@ export class WarehouseService {
       }
       const updatedWarehouse = await this.warehouseRepository.save(toSave);
 
-      // Recargar con relaciones para la respuesta
       const warehouseWithRelations = await this.warehouseRepository.findOne({
         where: {
           id: updatedWarehouse.id,
@@ -319,7 +312,7 @@ export class WarehouseService {
 
     warehouse.isOpen = updateStatusDto.isOpen;
     const updated = await this.warehouseRepository.save(warehouse);
-    // Recargar con relaciones para la respuesta
+   
     const warehouseWithRelations = await this.warehouseRepository.findOne({
       where: { id: updated.id, organization_id: this.organizationId },
       relations: ['currency'],
@@ -340,7 +333,7 @@ export class WarehouseService {
     warehouseId: string,
     userId?: string,
   ): Promise<CloseWarehouseResponseDto> {
-    // Verificar que el warehouse existe y está abierto
+
     const warehouse = await this.warehouseRepository.findOne({
       where: { id: warehouseId, organization_id: this.organizationId },
       relations: ['currency'],
@@ -363,7 +356,6 @@ export class WarehouseService {
       throw new BadRequestException(message);
     }
 
-    // Obtener todos los warehouse openings de este almacén (product.measurement_unit para sync al pack)
     const warehouseOpenings = await this.warehouseOpeningRepository.find({
       where: { warehouseId, organization_id: this.organizationId },
       relations: ['product', 'product.measurement_unit'],
@@ -372,9 +364,8 @@ export class WarehouseService {
     let transferredProducts = 0;
     let totalQuantity = 0;
 
-    // Procesar cada producto de warehouse opening (si los hay)
     for (const opening of warehouseOpenings) {
-      // Buscar si el producto ya existe en inventory
+
       const existingInventory = await this.inventoryRepository.findOne({
         where: {
           product: { id: opening.product.id },
@@ -387,10 +378,9 @@ export class WarehouseService {
       let finalInventory: Inventory;
 
       if (existingInventory) {
-        // Si existe, sumar las cantidades
+
         existingInventory.quantity =
           Number(existingInventory.quantity) + Number(opening.quantity);
-        // Actualizar precio con el promedio ponderado
         const totalValue =
           Number(existingInventory.price) *
             (Number(existingInventory.quantity) - Number(opening.quantity)) +
@@ -400,7 +390,7 @@ export class WarehouseService {
 
         finalInventory = await this.inventoryRepository.save(existingInventory);
       } else {
-        // Si no existe, crear nuevo registro en inventory
+
         const newInventory = this.inventoryRepository.create({
           product: opening.product,
           warehouse: warehouse,
@@ -412,12 +402,12 @@ export class WarehouseService {
         finalInventory = await this.inventoryRepository.save(newInventory);
       }
 
-      // Crear registro en ProductHistory con ID real del WarehouseOpening
+
       const productHistory = this.productHistoryRepository.create({
         product: opening.product,
         warehouse: warehouse,
         operation_type: OperationType.WAREHOUSE_OPENING,
-        operation_id: opening.id, // ID real del WarehouseOpening
+        operation_id: opening.id, 
         quantity: Number(opening.quantity),
         current_stock: Number(finalInventory.quantity),
         organization_id: this.organizationId,
@@ -431,19 +421,24 @@ export class WarehouseService {
       transferredProducts++;
       totalQuantity += Number(opening.quantity);
 
-      // Eliminar el warehouse opening
+
       await this.warehouseOpeningRepository.remove(opening);
     }
 
-    // Cerrar el almacén
     warehouse.isOpen = false;
     await this.warehouseRepository.save(warehouse);
 
-    // Retornar resumen de la operación
     const message =
       transferredProducts > 0
-        ? `Almacén cerrado exitosamente. ${transferredProducts} productos transferidos al inventario.`
-        : 'Almacén cerrado exitosamente. No había productos en apertura para transferir.';
+        ? await this.translationService.translate(
+            'warehouse.closed_with_transfers',
+            userId,
+            { count: transferredProducts },
+          )
+        : await this.translationService.translate(
+            'warehouse.closed_no_transfers',
+            userId,
+          );
 
     return {
       warehouseId: warehouse.id,

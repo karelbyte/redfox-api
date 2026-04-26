@@ -8,6 +8,7 @@ import { Role } from '../src/models/role.entity';
 import { Product } from '../src/models/product.entity';
 import { Client } from '../src/models/client.entity';
 import { Invoice } from '../src/models/invoice.entity';
+import { Organization } from '../src/models/organization.entity';
 
 /**
  * Configuración base para módulos de testing
@@ -137,7 +138,21 @@ export const createMockRepository = <T = any>() => ({
  */
 export const clearDatabase = async (repositories: Repository<any>[]) => {
   for (const repository of repositories) {
-    await repository.clear();
+    try {
+      await repository.clear();
+    } catch (error) {
+      // Si hay restricciones de clave foránea, eliminar registros uno por uno
+      try {
+        await repository.query(`DELETE FROM ${repository.metadata.tableName}`);
+      } catch (queryError) {
+        // Último recurso: desactivar restricciones y eliminar
+        await repository.query(`
+          SET session_replication_role = replica;
+          DELETE FROM ${repository.metadata.tableName};
+          SET session_replication_role = DEFAULT;
+        `);
+      }
+    }
   }
 };
 
@@ -149,4 +164,18 @@ export const generateTestToken = (
 ) => {
   const jwt = require('jsonwebtoken');
   return jwt.sign(payload, 'test-secret', { expiresIn: '1h' });
+};
+
+/**
+ * Datos de prueba para organizaciones
+ */
+export const createTestOrganization = async (
+  repository: Repository<Organization>,
+): Promise<Organization> => {
+  const organization = repository.create({
+    name: 'Test Organization',
+    slug: 'test-org',
+    isActive: true,
+  });
+  return await repository.save(organization);
 };

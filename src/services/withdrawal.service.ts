@@ -18,18 +18,16 @@ import { Warehouse } from '../models/warehouse.entity';
 import { Inventory } from '../models/inventory.entity';
 import {
   CashRegister,
-  CashRegisterStatus,
 } from '../models/cash-register.entity';
 import {
   CashTransaction,
   CashTransactionType,
-  PaymentMethod,
 } from '../models/cash-transaction.entity';
 import {
   ProductHistory,
   OperationType,
 } from '../models/product-history.entity';
-import { Product, InventoryStrategy } from '../models/product.entity';
+import { InventoryStrategy } from '../models/product.entity';
 import {
   CreateWithdrawalDto,
   CreateWithdrawalDetailDto,
@@ -57,7 +55,6 @@ import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
-import { User } from '../models/user.entity';
 
 @Injectable()
 export class WithdrawalService {
@@ -155,19 +152,16 @@ export class WithdrawalService {
     };
   }
 
-  // Función helper para calcular el monto total de la withdrawal
   private calculateTotalAmount(details: CreateWithdrawalDetailDto[]): number {
     return details.reduce((total, detail) => {
       return total + detail.quantity * detail.price;
     }, 0);
   }
 
-  // Función helper para calcular montos con precisión decimal (sin taxes)
   private calculateAmount(quantity: number, price: number): number {
     return quantity * price;
   }
 
-  // Función helper para calcular el monto total incluyendo impuestos del producto
   private calculateAmountWithTaxes(
     quantity: number,
     price: number,
@@ -182,7 +176,6 @@ export class WithdrawalService {
     return quantity * price * (1 + taxMultiplier);
   }
 
-  // Función helper para actualizar el monto total de la withdrawal
   private async updateWithdrawalAmount(
     withdrawalId: string,
     newAmount: number,
@@ -216,7 +209,6 @@ export class WithdrawalService {
       throw new NotFoundException(message);
     }
 
-    // Validar si el cliente tiene crédito activo cuando se selecciona pago a crédito
     if (createWithdrawalDto.payment_method === WithdrawalPaymentMethod.CREDIT) {
       if (!client.credit || !client.credit.is_active) {
         const message = await this.translationService.translate(
@@ -408,13 +400,11 @@ export class WithdrawalService {
     await this.withdrawalRepository.softRemove(withdrawal);
   }
 
-  // Métodos para detalles de withdrawal
   async createDetail(
     withdrawalId: string,
     createDetailDto: CreateDetailDto,
     userId?: string,
   ): Promise<WithdrawalDetailResponseDto> {
-    // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
     });
@@ -427,12 +417,10 @@ export class WithdrawalService {
       throw new NotFoundException(message);
     }
 
-    // Verificar que el producto existe
     const product = await this.productService.findOneEntity(
       createDetailDto.product_id,
     );
 
-    // Para productos tangibles se requiere warehouse; service/digital no necesitan
     const isTangible = product.type === 'tangible';
     let warehouse: Warehouse | null = null;
 
@@ -460,7 +448,6 @@ export class WithdrawalService {
       }
     }
 
-    // Verificar si ya existe un detalle con este producto en la withdrawal
     const existingDetail = await this.withdrawalDetailRepository.findOne({
       where: {
         withdrawal: { id: withdrawalId, organization_id: this.organizationId },
@@ -480,13 +467,11 @@ export class WithdrawalService {
     let detailToSave: WithdrawalDetail;
 
     if (existingDetail) {
-      // El producto ya existe, actualizar cantidad y promediar precio
       const oldQuantity = Number(existingDetail.quantity);
       const oldPrice = Number(existingDetail.price);
       const newQuantity = Number(createDetailDto.quantity);
       const newPrice = Number(createDetailDto.price);
 
-      // Calcular el monto anterior para restarlo del total
       const productTaxes = existingDetail.product?.taxes || [];
       const oldAmount = this.calculateAmountWithTaxes(
         oldQuantity,
@@ -494,20 +479,16 @@ export class WithdrawalService {
         productTaxes,
       );
 
-      // Sumar cantidades
       const totalQuantity = oldQuantity + newQuantity;
 
-      // Calcular precio promedio ponderado
       const totalAmount = oldQuantity * oldPrice + newQuantity * newPrice;
       const averagePrice = totalAmount / totalQuantity;
 
-      // Actualizar el detalle existente
       existingDetail.quantity = totalQuantity;
       existingDetail.price = averagePrice;
 
       detailToSave = existingDetail;
 
-      // Calcular el nuevo monto total para la withdrawal (con taxes)
       const newAmount = this.calculateAmountWithTaxes(
         totalQuantity,
         averagePrice,
@@ -528,14 +509,12 @@ export class WithdrawalService {
 
       detailToSave = detail;
 
-      // Calcular el monto del nuevo detalle (con taxes)
       const detailAmount = this.calculateAmountWithTaxes(
         createDetailDto.quantity,
         createDetailDto.price,
         product.taxes || [],
       );
 
-      // Actualizar el monto total de la withdrawal
       const currentAmount = withdrawal.amount || 0;
       const newTotalAmount = Number(currentAmount) + Number(detailAmount);
 
@@ -545,7 +524,6 @@ export class WithdrawalService {
     const savedDetail =
       await this.withdrawalDetailRepository.save(detailToSave);
 
-    // Recargar con relaciones para la respuesta
     const detailWithRelations = await this.withdrawalDetailRepository.findOne({
       where: { id: savedDetail.id },
       relations: [
@@ -571,7 +549,6 @@ export class WithdrawalService {
     queryDto: WithdrawalDetailQueryDto,
     userId?: string,
   ): Promise<PaginatedResponseDto<WithdrawalDetailResponseDto>> {
-    // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
     });
@@ -630,7 +607,6 @@ export class WithdrawalService {
     detailId: string,
     userId?: string,
   ): Promise<WithdrawalDetailResponseDto> {
-    // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId },
     });
@@ -673,7 +649,6 @@ export class WithdrawalService {
     detailId: string,
     updateDetailDto: UpdateWithdrawalDetailDto,
   ): Promise<WithdrawalDetailResponseDto> {
-    // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
     });
@@ -705,7 +680,6 @@ export class WithdrawalService {
       );
     }
 
-    // Guardar el monto anterior del detalle para restarlo del total (con taxes)
     const oldAmount = this.calculateAmountWithTaxes(
       detail.quantity,
       detail.price,
@@ -734,7 +708,6 @@ export class WithdrawalService {
       detail.warehouse = warehouse;
     }
 
-    // Actualizar los campos del detalle
     if (updateDetailDto.quantity !== undefined) {
       detail.quantity = updateDetailDto.quantity;
     }
@@ -744,14 +717,12 @@ export class WithdrawalService {
 
     const updatedDetail = await this.withdrawalDetailRepository.save(detail);
 
-    // Calcular el nuevo monto del detalle (con taxes)
     const newAmount = this.calculateAmountWithTaxes(
       detail.quantity,
       detail.price,
       detail.product?.taxes || [],
     );
 
-    // Actualizar el monto total de la withdrawal: restar el monto anterior y sumar el nuevo
     const currentAmount = withdrawal.amount || 0;
     const newTotalAmount =
       Number(currentAmount) - Number(oldAmount) + Number(newAmount);
@@ -761,7 +732,6 @@ export class WithdrawalService {
   }
 
   async removeDetail(withdrawalId: string, detailId: string): Promise<void> {
-    // Verificar que la withdrawal existe
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
     });
@@ -785,19 +755,16 @@ export class WithdrawalService {
       );
     }
 
-    // Calcular el monto del detalle a eliminar con precisión decimal (con taxes)
     const detailAmount = this.calculateAmountWithTaxes(
       detail.quantity,
       detail.price,
       detail.product?.taxes || [],
     );
 
-    // Restar el monto del detalle del total de la withdrawal
     const currentAmount = withdrawal.amount || 0;
     const newTotalAmount = Number(currentAmount) - Number(detailAmount);
     await this.updateWithdrawalAmount(withdrawalId, newTotalAmount);
 
-    // Eliminar el detalle
     await this.withdrawalDetailRepository.softDelete(detailId);
   }
 
@@ -805,7 +772,6 @@ export class WithdrawalService {
     withdrawalId: string,
     userId?: string,
   ): Promise<CloseWithdrawalResponseDto> {
-    // Verificar que la withdrawal existe y está abierta
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
       relations: ['client', 'details', 'details.product', 'details.warehouse'],
@@ -828,7 +794,6 @@ export class WithdrawalService {
       throw new BadRequestException(message);
     }
 
-    // Obtener todos los detalles de la withdrawal
     const withdrawalDetails = await this.withdrawalDetailRepository.find({
       where: {
         withdrawal: { id: withdrawalId, organization_id: this.organizationId },
@@ -842,7 +807,6 @@ export class WithdrawalService {
       );
     }
 
-    // Batch load de productos — evita N+1 (1 query en lugar de N)
     const productIds = withdrawalDetails.map((d) => d.product.id);
     const products = await this.productService.findManyEntities(productIds);
     const productMap = new Map(products.map((p) => [p.id, p]));
@@ -858,14 +822,12 @@ export class WithdrawalService {
         );
       }
 
-      // Productos service/digital no tienen inventario físico — solo registrar historia
       if (product.type !== 'tangible') {
         withdrawnProducts++;
         totalQuantity += Number(detail.quantity);
         continue;
       }
 
-      // Para tangibles: verificar warehouse y descontar stock
       if (!detail.warehouse) {
         throw new BadRequestException(
           `Product ${product.name} is tangible but has no warehouse assigned`,
@@ -941,11 +903,9 @@ export class WithdrawalService {
         );
       }
 
-      // Batch save lotes e historial — evita N saves individuales
       await this.inventoryRepository.save(lotsToSave);
       await this.productHistoryRepository.save(historyEntities);
 
-      // Update denormalized total_stock
       await this.productService.updateStock(
         detail.product.id,
         -Number(detail.quantity),
@@ -955,11 +915,9 @@ export class WithdrawalService {
       totalQuantity += Number(detail.quantity);
     }
 
-    // Cerrar la withdrawal
     withdrawal.status = WithdrawalStatus.CLOSED;
     const closedWithdrawal = await this.withdrawalRepository.save(withdrawal);
 
-    // Si el pago es a crédito, crear cuenta por cobrar
     if (closedWithdrawal.paymentMethod === WithdrawalPaymentMethod.CREDIT) {
       const client = await this.clientRepository.findOne({
         where: { id: closedWithdrawal.client.id },
@@ -983,14 +941,12 @@ export class WithdrawalService {
       }
     }
 
-    // Si es un retiro POS, intentar crear el recibo en el PAC
     if (closedWithdrawal.type === WithdrawalType.POS) {
       await this.posPackSyncService.createReceiptForWithdrawal(
         closedWithdrawal.id,
       );
     }
 
-    // Notificar al usuario que cerró la venta
     try {
       if (userId) {
         const amount = new Intl.NumberFormat('es-MX', {
@@ -1005,10 +961,8 @@ export class WithdrawalService {
         );
       }
     } catch {
-      /* no bloquear el flujo */
     }
 
-    // Trigger webhook for sale created
     try {
       await this.webhookService.triggerWebhooks(
         this.organizationId,
@@ -1032,7 +986,6 @@ export class WithdrawalService {
       this.logger.error('Error triggering sale_created webhook:', error);
     }
 
-    // Retornar resumen de la operación
     const resMessage =
       withdrawnProducts > 0
         ? `Withdrawal cerrada exitosamente. ${withdrawnProducts} productos retirados del inventario.`
@@ -1094,7 +1047,6 @@ export class WithdrawalService {
         );
       }
 
-      // Bloquear devolución si tiene factura activa (no cancelada)
       if (withdrawal.invoiceId && withdrawal.invoice) {
         const invoiceStatus = (withdrawal.invoice as any).status;
         if (invoiceStatus && invoiceStatus !== 'CANCELLED') {
@@ -1104,9 +1056,7 @@ export class WithdrawalService {
         }
       }
 
-      // 1. Restaurar Inventario y crear ProductHistory (Kardex)
       for (const detail of withdrawal.details) {
-        // service/digital no tienen warehouse — nada que restaurar
         if (!detail.warehouse) continue;
 
         const inventory = await queryRunner.manager.findOne(Inventory, {
@@ -1134,7 +1084,6 @@ export class WithdrawalService {
           });
           await queryRunner.manager.save(ProductHistory, productHistory);
 
-          // Update denormalized total_stock
           await this.productService.updateStock(
             detail.product.id,
             Number(detail.quantity),
@@ -1143,7 +1092,6 @@ export class WithdrawalService {
         }
       }
 
-      // 2. Ajustar Caja (Refund Transaction)
       if (withdrawal.cashTransaction) {
         const cashRegister = withdrawal.cashTransaction.cashRegister;
         const refundAmount = Number(withdrawal.amount);
@@ -1162,13 +1110,11 @@ export class WithdrawalService {
 
         await queryRunner.manager.save(CashTransaction, refundTransaction);
 
-        // Actualizar balance de la caja
         cashRegister.currentAmount =
           Number(cashRegister.currentAmount) - refundAmount;
         await queryRunner.manager.save(CashRegister, cashRegister);
       }
 
-      // 3. Cancelar recibo en PAC (Facturapi)
       if (
         withdrawal.type === WithdrawalType.POS &&
         withdrawal.pack_receipt_id
@@ -1176,7 +1122,6 @@ export class WithdrawalService {
         await this.posPackSyncService.cancelReceiptForWithdrawal(withdrawal.id);
       }
 
-      // 4. Actualizar estado a RETURNED
       withdrawal.status = WithdrawalStatus.RETURNED;
       const savedWithdrawal = await queryRunner.manager.save(
         Withdrawal,

@@ -111,7 +111,6 @@ export class ShipmentService {
       const address = await this.addressRepository.findOne({
          where: { id: createShipmentDto.shipping_address_id, client_id: withdrawal.client?.id }
       });
-      // In a more robust system, we would validate if it belongs to the client or generic.
     }
 
     const shipment = this.shipmentRepository.create({

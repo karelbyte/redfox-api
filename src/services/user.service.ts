@@ -248,7 +248,6 @@ export class UserService {
       user.roles = roles;
     }
 
-    // Merge updates into the existing entity to preserve methods
     const updatedEntity = this.userRepository.merge(user, updateUserDto);
     const updatedUser = await this.userRepository.save(updatedEntity);
     return this.mapToResponseDto(updatedUser);
@@ -296,11 +295,6 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Finds a user by email for authentication purposes (doesn't throw if not found)
-   * @param email - User email
-   * @returns User or null if not found
-   */
   async findByEmailForAuth(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { email },
@@ -314,12 +308,6 @@ export class UserService {
     });
   }
 
-  /**
-   * Obtiene un usuario con todos sus roles y permisos cargados
-   * @param id - ID del usuario
-   * @param userId - ID del usuario autenticado
-   * @returns Usuario con roles y permisos
-   */
   async findOneWithPermissions(id: string, userId?: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
@@ -344,12 +332,6 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Obtiene un usuario por email con todos sus roles y permisos cargados
-   * @param email - Email del usuario
-   * @param userId - ID del usuario autenticado
-   * @returns Usuario con roles y permisos
-   */
   async findByEmailWithPermissions(
     email: string,
     userId?: string,
@@ -376,35 +358,18 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Obtiene los permisos de un usuario desde la base de datos
-   * @param id - ID del usuario
-   * @param userId - ID del usuario autenticado
-   * @returns Array de permisos únicos
-   */
   async getUserPermissions(id: string, userId?: string): Promise<any[]> {
     const user = await this.findOneWithPermissions(id, userId);
     return user.getPermissions();
   }
 
-  /**
-   * Obtiene los códigos de permisos de un usuario desde la base de datos
-   * @param id - ID del usuario
-   * @param userId - ID del usuario autenticado
-   * @returns Array de códigos de permisos únicos
-   */
+
   async getUserPermissionCodes(id: string, userId?: string): Promise<string[]> {
     const user = await this.findOneWithPermissions(id, userId);
     return user.getPermissionCodes();
   }
 
-  /**
-   * Verifica si un usuario tiene un permiso específico
-   * @param id - ID del usuario
-   * @param permissionCode - Código del permiso a verificar
-   * @param userId - ID del usuario autenticado
-   * @returns true si el usuario tiene el permiso, false en caso contrario
-   */
+
   async userHasPermission(
     id: string,
     permissionCode: string,
@@ -414,13 +379,7 @@ export class UserService {
     return user.hasPermission(permissionCode);
   }
 
-  /**
-   * Verifica si un usuario tiene al menos uno de los permisos especificados
-   * @param id - ID del usuario
-   * @param permissionCodes - Array de códigos de permisos a verificar
-   * @param userId - ID del usuario autenticado
-   * @returns true si el usuario tiene al menos uno de los permisos, false en caso contrario
-   */
+
   async userHasAnyPermission(
     id: string,
     permissionCodes: string[],
@@ -430,13 +389,7 @@ export class UserService {
     return user.hasAnyPermission(permissionCodes);
   }
 
-  /**
-   * Verifica si un usuario tiene todos los permisos especificados
-   * @param id - ID del usuario
-   * @param permissionCodes - Array de códigos de permisos a verificar
-   * @param userId - ID del usuario autenticado
-   * @returns true si el usuario tiene todos los permisos, false en caso contrario
-   */
+
   async userHasAllPermissions(
     id: string,
     permissionCodes: string[],
@@ -467,18 +420,12 @@ export class UserService {
     return user?.onboarding_completed || false;
   }
 
-  /**
-   * Sends an admin message to a user via email and internal notification
-   * @param userId - ID of the user to send message to
-   * @param message - Message content (10-1000 chars)
-   * @param senderUserId - ID of the user sending the message (admin)
-   */
   async sendMessage(
     userId: string,
     message: string,
     senderUserId: string,
   ): Promise<void> {
-    // Get target user (without organization filter - admins can message any user)
+  
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['organization'],
@@ -494,13 +441,13 @@ export class UserService {
       throw new NotFoundException(msg);
     }
 
-    // Get sender user
+   
     const sender = await this.userRepository.findOne({
       where: { id: senderUserId },
     });
 
     try {
-      // Send email with message using system email service
+      
       const htmlContent = this.buildAdminMessageHtml(
         user.name,
         message,
@@ -508,20 +455,18 @@ export class UserService {
         user.organization?.name || 'Nitro',
       );
 
-      // Send email directly using system email service (not via tenant-specific queue)
+      
       await this.emailService.sendSystemEmail(
         user.email,
         `Mensaje de ${sender?.name || 'Administrador'} - Nitro`,
         htmlContent,
       );
     } catch (error) {
-      // Log error but don't fail - app continues even if email fails
       console.error(
         `Failed to send email to user ${userId}: ${error.message}`,
       );
     }
 
-    // Always create the notification with correct organization_id
     try {
       await this.notificationService.create({
         title: `Mensaje de ${sender?.name || 'Administrador'}`,

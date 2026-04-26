@@ -65,7 +65,6 @@ export class TaxService {
   ): Promise<PaginatedResponse<TaxResponseDto>> {
     const { page, limit, term } = paginationDto || {};
 
-    // Construir las condiciones de búsqueda
     const baseConditions = {
       where: { organization_id: this.organizationId },
       order: {
@@ -82,7 +81,6 @@ export class TaxService {
         }
       : baseConditions;
 
-    // Si no se proporciona paginación, devolver toda la data
     if (!page && !limit) {
       const taxes = await this.taxRepository.find(whereConditions);
 
@@ -99,7 +97,6 @@ export class TaxService {
       };
     }
 
-    // Si se proporciona paginación, aplicar la lógica de paginación
     const currentPage = page || 1;
     const currentLimit = limit || 8;
     const skip = (currentPage - 1) * currentLimit;
@@ -189,7 +186,6 @@ export class TaxService {
       throw new NotFoundException(message);
     }
 
-    // Verificar si el tax está siendo usado en productos
     const productsUsingTax = await this.productRepository.count({
       where: {
         tax: { id },
