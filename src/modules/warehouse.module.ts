@@ -11,6 +11,7 @@ import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { InventoryPackSyncModule } from './inventory-pack-sync.module';
 import { OrganizationModule } from './organization.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { OrganizationModule } from './organization.module';
     LanguageModule,
     InventoryPackSyncModule,
     OrganizationModule,
+    UserAttributionModule,
   ],
   controllers: [WarehouseController],
   providers: [WarehouseService, WarehouseMapper],

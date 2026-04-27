@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { Inventory } from '../models/inventory.entity';
 import { CreateInventoryDto } from '../dtos/inventory/create-inventory.dto';
 import { UpdateInventoryDto } from '../dtos/inventory/update-inventory.dto';
@@ -15,6 +15,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class InventoryService {
@@ -28,6 +29,7 @@ export class InventoryService {
     private translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -106,9 +108,29 @@ export class InventoryService {
     const whereConditions: any = {
       organization_id: this.organizationId,
     };
-    if (warehouse_id) {
-      whereConditions.warehouse = { id: warehouse_id };
+
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
+
+    if (warehouse_id) {
+      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
+        return {
+          data: [],
+          meta: { total: 0, page, limit, totalPages: 0 },
+        };
+      }
+      whereConditions.warehouse = { id: warehouse_id };
+    } else if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     if (product_id) {
       whereConditions.product = { id: product_id };
     }
@@ -307,8 +329,26 @@ export class InventoryService {
       organization_id: this.organizationId,
     };
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
     if (warehouse_id) {
+      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
+        return {
+          data: [],
+          meta: { total: 0, page, limit, totalPages: 0 },
+        };
+      }
       whereConditions.warehouse = { id: warehouse_id };
+    } else if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
     }
 
     const [inventory] = await this.inventoryRepository.findAndCount({
@@ -326,17 +366,13 @@ export class InventoryService {
       order: { product: { name: 'ASC' }, quantity: 'DESC' },
     });
 
-    // Solo tangibles con stock > 0
     let filteredInventory = inventory.filter((item) => item.quantity > 0);
 
-    // Productos service/digital del catálogo (no necesitan almacén)
-    // Solo si no se filtra por warehouse específico
     let serviceDigitalItems: InventoryListResponseDto[] = [];
     if (!warehouse_id) {
       const nonTangibleProducts =
         await this.productService.findNonTangibleActive(this.organizationId);
 
-      // Excluir los que ya están en inventario (por si alguien los metió)
       const inventoryProductIds = new Set(
         filteredInventory.map((i) => i.product.id),
       );
@@ -344,17 +380,16 @@ export class InventoryService {
       serviceDigitalItems = nonTangibleProducts
         .filter((p) => !inventoryProductIds.has(p.id))
         .map((p) => ({
-          id: p.id, // usamos el product id como id virtual
+          id: p.id,
           product: this.productMapper.mapToResponseDto(p),
           warehouse: null,
-          quantity: null, // ilimitado
+          quantity: null,
           price: Number(p.base_price) || 0,
           pack_product_id: null,
           createdAt: p.created_at,
         }));
     }
 
-    // Aplicar filtro de término sobre ambas listas
     if (term) {
       const searchTerm = term.toLowerCase();
       filteredInventory = filteredInventory.filter(
@@ -381,10 +416,8 @@ export class InventoryService {
       this.mapToListResponseDto(item),
     );
 
-    // Combinar: tangibles primero, luego service/digital
     const combined = [...tangibleData, ...serviceDigitalItems];
 
-    // Paginación sobre el resultado combinado
     const total = combined.length;
     const paginated = combined.slice(skip, skip + limit);
 

@@ -25,6 +25,7 @@ import { AccountReceivableModule } from './account-receivable.module';
 import { OrganizationModule } from './organization.module';
 import { NotificationModule } from './notification.module';
 import { WebhookModule } from './webhook.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { WebhookModule } from './webhook.module';
     OrganizationModule,
     NotificationModule,
     WebhookModule,
+    UserAttributionModule,
   ],
   controllers: [WithdrawalController],
   providers: [

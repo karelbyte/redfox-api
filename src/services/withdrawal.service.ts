@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In } from 'typeorm';
 import {
   Withdrawal,
   WithdrawalType,
@@ -55,6 +55,7 @@ import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class WithdrawalService {
@@ -81,6 +82,7 @@ export class WithdrawalService {
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
     private readonly webhookService: WebhookService,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private readonly logger = new Logger(WithdrawalService.name);
@@ -242,6 +244,7 @@ export class WithdrawalService {
   async findAll(
     paginationDto: PaginationDto,
     clientId?: string,
+    userId?: string,
   ): Promise<PaginatedResponseDto<WithdrawalResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
@@ -249,6 +252,11 @@ export class WithdrawalService {
     const where: any = { organization_id: this.organizationId };
     if (clientId) {
       where.client = { id: clientId };
+    }
+
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     const [withdrawals, total] = await this.withdrawalRepository.findAndCount({
@@ -273,13 +281,30 @@ export class WithdrawalService {
       },
     });
 
+    let filteredWithdrawals = withdrawals;
+    if (userId && authorizedWarehouseIds.length > 0) {
+      filteredWithdrawals = withdrawals.filter((withdrawal) => {
+        if (!withdrawal.details || withdrawal.details.length === 0) {
+          return true;
+        }
+        return withdrawal.details.some((detail) => {
+          if (!detail.warehouse) {
+            return true;
+          }
+          return authorizedWarehouseIds.includes(detail.warehouse.id);
+        });
+      });
+    } else if (userId) {
+      filteredWithdrawals = [];
+    }
+
     return {
-      data: withdrawals.map((withdrawal) => this.mapToResponseDto(withdrawal)),
+      data: filteredWithdrawals.map((withdrawal) => this.mapToResponseDto(withdrawal)),
       meta: {
-        total,
+        total: userId ? filteredWithdrawals.length : total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil((userId ? filteredWithdrawals.length : total) / limit),
       },
     };
   }

@@ -14,6 +14,7 @@ import { Provider } from './provider.entity';
 import { Warehouse } from './warehouse.entity';
 import { PurchaseOrderDetail } from './purchase-order-detail.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 @Entity('purchase_orders')
 @Index(['organization_id', 'code'], { unique: true })
@@ -60,6 +61,13 @@ export class PurchaseOrder {
 
   @Column({ type: 'date', nullable: true })
   expected_delivery_date: Date;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => PurchaseOrderDetail, (detail) => detail.purchaseOrder)
   details: PurchaseOrderDetail[];

@@ -25,8 +25,11 @@ export class AccountPayableController {
   constructor(private readonly accountPayableService: AccountPayableService) {}
 
   @Post()
-  create(@Body() createAccountPayableDto: CreateAccountPayableDto) {
-    return this.accountPayableService.create(createAccountPayableDto);
+  create(
+    @Body() createAccountPayableDto: CreateAccountPayableDto,
+    @UserId() userId: string,
+  ) {
+    return this.accountPayableService.create(createAccountPayableDto, userId);
   }
 
   @Get()

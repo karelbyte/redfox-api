@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { WarehouseOpening } from '../models/warehouse-opening.entity';
 import { CreateWarehouseOpeningDto } from '../dtos/warehouse-opening/create-warehouse-opening.dto';
 import { WarehouseOpeningResponseDto } from '../dtos/warehouse-opening/warehouse-opening-response.dto';
@@ -16,6 +16,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { ProductService } from './product.service';
 
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class WarehouseOpeningService {
@@ -26,6 +27,7 @@ export class WarehouseOpeningService {
     private readonly productMapper: ProductMapper,
     private readonly productService: ProductService,
     private readonly tenantContext: TenantContext,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -95,13 +97,38 @@ export class WarehouseOpeningService {
   async findAll(
     paginationDto: PaginationDto,
     warehouseId: string,
+    userId?: string,
   ): Promise<PaginatedResponse<WarehouseOpeningResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { organization_id: this.organizationId };
+    
+    if (warehouseId) {
+      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouseId)) {
+        return {
+          data: [],
+          meta: { total: 0, page, limit, totalPages: 0 },
+        };
+      }
+      whereConditions.warehouseId = warehouseId;
+    } else if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouseId = In(authorizedWarehouseIds);
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     const [warehouseOpenings, total] =
       await this.warehouseOpeningRepository.findAndCount({
-        where: { warehouseId, organization_id: this.organizationId },
+        where: whereConditions,
         relations: [
           'warehouse',
           'product',

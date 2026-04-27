@@ -66,6 +66,12 @@ export class CreateWarehouseAdjustmentsTable1716400000180
             default: true,
           },
           {
+            name: 'created_by',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
@@ -161,6 +167,17 @@ export class CreateWarehouseAdjustmentsTable1716400000180
         referencedColumnNames: ['id'],
         referencedTableName: 'warehouses',
         onDelete: 'RESTRICT',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'warehouse_adjustments',
+      new TableForeignKey({
+        columnNames: ['created_by'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'users',
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       }),
     );
 

@@ -14,6 +14,7 @@ import { Provider } from './provider.entity';
 import { Warehouse } from './warehouse.entity';
 import { ReceptionDetail } from './reception-detail.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 @Entity('receptions')
 @Index(['organization_id', 'code'], { unique: true })
@@ -50,6 +51,13 @@ export class Reception {
 
   @Column({ default: true })
   status: boolean;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => ReceptionDetail, (detail) => detail.reception)
   details: ReceptionDetail[];

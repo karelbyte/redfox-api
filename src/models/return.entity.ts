@@ -14,6 +14,7 @@ import { Warehouse } from './warehouse.entity';
 import { Provider } from './provider.entity';
 import { ReturnDetail } from './return-detail.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 @Entity('returns')
 @Index(['organization_id', 'code'], { unique: true })
@@ -45,6 +46,13 @@ export class Return {
 
   @Column({ default: true })
   status: boolean;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'source_warehouse_id' })

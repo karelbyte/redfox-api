@@ -38,6 +38,7 @@ import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
 import { CfdiQueue } from '../queues/cfdi.queue';
+import { UserAttributionService } from './user-attribution.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
 
@@ -69,6 +70,7 @@ export class InvoiceService {
     private readonly notificationService: NotificationService,
     private readonly cfdiQueue: CfdiQueue,
     private readonly webhookService: WebhookService,
+    private readonly userAttributionService: UserAttributionService,
   ) { }
 
 
@@ -241,6 +243,7 @@ export class InvoiceService {
       payment_conditions: rest.payment_conditions,
       notes: rest.notes,
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
@@ -346,11 +349,27 @@ export class InvoiceService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { organization_id: this.organizationId };
+    if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.withdrawal = { warehouse: { id: In(authorizedWarehouseIds) } };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     const [invoices, total] = await this.invoiceRepository.findAndCount({
-      where: { organization_id: this.organizationId },
+      where: whereConditions,
       relations: [
         'client',
         'withdrawal',
+        'withdrawal.warehouse',
         'details',
         'details.product',
         'details.product.brand',

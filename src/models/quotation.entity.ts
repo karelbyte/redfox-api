@@ -14,6 +14,7 @@ import { Client } from './client.entity';
 import { Warehouse } from './warehouse.entity';
 import { QuotationDetail } from './quotation-detail.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 export enum QuotationStatus {
   DRAFT = 'draft',
@@ -75,6 +76,13 @@ export class Quotation {
 
   @Column({ type: 'uuid', nullable: true })
   converted_to_sale_id: string;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => QuotationDetail, (detail) => detail.quotation)
   details: QuotationDetail[];

@@ -23,6 +23,7 @@ import { ProductMapper } from '../services/mappers/product.mapper';
 import { ProviderMapper } from '../services/mappers/provider.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { OrganizationModule } from './organization.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { OrganizationModule } from './organization.module';
     MeasurementUnitModule,
     LanguageModule,
     OrganizationModule,
+    UserAttributionModule,
   ],
   controllers: [ReturnController],
   providers: [

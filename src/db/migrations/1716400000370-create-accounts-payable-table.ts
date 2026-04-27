@@ -86,6 +86,12 @@ export class CreateAccountsPayableTable1716400000370
             isNullable: true,
           },
           {
+            name: 'created_by',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'createdAt',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
@@ -128,6 +134,17 @@ export class CreateAccountsPayableTable1716400000370
         referencedColumnNames: ['id'],
         referencedTableName: 'purchase_orders',
         onDelete: 'SET NULL',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'accounts_payable',
+      new TableForeignKey({
+        columnNames: ['created_by'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'users',
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       }),
     );
 

@@ -23,6 +23,7 @@ import { ProviderModule } from './provider.module';
 import { OrganizationModule } from './organization.module';
 import { SurrogateModule } from './surrogate.module';
 import { WebhookModule } from './webhook.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { WebhookModule } from './webhook.module';
     OrganizationModule,
     SurrogateModule,
     WebhookModule,
+    UserAttributionModule,
   ],
   controllers: [ReceptionController],
   providers: [

@@ -17,6 +17,7 @@ import { TaxModule } from './tax.module';
 import { MeasurementUnitModule } from './measurement-unit.module';
 import { LanguageModule } from './language.module';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
+import { UserAttributionModule } from './user-attribution.module';
 import { ProductMapper } from '../services/mappers/product.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { OrganizationModule } from './organization.module';
@@ -40,6 +41,7 @@ import { OrganizationModule } from './organization.module';
     MeasurementUnitModule,
     LanguageModule,
     OrganizationModule,
+    UserAttributionModule,
   ],
   controllers: [WarehouseAdjustmentController],
   providers: [

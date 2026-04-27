@@ -12,6 +12,7 @@ import {
 import { Organization } from './organization.entity';
 import { Withdrawal } from './withdrawal.entity';
 import { ClientAddress } from './client-address.entity';
+import { User } from './user.entity';
 
 export enum ShipmentStatus {
   PENDING = 'PENDING',
@@ -81,6 +82,13 @@ export class Shipment {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @CreateDateColumn()
   created_at: Date;

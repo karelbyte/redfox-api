@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PurchaseOrder } from '../models/purchase-order.entity';
 import { PurchaseOrderDetail } from '../models/purchase-order-detail.entity';
 import { Provider } from '../models/provider.entity';
@@ -29,6 +29,7 @@ import { NotificationService } from './notification.service';
 import { ReceptionService } from './reception.service';
 import { EmailService } from './email.service';
 import { SurrogateService } from './surrogate.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -52,6 +53,7 @@ export class PurchaseOrderService {
     private readonly receptionService: ReceptionService,
     private readonly emailService: EmailService,
     private readonly surrogateService: SurrogateService,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -148,6 +150,7 @@ export class PurchaseOrderService {
       provider,
       status: rest.status || 'PENDING',
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedPurchaseOrder =
@@ -183,9 +186,24 @@ export class PurchaseOrderService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { organization_id: this.organizationId };
+    if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     const [purchaseOrders, total] =
       await this.purchaseOrderRepository.findAndCount({
-        where: { organization_id: this.organizationId },
+        where: whereConditions,
         relations: ['provider', 'warehouse'],
         skip,
         take: limit,

@@ -8,6 +8,7 @@ import { OrganizationModule } from './organization.module';
 import { EmailModule } from './email.module';
 import { NotificationModule } from './notification.module';
 import { LanguageModule } from './language.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { LanguageModule } from './language.module';
     EmailModule,
     NotificationModule,
     LanguageModule,
+    UserAttributionModule,
   ],
   controllers: [UserController],
   providers: [UserService],

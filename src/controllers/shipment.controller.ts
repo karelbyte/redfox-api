@@ -30,8 +30,8 @@ export class ShipmentController {
   }
 
   @Get('shipments')
-  findAllGlobal(@Query() queryDto: ShipmentQueryDto) {
-    return this.shipmentService.findAllGlobal(queryDto);
+  findAllGlobal(@Query() queryDto: ShipmentQueryDto, @UserId() userId: string) {
+    return this.shipmentService.findAllGlobal(queryDto, userId);
   }
 
   @Post('withdrawals/:withdrawalId/shipments')

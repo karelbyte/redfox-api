@@ -10,6 +10,7 @@ export class UserResponseDto {
   roles: RoleResponseDto[];
   permissions: string[];
   status: boolean;
+  admin: boolean;
   created_at: Date;
 }
 
@@ -23,5 +24,6 @@ export class UserWithPermissionDescriptionsDto {
   roles: RoleResponseDto[];
   permission_descriptions: string[];
   status: boolean;
+  admin: boolean;
   created_at: Date;
 }

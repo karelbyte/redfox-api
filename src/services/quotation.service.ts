@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Quotation, QuotationStatus } from '../models/quotation.entity';
 import { QuotationDetail } from '../models/quotation-detail.entity';
 import { Client } from '../models/client.entity';
@@ -32,6 +32,7 @@ import { QuotationBotPdfService, QuotationBotPdfDocument } from './quotation-bot
 import { EmailService } from './email.service';
 import { EmailQueue } from '../queues/email.queue';
 import { SendQuotationEmailDto } from '../dtos/quotation/send-quotation-email.dto';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class QuotationService {
@@ -60,6 +61,7 @@ export class QuotationService {
     private readonly quotationBotPdfService: QuotationBotPdfService,
     private readonly emailService: EmailService,
     private readonly emailQueue: EmailQueue,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -198,6 +200,7 @@ export class QuotationService {
       total: 0,
       status: QuotationStatus.DRAFT,
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedQuotation = await this.quotationRepository.save(quotation);
@@ -232,8 +235,23 @@ export class QuotationService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { organization_id: this.organizationId };
+    if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     const [quotations, total] = await this.quotationRepository.findAndCount({
-      where: { organization_id: this.organizationId },
+      where: whereConditions,
       relations: ['client', 'warehouse'],
       skip,
       take: limit,

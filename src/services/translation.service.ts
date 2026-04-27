@@ -424,6 +424,38 @@ export class TranslationService {
       zh: '角色权限关联删除成功',
     },
 
+    // UserAttribution messages
+    'user_attribution.already_exists': {
+      es: 'Ya existe esta atribución para el usuario',
+      en: 'This attribution already exists for the user',
+      zh: '该用户的此归属已存在',
+    },
+    'user_attribution.not_found': {
+      es: 'Atribución con ID {id} no encontrada',
+      en: 'Attribution with ID {id} not found',
+      zh: '未找到 ID 为 {id} 的归属',
+    },
+    'user_attribution.created_successfully': {
+      es: 'Atribución creada exitosamente',
+      en: 'Attribution created successfully',
+      zh: '归属创建成功',
+    },
+    'user_attribution.updated_successfully': {
+      es: 'Atribución actualizada exitosamente',
+      en: 'Attribution updated successfully',
+      zh: '归属更新成功',
+    },
+    'user_attribution.deleted_successfully': {
+      es: 'Atribución eliminada exitosamente',
+      en: 'Attribution deleted successfully',
+      zh: '归属删除成功',
+    },
+    'user_attribution.assigned_successfully': {
+      es: 'Atribuciones asignadas exitosamente',
+      en: 'Attributions assigned successfully',
+      zh: '归属分配成功',
+    },
+
     // CashRegister messages
     'cash_register.not_found': {
       es: 'Caja registradora con ID {id} no encontrada',

@@ -34,6 +34,7 @@ import { WebhookModule } from './webhook.module';
 import { CfdiQueue } from '../queues/cfdi.queue';
 import { InMemoryCfdiQueue } from '../queues/in-memory-cfdi.queue';
 import { CfdiProcessor } from '../processors/cfdi.processor';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { CfdiProcessor } from '../processors/cfdi.processor';
     forwardRef(() => AccountReceivableModule),
     NotificationModule,
     WebhookModule,
+    UserAttributionModule,
     BullModule.registerQueueAsync({
       name: 'generate-cfdi',
       imports: [ConfigModule],

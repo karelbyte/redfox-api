@@ -15,6 +15,7 @@ import { Withdrawal } from './withdrawal.entity';
 import { InvoiceDetail } from './invoice-detail.entity';
 import { InvoicePayment } from './invoice-payment.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
@@ -116,6 +117,13 @@ export class Invoice {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   emitter_id!: string | null;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => InvoiceDetail, (detail) => detail.invoice)
   details!: InvoiceDetail[];

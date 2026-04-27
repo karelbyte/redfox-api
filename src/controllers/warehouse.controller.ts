@@ -42,13 +42,14 @@ export class WarehouseController {
   @Get()
   findAll(
     @Query() paginationDto: PaginationDto,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
-    return this.warehouseService.findAll(paginationDto);
+    return this.warehouseService.findAll(paginationDto, userId);
   }
 
   @Get('closed')
-  findClosed(): Promise<WarehouseSimpleResponseDto[]> {
-    return this.warehouseService.findClosed();
+  findClosed(@UserId() userId: string): Promise<WarehouseSimpleResponseDto[]> {
+    return this.warehouseService.findClosed(userId);
   }
 
   @Get(':id')

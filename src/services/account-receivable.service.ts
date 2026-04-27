@@ -45,6 +45,7 @@ export class AccountReceivableService {
 
   async create(
     createAccountReceivableDto: CreateAccountReceivableDto,
+    userId?: string,
   ): Promise<AccountReceivable> {
     const organizationId = await this.getOrganizationId();
     const existingAccount = await this.accountReceivableRepository.findOne({
@@ -81,6 +82,7 @@ export class AccountReceivableService {
     accountReceivable.remainingAmount = remainingAmount;
     accountReceivable.paidAmount = paidAmount;
     accountReceivable.status = status;
+    accountReceivable.created_by = userId || null;
 
     const savedAccount =
       await this.accountReceivableRepository.save(accountReceivable);

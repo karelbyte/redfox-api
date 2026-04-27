@@ -7,6 +7,7 @@ import { ProductModule } from './product.module';
 import { WarehouseModule } from './warehouse.module';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { OrganizationModule } from './organization.module';
     WarehouseModule,
     LanguageModule,
     OrganizationModule,
+    UserAttributionModule,
   ],
   controllers: [WarehouseOpeningController],
   providers: [WarehouseOpeningService],

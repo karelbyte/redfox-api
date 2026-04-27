@@ -27,6 +27,7 @@ import { SurrogateModule } from './surrogate.module';
 import { WithdrawalModule } from './withdrawal.module';
 import { InvoiceModule } from './invoice.module';
 import { EmailModule } from './email.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { EmailModule } from './email.module';
     OrganizationModule,
     SurrogateModule,
     EmailModule,
+    UserAttributionModule,
     forwardRef(() => WithdrawalModule),
     forwardRef(() => InvoiceModule),
   ],

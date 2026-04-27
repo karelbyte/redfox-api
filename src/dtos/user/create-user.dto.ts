@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsUUID,
   MinLength,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -27,4 +28,8 @@ export class CreateUserDto {
   @IsUUID()
   @IsOptional()
   organization_id?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  admin?: boolean;
 }

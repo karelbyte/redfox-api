@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Warehouse } from '../models/warehouse.entity';
 import { Currency } from '../models/currency.entity';
 import { CreateWarehouseDto } from '../dtos/warehouse/create-warehouse.dto';
@@ -27,6 +27,7 @@ import { TranslationService } from './translation.service';
 import { InventoryPackSyncService } from './inventory-pack-sync.service';
 import { Like } from 'typeorm';
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class WarehouseService {
@@ -44,6 +45,7 @@ export class WarehouseService {
     private readonly translationService: TranslationService,
     private readonly inventoryPackSyncService: InventoryPackSyncService,
     private readonly tenantContext: TenantContext,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -94,6 +96,7 @@ export class WarehouseService {
 
   async findAll(
     paginationDto: PaginationDto,
+    userId?: string,
   ): Promise<PaginatedResponse<WarehouseResponseDto>> {
     const { page, limit, term, isClosed } = paginationDto || {};
 
@@ -104,33 +107,89 @@ export class WarehouseService {
 
     const orgFilter = { organization_id: this.organizationId };
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
     let whereConditions;
 
     if (isClosed !== undefined && term) {
-      whereConditions = {
-        ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
-          { name: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
-          { address: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
-        ],
-      };
+      const baseWhere = [
+        { code: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
+        { name: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
+        { address: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
+      ];
+      if (userId && authorizedWarehouseIds.length > 0) {
+        whereConditions = {
+          ...baseConditions,
+          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds) })),
+        };
+      } else if (userId) {
+        whereConditions = {
+          ...baseConditions,
+          where: [],
+        };
+      } else {
+        whereConditions = {
+          ...baseConditions,
+          where: baseWhere,
+        };
+      }
     } else if (isClosed !== undefined) {
-      whereConditions = {
-        ...baseConditions,
-        where: { isOpen: !isClosed, ...orgFilter },
-      };
+      const baseWhere = { isOpen: !isClosed, ...orgFilter };
+      if (userId && authorizedWarehouseIds.length > 0) {
+        whereConditions = {
+          ...baseConditions,
+          where: { ...baseWhere, id: In(authorizedWarehouseIds) },
+        };
+      } else if (userId) {
+        whereConditions = {
+          ...baseConditions,
+          where: [],
+        };
+      } else {
+        whereConditions = {
+          ...baseConditions,
+          where: baseWhere,
+        };
+      }
     } else if (term) {
-      whereConditions = {
-        ...baseConditions,
-        where: [
-          { code: Like(`%${term}%`), ...orgFilter },
-          { name: Like(`%${term}%`), ...orgFilter },
-          { address: Like(`%${term}%`), ...orgFilter },
-        ],
-      };
+      const baseWhere = [
+        { code: Like(`%${term}%`), ...orgFilter },
+        { name: Like(`%${term}%`), ...orgFilter },
+        { address: Like(`%${term}%`), ...orgFilter },
+      ];
+      if (userId && authorizedWarehouseIds.length > 0) {
+        whereConditions = {
+          ...baseConditions,
+          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds) })),
+        };
+      } else if (userId) {
+        whereConditions = {
+          ...baseConditions,
+          where: [],
+        };
+      } else {
+        whereConditions = {
+          ...baseConditions,
+          where: baseWhere,
+        };
+      }
     } else {
-      whereConditions = { ...baseConditions, where: orgFilter };
+      if (userId && authorizedWarehouseIds.length > 0) {
+        whereConditions = {
+          ...baseConditions,
+          where: { ...orgFilter, id: In(authorizedWarehouseIds) },
+        };
+      } else if (userId) {
+        whereConditions = {
+          ...baseConditions,
+          where: [],
+        };
+      } else {
+        whereConditions = { ...baseConditions, where: orgFilter };
+      }
     }
 
     if (!page && !limit) {
@@ -154,8 +213,6 @@ export class WarehouseService {
     const currentPage = page || 1;
     const currentLimit = limit || 10;
     const skip = (currentPage - 1) * currentLimit;
-
-    console.log(whereConditions);
 
     const [warehouses, total] = await this.warehouseRepository.findAndCount({
       ...whereConditions,
@@ -181,9 +238,22 @@ export class WarehouseService {
     };
   }
 
-  async findClosed(): Promise<WarehouseSimpleResponseDto[]> {
+  async findClosed(userId?: string): Promise<WarehouseSimpleResponseDto[]> {
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { isOpen: false, organization_id: this.organizationId };
+    
+    if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.id = In(authorizedWarehouseIds);
+    } else if (userId) {
+      return [];
+    }
+
     const warehouses = await this.warehouseRepository.find({
-      where: { isOpen: false, organization_id: this.organizationId },
+      where: whereConditions,
       select: ['id', 'code', 'name'],
       order: {
         created_at: 'DESC',

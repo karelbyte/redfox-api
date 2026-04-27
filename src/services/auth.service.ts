@@ -110,6 +110,7 @@ export class AuthService {
         })),
         permissions: user.getPermissionCodes(),
         status: user.status,
+        admin: user.admin,
         created_at: user.created_at,
       },
     };
@@ -155,6 +156,7 @@ export class AuthService {
         })),
         permissions: user.getPermissionCodes(),
         status: user.status,
+        admin: user.admin,
         created_at: user.created_at,
       },
     };
@@ -238,6 +240,7 @@ export class AuthService {
       organization_id: organization.id,
       role_ids: [adminRole.id],
       status: false,
+      admin: true,
     } as any);
 
     await this.taxService.create({
@@ -930,6 +933,7 @@ export class AuthService {
       })),
       permissions: user.getPermissionCodes(),
       status: user.status,
+      admin: user.admin,
       created_at: user.created_at,
     };
   }

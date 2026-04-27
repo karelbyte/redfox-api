@@ -54,6 +54,9 @@ export class User {
   @Column({ default: false })
   onboarding_completed: boolean;
 
+  @Column({ default: false })
+  admin: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -149,6 +152,7 @@ export class User {
    * @returns true si el usuario tiene el permiso, false en caso contrario
    */
   hasPermission(permissionCode: string): boolean {
+    if (this.admin) return true;
     return this.getPermissionCodes().includes(permissionCode);
   }
 
@@ -158,6 +162,7 @@ export class User {
    * @returns true si el usuario tiene al menos uno de los permisos, false en caso contrario
    */
   hasAnyPermission(permissionCodes: string[]): boolean {
+    if (this.admin) return true;
     const userPermissions = this.getPermissionCodes();
     return permissionCodes.some((code) => userPermissions.includes(code));
   }
@@ -168,6 +173,7 @@ export class User {
    * @returns true si el usuario tiene todos los permisos, false en caso contrario
    */
   hasAllPermissions(permissionCodes: string[]): boolean {
+    if (this.admin) return true;
     const userPermissions = this.getPermissionCodes();
     return permissionCodes.every((code) => userPermissions.includes(code));
   }

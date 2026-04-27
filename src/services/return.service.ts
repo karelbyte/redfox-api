@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like } from 'typeorm';
+import { Repository, DataSource, Like, In } from 'typeorm';
 import { Return } from '../models/return.entity';
 import { ReturnDetail } from '../models/return-detail.entity';
 import { Warehouse } from '../models/warehouse.entity';
@@ -29,6 +29,7 @@ import { ProductMapper } from './mappers/product.mapper';
 import { ProviderMapper } from './mappers/provider.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class ReturnService {
@@ -53,6 +54,7 @@ export class ReturnService {
     private providerMapper: ProviderMapper,
     private translationService: TranslationService,
     private tenantContext: TenantContext,
+    private userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -107,6 +109,7 @@ export class ReturnService {
       description: createDto.description,
       status: false,
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedReturn = await this.returnRepository.save(return_);
@@ -528,6 +531,11 @@ export class ReturnService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
     const queryBuilder = this.returnRepository
       .createQueryBuilder('return')
       .leftJoinAndSelect('return.sourceWarehouse', 'sourceWarehouse')
@@ -538,9 +546,24 @@ export class ReturnService {
       .orderBy('return.created_at', 'DESC');
 
     if (queryDto?.sourceWarehouseId) {
+      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(queryDto.sourceWarehouseId)) {
+        return {
+          data: [],
+          meta: { total: 0, page, limit, totalPages: 0 },
+        };
+      }
       queryBuilder.andWhere('return.sourceWarehouseId = :sourceWarehouseId', {
         sourceWarehouseId: queryDto.sourceWarehouseId,
       });
+    } else if (userId && authorizedWarehouseIds.length > 0) {
+      queryBuilder.andWhere('return.sourceWarehouseId IN (:...authorizedWarehouseIds)', {
+        authorizedWarehouseIds,
+      });
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
     }
 
     if (queryDto?.targetProviderId) {

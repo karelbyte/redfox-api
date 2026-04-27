@@ -13,6 +13,7 @@ import { Provider } from './provider.entity';
 import { PurchaseOrder } from './purchase-order.entity';
 import { AccountPayablePayment } from './account-payable-payment.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 export enum AccountPayableStatus {
   PENDING = 'pending',
@@ -76,6 +77,13 @@ export class AccountPayable {
 
   @Column({ nullable: true })
   purchaseOrderId: string;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(() => AccountPayablePayment, (payment) => payment.accountPayable)
   payments: AccountPayablePayment[];

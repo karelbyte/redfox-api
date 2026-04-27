@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Reception } from '../models/reception.entity';
 import { ReceptionDetail } from '../models/reception-detail.entity';
 import { Provider } from '../models/provider.entity';
@@ -36,6 +36,7 @@ import { SurrogateService } from './surrogate.service';
 import { TenantContext } from './tenant-context.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class ReceptionService {
@@ -63,6 +64,7 @@ export class ReceptionService {
     private readonly surrogateService: SurrogateService,
     private readonly tenantContext: TenantContext,
     private readonly webhookService: WebhookService,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private readonly logger = new Logger(ReceptionService.name);
@@ -165,6 +167,7 @@ export class ReceptionService {
       document: createReceptionDto.document,
       amount: createReceptionDto.amount,
       organization_id: organizationId,
+      created_by: userId || null,
     });
 
     const savedReception = await this.receptionRepository.save(reception);
@@ -222,8 +225,23 @@ export class ReceptionService {
     const skip = (page - 1) * limit;
     const organizationId = await this.getOrganizationId();
 
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
+
+    const whereConditions: any = { organization_id: organizationId };
+    if (userId && authorizedWarehouseIds.length > 0) {
+      whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
+    } else if (userId) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
     const [receptions, total] = await this.receptionRepository.findAndCount({
-      where: { organization_id: organizationId },
+      where: whereConditions,
       relations: ['provider', 'warehouse'],
       skip,
       take: limit,

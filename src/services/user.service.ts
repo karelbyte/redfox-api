@@ -47,6 +47,7 @@ export class UserService {
       email,
       roles,
       status,
+      admin,
       created_at,
       organization_id,
       organization,
@@ -67,6 +68,7 @@ export class UserService {
         })) || [],
       permissions: user.getPermissionCodes(),
       status,
+      admin,
       created_at,
     };
   }
@@ -80,6 +82,7 @@ export class UserService {
       email,
       roles,
       status,
+      admin,
       created_at,
       organization_id,
       organization,
@@ -100,6 +103,7 @@ export class UserService {
         })) || [],
       permission_descriptions: user.getPermissionDescriptions(),
       status,
+      admin,
       created_at,
     };
   }

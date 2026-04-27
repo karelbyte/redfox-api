@@ -64,6 +64,12 @@ export class CreateReturnsTable1716400000190 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'created_by',
+            type: isPostgres ? 'uuid' : 'varchar',
+            length: isPostgres ? undefined : '36',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',
@@ -159,6 +165,17 @@ export class CreateReturnsTable1716400000190 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'providers',
         onDelete: 'RESTRICT',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'returns',
+      new TableForeignKey({
+        columnNames: ['created_by'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'users',
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       }),
     );
 

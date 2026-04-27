@@ -44,8 +44,9 @@ export class WarehouseOpeningController {
   findAll(
     @Query() paginationDto: PaginationDto,
     @Query('warehouse_id') warehouseId: string,
+    @UserId() userId: string,
   ): Promise<PaginatedResponse<WarehouseOpeningResponseDto>> {
-    return this.warehouseOpeningService.findAll(paginationDto, warehouseId);
+    return this.warehouseOpeningService.findAll(paginationDto, warehouseId, userId);
   }
 
   @Get(':id')

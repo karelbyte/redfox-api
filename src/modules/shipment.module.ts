@@ -17,6 +17,7 @@ import { NotificationModule } from './notification.module';
 import { EmailModule } from './email.module';
 import { User } from '../models/user.entity';
 import { BotSettings } from '../models/bot-settings.entity';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BotSettings } from '../models/bot-settings.entity';
     BotSettingsModule,
     NotificationModule,
     EmailModule,
+    UserAttributionModule,
   ],
   controllers: [ShipmentController, ShipmentPublicController],
   providers: [ShipmentService, ShipmentNotificationService, ShipmentSchedulerService],

@@ -26,8 +26,11 @@ export class AccountReceivableController {
   ) {}
 
   @Post()
-  create(@Body() createAccountReceivableDto: CreateAccountReceivableDto) {
-    return this.accountReceivableService.create(createAccountReceivableDto);
+  create(
+    @Body() createAccountReceivableDto: CreateAccountReceivableDto,
+    @UserId() userId: string,
+  ) {
+    return this.accountReceivableService.create(createAccountReceivableDto, userId);
   }
 
   @Get()

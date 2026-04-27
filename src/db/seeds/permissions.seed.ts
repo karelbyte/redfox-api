@@ -146,6 +146,16 @@ export class PermissionsSeed {
         module: 'clients',
         description: 'Allows deleting clients | Permite eliminar clientes',
       },
+      {
+        code: 'client_import_from_pack',
+        module: 'clients',
+        description: 'Allows importing clients from pack | Permite importar clientes del pack',
+      },
+      {
+        code: 'client_import_csv',
+        module: 'clients',
+        description: 'Allows importing clients from CSV | Permite importar clientes desde CSV',
+      },
 
       // Provider Permissions
       {
@@ -347,6 +357,16 @@ export class PermissionsSeed {
         code: 'product_delete',
         module: 'products',
         description: 'Allows deleting products | Permite eliminar productos',
+      },
+      {
+        code: 'product_import_from_pack',
+        module: 'products',
+        description: 'Allows importing products from pack | Permite importar productos del pack',
+      },
+      {
+        code: 'product_import_csv',
+        module: 'products',
+        description: 'Allows importing products from CSV | Permite importar productos desde CSV',
       },
 
       // Inventory Permissions

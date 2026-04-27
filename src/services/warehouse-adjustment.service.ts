@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like } from 'typeorm';
+import { Repository, DataSource, In, Like } from 'typeorm';
 import { WarehouseAdjustment } from '../models/warehouse-adjustment.entity';
 import { WarehouseAdjustmentDetail } from '../models/warehouse-adjustment-detail.entity';
 import { Warehouse } from '../models/warehouse.entity';
@@ -15,19 +11,19 @@ import {
   OperationType,
 } from '../models/product-history.entity';
 import { CreateWarehouseAdjustmentDto } from '../dtos/warehouse-adjustment/create-warehouse-adjustment.dto';
-import { CreateWarehouseAdjustmentDetailDto } from '../dtos/warehouse-adjustment/create-warehouse-adjustment-detail.dto';
-import { UpdateWarehouseAdjustmentDetailDto } from '../dtos/warehouse-adjustment/update-warehouse-adjustment-detail.dto';
 import { WarehouseAdjustmentResponseDto } from '../dtos/warehouse-adjustment/warehouse-adjustment-response.dto';
 import { WarehouseAdjustmentDetailResponseDto } from '../dtos/warehouse-adjustment/warehouse-adjustment-detail-response.dto';
-import { WarehouseAdjustmentQueryDto } from '../dtos/warehouse-adjustment/warehouse-adjustment-query.dto';
+import { CreateWarehouseAdjustmentDetailDto } from '../dtos/warehouse-adjustment/create-warehouse-adjustment-detail.dto';
+import { UpdateWarehouseAdjustmentDetailDto } from '../dtos/warehouse-adjustment/update-warehouse-adjustment-detail.dto';
 import { WarehouseAdjustmentDetailQueryDto } from '../dtos/warehouse-adjustment/warehouse-adjustment-detail-query.dto';
+import { WarehouseAdjustmentQueryDto } from '../dtos/warehouse-adjustment/warehouse-adjustment-query.dto';
 import { PaginationDto } from '../dtos/common/pagination.dto';
-import { PaginatedResponse } from '../interfaces/pagination.interface';
+import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
-
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class WarehouseAdjustmentService {
@@ -49,6 +45,7 @@ export class WarehouseAdjustmentService {
     private productMapper: ProductMapper,
     private translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -109,6 +106,7 @@ export class WarehouseAdjustmentService {
       description: createDto.description,
       status: false,
       organization_id: this.organizationId,
+      created_by: userId || null,
     });
 
     const savedAdjustment =
@@ -227,7 +225,7 @@ export class WarehouseAdjustmentService {
     adjustmentId: string,
     queryDto: WarehouseAdjustmentDetailQueryDto,
     userId: string,
-  ): Promise<PaginatedResponse<WarehouseAdjustmentDetailResponseDto>> {
+  ): Promise<PaginatedResponseDto<WarehouseAdjustmentDetailResponseDto>> {
     
     const adjustment = await this.warehouseAdjustmentRepository.findOne({
       where: { id: adjustmentId, organization_id: this.organizationId },
@@ -569,9 +567,14 @@ export class WarehouseAdjustmentService {
     paginationDto: PaginationDto,
     queryDto?: WarehouseAdjustmentQueryDto,
     userId?: string,
-  ): Promise<PaginatedResponse<WarehouseAdjustmentResponseDto>> {
+  ): Promise<PaginatedResponseDto<WarehouseAdjustmentResponseDto>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
+
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
 
     const queryBuilder = this.warehouseAdjustmentRepository
       .createQueryBuilder('adjustment')
@@ -619,7 +622,17 @@ export class WarehouseAdjustmentService {
       .take(limit)
       .getManyAndCount();
 
-    const responseDtos = adjustments.map((adjustment) =>
+    let filteredAdjustments = adjustments;
+    if (userId && authorizedWarehouseIds.length > 0) {
+      filteredAdjustments = adjustments.filter((adjustment) => {
+        return authorizedWarehouseIds.includes(adjustment.sourceWarehouseId) ||
+               authorizedWarehouseIds.includes(adjustment.targetWarehouseId);
+      });
+    } else if (userId) {
+      filteredAdjustments = [];
+    }
+
+    const responseDtos = filteredAdjustments.map((adjustment) =>
       this.mapToResponseDto(adjustment),
     );
 
@@ -628,8 +641,8 @@ export class WarehouseAdjustmentService {
       meta: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: userId ? filteredAdjustments.length : total,
+        totalPages: Math.ceil((userId ? filteredAdjustments.length : total) / limit),
       },
     };
   }

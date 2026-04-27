@@ -32,6 +32,10 @@ export class UpdateUserDto {
   @IsOptional()
   status?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  admin?: boolean;
+
   @IsUUID()
   @IsOptional()
   organization_id?: string;

@@ -13,6 +13,7 @@ import {
 import { Warehouse } from './warehouse.entity';
 import { WarehouseAdjustmentDetail } from './warehouse-adjustment-detail.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 @Entity('warehouse_adjustments')
 @Index(['organization_id', 'code'], { unique: true })
@@ -44,6 +45,13 @@ export class WarehouseAdjustment {
 
   @Column({ default: true })
   status: boolean;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'source_warehouse_id' })

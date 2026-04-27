@@ -46,6 +46,7 @@ export class AccountPayableService {
 
   async create(
     createAccountPayableDto: CreateAccountPayableDto,
+    userId?: string,
   ): Promise<AccountPayable> {
     const organizationId = await this.getOrganizationId();
     const totalAmount = Number(createAccountPayableDto.totalAmount);
@@ -66,6 +67,7 @@ export class AccountPayableService {
     accountPayable.remainingAmount = remainingAmount;
     accountPayable.paidAmount = paidAmount;
     accountPayable.status = status;
+    accountPayable.created_by = userId || null;
 
     const savedAccount =
       await this.accountPayableRepository.save(accountPayable);

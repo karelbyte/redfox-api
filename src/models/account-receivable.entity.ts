@@ -13,6 +13,7 @@ import { Client } from './client.entity';
 import { Invoice } from './invoice.entity';
 import { AccountReceivablePayment } from './account-receivable-payment.entity';
 import { Organization } from './organization.entity';
+import { User } from './user.entity';
 
 export enum AccountReceivableStatus {
   PENDING = 'pending',
@@ -76,6 +77,13 @@ export class AccountReceivable {
 
   @Column({ nullable: true })
   invoiceId: string;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  user: User | null;
 
   @OneToMany(
     () => AccountReceivablePayment,

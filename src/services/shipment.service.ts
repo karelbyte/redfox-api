@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Shipment, ShipmentStatus } from '../models/shipment.entity';
 import { Withdrawal, WithdrawalStatus } from '../models/withdrawal.entity';
 import { ClientAddress } from '../models/client-address.entity';
@@ -12,6 +12,7 @@ import { PaginatedResponse } from '../interfaces/pagination.interface';
 import { TenantContext } from './tenant-context.service';
 import { TranslationService } from './translation.service';
 import { ShipmentNotificationService } from './shipment-notification.service';
+import { UserAttributionService } from './user-attribution.service';
 
 @Injectable()
 export class ShipmentService {
@@ -25,6 +26,7 @@ export class ShipmentService {
     private readonly tenantContext: TenantContext,
     private readonly translationService: TranslationService,
     private readonly shipmentNotificationService: ShipmentNotificationService,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
@@ -117,19 +119,27 @@ export class ShipmentService {
       ...createShipmentDto,
       organization_id: this.organizationId,
       status: ShipmentStatus.PENDING,
+      created_by: userId || null,
     });
 
     const savedShipment = await this.shipmentRepository.save(shipment);
     return this.mapToResponseDto(savedShipment);
   }
 
-  async findAllGlobal(queryDto: ShipmentQueryDto): Promise<PaginatedResponse<ShipmentResponseDto>> {
+  async findAllGlobal(queryDto: ShipmentQueryDto, userId?: string): Promise<PaginatedResponse<ShipmentResponseDto>> {
     const { page = 1, limit = 10, search, status } = queryDto;
     const skip = (page - 1) * limit;
+
+    let authorizedWarehouseIds: string[] = [];
+    if (userId) {
+      authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
+    }
 
     const queryBuilder = this.shipmentRepository
       .createQueryBuilder('shipment')
       .leftJoinAndSelect('shipment.withdrawal', 'withdrawal')
+      .leftJoinAndSelect('withdrawal.details', 'details')
+      .leftJoinAndSelect('details.warehouse', 'warehouse')
       .where('shipment.organization_id = :organizationId', { organizationId: this.organizationId })
       .orderBy('shipment.created_at', 'DESC')
       .skip(skip)
@@ -148,13 +158,30 @@ export class ShipmentService {
 
     const [shipments, total] = await queryBuilder.getManyAndCount();
 
+    let filteredShipments = shipments;
+    if (userId && authorizedWarehouseIds.length > 0) {
+      filteredShipments = shipments.filter((shipment) => {
+        if (!shipment.withdrawal || !shipment.withdrawal.details || shipment.withdrawal.details.length === 0) {
+          return false;
+        }
+        return shipment.withdrawal.details.some((detail) => {
+          if (!detail.warehouse) {
+            return false;
+          }
+          return authorizedWarehouseIds.includes(detail.warehouse.id);
+        });
+      });
+    } else if (userId) {
+      filteredShipments = [];
+    }
+
     return {
-      data: shipments.map(shipment => this.mapToResponseDto(shipment)),
+      data: filteredShipments.map(shipment => this.mapToResponseDto(shipment)),
       meta: {
-        total,
+        total: userId ? filteredShipments.length : total,
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil((userId ? filteredShipments.length : total) / limit),
       },
     };
   }

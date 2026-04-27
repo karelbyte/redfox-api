@@ -22,6 +22,7 @@ import { NotificationModule } from './notification.module';
 import { ReceptionModule } from './reception.module';
 import { EmailConfigModule } from './email-config.module';
 import { SurrogateModule } from './surrogate.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 
 @Module({
@@ -41,6 +42,7 @@ import { SurrogateModule } from './surrogate.module';
     forwardRef(() => ReceptionModule),
     EmailConfigModule,
     SurrogateModule,
+    UserAttributionModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [

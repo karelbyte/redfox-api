@@ -97,6 +97,11 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
@@ -224,6 +229,17 @@ export class CreateQuotationsTable1716400000310 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'warehouses',
         onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'quotations',
+      new TableForeignKey({
+        columnNames: ['created_by'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'users',
+        onDelete: 'SET NULL',
         onUpdate: 'CASCADE',
       }),
     );

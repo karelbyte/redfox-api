@@ -67,6 +67,11 @@ export class CreatePurchaseOrdersTable1716400000220
             isNullable: true,
           },
           {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
@@ -100,6 +105,12 @@ export class CreatePurchaseOrdersTable1716400000220
             referencedColumnNames: ['id'],
             referencedTableName: 'warehouses',
             onDelete: 'RESTRICT',
+          },
+          {
+            columnNames: ['created_by'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'users',
+            onDelete: 'SET NULL',
           },
         ],
         indices: [

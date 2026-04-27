@@ -2,8 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
@@ -49,7 +49,7 @@ export class UserController {
     return this.userService.findOneWithPermissionDescriptions(id, userId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
