@@ -186,15 +186,15 @@ export class PurchaseOrderService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     const whereConditions: any = { organization_id: this.organizationId };
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },

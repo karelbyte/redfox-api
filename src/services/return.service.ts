@@ -531,7 +531,7 @@ export class ReturnService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -546,7 +546,7 @@ export class ReturnService {
       .orderBy('return.created_at', 'DESC');
 
     if (queryDto?.sourceWarehouseId) {
-      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(queryDto.sourceWarehouseId)) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(queryDto.sourceWarehouseId)) {
         return {
           data: [],
           meta: { total: 0, page, limit, totalPages: 0 },
@@ -555,11 +555,11 @@ export class ReturnService {
       queryBuilder.andWhere('return.sourceWarehouseId = :sourceWarehouseId', {
         sourceWarehouseId: queryDto.sourceWarehouseId,
       });
-    } else if (userId && authorizedWarehouseIds.length > 0) {
+    } else if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       queryBuilder.andWhere('return.sourceWarehouseId IN (:...authorizedWarehouseIds)', {
         authorizedWarehouseIds,
       });
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },

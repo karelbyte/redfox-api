@@ -130,7 +130,7 @@ export class ShipmentService {
     const { page = 1, limit = 10, search, status } = queryDto;
     const skip = (page - 1) * limit;
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -159,7 +159,7 @@ export class ShipmentService {
     const [shipments, total] = await queryBuilder.getManyAndCount();
 
     let filteredShipments = shipments;
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       filteredShipments = shipments.filter((shipment) => {
         if (!shipment.withdrawal || !shipment.withdrawal.details || shipment.withdrawal.details.length === 0) {
           return false;
@@ -171,7 +171,7 @@ export class ShipmentService {
           return authorizedWarehouseIds.includes(detail.warehouse.id);
         });
       });
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       filteredShipments = [];
     }
 

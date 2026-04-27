@@ -109,22 +109,22 @@ export class InventoryService {
       organization_id: this.organizationId,
     };
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     if (warehouse_id) {
-      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
         return {
           data: [],
           meta: { total: 0, page, limit, totalPages: 0 },
         };
       }
       whereConditions.warehouse = { id: warehouse_id };
-    } else if (userId && authorizedWarehouseIds.length > 0) {
+    } else if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },
@@ -329,22 +329,22 @@ export class InventoryService {
       organization_id: this.organizationId,
     };
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     if (warehouse_id) {
-      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouse_id)) {
         return {
           data: [],
           meta: { total: 0, page, limit, totalPages: 0 },
         };
       }
       whereConditions.warehouse = { id: warehouse_id };
-    } else if (userId && authorizedWarehouseIds.length > 0) {
+    } else if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },

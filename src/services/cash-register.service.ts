@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Like } from 'typeorm';
 import {
   CashRegister,
   CashRegisterStatus,
@@ -19,6 +19,8 @@ import { CashRegisterBalanceResponseDto } from '../dtos/cash-register/cash-regis
 import { CashRegisterMapper } from './mappers/cash-register.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { UserAttributionService } from './user-attribution.service';
+import { PaginatedResponseDto } from '../dtos/common/paginated-response.dto';
 
 @Injectable()
 export class CashRegisterService {
@@ -29,21 +31,98 @@ export class CashRegisterService {
     private readonly cashTransactionRepository: Repository<CashTransaction>,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
   }
 
+  async findAll(
+    page: string = '1',
+    limit: string = '10',
+    term: string = '',
+    userId?: string,
+  ): Promise<PaginatedResponseDto<CashRegisterResponseDto>> {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    const orgFilter = { organization_id: this.organizationId };
+
+    let authorizedCashRegisterIds: string[] | null = null;
+    if (userId) {
+      authorizedCashRegisterIds = await this.userAttributionService.getAuthorizedCashRegisterIds(userId);
+    }
+
+    let whereConditions;
+    if (term) {
+      const baseWhere = [
+        { code: Like(`%${term}%`), ...orgFilter },
+        { name: Like(`%${term}%`), ...orgFilter },
+      ];
+      if (userId && authorizedCashRegisterIds !== null && authorizedCashRegisterIds.length > 0) {
+        whereConditions = baseWhere.map((w) => ({ ...w, id: In(authorizedCashRegisterIds!) }));
+      } else if (userId && authorizedCashRegisterIds !== null) {
+        whereConditions = [];
+      } else {
+        whereConditions = baseWhere;
+      }
+    } else {
+      if (userId && authorizedCashRegisterIds !== null && authorizedCashRegisterIds.length > 0) {
+        whereConditions = { id: In(authorizedCashRegisterIds), ...orgFilter };
+      } else if (userId && authorizedCashRegisterIds !== null) {
+        whereConditions = [];
+      } else {
+        whereConditions = orgFilter;
+      }
+    }
+
+    const [data, total] = await this.cashRegisterRepository.findAndCount({
+      where: whereConditions,
+      skip,
+      take: limitNum,
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      data: data.map((cashRegister) => CashRegisterMapper.mapToResponseDto(cashRegister)),
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    };
+  }
+
   async getCurrentCashRegister(
     userId?: string,
   ): Promise<CashRegisterResponseDto> {
+    const authorizedCashRegisterIds =
+      await this.userAttributionService.getAuthorizedCashRegisterIds(
+        userId || '',
+      );
+
+    const whereConditions: any = {
+      status: CashRegisterStatus.OPEN,
+      organization_id: this.organizationId,
+    };
+
+    if (authorizedCashRegisterIds !== null) {
+      if (authorizedCashRegisterIds.length === 0) {
+        const message = await this.translationService.translate(
+          'cash_register.no_open_register',
+          userId,
+        );
+        throw new NotFoundException(message);
+      }
+      whereConditions.id = In(authorizedCashRegisterIds);
+    }
+
     const currentCashRegister = await this.cashRegisterRepository.findOne({
-      where: {
-        status: CashRegisterStatus.OPEN,
-        organization_id: this.organizationId,
-      },
-      order: { created_at: 'DESC' },
+      where: whereConditions,
+      order: { openedAt: 'DESC' },
     });
 
     if (!currentCashRegister) {
@@ -111,23 +190,6 @@ export class CashRegisterService {
     openCashRegisterDto: OpenCashRegisterDto,
     userId?: string,
   ): Promise<CashRegisterResponseDto> {
-    // Verificar si ya hay una caja abierta
-    const existingOpenCashRegister = await this.cashRegisterRepository.findOne({
-      where: {
-        status: CashRegisterStatus.OPEN,
-        organization_id: this.organizationId,
-      },
-    });
-
-    if (existingOpenCashRegister) {
-      const message = await this.translationService.translate(
-        'cash_register.already_open',
-        userId,
-      );
-      throw new BadRequestException(message);
-    }
-
-    // Generar código único para la caja
     const timestamp = Date.now();
     const code = `CASH-${timestamp}`;
 
@@ -147,6 +209,34 @@ export class CashRegisterService {
     const savedCashRegister =
       await this.cashRegisterRepository.save(cashRegister);
     return CashRegisterMapper.mapToResponseDto(savedCashRegister);
+  }
+
+  async getAuthorizedOpenCashRegisters(
+    userId?: string,
+  ): Promise<CashRegisterResponseDto[]> {
+    const authorizedCashRegisterIds =
+      await this.userAttributionService.getAuthorizedCashRegisterIds(
+        userId || '',
+      );
+
+    const whereConditions: any = {
+      status: CashRegisterStatus.OPEN,
+      organization_id: this.organizationId,
+    };
+
+    if (authorizedCashRegisterIds !== null) {
+      if (authorizedCashRegisterIds.length === 0) {
+        return [];
+      }
+      whereConditions.id = In(authorizedCashRegisterIds);
+    }
+
+    const cashRegisters = await this.cashRegisterRepository.find({
+      where: whereConditions,
+      order: { openedAt: 'DESC' },
+    });
+
+    return cashRegisters.map((cr) => CashRegisterMapper.mapToResponseDto(cr));
   }
 
   async closeCashRegister(

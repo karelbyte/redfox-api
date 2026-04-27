@@ -102,7 +102,7 @@ export class WarehouseOpeningService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -110,16 +110,16 @@ export class WarehouseOpeningService {
     const whereConditions: any = { organization_id: this.organizationId };
     
     if (warehouseId) {
-      if (userId && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouseId)) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0 && !authorizedWarehouseIds.includes(warehouseId)) {
         return {
           data: [],
           meta: { total: 0, page, limit, totalPages: 0 },
         };
       }
       whereConditions.warehouseId = warehouseId;
-    } else if (userId && authorizedWarehouseIds.length > 0) {
+    } else if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.warehouseId = In(authorizedWarehouseIds);
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },

@@ -225,15 +225,15 @@ export class ReceptionService {
     const skip = (page - 1) * limit;
     const organizationId = await this.getOrganizationId();
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     const whereConditions: any = { organization_id: organizationId };
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.warehouse = { id: In(authorizedWarehouseIds) };
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return {
         data: [],
         meta: { total: 0, page, limit, totalPages: 0 },

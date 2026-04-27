@@ -571,7 +571,7 @@ export class WarehouseAdjustmentService {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -623,12 +623,12 @@ export class WarehouseAdjustmentService {
       .getManyAndCount();
 
     let filteredAdjustments = adjustments;
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       filteredAdjustments = adjustments.filter((adjustment) => {
         return authorizedWarehouseIds.includes(adjustment.sourceWarehouseId) ||
                authorizedWarehouseIds.includes(adjustment.targetWarehouseId);
       });
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       filteredAdjustments = [];
     }
 

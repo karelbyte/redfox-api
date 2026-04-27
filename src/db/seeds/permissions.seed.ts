@@ -1033,6 +1033,34 @@ export class PermissionsSeed {
           'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
       },
 
+      // Cash Register Permissions
+      {
+        code: 'cash_registers_module_view',
+        module: 'cash_registers',
+        description:
+          'Allows viewing the cash registers module | Permite ver el módulo de cajas registradoras',
+      },
+      {
+        code: 'cash_registers_create',
+        module: 'cash_registers',
+        description: 'Allows creating cash registers | Permite crear cajas registradoras',
+      },
+      {
+        code: 'cash_registers_read',
+        module: 'cash_registers',
+        description: 'Allows reading cash registers | Permite leer cajas registradoras',
+      },
+      {
+        code: 'cash_registers_update',
+        module: 'cash_registers',
+        description: 'Allows updating cash registers | Permite actualizar cajas registradoras',
+      },
+      {
+        code: 'cash_registers_delete',
+        module: 'cash_registers',
+        description: 'Allows deleting cash registers | Permite eliminar cajas registradoras',
+      },
+
       // Notification Permissions
       {
         code: 'notification_module_view',

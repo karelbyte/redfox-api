@@ -6,12 +6,14 @@ import { CashRegisterController } from '../controllers/cash-register.controller'
 import { CashRegisterService } from '../services/cash-register.service';
 import { LanguageModule } from './language.module';
 import { OrganizationModule } from './organization.module';
+import { UserAttributionModule } from './user-attribution.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CashRegister, CashTransaction]),
     LanguageModule,
     OrganizationModule,
+    UserAttributionModule,
   ],
   controllers: [CashRegisterController],
   providers: [CashRegisterService],

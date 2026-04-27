@@ -254,7 +254,7 @@ export class WithdrawalService {
       where.client = { id: clientId };
     }
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -282,7 +282,7 @@ export class WithdrawalService {
     });
 
     let filteredWithdrawals = withdrawals;
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       filteredWithdrawals = withdrawals.filter((withdrawal) => {
         if (!withdrawal.details || withdrawal.details.length === 0) {
           return true;
@@ -294,7 +294,7 @@ export class WithdrawalService {
           return authorizedWarehouseIds.includes(detail.warehouse.id);
         });
       });
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       filteredWithdrawals = [];
     }
 

@@ -107,7 +107,7 @@ export class WarehouseService {
 
     const orgFilter = { organization_id: this.organizationId };
 
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
@@ -120,12 +120,12 @@ export class WarehouseService {
         { name: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
         { address: Like(`%${term}%`), isOpen: !isClosed, ...orgFilter },
       ];
-      if (userId && authorizedWarehouseIds.length > 0) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
         whereConditions = {
           ...baseConditions,
-          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds) })),
+          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds!) })),
         };
-      } else if (userId) {
+      } else if (userId && authorizedWarehouseIds !== null) {
         whereConditions = {
           ...baseConditions,
           where: [],
@@ -138,12 +138,12 @@ export class WarehouseService {
       }
     } else if (isClosed !== undefined) {
       const baseWhere = { isOpen: !isClosed, ...orgFilter };
-      if (userId && authorizedWarehouseIds.length > 0) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
         whereConditions = {
           ...baseConditions,
-          where: { ...baseWhere, id: In(authorizedWarehouseIds) },
+          where: { ...baseWhere, id: In(authorizedWarehouseIds!) },
         };
-      } else if (userId) {
+      } else if (userId && authorizedWarehouseIds !== null) {
         whereConditions = {
           ...baseConditions,
           where: [],
@@ -160,12 +160,12 @@ export class WarehouseService {
         { name: Like(`%${term}%`), ...orgFilter },
         { address: Like(`%${term}%`), ...orgFilter },
       ];
-      if (userId && authorizedWarehouseIds.length > 0) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
         whereConditions = {
           ...baseConditions,
-          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds) })),
+          where: baseWhere.map((w) => ({ ...w, id: In(authorizedWarehouseIds!) })),
         };
-      } else if (userId) {
+      } else if (userId && authorizedWarehouseIds !== null) {
         whereConditions = {
           ...baseConditions,
           where: [],
@@ -177,12 +177,12 @@ export class WarehouseService {
         };
       }
     } else {
-      if (userId && authorizedWarehouseIds.length > 0) {
+      if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
         whereConditions = {
           ...baseConditions,
-          where: { ...orgFilter, id: In(authorizedWarehouseIds) },
+          where: { ...orgFilter, id: In(authorizedWarehouseIds!) },
         };
-      } else if (userId) {
+      } else if (userId && authorizedWarehouseIds !== null) {
         whereConditions = {
           ...baseConditions,
           where: [],
@@ -239,16 +239,16 @@ export class WarehouseService {
   }
 
   async findClosed(userId?: string): Promise<WarehouseSimpleResponseDto[]> {
-    let authorizedWarehouseIds: string[] = [];
+    let authorizedWarehouseIds: string[] | null = null;
     if (userId) {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
     const whereConditions: any = { isOpen: false, organization_id: this.organizationId };
     
-    if (userId && authorizedWarehouseIds.length > 0) {
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
       whereConditions.id = In(authorizedWarehouseIds);
-    } else if (userId) {
+    } else if (userId && authorizedWarehouseIds !== null) {
       return [];
     }
 

@@ -179,11 +179,38 @@ export class UserAttributionService {
     await this.userAttributionRepository.remove(attribution);
   }
 
-  async getAuthorizedWarehouseIds(userId: string): Promise<string[]> {
+  async isUserAdmin(userId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['admin'],
+    });
+    return user?.admin === true;
+  }
+
+  async getAuthorizedWarehouseIds(userId: string): Promise<string[] | null> {
+    const isAdmin = await this.isUserAdmin(userId);
+    if (isAdmin) {
+      return null;
+    }
     const attributions = await this.userAttributionRepository.find({
       where: {
         userId,
         attributionType: AttributionType.WAREHOUSE,
+      },
+      select: ['resourceId'],
+    });
+    return attributions.map((a) => a.resourceId);
+  }
+
+  async getAuthorizedCashRegisterIds(userId: string): Promise<string[] | null> {
+    const isAdmin = await this.isUserAdmin(userId);
+    if (isAdmin) {
+      return null;
+    }
+    const attributions = await this.userAttributionRepository.find({
+      where: {
+        userId,
+        attributionType: AttributionType.CASH_REGISTER,
       },
       select: ['resourceId'],
     });

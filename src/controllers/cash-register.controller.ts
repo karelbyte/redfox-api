@@ -8,6 +8,7 @@ import {
   Put,
   ParseUUIDPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { CashRegisterService } from '../services/cash-register.service';
 import { CreateCashRegisterDto } from '../dtos/cash-register/create-cash-register.dto';
@@ -23,11 +24,28 @@ import { UserId } from '../decorators/user-id.decorator';
 export class CashRegisterController {
   constructor(private readonly cashRegisterService: CashRegisterService) {}
 
+  @Get()
+  findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('term') term: string,
+    @UserId() userId: string,
+  ) {
+    return this.cashRegisterService.findAll(page, limit, term, userId);
+  }
+
   @Get('current')
   getCurrentCashRegister(
     @UserId() userId: string,
   ): Promise<CashRegisterResponseDto> {
     return this.cashRegisterService.getCurrentCashRegister(userId);
+  }
+
+  @Get('authorized-open')
+  getAuthorizedOpenCashRegisters(
+    @UserId() userId: string,
+  ): Promise<CashRegisterResponseDto[]> {
+    return this.cashRegisterService.getAuthorizedOpenCashRegisters(userId);
   }
 
   @Post()
