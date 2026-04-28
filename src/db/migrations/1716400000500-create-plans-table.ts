@@ -90,6 +90,12 @@ export class CreatePlansTable1716400000500 implements MigrationInterface {
             default: true,
           },
           {
+            name: 'referrer_code',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: isPostgres ? 'timestamp' : 'datetime',
             default: isPostgres ? 'CURRENT_TIMESTAMP' : 'CURRENT_TIMESTAMP',

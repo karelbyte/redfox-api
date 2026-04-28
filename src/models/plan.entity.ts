@@ -62,6 +62,9 @@ export class Plan {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  referrer_code: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -213,6 +213,14 @@ export class AdminService {
     });
   }
 
+  async updateOrganization(id: string, data: Partial<Organization>) {
+    await this.orgRepository.update(id, data);
+    return this.orgRepository.findOne({
+      where: { id },
+      relations: ['subscription', 'subscription.plan'],
+    });
+  }
+
   async getSubscriptions(page = 1, limit = 10, search?: string) {
     const query = this.subRepository
       .createQueryBuilder('sub')

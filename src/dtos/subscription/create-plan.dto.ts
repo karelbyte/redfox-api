@@ -47,4 +47,8 @@ export class CreatePlanDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @IsString()
+  @IsOptional()
+  referrer_code?: string;
 }

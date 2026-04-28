@@ -15,6 +15,8 @@ import { Public } from '../decorators/public.decorator';
 import { ConvertTrialDto } from '../dtos/subscription/convert-trial.dto';
 import { CreatePlanDto } from '../dtos/subscription/create-plan.dto';
 import { TranslationService } from '../services/translation.service';
+import { TenantContext } from '../services/tenant-context.service';
+import { OrganizationService } from '../services/organization.service';
 
 @Controller('subscriptions')
 @UseGuards(AuthGuard)
@@ -22,6 +24,8 @@ export class SubscriptionController {
   constructor(
     private subscriptionService: SubscriptionService,
     private translationService: TranslationService,
+    private tenantContext: TenantContext,
+    private organizationService: OrganizationService,
   ) {}
 
   @Get('status')
@@ -68,8 +72,38 @@ export class SubscriptionController {
   }
 
   @Get('plans')
-  async getPlans() {
-    return this.subscriptionService.getAllPlans();
+  async getPlans(@Req() request: any) {
+    // Intentar obtener desde TenantContext primero
+    const organizationId = this.tenantContext.getOrganizationId();
+    
+    let organizationReferrerCode: string | undefined = undefined;
+    
+    // Si TenantContext no funciona, intentar desde req.user
+    if (organizationId) {
+      const organization = await this.organizationService.findOne(organizationId);
+      organizationReferrerCode = organization?.referrer_code || undefined;
+    } else if (request.user) {
+      // Si tenemos organizationId pero no la organización completa, buscarla
+      if (request.user.organizationId && !request.user.organization) {
+        const organization = await this.organizationService.findOne(request.user.organizationId);
+        organizationReferrerCode = organization?.referrer_code || undefined;
+      } else if (request.user.organization) {
+        organizationReferrerCode = request.user.organization.referrer_code || undefined;
+      }
+    }
+    
+    const plans = await this.subscriptionService.getAllPlans(organizationReferrerCode);
+    
+    return plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      currency: p.currency,
+      billing_period: p.billing_period,
+      description: p.description,
+      features: p.features,
+      is_default: p.is_default,
+    }));
   }
 
   @Get('plans/admin')

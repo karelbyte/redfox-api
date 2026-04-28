@@ -69,10 +69,26 @@ export class SubscriptionService {
       throw new BadRequestException(t('org_not_found'));
     }
 
-    const plan = await this.planRepository.findOne({
-      where: { is_active: true },
-      order: { created_at: 'ASC' },
-    });
+    let plan: Plan | null = null;
+
+    // Si la organización tiene referrer_code, buscar plan con ese código
+    if (organization.referrer_code) {
+      plan = await this.planRepository.findOne({
+        where: { 
+          is_active: true,
+          referrer_code: organization.referrer_code 
+        },
+        order: { created_at: 'ASC' },
+      });
+    }
+
+    // Si no se encontró plan con referrer_code, usar el plan default
+    if (!plan) {
+      plan = await this.planRepository.findOne({
+        where: { is_active: true },
+        order: { created_at: 'ASC' },
+      });
+    }
 
     if (!plan) {
       throw new BadRequestException(t('no_active_plan'));
@@ -358,10 +374,20 @@ export class SubscriptionService {
     return this.parsePlanFeatures(saved);
   }
 
-  async getAllPlans() {
+  async getAllPlans(organizationReferrerCode?: string) {
+    const where: any = { is_active: true };
+
+    if (organizationReferrerCode) {
+      where.referrer_code = organizationReferrerCode;
+    } else {
+      where.is_public = true;
+      where.referrer_code = null as any;
+    }
+
     const plans = await this.planRepository.find({
-      where: { is_active: true, is_public: true },
+      where,
     });
+    
     return plans.map((p) => this.parsePlanFeatures(p));
   }
 

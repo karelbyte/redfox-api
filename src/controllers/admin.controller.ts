@@ -4,6 +4,7 @@ import {
   Put,
   Post,
   Delete,
+  Patch,
   Param,
   Body,
   UseGuards,
@@ -14,6 +15,7 @@ import { AuthService } from '../services/auth.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { SuperAdminGuard } from '../guards/super-admin.guard';
 import { PartialOrganizationCleanupDto } from '../dtos/admin/partial-organization-cleanup.dto';
+import { Organization } from '../models/organization.entity';
 
 @Controller('admin')
 @UseGuards(AuthGuard, SuperAdminGuard)
@@ -109,12 +111,20 @@ export class AdminController {
     return this.adminService.getOrganizations();
   }
 
-  @Put('organizations/:id')
+  @Put('organizations/:id/toggle')
   toggleOrganization(
     @Param('id') id: string,
     @Body() body: { status: boolean },
   ) {
     return this.adminService.toggleOrganization(id, body.status);
+  }
+
+  @Put('organizations/:id')
+  updateOrganization(
+    @Param('id') id: string,
+    @Body() body: Partial<Organization>,
+  ) {
+    return this.adminService.updateOrganization(id, body);
   }
 
   @Delete('organizations/:id')

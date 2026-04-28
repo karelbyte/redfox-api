@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger, UseGuards, Req } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { EmailQueue } from '../queues/email.queue';
 import { SubscriptionService } from '../services/subscription.service';
+import { TenantContext } from '../services/tenant-context.service';
+import { OrganizationService } from '../services/organization.service';
+import { AuthGuard } from '../guards/auth.guard';
 
 class ContactDto {
   @IsString()
@@ -34,7 +37,8 @@ export class PublicPlansController {
 
   @Get('plans')
   async getPublicPlans() {
-    const plans = await this.subscriptionService.getAllPlans();
+    // Solo planes públicos para landing page
+    const plans = await this.subscriptionService.getAllPlans(undefined);
     return plans.map((p) => ({
       id: p.id,
       name: p.name,
