@@ -5,6 +5,7 @@ import {
   MaxLength,
   Matches,
   IsOptional,
+  IsIn,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -32,4 +33,9 @@ export class RegisterDto {
   @IsString()
   @MaxLength(20)
   referrer_code?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['es', 'en', 'zh'])
+  language?: string;
 }

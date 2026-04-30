@@ -333,6 +333,24 @@ export class AdminService {
     });
   }
 
+  async updateUser(id: string, updateData: any) {
+    // Si se incluye contraseña, hashearla
+    if (updateData.password) {
+      const bcrypt = require('bcrypt');
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
+    }
+
+    // Actualizar el usuario directamente
+    await this.userRepository.update(id, updateData);
+    
+    // Retornar el usuario actualizado con relaciones
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['roles', 'organization'],
+    });
+  }
+
   async toggleUser(id: string, status: boolean) {
     await this.userRepository.update(id, { status });
     return this.userRepository.findOne({

@@ -17,6 +17,7 @@ import { RolePermissionModule } from './role-permission.module';
 import { TaxModule } from './tax.module';
 import { MeasurementUnitModule } from './measurement-unit.module';
 import { LanguageModule } from './language.module';
+import { Language } from '../models/language.entity';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { LanguageModule } from './language.module';
       secret: AppConfig().appKey,
       signOptions: { expiresIn: '30d' },
     }),
-    TypeOrmModule.forFeature([Currency]),
+    TypeOrmModule.forFeature([Currency, Language]),
     UserModule,
     EmailConfigModule,
     RoleModule,

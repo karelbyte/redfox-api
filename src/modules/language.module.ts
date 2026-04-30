@@ -17,6 +17,6 @@ import { OrganizationModule } from './organization.module';
     UserContextService,
     TenantContext,
   ],
-  exports: [LanguageService, TranslationService, UserContextService],
+  exports: [LanguageService, TranslationService, UserContextService, TypeOrmModule],
 })
 export class LanguageModule {}

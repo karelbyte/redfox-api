@@ -1622,17 +1622,212 @@ export class TranslationService {
     'shipment.tenant_required': {
       es: 'Tenant requerido',
       en: 'Tenant required',
-      zh: '需要租户',
+      zh: 'Tenant required',
     },
-    'home.welcome_message': {
-      es: 'Todas las request se atienden por /api',
-      en: 'All requests are handled via /api',
-      zh: '所有请求均通过 /api 处理',
+    'auth.welcome_title': {
+      es: 'Bienvenido a Nitro',
+      en: 'Welcome to Nitro',
+      zh: 'Welcome to Nitro',
     },
-    'home.test_error_message': {
-      es: '🚨 Este es un error provocado para probar el envío de correos por Gmail OAuth2',
-      en: '🚨 This is a triggered error to test Gmail OAuth2 email sending',
-      zh: '🚨 这是一个触发的错误，用于测试 Gmail OAuth2 邮件发送',
+    'auth.welcome_message': {
+      es: '¡Hola, {name}! Te damos la bienvenida a Nitro. Estamos emocionados de tenerte con nosotros y ayudarte a potenciar tu negocio.',
+      en: 'Hello, {name}! Welcome to Nitro. We are excited to have you with us and help you boost your business.',
+      zh: 'Hello, {name}! Welcome to Nitro. We are excited to have you with us and help you boost your business.',
+    },
+    'auth.activate_button': {
+      es: 'Activar mi cuenta',
+      en: 'Activate my account',
+      zh: 'Activate my account',
+    },
+    'auth.activate_instructions': {
+      es: 'Para comenzar a explorar todas las funciones, por favor activa tu cuenta haciendo clic en el botón de abajo:',
+      en: 'To start exploring all the features, please activate your account by clicking the button below:',
+      zh: 'To start exploring all the features, please activate your account by clicking the button below:',
+    },
+    'auth.copy_link_text': {
+      es: 'Si el botón no funciona, copia y pega este enlace en tu navegador:',
+      en: 'If the button doesn\'t work, copy and paste this link into your browser:',
+      zh: 'If the button doesn\'t work, copy and paste this link into your browser:',
+    },
+    'auth.email_subject': {
+      es: 'Activa tu cuenta de Nitro',
+      en: 'Activate your Nitro account',
+      zh: 'Activate your Nitro account',
+    },
+    'auth.activation_success_title': {
+      es: '¡Bienvenido a Nitro!',
+      en: 'Welcome to Nitro!',
+      zh: 'Welcome to Nitro!',
+    },
+    'auth.account_activated': {
+      es: 'CUENTA ACTIVADA',
+      en: 'ACCOUNT ACTIVATED',
+      zh: 'ACCOUNT ACTIVATED',
+    },
+    'auth.activation_welcome': {
+      es: '¡Hola, {name}!',
+      en: 'Hello, {name}!',
+      zh: 'Hello, {name}!',
+    },
+    'auth.activation_success_message': {
+      es: 'Tu cuenta ha sido activada exitosamente. ¡Estamos emocionados de tenerte con nosotros!',
+      en: 'Your account has been successfully activated. We are excited to have you with us!',
+      zh: 'Your account has been successfully activated. We are excited to have you with us!',
+    },
+    'auth.trial_period_activated': {
+      es: 'Período de Prueba Activado',
+      en: 'Trial Period Activated',
+      zh: 'Trial Period Activated',
+    },
+    'auth.trial_duration': {
+      es: 'Duración',
+      en: 'Duration',
+      zh: 'Duration',
+    },
+    'auth.trial_ends': {
+      es: 'Finaliza',
+      en: 'Ends',
+      zh: 'Ends',
+    },
+    'auth.trial_access': {
+      es: 'Acceso',
+      en: 'Access',
+      zh: 'Access',
+    },
+    'auth.trial_all_features': {
+      es: 'Todas las funcionalidades',
+      en: 'All features',
+      zh: 'All features',
+    },
+    'auth.trial_description': {
+      es: 'Durante estos 7 días podrás explorar todas las características de Nitro sin ningún costo.',
+      en: 'During these 7 days you can explore all Nitro features at no cost.',
+      zh: 'During these 7 days you can explore all Nitro features at no cost.',
+    },
+    'auth.single_plan_title': {
+      es: 'Plan Único - Todas las Características',
+      en: 'Single Plan - All Features',
+      zh: 'Single Plan - All Features',
+    },
+    'auth.plan_price': {
+      es: '$700 <span style="font-size: 18px; color: #CBD5E1;">MXN/mes</span>',
+      en: '$700 <span style="font-size: 18px; color: #CBD5E1;">MXN/month</span>',
+      zh: '$700 <span style="font-size: 18px; color: #CBD5E1;">MXN/month</span>',
+    },
+    'auth.unlimited_users': {
+      es: 'Usuarios ilimitados',
+      en: 'Unlimited users',
+      zh: 'Unlimited users',
+    },
+    'auth.unlimited_warehouses': {
+      es: 'Almacenes ilimitados',
+      en: 'Unlimited warehouses',
+      zh: 'Unlimited warehouses',
+    },
+    'auth.unlimited_products': {
+      es: 'Productos ilimitados',
+      en: 'Unlimited products',
+      zh: 'Unlimited products',
+    },
+    'auth.inventory_strategies': {
+      es: 'Todas las estrategias de inventario (FIFO, AVERAGE, FEFO)',
+      en: 'All inventory strategies (FIFO, AVERAGE, FEFO)',
+      zh: 'All inventory strategies (FIFO, AVERAGE, FEFO)',
+    },
+    'auth.credit_management': {
+      es: 'Gestión de crédito a clientes',
+      en: 'Customer credit management',
+      zh: 'Customer credit management',
+    },
+    'auth.electronic_invoicing': {
+      es: 'Facturación electrónica (CFDI)',
+      en: 'Electronic invoicing (CFDI)',
+      zh: 'Electronic invoicing (CFDI)',
+    },
+    'auth.advanced_reports': {
+      es: 'Reportes avanzados y análisis',
+      en: 'Advanced reports and analytics',
+      zh: 'Advanced reports and analytics',
+    },
+    'auth.api_webhooks': {
+      es: 'API REST y Webhooks',
+      en: 'REST API and Webhooks',
+      zh: 'REST API and Webhooks',
+    },
+    'auth.priority_support': {
+      es: 'Soporte prioritario',
+      en: 'Priority support',
+      zh: 'Priority support',
+    },
+    'auth.after_trial_message': {
+      es: 'Después del período de prueba, necesitarás activar tu suscripción para continuar usando Nitro.',
+      en: 'After the trial period, you will need to activate your subscription to continue using Nitro.',
+      zh: 'After the trial period, you will need to activate your subscription to continue using Nitro.',
+    },
+    'auth.start_using_nitro': {
+      es: 'Comenzar a usar Nitro',
+      en: 'Start using Nitro',
+      zh: 'Start using Nitro',
+    },
+    'auth.trial_tip': {
+      es: 'Tip: Te enviaremos recordatorios antes de que finalice tu período de prueba.',
+      en: 'Tip: We will send you reminders before your trial period ends.',
+      zh: 'Tip: We will send you reminders before your trial period ends.',
+    },
+    'auth.activation_email_subject': {
+      es: '¡Bienvenido a Nitro! Tu cuenta está activa',
+      en: 'Welcome to Nitro! Your account is active',
+      zh: 'Welcome to Nitro! Your account is active',
+    },
+    'auth.reset_password_title': {
+      es: 'Restablecer Contraseña - Nitro',
+      en: 'Reset Password - Nitro',
+      zh: 'Reset Password - Nitro',
+    },
+    'auth.reset_password_subject': {
+      es: 'Restablecer contraseña - Nitro',
+      en: 'Reset password - Nitro',
+      zh: 'Reset password - Nitro',
+    },
+    'auth.reset_password_heading': {
+      es: 'Restablecer Contraseña',
+      en: 'Reset Password',
+      zh: 'Reset Password',
+    },
+    'auth.reset_greeting': {
+      es: 'Hola,',
+      en: 'Hello,',
+      zh: 'Hello,',
+    },
+    'auth.reset_instructions': {
+      es: 'Hemos recibido una solicitud para restablecer la contraseña de tu cuenta. Si no hiciste esta solicitud, puedes ignorar este correo.',
+      en: 'We have received a request to reset your account password. If you didn\'t make this request, you can ignore this email.',
+      zh: 'We have received a request to reset your account password. If you didn\'t make this request, you can ignore this email.',
+    },
+    'auth.reset_button': {
+      es: 'Restablecer Contraseña',
+      en: 'Reset Password',
+      zh: 'Reset Password',
+    },
+    'auth.reset_expiry': {
+      es: 'Este enlace expirará en 1 hora por razones de seguridad.',
+      en: 'This link will expire in 1 hour for security reasons.',
+      zh: 'This link will expire in 1 hour for security reasons.',
+    },
+    'auth.reset_copy_link': {
+      es: 'Si tienes problemas con el botón, copia y pega el siguiente enlace en tu navegador:',
+      en: 'If you have trouble with the button, copy and paste the following link into your browser:',
+      zh: 'If you have trouble with the button, copy and paste the following link into your browser:',
+    },
+    'auth.footer_text': {
+      es: 'El motor de tu negocio.<br>Todos los derechos reservados.',
+      en: 'The engine of your business.<br>All rights reserved.',
+      zh: 'The engine of your business.<br>All rights reserved.',
+    },
+    'auth.ignore_email': {
+      es: 'Este enlace de activación es válido por las próximas <strong>72 horas</strong> (3 días).<br><br>Si no solicitaste esta cuenta, puedes ignorar este correo sin ningún problema.',
+      en: 'This activation link is valid for the next <strong>72 hours</strong> (3 days).<br><br>If you didn\'t request this account, you can ignore this email without any problem.',
+      zh: 'This activation link is valid for the next <strong>72 hours</strong> (3 days).<br><br>If you didn\'t request this account, you can ignore this email without any problem.',
     },
     };
 

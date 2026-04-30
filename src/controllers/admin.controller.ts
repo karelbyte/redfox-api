@@ -194,6 +194,11 @@ export class AdminController {
   }
 
   @Put('users/:id')
+  updateUser(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.updateUser(id, body);
+  }
+
+  @Patch('users/:id/toggle')
   toggleUser(@Param('id') id: string, @Body() body: { status: boolean }) {
     return this.adminService.toggleUser(id, body.status);
   }

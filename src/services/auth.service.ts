@@ -26,6 +26,7 @@ import { MeasurementUnitService } from './measurement-unit.service';
 import { TenantContext } from './tenant-context.service';
 import { TaxType } from '../models/tax.entity';
 import { TranslationService } from './translation.service';
+import { Language } from '../models/language.entity';
 
 @Injectable()
 export class AuthService {
@@ -46,6 +47,8 @@ export class AuthService {
     private readonly translationService: TranslationService,
     @InjectRepository(Currency)
     private readonly currencyRepository: Repository<Currency>,
+    @InjectRepository(Language)
+    private readonly languageRepository: Repository<Language>,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -294,7 +297,44 @@ export class AuthService {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
-    const activationLink = `${frontendUrl}/es/activate?token=${token}`;
+    // Usar el idioma del usuario o fallback a español
+    const userLanguage = registerDto.language || 'es';
+    const activationLink = `${frontendUrl}/${userLanguage}/activate?token=${token}`;
+
+    // Obtener traducciones según el idioma del usuario
+    const welcomeTitle = await this.translationService.translateWithLanguage(
+      'auth.welcome_title', 
+      userLanguage
+    );
+    const welcomeMessage = await this.translationService.translateWithLanguage(
+      'auth.welcome_message', 
+      userLanguage, 
+      { name: newUser.name }
+    );
+    const activateButton = await this.translationService.translateWithLanguage(
+      'auth.activate_button', 
+      userLanguage
+    );
+    const activateInstructions = await this.translationService.translateWithLanguage(
+      'auth.activate_instructions', 
+      userLanguage
+    );
+    const copyLinkText = await this.translationService.translateWithLanguage(
+      'auth.copy_link_text', 
+      userLanguage
+    );
+    const footerText = await this.translationService.translateWithLanguage(
+      'auth.footer_text', 
+      userLanguage
+    );
+    const emailSubject = await this.translationService.translateWithLanguage(
+      'auth.email_subject', 
+      userLanguage
+    );
+    const ignoreEmail = await this.translationService.translateWithLanguage(
+      'auth.ignore_email', 
+      userLanguage
+    );
 
     const html = `
       <!DOCTYPE html>
@@ -302,7 +342,7 @@ export class AuthService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bienvenido a Nitro</title>
+        <title>${welcomeTitle}</title>
         <style>
           body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -398,24 +438,22 @@ export class AuthService {
             <h1>NITRO<span>.</span></h1>
           </div>
           <div class="content">
-            <p class="welcome-text">¡Hola, ${newUser.name}!</p>
-            <p class="instruction-text">Te damos la bienvenida a <span class="highlight">Nitro</span>. Estamos emocionados de tenerte con nosotros y ayudarte a potenciar tu negocio.</p>
-            <p class="instruction-text">Para comenzar a explorar todas las funciones, por favor activa tu cuenta haciendo clic en el botón de abajo:</p>
+            <p class="welcome-text">${welcomeMessage}</p>
+            <p class="instruction-text">${activateInstructions}</p>
             
             <div style="text-align: center;">
-              <a href="${activationLink}" class="button">Activar mi cuenta</a>
+              <a href="${activationLink}" class="button">${activateButton}</a>
             </div>
             
-            <p class="instruction-text">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+            <p class="instruction-text">${copyLinkText}</p>
             <p style="word-break: break-all; font-size: 12px; color: #EAB308; background: #0F172A; padding: 12px; border-radius: 6px; border: 1px solid #334155;">${activationLink}</p>
             
             <div class="expiry-notice">
-              Este enlace de activación es válido por las próximas <strong>72 horas</strong> (3 días).<br><br>
-              Si no solicitaste esta cuenta, puedes ignorar este correo sin ningún problema.
+              ${ignoreEmail}
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>Todos los derechos reservados.
+            &copy; ${new Date().getFullYear()} NITRO. ${footerText}
           </div>
         </div>
       </body>
@@ -424,11 +462,10 @@ export class AuthService {
 
     await this.emailQueue.addEmailJob({
       to: newUser.email,
-      subject: 'Activa tu cuenta de Nitro',
+      subject: emailSubject,
       html,
     });
 
-    // Notificar al admin sobre el nuevo registro
     const notifyEmail = this.configService.get<string>('ERROR_NOTIFY_EMAIL');
     if (notifyEmail) {
       try {
@@ -480,6 +517,9 @@ export class AuthService {
         return { message, alreadyActive: true };
       }
 
+      // Obtener idioma del usuario
+      const userLanguage = await this.getUserLanguage(userId);
+
       await this.userService.update(user.id, { status: true } as any);
 
       let subscription: any = null;
@@ -528,6 +568,113 @@ export class AuthService {
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
 
+      // Obtener traducciones para el correo de activación
+      const activationTitle = await this.translationService.translateWithLanguage(
+        'auth.activation_success_title', 
+        userLanguage
+      );
+      const accountActivated = await this.translationService.translateWithLanguage(
+        'auth.account_activated', 
+        userLanguage
+      );
+      const welcomeMessage = await this.translationService.translateWithLanguage(
+        'auth.activation_welcome', 
+        userLanguage, 
+        { name: user.name }
+      );
+      const activationSuccessMessage = await this.translationService.translateWithLanguage(
+        'auth.activation_success_message', 
+        userLanguage
+      );
+      const trialPeriodActivated = await this.translationService.translateWithLanguage(
+        'auth.trial_period_activated', 
+        userLanguage
+      );
+      const trialDuration = await this.translationService.translateWithLanguage(
+        'auth.trial_duration', 
+        userLanguage
+      );
+      const trialEnds = await this.translationService.translateWithLanguage(
+        'auth.trial_ends', 
+        userLanguage
+      );
+      const trialAccess = await this.translationService.translateWithLanguage(
+        'auth.trial_access', 
+        userLanguage
+      );
+      const trialAllFeatures = await this.translationService.translateWithLanguage(
+        'auth.trial_all_features', 
+        userLanguage
+      );
+      const trialDescription = await this.translationService.translateWithLanguage(
+        'auth.trial_description', 
+        userLanguage
+      );
+      const singlePlanTitle = await this.translationService.translateWithLanguage(
+        'auth.single_plan_title', 
+        userLanguage
+      );
+      const planPrice = await this.translationService.translateWithLanguage(
+        'auth.plan_price', 
+        userLanguage
+      );
+      const unlimitedUsers = await this.translationService.translateWithLanguage(
+        'auth.unlimited_users', 
+        userLanguage
+      );
+      const unlimitedWarehouses = await this.translationService.translateWithLanguage(
+        'auth.unlimited_warehouses', 
+        userLanguage
+      );
+      const unlimitedProducts = await this.translationService.translateWithLanguage(
+        'auth.unlimited_products', 
+        userLanguage
+      );
+      const inventoryStrategies = await this.translationService.translateWithLanguage(
+        'auth.inventory_strategies', 
+        userLanguage
+      );
+      const creditManagement = await this.translationService.translateWithLanguage(
+        'auth.credit_management', 
+        userLanguage
+      );
+      const electronicInvoicing = await this.translationService.translateWithLanguage(
+        'auth.electronic_invoicing', 
+        userLanguage
+      );
+      const advancedReports = await this.translationService.translateWithLanguage(
+        'auth.advanced_reports', 
+        userLanguage
+      );
+      const apiWebhooks = await this.translationService.translateWithLanguage(
+        'auth.api_webhooks', 
+        userLanguage
+      );
+      const prioritySupport = await this.translationService.translateWithLanguage(
+        'auth.priority_support', 
+        userLanguage
+      );
+      const afterTrialMessage = await this.translationService.translateWithLanguage(
+        'auth.after_trial_message', 
+        userLanguage
+      );
+      const startUsingNitro = await this.translationService.translateWithLanguage(
+        'auth.start_using_nitro', 
+        userLanguage
+      );
+      const trialTip = await this.translationService.translateWithLanguage(
+        'auth.trial_tip', 
+        userLanguage
+      );
+      const activationEmailSubject = await this.translationService.translateWithLanguage(
+        'auth.activation_email_subject', 
+        userLanguage
+      );
+      const footerText = await this.translationService.translateWithLanguage(
+        'auth.footer_text', 
+        userLanguage
+      );
+
       const trialEndDate = subscription?.trial_end_date
         ? new Date(subscription.trial_end_date).toLocaleDateString('es-MX', {
             year: 'numeric',
@@ -542,7 +689,7 @@ export class AuthService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>¡Bienvenido a Nitro!</title>
+          <title>${activationTitle}</title>
           <style>
             body {
               font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -690,63 +837,6 @@ export class AuthService {
         </head>
         <body>
           <div class="container">
-            <div class="header">
-              <h1>NITRO<span>.</span></h1>
-            </div>
-            <div class="content">
-              <div style="text-align: center;">
-                <span class="success-badge">✓ CUENTA ACTIVADA</span>
-              </div>
-              
-              <p class="welcome-text">¡Hola, ${user.name}!</p>
-              <p class="instruction-text">
-                Tu cuenta ha sido activada exitosamente. ¡Estamos emocionados de tenerte con nosotros!
-              </p>
-
-              <div class="trial-box">
-                <h3>🎉 Período de Prueba Activado</h3>
-                <p class="trial-info">
-                  <strong>Duración:</strong> 7 días gratis<br>
-                  <strong>Finaliza:</strong> ${trialEndDate}<br>
-                  <strong>Acceso:</strong> Todas las funcionalidades
-                </p>
-                <p class="instruction-text">
-                  Durante estos 7 días podrás explorar todas las características de Nitro sin ningún costo.
-                </p>
-              </div>
-
-              <div class="plan-box">
-                <h3>Plan Único - Todas las Características</h3>
-                <div class="price">$700 <span style="font-size: 18px; color: #CBD5E1;">MXN/mes</span></div>
-                
-                <ul class="plan-features">
-                  <li>Usuarios ilimitados</li>
-                  <li>Almacenes ilimitados</li>
-                  <li>Productos ilimitados</li>
-                  <li>Todas las estrategias de inventario (FIFO, AVERAGE, FEFO)</li>
-                  <li>Gestión de crédito a clientes</li>
-                  <li>Facturación electrónica (CFDI)</li>
-                  <li>Reportes avanzados y análisis</li>
-                  <li>API REST y Webhooks</li>
-                  <li>Soporte prioritario</li>
-                </ul>
-
-                <p class="instruction-text">
-                  Después del período de prueba, necesitarás activar tu suscripción para continuar usando Nitro.
-                </p>
-              </div>
-
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="${frontendUrl}" class="button">Comenzar a usar Nitro</a>
-              </div>
-
-              <p class="instruction-text" style="font-size: 14px; color: #64748B; text-align: center;">
-                💡 Tip: Te enviaremos recordatorios antes de que finalice tu período de prueba.
-              </p>
-            </div>
-            <div class="footer">
-              &copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>
-              Todos los derechos reservados.
             </div>
           </div>
         </body>
@@ -755,7 +845,7 @@ export class AuthService {
 
       await this.emailQueue.addEmailJob({
         to: user.email,
-        subject: '¡Bienvenido a Nitro! Tu cuenta está activa',
+        subject: activationEmailSubject,
         html,
       });
 
@@ -773,18 +863,71 @@ export class AuthService {
     }
   }
 
+  private async getUserLanguage(userId: string): Promise<string> {
+    try {
+      const language = await this.languageRepository.findOne({
+        where: { userId },
+      });
+      return language?.code || 'es';
+    } catch (error) {
+      console.warn('Error getting user language:', error);
+      return 'es';
+    }
+  }
+
   async forgotPassword(email: string): Promise<void> {
     const user = await this.userService.findByEmailForAuth(email);
     if (!user) {
       return;
     }
 
+    // Obtener idioma del usuario
+    const userLanguage = await this.getUserLanguage(user.id);
+
     const payload = { sub: user.id, type: 'password-reset' };
     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
 
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const resetLink = `${frontendUrl}/es/reset-password?token=${token}`;
+    const resetLink = `${frontendUrl}/${userLanguage}/reset-password?token=${token}`;
+
+    // Obtener traducciones para el correo de restablecimiento
+    const resetTitle = await this.translationService.translateWithLanguage(
+      'auth.reset_password_title', 
+      userLanguage
+    );
+    const resetSubject = await this.translationService.translateWithLanguage(
+      'auth.reset_password_subject', 
+      userLanguage
+    );
+    const resetHeading = await this.translationService.translateWithLanguage(
+      'auth.reset_password_heading', 
+      userLanguage
+    );
+    const resetGreeting = await this.translationService.translateWithLanguage(
+      'auth.reset_greeting', 
+      userLanguage
+    );
+    const resetInstructions = await this.translationService.translateWithLanguage(
+      'auth.reset_instructions', 
+      userLanguage
+    );
+    const resetButton = await this.translationService.translateWithLanguage(
+      'auth.reset_button', 
+      userLanguage
+    );
+    const resetExpiry = await this.translationService.translateWithLanguage(
+      'auth.reset_expiry', 
+      userLanguage
+    );
+    const resetCopyLink = await this.translationService.translateWithLanguage(
+      'auth.reset_copy_link', 
+      userLanguage
+    );
+    const footerText = await this.translationService.translateWithLanguage(
+      'auth.footer_text', 
+      userLanguage
+    );
 
     const html = `
       <!DOCTYPE html>
@@ -792,7 +935,7 @@ export class AuthService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Restablecer Contraseña - Nitro</title>
+        <title>${resetTitle}</title>
         <style>
           body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -865,17 +1008,17 @@ export class AuthService {
             <h1>NITRO</h1>
           </div>
           <div class="content">
-            <h2>Restablecer Contraseña</h2>
-            <p>Hola,</p>
-            <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta. Si no hiciste esta solicitud, puedes ignorar este correo.</p>
+            <h2>${resetHeading}</h2>
+            <p>${resetGreeting}</p>
+            <p>${resetInstructions}</p>
             <div class="button-container">
-              <a href="${resetLink}" class="button">Restablecer Contraseña</a>
+              <a href="${resetLink}" class="button">${resetButton}</a>
             </div>
-            <p>Este enlace expirará en 1 hora por razones de seguridad.</p>
-            <p>Si tienes problemas con el botón, copia y pega el siguiente enlace en tu navegador:</p>
+            <p>${resetExpiry}</p>
+            <p>${resetCopyLink}</p>
             <p style="word-break: break-all; font-size: 12px; color: #64748B;">${resetLink}</p>
           </div>
-          <div class="footer">&copy; ${new Date().getFullYear()} NITRO. El motor de tu negocio.<br>Todos los derechos reservados.</div>
+          <div class="footer">&copy; ${new Date().getFullYear()} NITRO. ${footerText}</div>
         </div>
       </body>
       </html>
@@ -883,7 +1026,7 @@ export class AuthService {
 
     await this.emailQueue.addEmailJob({
       to: user.email,
-      subject: 'Restablecer contraseña - Nitro',
+      subject: resetSubject,
       html,
     });
   }
