@@ -355,21 +355,13 @@ export class InvoiceService {
     }
 
     const whereConditions: any = { organization_id: this.organizationId };
-    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length > 0) {
-      whereConditions.withdrawal = { warehouse: { id: In(authorizedWarehouseIds) } };
-    } else if (userId && authorizedWarehouseIds !== null) {
-      return {
-        data: [],
-        meta: { total: 0, page, limit, totalPages: 0 },
-      };
-    }
+    // Eliminada la validación de warehouse ya que no existe en Withdrawal entity
 
     const [invoices, total] = await this.invoiceRepository.findAndCount({
       where: whereConditions,
       relations: [
         'client',
         'withdrawal',
-        'withdrawal.warehouse',
         'details',
         'details.product',
         'details.product.brand',
