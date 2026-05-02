@@ -34,7 +34,6 @@ import { createKeyv } from '@keyv/redis';
           };
         }
 
-        // Fallback: caché en memoria
         return {
           ttl: 60 * 1000,
         };

@@ -60,7 +60,6 @@ export class CfdiProcessor {
       async () => {
         this.logger.log(`[CfdiProcessor] Processing CFDI for invoice: ${invoiceId}`);
 
-        // Recargar la factura con todas sus relaciones necesarias
         const invoice = await this.invoiceRepository.findOne({
           where: { id: invoiceId },
           relations: [
@@ -78,7 +77,6 @@ export class CfdiProcessor {
           return;
         }
 
-        // Verificar que la organización coincida (seguridad adicional)
         if (invoice.organization_id !== organizationId) {
           this.logger.error(
             `[CfdiProcessor] Organization mismatch: job=${organizationId}, invoice=${invoice.organization_id}`,
@@ -90,7 +88,6 @@ export class CfdiProcessor {
           `[CfdiProcessor] Tenant context set for organization: ${organizationId}`,
         );
 
-        // Verificar que sigue en estado PENDING_CFDI
         if (invoice.status !== InvoiceStatus.PENDING_CFDI) {
           this.logger.warn(
             `[CfdiProcessor] Invoice ${invoiceId} is no longer in PENDING_CFDI status (current: ${invoice.status}). Skipping.`,
@@ -101,7 +98,6 @@ export class CfdiProcessor {
         try {
           const packService = await this.certificationPackFactory.getPackService();
 
-          // Asegurar que todos los productos estén sincronizados con el PAC
           for (const detail of invoice.details) {
             if (detail.product && !detail.product.product_pack_id) {
               this.logger.log(
@@ -120,10 +116,8 @@ export class CfdiProcessor {
             }
           }
 
-          // Llamar al PAC para timbrar
           const cfdiResult = await packService.generateCFDI(invoice, options, emitterId);
 
-          // Actualizar la factura con el resultado del timbrado
           invoice.cfdi_uuid = this.isValidUUID(cfdiResult.uuid) ? cfdiResult.uuid : null;
           invoice.pack_invoice_id = cfdiResult.id;
           invoice.pack_invoice_response = {
@@ -146,7 +140,6 @@ export class CfdiProcessor {
             `[CfdiProcessor] ✅ CFDI generated successfully for invoice ${invoiceId}. UUID: ${uuidMessage}`,
           );
 
-          // Notificar al usuario
           try {
             if (userId) {
               const notificationMessage = cfdiResult.uuid
@@ -168,7 +161,6 @@ export class CfdiProcessor {
             `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
           );
 
-          // Marcar la factura como FAILED_CFDI para que pueda ser reintentada
           invoice.status = InvoiceStatus.FAILED_CFDI;
           invoice.pack_invoice_response = {
             error: error?.message || 'Unknown error',
@@ -176,7 +168,6 @@ export class CfdiProcessor {
           };
           await this.invoiceRepository.save(invoice);
 
-          // Notificar al usuario del error
           try {
             if (userId) {
               await this.notificationService.createInvoiceNotification(

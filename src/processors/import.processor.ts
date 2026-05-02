@@ -47,7 +47,6 @@ export class ImportProcessor implements OnModuleInit {
           ? ImportLogType.PRODUCT
           : ImportLogType.PROVIDER;
 
-    // Crear registro pending en import_logs
     const importLog = await this.importLogService.createPending(
       logType,
       userId,
@@ -112,7 +111,6 @@ export class ImportProcessor implements OnModuleInit {
           `⚙️ Processing product import: ${job.rows.length} rows for org=${organizationId}`,
         );
 
-        // ProductImportService usa TenantContext — necesitamos pasarle el orgId directamente
         const result = await this.productImportService.importRowsWithOrg(
           job.rows,
           organizationId,

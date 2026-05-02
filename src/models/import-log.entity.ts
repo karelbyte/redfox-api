@@ -67,11 +67,9 @@ export class ImportLog {
   @Column({ type: 'text', nullable: true })
   summary: string;
 
-  // JSON array de { row, code/sku, name, reason }
   @Column({ type: 'json', nullable: true })
   errors: any[];
 
-  // JSON array de { code/sku, name, reason }
   @Column({ type: 'json', nullable: true })
   pack_warnings: any[];
 

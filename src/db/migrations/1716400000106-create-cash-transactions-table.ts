@@ -122,7 +122,6 @@ export class CreateCashTransactionsTable1716400000106
       true,
     );
 
-    // Foreign key: cash_register_id -> cash_registers(id)
     await queryRunner.createForeignKey(
       'cash_transactions',
       new TableForeignKey({
@@ -134,19 +133,7 @@ export class CreateCashTransactionsTable1716400000106
       }),
     );
 
-    // Foreign key: sale_id -> withdrawals(id) - Comentado temporalmente
-    // await queryRunner.createForeignKey(
-    //   'cash_transactions',
-    //   new TableForeignKey({
-    //     columnNames: ['sale_id'],
-    //     referencedColumnNames: ['id'],
-    //     referencedTableName: 'withdrawals',
-    //     onDelete: 'SET NULL',
-    //     onUpdate: 'CASCADE',
-    //   }),
-    // );
 
-    // Foreign key: created_by -> users(id)
     await queryRunner.createForeignKey(
       'cash_transactions',
       new TableForeignKey({

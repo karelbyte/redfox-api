@@ -73,17 +73,14 @@ export class SubscriptionController {
 
   @Get('plans')
   async getPlans(@Req() request: any) {
-    // Intentar obtener desde TenantContext primero
     const organizationId = this.tenantContext.getOrganizationId();
     
     let organizationReferrerCode: string | undefined = undefined;
     
-    // Si TenantContext no funciona, intentar desde req.user
     if (organizationId) {
       const organization = await this.organizationService.findOne(organizationId);
       organizationReferrerCode = organization?.referrer_code || undefined;
     } else if (request.user) {
-      // Si tenemos organizationId pero no la organización completa, buscarla
       if (request.user.organizationId && !request.user.organization) {
         const organization = await this.organizationService.findOne(request.user.organizationId);
         organizationReferrerCode = organization?.referrer_code || undefined;

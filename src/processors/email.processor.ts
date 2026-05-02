@@ -27,13 +27,11 @@ export class EmailProcessor {
     this.logger.log(`Processing email job ${job.id} to ${job.data.to}`);
 
     try {
-      // 1. Asegurar que los adjuntos sean Buffers reales (Redis los serializa como objetos)
       if (job.data.attachments) {
         job.data.attachments = this.ensureBuffers(job.data.attachments);
       }
 
       if (job.data.organizationId) {
-        // Enviar usando la configuración de la organización
         const result = await this.emailService.sendOrganizationEmail(
           job.data.organizationId,
           {
@@ -50,7 +48,6 @@ export class EmailProcessor {
           );
         }
       } else {
-        // Enviar usando la configuración del sistema (fallback)
         const success = await this.emailService.sendSystemEmail(
           job.data.to,
           job.data.subject,
@@ -93,7 +90,6 @@ export class EmailProcessor {
   }
 }
 
-// Apply Bull decorators dynamically at runtime (only when @nestjs/bull is available)
 try {
   const bull = require('@nestjs/bull');
   if (bull.Processor) {
@@ -113,5 +109,4 @@ try {
     }
   }
 } catch {
-  // @nestjs/bull not installed, decorators not applied — this is fine
 }

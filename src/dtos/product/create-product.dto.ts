@@ -60,9 +60,9 @@ const transformToArray = ({
         }
         return parsed;
       }
-      return [parsed]; // Si no es array, convertir a array
+      return [parsed];
     } catch (error) {
-      return [value]; // Si falla el parse, tratar como string simple
+      return [value];
     }
   }
   return undefined;

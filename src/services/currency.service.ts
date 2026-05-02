@@ -41,7 +41,6 @@ export class CurrencyService {
     userId?: string,
   ): Promise<CurrencyResponseDto> {
     try {
-      // Verificar si ya existe una moneda con el mismo código
       const existingCurrency = await this.currencyRepository.findOne({
         where: {
           code: createCurrencyDto.code.toUpperCase(),

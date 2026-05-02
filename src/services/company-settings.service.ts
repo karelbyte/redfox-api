@@ -38,7 +38,6 @@ export class CompanySettingsService {
         });
         settings = await this.companySettingsRepository.save(settings);
       } catch (error: any) {
-        // Race condition: otro request ya insertó el registro, buscarlo de nuevo
         if (
           error?.code === '23505' ||
           error?.message?.includes('UQ_company_settings_organization')

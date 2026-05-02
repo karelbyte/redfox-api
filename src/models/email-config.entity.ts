@@ -25,7 +25,7 @@ export class EmailConfig {
   organization: Organization;
 
   @Column({ type: 'varchar', length: 50, default: 'smtp' })
-  provider: string; // smtp, sendgrid, postmark, mailgun, brevo
+  provider: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   apiKey: string;
