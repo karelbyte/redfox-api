@@ -1829,7 +1829,44 @@ export class TranslationService {
       en: 'This activation link is valid for the next <strong>72 hours</strong> (3 days).<br><br>If you didn\'t request this account, you can ignore this email without any problem.',
       zh: 'This activation link is valid for the next <strong>72 hours</strong> (3 days).<br><br>If you didn\'t request this account, you can ignore this email without any problem.',
     },
-    };
+
+    // HR Module messages
+    'hr.department.not_found': {
+      es: 'Departamento no encontrado',
+      en: 'Department not found',
+      zh: '未找到部门',
+    },
+    'hr.position.not_found': {
+      es: 'Puesto no encontrado',
+      en: 'Position not found',
+      zh: '未找到职位',
+    },
+    'hr.employee.not_found': {
+      es: 'Empleado no encontrado',
+      en: 'Employee not found',
+      zh: '未找到员工',
+    },
+    'hr.attendance.not_found': {
+      es: 'Registro de asistencia no encontrado',
+      en: 'Attendance record not found',
+      zh: '未找到考勤记录',
+    },
+    'hr.leave_request.not_found': {
+      es: 'Solicitud de ausencia no encontrada',
+      en: 'Leave request not found',
+      zh: '未找到请假申请',
+    },
+    'hr.payroll.not_found': {
+      es: 'Registro de nómina no encontrado',
+      en: 'Payroll record not found',
+      zh: '未找到工资记录',
+    },
+    'hr.document.not_found': {
+      es: 'Documento no encontrado',
+      en: 'Document not found',
+      zh: '未找到文档',
+    },
+  };
 
   constructor(
     @InjectRepository(Language)

@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
+import { SubscriptionService } from '../services/subscription.service';
+import { AdminQueueService } from '../services/admin-queue.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { SuperAdminGuard } from '../guards/super-admin.guard';
 import { PartialOrganizationCleanupDto } from '../dtos/admin/partial-organization-cleanup.dto';
@@ -23,6 +25,8 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
+    private readonly subscriptionService: SubscriptionService,
+    private readonly queueService: AdminQueueService,
   ) {}
 
   private readonly SENSITIVE_FIELDS = [
@@ -168,6 +172,18 @@ export class AdminController {
     return this.adminService.createSubscription(body);
   }
 
+  @Post('subscriptions/:id/manual-payment')
+  async processManualPayment(
+    @Param('id') id: string,
+    @Body() body: { amount?: number; notes?: string },
+  ) {
+    return this.subscriptionService.processManualPayment(
+      id,
+      body.amount,
+      body.notes,
+    );
+  }
+
   @Delete('subscriptions/:id')
   deleteSubscription(@Param('id') id: string) {
     return this.adminService.deleteSubscription(id);
@@ -236,5 +252,60 @@ export class AdminController {
       ...result,
       data: result.data.map((log) => this.sanitizeAuditLog(log)),
     };
+  }
+
+  // Queue Monitoring Endpoints
+  @Get('queues/stats')
+  getQueueStats() {
+    return this.queueService.getAllQueueStats();
+  }
+
+  @Get('queues/:queueName/jobs')
+  getQueueJobs(
+    @Param('queueName') queueName: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    const types = status ? [status] : ['active', 'waiting', 'completed', 'failed', 'delayed'];
+    return this.queueService.getJobs(
+      queueName,
+      types,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+    );
+  }
+
+  @Get('queues/:queueName/jobs/:jobId')
+  getJobDetails(
+    @Param('queueName') queueName: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.queueService.getJobById(queueName, jobId);
+  }
+
+  @Post('queues/:queueName/jobs/:jobId/retry')
+  retryJob(
+    @Param('queueName') queueName: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.queueService.retryJob(queueName, jobId);
+  }
+
+  @Delete('queues/:queueName/jobs/:jobId')
+  deleteJob(
+    @Param('queueName') queueName: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.queueService.deleteJob(queueName, jobId);
+  }
+
+  @Patch('queues/:queueName/jobs/:jobId/data')
+  updateJobData(
+    @Param('queueName') queueName: string,
+    @Param('jobId') jobId: string,
+    @Body() body: { data: any },
+  ) {
+    return this.queueService.updateJobData(queueName, jobId, body.data);
   }
 }

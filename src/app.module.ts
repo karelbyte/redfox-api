@@ -59,6 +59,7 @@ import { RedisServiceModule } from './modules/redis-service.module';
 import { BotSettingsModule } from './modules/bot-settings.module';
 import { ShipmentModule } from './modules/shipment.module';
 import { WebhookModule } from './modules/webhook.module';
+import { HrModule } from './modules/hr.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -141,6 +142,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     BotSettingsModule,
     ShipmentModule,
     WebhookModule,
+    HrModule,
   ],
   controllers: [HomeController],
   providers: [

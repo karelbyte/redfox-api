@@ -33,7 +33,9 @@ async function bootstrap() {
       `   MYSQL_DB_NAME: ${process.env.MYSQL_DB_NAME || 'not defined'}`,
     );
 
-    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      rawBody: true,
+    });
     // const host = process.env.HOST || '0.0.0.0'; // Change to 0.0.0.0 for Railway
     const port = process.env.PORT || 3000;
 

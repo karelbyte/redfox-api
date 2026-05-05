@@ -14,6 +14,7 @@ import { SubscriptionEmailService } from '../services/subscription-email.service
 import { SubscriptionReceiptPdfService } from '../services/subscription-receipt-pdf.service';
 import { SubscriptionController } from '../controllers/subscription.controller';
 import { PublicPlansController } from '../controllers/public-plans.controller';
+import { StripeWebhookController } from '../controllers/stripe-webhook.controller';
 import stripeConfig from '../config/stripe.config';
 import { ReferralModule } from './referral.module';
 import { LanguageModule } from './language.module';
@@ -34,7 +35,11 @@ import { OrganizationModule } from './organization.module';
     LanguageModule,
     OrganizationModule,
   ],
-  controllers: [SubscriptionController, PublicPlansController],
+  controllers: [
+    SubscriptionController,
+    PublicPlansController,
+    StripeWebhookController,
+  ],
   providers: [
     SubscriptionService,
     StripeService,

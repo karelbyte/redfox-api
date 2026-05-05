@@ -79,6 +79,153 @@ export class PermissionsSeed {
         description:
           'Allows viewing webhook logs | Permite ver logs de webhooks',
       },
+
+      // HR Module Permissions
+      {
+        code: 'hr_employee_view',
+        module: 'hr',
+        description: 'Allows viewing employees | Permite ver empleados',
+      },
+      {
+        code: 'hr_employee_create',
+        module: 'hr',
+        description: 'Allows creating employees | Permite crear empleados',
+      },
+      {
+        code: 'hr_employee_update',
+        module: 'hr',
+        description: 'Allows updating employees | Permite actualizar empleados',
+      },
+      {
+        code: 'hr_employee_delete',
+        module: 'hr',
+        description: 'Allows deleting employees | Permite eliminar empleados',
+      },
+      {
+        code: 'hr_department_view',
+        module: 'hr',
+        description: 'Allows viewing departments | Permite ver departamentos',
+      },
+      {
+        code: 'hr_department_create',
+        module: 'hr',
+        description: 'Allows creating departments | Permite crear departamentos',
+      },
+      {
+        code: 'hr_department_update',
+        module: 'hr',
+        description: 'Allows updating departments | Permite actualizar departamentos',
+      },
+      {
+        code: 'hr_department_delete',
+        module: 'hr',
+        description: 'Allows deleting departments | Permite eliminar departamentos',
+      },
+      {
+        code: 'hr_position_view',
+        module: 'hr',
+        description: 'Allows viewing positions | Permite ver puestos',
+      },
+      {
+        code: 'hr_position_create',
+        module: 'hr',
+        description: 'Allows creating positions | Permite crear puestos',
+      },
+      {
+        code: 'hr_position_update',
+        module: 'hr',
+        description: 'Allows updating positions | Permite actualizar puestos',
+      },
+      {
+        code: 'hr_position_delete',
+        module: 'hr',
+        description: 'Allows deleting positions | Permite eliminar puestos',
+      },
+      {
+        code: 'hr_attendance_view',
+        module: 'hr',
+        description: 'Allows viewing attendance | Permite ver asistencia',
+      },
+      {
+        code: 'hr_attendance_create',
+        module: 'hr',
+        description: 'Allows creating attendance records | Permite crear registros de asistencia',
+      },
+      {
+        code: 'hr_attendance_update',
+        module: 'hr',
+        description: 'Allows updating attendance records | Permite actualizar registros de asistencia',
+      },
+      {
+        code: 'hr_attendance_delete',
+        module: 'hr',
+        description: 'Allows deleting attendance records | Permite eliminar registros de asistencia',
+      },
+      {
+        code: 'hr_leave_request_view',
+        module: 'hr',
+        description: 'Allows viewing leave requests | Permite ver solicitudes de ausencia',
+      },
+      {
+        code: 'hr_leave_request_create',
+        module: 'hr',
+        description: 'Allows creating leave requests | Permite crear solicitudes de ausencia',
+      },
+      {
+        code: 'hr_leave_request_update',
+        module: 'hr',
+        description: 'Allows updating leave requests | Permite actualizar solicitudes de ausencia',
+      },
+      {
+        code: 'hr_leave_request_delete',
+        module: 'hr',
+        description: 'Allows deleting leave requests | Permite eliminar solicitudes de ausencia',
+      },
+      {
+        code: 'hr_leave_request_approve',
+        module: 'hr',
+        description: 'Allows approving leave requests | Permite aprobar solicitudes de ausencia',
+      },
+      {
+        code: 'hr_payroll_view',
+        module: 'hr',
+        description: 'Allows viewing payroll | Permite ver nómina',
+      },
+      {
+        code: 'hr_payroll_create',
+        module: 'hr',
+        description: 'Allows creating payroll | Permite crear nómina',
+      },
+      {
+        code: 'hr_payroll_update',
+        module: 'hr',
+        description: 'Allows updating payroll | Permite actualizar nómina',
+      },
+      {
+        code: 'hr_payroll_delete',
+        module: 'hr',
+        description: 'Allows deleting payroll | Permite eliminar nómina',
+      },
+      {
+        code: 'hr_document_view',
+        module: 'hr',
+        description: 'Allows viewing employee documents | Permite ver documentos de empleados',
+      },
+      {
+        code: 'hr_document_create',
+        module: 'hr',
+        description: 'Allows creating employee documents | Permite crear documentos de empleados',
+      },
+      {
+        code: 'hr_document_update',
+        module: 'hr',
+        description: 'Allows updating employee documents | Permite actualizar documentos de empleados',
+      },
+      {
+        code: 'hr_document_delete',
+        module: 'hr',
+        description: 'Allows deleting employee documents | Permite eliminar documentos de empleados',
+      },
     ];
 
     console.log('🔐 Creating system permissions ...');
