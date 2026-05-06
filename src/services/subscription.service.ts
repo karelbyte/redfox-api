@@ -61,43 +61,66 @@ export class SubscriptionService {
     organizationId: string,
     organizationEmail?: string,
   ) {
+    console.log(`[SubscriptionService] createTrialSubscription START — org: ${organizationId}`);
+
     const organization = await this.organizationRepository.findOne({
       where: { id: organizationId },
     });
 
     if (!organization) {
+      console.error(`[SubscriptionService] Organization not found: ${organizationId}`);
       throw new BadRequestException(t('org_not_found'));
     }
 
+    console.log(`[SubscriptionService] Organization found: ${organization.name} | referrer_code: ${organization.referrer_code || 'none'}`);
+
     let plan: Plan | null = null;
 
-    // Si la organización tiene referrer_code, buscar plan con ese código
     if (organization.referrer_code) {
       plan = await this.planRepository.findOne({
-        where: { 
+        where: {
           is_active: true,
-          referrer_code: organization.referrer_code 
+          referrer_code: organization.referrer_code,
         },
         order: { created_at: 'ASC' },
       });
+      console.log(`[SubscriptionService] Plan by referrer_code (${organization.referrer_code}): ${plan ? plan.name : 'not found'}`);
     }
 
-    // Si no se encontró plan con referrer_code, usar el plan default
     if (!plan) {
       plan = await this.planRepository.findOne({
-        where: { is_active: true },
+        where: { is_active: true, is_default: true },
         order: { created_at: 'ASC' },
       });
+      console.log(`[SubscriptionService] Plan by is_default: ${plan ? plan.name : 'not found'}`);
     }
 
     if (!plan) {
+      plan = await this.planRepository.findOne({
+        where: { is_active: true, is_public: true },
+        order: { created_at: 'ASC' },
+      });
+      console.log(`[SubscriptionService] Plan by is_public: ${plan ? plan.name : 'not found'}`);
+    }
+
+    if (!plan) {
+      console.error(`[SubscriptionService] No active plan found for org: ${organizationId}`);
       throw new BadRequestException(t('no_active_plan'));
     }
 
-    const stripeCustomer = await this.stripeService.createCustomer(
-      organizationEmail || `org-${organizationId}@redfox.com`,
-      organization.name,
-    );
+    console.log(`[SubscriptionService] Using plan: ${plan.name} (${plan.id})`);
+
+    let stripeCustomer: any;
+    try {
+      stripeCustomer = await this.stripeService.createCustomer(
+        organizationEmail || `org-${organizationId}@redfox.com`,
+        organization.name,
+      );
+      console.log(`[SubscriptionService] Stripe customer created: ${stripeCustomer.id}`);
+    } catch (stripeError) {
+      console.error(`[SubscriptionService] Stripe createCustomer failed:`, stripeError?.message || stripeError);
+      throw stripeError;
+    }
 
     const trialStartDate = new Date();
     const trialEndDate = new Date();
@@ -112,13 +135,14 @@ export class SubscriptionService {
       stripe_customer_id: stripeCustomer.id,
     });
 
-    const savedSubscription =
-      await this.subscriptionRepository.save(subscription);
+    const savedSubscription = await this.subscriptionRepository.save(subscription);
+    console.log(`[SubscriptionService] Subscription created: ${savedSubscription.id} | trial ends: ${trialEndDate.toISOString()}`);
 
     await this.organizationRepository.update(organizationId, {
       plan_id: plan.id,
       subscription_id: savedSubscription.id,
     });
+    console.log(`[SubscriptionService] Organization updated with plan_id and subscription_id`);
 
     return savedSubscription;
   }

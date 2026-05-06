@@ -691,152 +691,74 @@ export class AuthService {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>${activationTitle}</title>
           <style>
-            body {
-              font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              line-height: 1.6;
-              color: #E2E8F0;
-              margin: 0;
-              padding: 0;
-              background-color: #0F172A;
-            }
-            .container {
-              max-width: 600px;
-              margin: 40px auto;
-              background: #1E293B;
-              border-radius: 16px;
-              overflow: hidden;
-              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-              border: 1px solid #334155;
-            }
-            .header {
-              background: #2D3748;
-              padding: 40px 20px;
-              text-align: center;
-              border-bottom: 2px solid #EAB308;
-            }
-            .header h1 {
-              color: #F8FAFC;
-              margin: 0;
-              font-size: 32px;
-              font-weight: 800;
-              letter-spacing: -0.025em;
-              text-transform: uppercase;
-            }
-            .header h1 span {
-              color: #EAB308;
-            }
-            .content {
-              padding: 40px;
-            }
-            .success-badge {
-              background: #10B981;
-              color: white;
-              padding: 12px 24px;
-              border-radius: 8px;
-              display: inline-block;
-              font-weight: 700;
-              margin-bottom: 24px;
-              font-size: 14px;
-            }
-            .trial-box {
-              background: #0F172A;
-              border: 2px solid #EAB308;
-              border-radius: 12px;
-              padding: 24px;
-              margin: 24px 0;
-            }
-            .trial-box h3 {
-              color: #EAB308;
-              margin-top: 0;
-              font-size: 20px;
-            }
-            .trial-info {
-              color: #CBD5E1;
-              margin: 12px 0;
-            }
-            .trial-info strong {
-              color: #F8FAFC;
-            }
-            .plan-box {
-              background: #334155;
-              border-radius: 12px;
-              padding: 24px;
-              margin: 24px 0;
-            }
-            .plan-box h3 {
-              color: #EAB308;
-              margin-top: 0;
-            }
-            .plan-features {
-              list-style: none;
-              padding: 0;
-              margin: 16px 0;
-            }
-            .plan-features li {
-              padding: 8px 0;
-              color: #CBD5E1;
-              padding-left: 24px;
-              position: relative;
-            }
-            .plan-features li:before {
-              content: "✓";
-              color: #10B981;
-              font-weight: bold;
-              position: absolute;
-              left: 0;
-            }
-            .price {
-              font-size: 36px;
-              font-weight: 800;
-              color: #EAB308;
-              margin: 16px 0;
-            }
-            .button {
-              display: inline-block;
-              padding: 16px 36px;
-              background-color: #EAB308;
-              color: #0F172A !important;
-              text-decoration: none;
-              border-radius: 8px;
-              font-weight: 700;
-              margin: 20px 0;
-              transition: all 0.2s;
-              text-transform: uppercase;
-              font-size: 14px;
-              box-shadow: 0 4px 6px rgba(234, 179, 8, 0.2);
-            }
-            .button:hover {
-              background-color: #FACC15;
-              transform: translateY(-2px);
-              box-shadow: 0 6px 12px rgba(234, 179, 8, 0.3);
-            }
-            .footer {
-              background-color: #0F172A;
-              padding: 24px;
-              text-align: center;
-              font-size: 13px;
-              color: #64748B;
-              border-top: 1px solid #334155;
-            }
-            .welcome-text {
-              font-size: 20px;
-              font-weight: 600;
-              color: #F8FAFC;
-              margin-bottom: 16px;
-            }
-            .instruction-text {
-              color: #CBD5E1;
-              margin-bottom: 16px;
-              font-size: 16px;
-            }
-            .highlight {
-              color: #EAB308;
-              font-weight: 600;
-            }
+            body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #E2E8F0; margin: 0; padding: 0; background-color: #0F172A; }
+            .container { max-width: 600px; margin: 40px auto; background: #1E293B; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
+            .header { background: #2D3748; padding: 40px 20px; text-align: center; border-bottom: 2px solid #EAB308; }
+            .header h1 { color: #F8FAFC; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.025em; text-transform: uppercase; }
+            .header h1 span { color: #EAB308; }
+            .content { padding: 40px; }
+            .success-badge { background: #10B981; color: white; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: 700; margin-bottom: 24px; font-size: 14px; }
+            .trial-box { background: #0F172A; border: 2px solid #EAB308; border-radius: 12px; padding: 24px; margin: 24px 0; }
+            .trial-box h3 { color: #EAB308; margin-top: 0; font-size: 20px; }
+            .trial-info { color: #CBD5E1; margin: 12px 0; }
+            .trial-info strong { color: #F8FAFC; }
+            .plan-box { background: #334155; border-radius: 12px; padding: 24px; margin: 24px 0; }
+            .plan-box h3 { color: #EAB308; margin-top: 0; }
+            .plan-features { list-style: none; padding: 0; margin: 16px 0; }
+            .plan-features li { padding: 8px 0; color: #CBD5E1; padding-left: 24px; position: relative; }
+            .plan-features li:before { content: "✓"; color: #10B981; font-weight: bold; position: absolute; left: 0; }
+            .price { font-size: 36px; font-weight: 800; color: #EAB308; margin: 16px 0; }
+            .button { display: inline-block; padding: 16px 36px; background-color: #EAB308; color: #0F172A !important; text-decoration: none; border-radius: 8px; font-weight: 700; margin: 20px 0; text-transform: uppercase; font-size: 14px; }
+            .footer { background-color: #0F172A; padding: 24px; text-align: center; font-size: 13px; color: #64748B; border-top: 1px solid #334155; }
+            .welcome-text { font-size: 20px; font-weight: 600; color: #F8FAFC; margin-bottom: 16px; }
+            .instruction-text { color: #CBD5E1; margin-bottom: 16px; font-size: 16px; }
+            .highlight { color: #EAB308; font-weight: 600; }
           </style>
         </head>
         <body>
           <div class="container">
+            <div class="header">
+              <h1>NITRO<span>.</span></h1>
+            </div>
+            <div class="content">
+              <div class="success-badge">✓ ${accountActivated}</div>
+              <p class="welcome-text">${welcomeMessage}</p>
+              <p class="instruction-text">${activationSuccessMessage}</p>
+
+              <div class="trial-box">
+                <h3>🚀 ${trialPeriodActivated}</h3>
+                <p class="trial-info"><strong>${trialDuration}</strong></p>
+                <p class="trial-info">${trialEnds}: <strong>${trialEndDate}</strong></p>
+                <p class="trial-info">✅ ${trialAccess}</p>
+                <p class="trial-info">✅ ${trialAllFeatures}</p>
+                <p class="trial-info">${trialDescription}</p>
+              </div>
+
+              <div class="plan-box">
+                <h3>📦 ${singlePlanTitle}</h3>
+                <div class="price">${planPrice}</div>
+                <ul class="plan-features">
+                  <li>${unlimitedUsers}</li>
+                  <li>${unlimitedWarehouses}</li>
+                  <li>${unlimitedProducts}</li>
+                  <li>${inventoryStrategies}</li>
+                  <li>${creditManagement}</li>
+                  <li>${electronicInvoicing}</li>
+                  <li>${advancedReports}</li>
+                  <li>${apiWebhooks}</li>
+                  <li>${prioritySupport}</li>
+                </ul>
+                <p class="trial-info">${afterTrialMessage}</p>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}" class="button">${startUsingNitro}</a>
+              </div>
+
+              <p class="instruction-text" style="margin-top: 24px; font-size: 14px; color: #64748B;">💡 ${trialTip}</p>
+            </div>
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} NITRO. ${footerText}
             </div>
           </div>
         </body>
