@@ -538,6 +538,14 @@ export class AuthService {
             'Failed to create trial subscription:',
             subscriptionError,
           );
+          const notifyEmail = this.configService.get<string>('ERROR_NOTIFY_EMAIL');
+          if (notifyEmail) {
+            void this.emailService.sendSystemEmail(
+              notifyEmail,
+              '⚠️ Trial subscription issue on activation',
+              `<p>Organization <strong>${user.organization_id}</strong> activated but trial subscription had an issue:</p><pre>${subscriptionError?.message || subscriptionError}</pre><p>The user can access the system (trial was created without Stripe customer). Stripe customer needs to be linked manually.</p>`,
+            );
+          }
         }
 
         try {

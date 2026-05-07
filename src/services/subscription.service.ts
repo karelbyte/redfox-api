@@ -110,16 +110,16 @@ export class SubscriptionService {
 
     console.log(`[SubscriptionService] Using plan: ${plan.name} (${plan.id})`);
 
-    let stripeCustomer: any;
+    let stripeCustomerId: string | null = null;
     try {
-      stripeCustomer = await this.stripeService.createCustomer(
+      const stripeCustomer = await this.stripeService.createCustomer(
         organizationEmail || `org-${organizationId}@redfox.com`,
         organization.name,
       );
-      console.log(`[SubscriptionService] Stripe customer created: ${stripeCustomer.id}`);
+      stripeCustomerId = stripeCustomer.id;
+      console.log(`[SubscriptionService] Stripe customer created: ${stripeCustomerId}`);
     } catch (stripeError) {
-      console.error(`[SubscriptionService] Stripe createCustomer failed:`, stripeError?.message || stripeError);
-      throw stripeError;
+      console.error(`[SubscriptionService] Stripe createCustomer failed — proceeding without Stripe customer:`, stripeError?.message || stripeError);
     }
 
     const trialStartDate = new Date();
@@ -132,11 +132,11 @@ export class SubscriptionService {
       status: 'trial',
       trial_start_date: trialStartDate,
       trial_end_date: trialEndDate,
-      stripe_customer_id: stripeCustomer.id,
+      ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
     });
 
     const savedSubscription = await this.subscriptionRepository.save(subscription);
-    console.log(`[SubscriptionService] Subscription created: ${savedSubscription.id} | trial ends: ${trialEndDate.toISOString()}`);
+    console.log(`[SubscriptionService] Subscription created: ${savedSubscription.id} | trial ends: ${trialEndDate.toISOString()} | stripe_customer_id: ${stripeCustomerId || 'pending'}`);
 
     await this.organizationRepository.update(organizationId, {
       plan_id: plan.id,
