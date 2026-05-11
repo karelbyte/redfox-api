@@ -7,6 +7,7 @@ export class UserResponseDto {
   organization_id?: string;
   organization_slug?: string;
   organization_referrer_code?: string;
+  organization_country?: string | null;
   roles: RoleResponseDto[];
   permissions: string[];
   status: boolean;

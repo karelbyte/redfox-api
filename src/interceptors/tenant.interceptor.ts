@@ -43,6 +43,11 @@ export class TenantInterceptor implements NestInterceptor {
       this.tenantContext.setLocale(locale.split('-')[0].toLowerCase());
     }
 
+    const country = user?.country;
+    if (country && this.tenantContext) {
+      this.tenantContext.setCountry(country);
+    }
+
     return next.handle();
   }
 }

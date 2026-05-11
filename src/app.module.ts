@@ -71,6 +71,7 @@ import { TenantMiddleware } from './middlewares/tenant.middleware';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 import { UnverifiedAccountCleanupService } from './services/unverified-account-cleanup.service';
+import { IsValidRFCConstraint } from './validators/rfc.validator';
 
 @Module({
   imports: [
@@ -160,6 +161,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     },
     AuditSubscriber,
     UnverifiedAccountCleanupService,
+    IsValidRFCConstraint,
   ],
 })
 export class AppModule implements NestModule {

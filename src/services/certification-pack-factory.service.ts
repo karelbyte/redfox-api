@@ -46,6 +46,7 @@ export class CertificationPackFactoryService {
         is_active: true,
         organization_id: this.organizationId,
       },
+      relations: ['emitters'],
     });
 
     if (defaultPack) {
@@ -55,6 +56,7 @@ export class CertificationPackFactoryService {
     const activePack = await this.certificationPackRepository.findOne({
       where: { is_active: true, organization_id: this.organizationId },
       order: { created_at: 'ASC' },
+      relations: ['emitters'],
     });
 
     if (!activePack) {
@@ -76,6 +78,7 @@ export class CertificationPackFactoryService {
           is_active: true,
           organization_id: this.organizationId,
         },
+        relations: ['emitters'],
       });
     } else {
       pack = await this.getActivePack();
@@ -101,7 +104,14 @@ export class CertificationPackFactoryService {
       );
     }
 
-     this.tenantContext.setPacConfig(pack.config || {});
+    const config = { ...(pack.config || {}) };
+    if (pack.emitters?.length > 0) {
+      const favEmitter = pack.emitters.find((e) => e.fav) || pack.emitters[0];
+      config.emitter_id = favEmitter.emitter;
+      this.logger.log(`Using emitter: ${favEmitter.name} (${favEmitter.emitter})`);
+    }
+
+    this.tenantContext.setPacConfig(config);
 
     return service;
   }

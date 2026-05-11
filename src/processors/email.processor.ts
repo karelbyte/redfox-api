@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { EmailService } from '../services/email.service';
+import { NotificationService } from '../services/notification.service';
+import { NotificationType, NotificationPriority } from '../models/notification.entity';
 
 interface EmailJob {
   to: string | string[];
@@ -12,6 +14,7 @@ interface EmailJob {
     contentType?: string;
   }>;
   organizationId?: string;
+  userId?: string;
 }
 
 /**
@@ -21,7 +24,10 @@ interface EmailJob {
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async handleSendEmail(job: { id: number | string; data: EmailJob }) {
     this.logger.log(`Processing email job ${job.id} to ${job.data.to}`);
@@ -64,6 +70,23 @@ export class EmailProcessor {
       return { success: true };
     } catch (error) {
       this.logger.error(`Failed to send email to ${job.data.to}:`, error);
+
+      // Si falla el envío (especialmente por falta de configuración), notificar al usuario
+      if (job.data.organizationId && job.data.userId) {
+        try {
+          await this.notificationService.create({
+            userId: job.data.userId,
+            organization_id: job.data.organizationId,
+            title: '❌ Error al enviar correo',
+            message: `No se pudo enviar el correo "${job.data.subject}" a ${job.data.to}. Verifique que su configuración de correo esté activa y sea correcta.`,
+            type: NotificationType.ERROR,
+            priority: NotificationPriority.HIGH,
+          });
+        } catch (notifError) {
+          this.logger.error('Failed to send failure notification:', notifError);
+        }
+      }
+
       throw error;
     }
   }

@@ -88,6 +88,7 @@ export class AuthService {
       email: user.email,
       roles: user.roles.map((role) => role.code),
       organizationId: user.organization_id,
+      country: user.organization?.country || null,
     };
 
     const expiresIn = '72h';
@@ -104,6 +105,7 @@ export class AuthService {
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
         organization_referrer_code: user.organization?.referrer_code,
+        organization_country: user.organization?.country || null,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -150,6 +152,7 @@ export class AuthService {
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
         organization_referrer_code: user.organization?.referrer_code,
+        organization_country: user.organization?.country || null,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -217,6 +220,7 @@ export class AuthService {
       name: registerDto.companyName,
       slug,
       status: false,
+      country: registerDto.country || 'mx',
       ...(registerDto.referrer_code
         ? { referrer_code: registerDto.referrer_code.toUpperCase() }
         : {}),
@@ -997,6 +1001,7 @@ export class AuthService {
       organization_id: user.organization_id,
       organization_slug: user.organization?.slug,
       organization_referrer_code: user.organization?.referrer_code,
+        organization_country: user.organization?.country || null,
       roles: user.roles.map((role) => ({
         id: role.id,
         code: role.code,

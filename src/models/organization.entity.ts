@@ -37,6 +37,9 @@ export class Organization {
   @Column({ length: 20, nullable: true })
   referrer_code: string;
 
+  @Column({ length: 10, nullable: true })
+  country: string;
+
   @OneToMany(() => User, (user) => user.organization)
   users: User[];
 

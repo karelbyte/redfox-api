@@ -5,7 +5,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Client } from '../models/client.entity';
 import { ClientAddress } from '../models/client-address.entity';
 import { ClientTaxData } from '../models/client-tax-data.entity';
-import { Notification } from '../models/notification.entity';
 import { User } from '../models/user.entity';
 import { Product } from '../models/product.entity';
 import { Brand } from '../models/brand.entity';
@@ -30,6 +29,7 @@ import { ClientPackSyncService } from '../services/client-pack-sync.service';
 import { CertificationPackModule } from './certification-pack.module';
 import { TenantContext } from '../services/tenant-context.service';
 import { LanguageModule } from './language.module';
+import { NotificationModule } from './notification.module';
 
 @Module({
   imports: [
@@ -37,7 +37,6 @@ import { LanguageModule } from './language.module';
       Client,
       ClientAddress,
       ClientTaxData,
-      Notification,
       User,
       Product,
       Brand,
@@ -51,6 +50,7 @@ import { LanguageModule } from './language.module';
     ]),
     CertificationPackModule,
     LanguageModule,
+    NotificationModule,
     BullModule.registerQueueAsync({
       name: 'import',
       imports: [ConfigModule],

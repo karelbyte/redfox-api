@@ -29,6 +29,25 @@ export class FacturaAPIService implements ICertificationPackService {
     private readonly translationService: TranslationService,
   ) {}
 
+  private getEmitterId(): string | null {
+    const pacConfig = this.tenantContext.getPacConfig();
+    return pacConfig?.emitter_id || null;
+  }
+
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    const apiKey = await this.getApiKey();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+    };
+
+    const emitterId = this.getEmitterId();
+    if (emitterId) {
+      headers['Fapi-Issuer'] = emitterId;
+    }
+
+    return headers;
+  }
+
   private async getClient(): Promise<Facturapi> {
     const pacConfig = this.tenantContext.getPacConfig();
     const apiKey =
@@ -491,13 +510,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async validateTaxId(taxId: string): Promise<boolean> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         `https://api.facturapi.io/v1/customers/tax-id/${taxId}`,
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -515,13 +532,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getTaxRegimes(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/tax-regimes',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -538,13 +553,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getProductKeys(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/products',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -561,13 +574,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getPaymentForms(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/payment-forms',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -584,13 +595,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getUses(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/uses',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -734,8 +743,8 @@ export class FacturaAPIService implements ICertificationPackService {
    * Implementación paginada para no depender del tamaño de la cuenta.
    */
   async listCustomers(): Promise<CustomerResponse[]> {
-    const client = this.getClient();
-    const apiKey = this.getApiKey();
+    const client = await this.getClient();
+    const apiKey = await this.getApiKey();
 
     const all: CustomerResponse[] = [];
     const limit = 100;
@@ -797,8 +806,8 @@ export class FacturaAPIService implements ICertificationPackService {
    * Elimina customer en Facturapi.
    */
   async deleteCustomer(customerId: string): Promise<void> {
-    const client = this.getClient();
-    const apiKey = this.getApiKey();
+    const client = await this.getClient();
+    const headers = await this.getAuthHeaders();
 
     try {
       const sdk = (client as any)?.customers;
@@ -815,7 +824,7 @@ export class FacturaAPIService implements ICertificationPackService {
         `https://api.facturapi.io/v1/customers/${customerId}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${apiKey}` },
+          headers,
         },
       );
 
@@ -843,7 +852,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createProduct(productData: ProductData): Promise<ProductResponse> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const payload: Record<string, unknown> = {
         description: productData.description,
         product_key: productData.product_key,
@@ -860,8 +869,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const res = await fetch(this.getProductsBaseUrl(), {
         method: 'POST',
         headers: {
+          ...headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -895,14 +904,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async findProductBySku(sku: string): Promise<ProductResponse | null> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const res = await fetch(
         `${this.getProductsBaseUrl()}?sku=${encodeURIComponent(sku)}`,
         {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -941,7 +948,7 @@ export class FacturaAPIService implements ICertificationPackService {
     productData: Partial<ProductData>,
   ): Promise<ProductResponse> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const payload: Record<string, unknown> = {};
       if (productData.description !== undefined)
         payload.description = productData.description;
@@ -962,8 +969,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const res = await fetch(`${this.getProductsBaseUrl()}/${productId}`, {
         method: 'PUT',
         headers: {
+          ...headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -1053,7 +1060,7 @@ export class FacturaAPIService implements ICertificationPackService {
    * Paginación basada en total_pages de la respuesta.
    */
   async listProducts(): Promise<ProductResponse[]> {
-    const apiKey = this.getApiKey();
+    const headers = await this.getAuthHeaders();
     const all: ProductResponse[] = [];
     const limit = 100;
     let page = 1;
@@ -1063,7 +1070,7 @@ export class FacturaAPIService implements ICertificationPackService {
       try {
         const res = await fetch(
           `${this.getProductsBaseUrl()}?page=${page}&limit=${limit}`,
-          { headers: { Authorization: `Bearer ${apiKey}` } },
+          { headers },
         );
         data = await res.json();
         if (!res.ok) {

@@ -13,6 +13,7 @@ export interface EmailJob {
     contentType?: string;
   }>;
   organizationId?: string;
+  userId?: string;
 }
 
 /**

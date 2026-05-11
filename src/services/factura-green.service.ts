@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Invoice } from '../models/invoice.entity';
+import { Product } from '../models/product.entity';
 import {
   ICertificationPackService,
   CFDIResponse,
@@ -30,6 +33,8 @@ export class FacturaGreenService implements ICertificationPackService {
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
     private readonly translationService: TranslationService,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
 
   private isValidUUID(uuid: string | null | undefined): boolean {
@@ -108,14 +113,25 @@ export class FacturaGreenService implements ICertificationPackService {
       for (const detail of invoice.details) {
         const productPackId = (detail.product as any)?.product_pack_id;
         if (!productPackId) {
-          const msg = await this.translationService.translate(
-            'pack.product_not_synced',
-            this.tenantContext.getUserId() ?? undefined,
-            {
-              name: detail.product?.name || detail.product_id,
-            },
-          );
-          throw new BadRequestException(msg);
+          this.logger.log(`[FacturaGreen] Product "${detail.product?.name}" has no product_pack_id — attempting auto-sync`);
+          try {
+            const syncResult = await this.createProduct(this.buildProductDataFromDetail(detail));
+            if (syncResult?.id) {
+              (detail.product as any).product_pack_id = syncResult.id;
+              await this.productRepository.update(detail.product_id, { product_pack_id: syncResult.id });
+              this.logger.log(`[FacturaGreen] Auto-sync success for "${detail.product?.name}" → ${syncResult.id}`);
+            } else {
+              throw new Error('No ID returned from createProduct');
+            }
+          } catch (syncError: any) {
+            this.logger.error(`[FacturaGreen] Auto-sync failed for "${detail.product?.name}": ${syncError?.message}`);
+            const msg = await this.translationService.translate(
+              'pack.product_not_synced',
+              this.tenantContext.getUserId() ?? undefined,
+              { name: detail.product?.name || detail.product_id },
+            );
+            throw new BadRequestException(msg);
+          }
         }
       }
 
@@ -605,6 +621,26 @@ export class FacturaGreenService implements ICertificationPackService {
 
   async searchProductKeys(term: string): Promise<ProductKeySuggestion[]> {
     return this.satCatalogService.searchProductKeys(term);
+  }
+
+  private buildProductDataFromDetail(detail: any): ProductData {
+    const product = detail.product;
+    const taxes = (product.taxes || (product.tax ? [product.tax] : [])).map((tax: any) => ({
+      type: tax.name?.includes('IVA') ? 'IVA' : tax.name?.includes('IEPS') ? 'IEPS' : 'IVA',
+      rate: Number(tax.value || 0) / 100,
+    }));
+
+    return {
+      description: product.name,
+      product_key: product.code || '01010101',
+      unit_key: product.measurement_unit?.code || 'H87',
+      unit_name: product.measurement_unit?.description || 'Pieza',
+      price: Number(detail.price || product.base_price || 0),
+      tax_included: false,
+      taxes,
+      sku: product.sku || product.id,
+      type: 'dynamic',
+    };
   }
 
   private getStaticMeasurementUnits(term: string): MeasurementUnitSuggestion[] {

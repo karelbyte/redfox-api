@@ -1,16 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../models/invoice.entity';
 import { CertificationPackFactoryService } from '../services/certification-pack-factory.service';
-import { ProductPackSyncService } from '../services/product-pack-sync.service';
 import { NotificationService } from '../services/notification.service';
 import { TenantContext } from '../services/tenant-context.service';
 import { CfdiJob } from '../queues/cfdi.queue';
-import { In } from 'typeorm';
-import { InvoiceDetail } from '../models/invoice-detail.entity';
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
+import { InvoiceService } from '../services/invoice.service';
 
 @Injectable()
 @Processor('generate-cfdi')
@@ -20,10 +18,9 @@ export class CfdiProcessor {
   constructor(
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
-    @InjectRepository(InvoiceDetail)
-    private readonly invoiceDetailRepository: Repository<InvoiceDetail>,
+    @Inject(forwardRef(() => InvoiceService))
+    private readonly invoiceService: InvoiceService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-    private readonly productPackSyncService: ProductPackSyncService,
     private readonly notificationService: NotificationService,
     private readonly tenantContext: TenantContext,
   ) {}
@@ -98,42 +95,18 @@ export class CfdiProcessor {
         try {
           const packService = await this.certificationPackFactory.getPackService();
 
-          for (const detail of invoice.details) {
-            if (detail.product && !detail.product.product_pack_id) {
-              this.logger.log(
-                `[CfdiProcessor] Syncing product "${detail.product.name}" with PAC...`,
-              );
-              const result = await this.productPackSyncService.syncProduct(
-                detail.product,
-              );
-              if (result.packSyncSuccess) {
-                detail.product.product_pack_id = result.product.product_pack_id;
-              } else {
-                throw new Error(
-                  `No se pudo sincronizar el producto "${detail.product.name}": ${result.packErrorMessage}`,
-                );
-              }
-            }
-          }
-
           const cfdiResult = await packService.generateCFDI(invoice, options, emitterId);
 
-          invoice.cfdi_uuid = this.isValidUUID(cfdiResult.uuid) ? cfdiResult.uuid : null;
-          invoice.pack_invoice_id = cfdiResult.id;
-          invoice.pack_invoice_response = {
+          await this.invoiceService.updateStatusAfterCertification(invoiceId, {
+            success: true,
             uuid: cfdiResult.uuid,
+            id: cfdiResult.id,
             status: cfdiResult.status,
             pdf_url: cfdiResult.pdf_url,
             xml_url: cfdiResult.xml_url,
-            uuid_available: this.isValidUUID(cfdiResult.uuid),
-          };
-          if (cfdiResult.payload_send) {
-            invoice.payload_send = cfdiResult.payload_send;
-          }
-          invoice.emitter_id = emitterId || null;
-          invoice.status = InvoiceStatus.SENT;
-
-          await this.invoiceRepository.save(invoice);
+            payload_send: cfdiResult.payload_send,
+            emitterId,
+          });
 
           const uuidMessage = cfdiResult.uuid ? cfdiResult.uuid : 'UUID no disponible (revisar con PAC)';
           this.logger.log(
@@ -161,12 +134,10 @@ export class CfdiProcessor {
             `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
           );
 
-          invoice.status = InvoiceStatus.FAILED_CFDI;
-          invoice.pack_invoice_response = {
-            error: error?.message || 'Unknown error',
-            failed_at: new Date().toISOString(),
-          };
-          await this.invoiceRepository.save(invoice);
+          await this.invoiceService.updateStatusAfterCertification(invoiceId, {
+            success: false,
+            error: error?.message,
+          });
 
           try {
             if (userId) {

@@ -38,4 +38,9 @@ export class RegisterDto {
   @IsString()
   @IsIn(['es', 'en', 'zh'])
   language?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['mx', 'pe'])
+  country?: string;
 }

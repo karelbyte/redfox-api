@@ -17,6 +17,7 @@ interface JwtPayload {
   email: string;
   role: string;
   organizationId: string;
+  country?: string | null;
   iat: number;
   exp: number;
 }

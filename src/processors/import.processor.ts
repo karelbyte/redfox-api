@@ -10,7 +10,7 @@ import { ProductImportService } from '../services/product-import.service';
 import { ProviderImportService } from '../services/provider-import.service';
 import { ImportLogService } from '../services/import-log.service';
 import { ImportLogType } from '../models/import-log.entity';
-import { Notification } from '../models/notification.entity';
+import { NotificationService } from '../services/notification.service';
 
 @Processor('import')
 @Injectable()
@@ -23,8 +23,7 @@ export class ImportProcessor implements OnModuleInit {
     private readonly productImportService: ProductImportService,
     private readonly providerImportService: ProviderImportService,
     private readonly importLogService: ImportLogService,
-    @InjectRepository(Notification)
-    private readonly notificationRepo: Repository<Notification>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   onModuleInit() {
@@ -232,16 +231,14 @@ export class ImportProcessor implements OnModuleInit {
     priority: string,
   ): Promise<void> {
     try {
-      const notification = this.notificationRepo.create({
+      await this.notificationService.create({
         userId,
         organization_id: organizationId,
         title,
         message,
         type: type as any,
         priority: priority as any,
-        isRead: false,
       });
-      await this.notificationRepo.save(notification);
       this.logger.log(`🔔 Notification sent to user=${userId}`);
     } catch (err: any) {
       this.logger.error(`Failed to create notification: ${err?.message}`);

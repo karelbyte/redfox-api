@@ -1,5 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { EmailService } from '../services/email.service';
+import { NotificationService } from '../services/notification.service';
+import { NotificationType, NotificationPriority } from '../models/notification.entity';
 
 export interface EmailJob {
   to: string | string[];
@@ -12,6 +14,7 @@ export interface EmailJob {
     contentType?: string;
   }>;
   organizationId?: string;
+  userId?: string;
 }
 
 interface InMemoryJob {
@@ -31,7 +34,10 @@ export class InMemoryEmailQueue implements OnModuleDestroy {
   private jobIdCounter = 0;
   private timeoutRef: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly emailService: EmailService) {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
+  ) {
     this.logger.log('✅ In-memory email queue initialized');
   }
 
@@ -141,6 +147,22 @@ export class InMemoryEmailQueue implements OnModuleDestroy {
         this.logger.error(
           `💀 Job ${job.id} to ${job.data.to} failed after ${job.maxAttempts} attempts. Giving up.`,
         );
+
+        // Notificar al usuario si el envío falló definitivamente
+        if (job.data.organizationId && job.data.userId) {
+          try {
+            await this.notificationService.create({
+              userId: job.data.userId,
+              organization_id: job.data.organizationId,
+              title: '❌ Error al enviar correo',
+              message: `No se pudo enviar el correo "${job.data.subject}" a ${job.data.to}. Verifique que su configuración de correo esté activa y sea correcta.`,
+              type: NotificationType.ERROR,
+              priority: NotificationPriority.HIGH,
+            });
+          } catch (notifError) {
+            this.logger.error('Failed to send failure notification:', notifError);
+          }
+        }
       }
     }
   }
