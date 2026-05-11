@@ -128,6 +128,7 @@ describe('CertificationPackFactoryService', () => {
           is_active: true,
           organization_id: 'org-123',
         },
+        relations: ['emitters'],
       });
     });
 
@@ -177,6 +178,7 @@ describe('CertificationPackFactoryService', () => {
           is_active: true,
           organization_id: 'org-123',
         },
+        relations: ['emitters'],
       });
     });
 
