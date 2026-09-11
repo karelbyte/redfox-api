@@ -7,6 +7,10 @@ export class UserResponseDto {
   organization_id?: string;
   organization_slug?: string;
   organization_referrer_code?: string;
+  /** País de la organización en ISO 3166-1 alpha-2. */
+  organization_country?: string;
+  /** Moneda del país de la organización, en ISO 4217. */
+  organization_currency?: string;
   roles: RoleResponseDto[];
   permissions: string[];
   status: boolean;
@@ -21,6 +25,10 @@ export class UserWithPermissionDescriptionsDto {
   organization_id?: string;
   organization_slug?: string;
   organization_referrer_code?: string;
+  /** País de la organización en ISO 3166-1 alpha-2. */
+  organization_country?: string;
+  /** Moneda del país de la organización, en ISO 4217. */
+  organization_currency?: string;
   roles: RoleResponseDto[];
   permission_descriptions: string[];
   status: boolean;

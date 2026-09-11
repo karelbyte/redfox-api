@@ -59,6 +59,8 @@ import { RedisServiceModule } from './modules/redis-service.module';
 import { BotSettingsModule } from './modules/bot-settings.module';
 import { ShipmentModule } from './modules/shipment.module';
 import { WebhookModule } from './modules/webhook.module';
+import { DocumentSeriesModule } from './modules/document-series.module';
+import { CountryModule } from './modules/country.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -70,7 +72,6 @@ import { TenantMiddleware } from './middlewares/tenant.middleware';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 import { UnverifiedAccountCleanupService } from './services/unverified-account-cleanup.service';
-import { options } from './config/options/config.options';
 
 @Module({
   imports: [
@@ -142,7 +143,8 @@ import { options } from './config/options/config.options';
     BotSettingsModule,
     ShipmentModule,
     WebhookModule,
-    ConfigModule.forRoot(options)
+    DocumentSeriesModule,
+    CountryModule,
   ],
   controllers: [HomeController],
   providers: [

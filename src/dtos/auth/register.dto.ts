@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsIn,
 } from 'class-validator';
+import { SUPPORTED_COUNTRIES } from '../../constants/countries.constant';
 
 export class RegisterDto {
   @IsString()
@@ -33,6 +34,16 @@ export class RegisterDto {
   @IsString()
   @MaxLength(20)
   referrer_code?: string;
+
+  /**
+   * País de la organización en ISO 3166-1 alpha-2. Determina los packs de
+   * facturación y los catálogos con los que arranca. Si no se indica se usa
+   * el país por defecto.
+   */
+  @IsOptional()
+  @IsString()
+  @IsIn(SUPPORTED_COUNTRIES)
+  country?: string;
 
   @IsOptional()
   @IsString()

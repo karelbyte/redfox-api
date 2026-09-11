@@ -10,6 +10,7 @@ import { Warehouse } from '../models/warehouse.entity';
 import { Withdrawal } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { CompanySettings } from '../models/company-settings.entity';
+import { Organization } from '../models/organization.entity';
 import { WarehouseMapper } from '../services/mappers/warehouse.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { ProductMapper } from '../services/mappers/product.mapper';
@@ -42,6 +43,7 @@ import { UserAttributionModule } from './user-attribution.module';
       Language,
       User,
       CompanySettings,
+      Organization,
     ]),
     OrganizationModule,
     SurrogateModule,

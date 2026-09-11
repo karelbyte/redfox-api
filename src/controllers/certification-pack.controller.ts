@@ -44,6 +44,18 @@ export class CertificationPackController {
     return this.certificationPackService.findActive();
   }
 
+  /** Packs disponibles para el país de la organización. */
+  @Get('available-types')
+  findAvailableTypes() {
+    return this.certificationPackService.findAvailableTypes();
+  }
+
+  /** Capacidades del pack activo: series, recibos y catálogos que admite. */
+  @Get('capabilities')
+  findActiveCapabilities() {
+    return this.certificationPackService.findActiveCapabilities();
+  }
+
   @Get('available-emitters')
   findAvailableEmitters() {
     return this.certificationPackService.findAvailableEmitters();
@@ -51,7 +63,7 @@ export class CertificationPackController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.certificationPackService.findOne(id);
+    return this.certificationPackService.findOneWithCapabilities(id);
   }
 
   @Patch(':id')

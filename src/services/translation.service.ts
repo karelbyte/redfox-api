@@ -1393,6 +1393,41 @@ export class TranslationService {
       en: 'Factura Green API key not configured.',
       zh: 'Factura Green API 密钥未配置。',
     },
+    'document_series.not_configured': {
+      es: 'No hay una serie activa configurada para "{type}". Configúrala antes de emitir comprobantes.',
+      en: 'No active series configured for "{type}". Please configure one before issuing documents.',
+      zh: '未为 "{type}" 配置启用的编号系列。请先完成配置再开具凭证。',
+    },
+    'document_series.not_found': {
+      es: 'No se encontró la serie con ID {id}.',
+      en: 'Series with ID {id} not found.',
+      zh: '未找到 ID 为 {id} 的编号系列。',
+    },
+    'document_series.type_mismatch': {
+      es: 'La serie "{series}" ya está registrada para comprobantes de tipo "{type}".',
+      en: 'Series "{series}" is already registered for "{type}" documents.',
+      zh: '系列 "{series}" 已登记用于 "{type}" 类型的凭证。',
+    },
+    'pack.type_not_available_in_country': {
+      es: 'El pack "{type}" no está disponible para {country}.',
+      en: 'Pack "{type}" is not available for {country}.',
+      zh: '认证包 "{type}" 在 {country} 不可用。',
+    },
+    'pack.sunat_customer_document_invalid': {
+      es: 'El documento "{document}" del cliente "{name}" no es un RUC (11 dígitos) ni un DNI (8 dígitos). Corrígelo antes de emitir el comprobante.',
+      en: 'Document "{document}" of customer "{name}" is neither a RUC (11 digits) nor a DNI (8 digits). Please correct it before issuing the document.',
+      zh: '客户 "{name}" 的证件 "{document}" 既不是 RUC（11 位）也不是 DNI（8 位）。请先更正后再开具凭证。',
+    },
+    'pack.sunat_document_number_missing': {
+      es: 'La factura "{code}" no tiene serie ni correlativo asignados. Vuelve a generar el comprobante.',
+      en: 'Invoice "{code}" has no series or correlative assigned. Please generate the document again.',
+      zh: '发票 "{code}" 未分配编号系列或序号。请重新生成凭证。',
+    },
+    'pack.sunat_operation_not_supported': {
+      es: 'La operación "{operation}" todavía no está disponible para SUNAT.',
+      en: 'Operation "{operation}" is not available for SUNAT yet.',
+      zh: 'SUNAT 尚不支持操作 "{operation}"。',
+    },
     'pack.customer_not_synced': {
       es: 'El cliente no está sincronizado con Factura Green. Sincronízalo primero.',
       en: 'Customer not synced with Factura Green. Please sync first.',

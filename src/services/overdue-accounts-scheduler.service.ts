@@ -12,6 +12,9 @@ import {
   NotificationPriority,
 } from '../models/notification.entity';
 import { User } from '../models/user.entity';
+import { Organization } from '../models/organization.entity';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatMoney, resolveIntlLocale } from '../utils/format.utils';
 
 @Injectable()
 export class OverdueAccountsSchedulerService {
@@ -24,6 +27,8 @@ export class OverdueAccountsSchedulerService {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Organization)
+    private readonly organizationRepository: Repository<Organization>,
   ) {}
 
   // Corre todos los días a las 8:00 AM
@@ -119,10 +124,16 @@ export class OverdueAccountsSchedulerService {
         const clientList = Array.from(data.clients).slice(0, 3).join(', ');
         const moreClients =
           data.clients.size > 3 ? ` y ${data.clients.size - 3} más` : '';
-        const amount = new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency: 'MXN',
-        }).format(data.totalAmount);
+        // Cada organización ve el importe en la moneda de su país
+        const organization = await this.organizationRepository.findOne({
+          where: { id: organizationId },
+        });
+        const profile = getCountryProfile(organization?.country);
+        const amount = formatMoney(
+          data.totalAmount,
+          profile.currency,
+          resolveIntlLocale(null, profile.code),
+        );
 
         const title = `${data.count} cuenta${data.count > 1 ? 's' : ''} por cobrar vencida${data.count > 1 ? 's' : ''}`;
         const message = `Tienes ${data.count} cuenta${data.count > 1 ? 's' : ''} vencida${data.count > 1 ? 's' : ''} por un total de ${amount}. Clientes: ${clientList}${moreClients}.`;

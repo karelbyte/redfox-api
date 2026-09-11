@@ -1,3 +1,4 @@
+import { DEFAULT_COUNTRY } from '../constants/countries.constant';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -24,6 +25,14 @@ export class Organization {
 
   @Column({ length: 255, unique: true })
   slug: string;
+
+  /**
+   * País de la organización en ISO 3166-1 alpha-2. Determina qué packs de
+   * certificación se ofrecen y con qué catálogos arranca (ver COUNTRIES).
+   * Una organización pertenece a un solo país.
+   */
+  @Column({ length: 2, default: DEFAULT_COUNTRY })
+  country: string;
 
   @Column({ default: true })
   status: boolean;

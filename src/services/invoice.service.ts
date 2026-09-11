@@ -34,6 +34,12 @@ import { ClientMapper } from './mappers/client.mapper';
 import { WithdrawalMapper } from './mappers/withdrawal.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import {
+  ICertificationPackService,
+  packRequires,
+} from '../interfaces/certification-pack.interface';
+import { resolveCustomerDocument } from '../constants/sunat-catalogs.constant';
+import { DocumentSeriesService } from './document-series.service';
 import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
@@ -65,6 +71,7 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly documentSeriesService: DocumentSeriesService,
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
@@ -238,6 +245,7 @@ export class InvoiceService {
       tax_amount: amounts.tax_amount,
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
+      currency_code: rest.currency_code?.toUpperCase() || null,
       payment_method: rest.payment_method,
       card_type: rest.card_type || null,
       payment_conditions: rest.payment_conditions,
@@ -840,6 +848,66 @@ export class InvoiceService {
     return this.mapToResponseDto(invoiceWithDetails!);
   }
 
+  /**
+   * Reserva serie y correlativo para los packs que numeran por serie (SUNAT).
+   *
+   * Se hace de forma síncrona, antes de encolar la emisión, porque el punto de
+   * venta necesita el número para imprimir aunque el envío a SUNAT viaje
+   * después. Si la factura ya tiene número —reintento tras un fallo— se
+   * reutiliza: pedir uno nuevo dejaría un hueco en la numeración.
+   */
+  private async reserveDocumentNumber(
+    invoice: Invoice,
+    userId?: string,
+  ): Promise<void> {
+    if (invoice.series && invoice.number) {
+      return;
+    }
+
+    let packService: ICertificationPackService;
+
+    try {
+      packService = await this.certificationPackFactory.getPackService();
+    } catch {
+      // Sin pack configurado no hay nada que reservar; el processor se
+      // encarga de reportar el error de emisión.
+      return;
+    }
+
+    if (!packRequires(packService, 'documentSeries')) {
+      return;
+    }
+
+    const taxData =
+      (invoice.client?.taxData ?? []).find((item) => item.is_main) ??
+      invoice.client?.taxData?.[0];
+    const resolved = resolveCustomerDocument(taxData?.tax_document);
+
+    if (!resolved) {
+      const message = await this.translationService.translate(
+        'pack.sunat_customer_document_invalid',
+        userId,
+        {
+          name: invoice.client?.name ?? '',
+          document: taxData?.tax_document ?? '',
+        },
+      );
+      throw new BadRequestException(message);
+    }
+
+    const reserved = await this.documentSeriesService.reserveNext(
+      resolved.documentType,
+    );
+
+    invoice.document_type = reserved.documentType;
+    invoice.series = reserved.series;
+    invoice.number = reserved.number;
+
+    this.logger.log(
+      `[Invoice] Comprobante ${reserved.formatted} reservado para la factura ${invoice.code}`,
+    );
+  }
+
   async generateCFDI(
     invoiceId: string,
     userId?: string,
@@ -876,6 +944,10 @@ export class InvoiceService {
       );
       throw new BadRequestException(message);
     }
+
+    // Fuera del try: si falla la reserva (por ejemplo, no hay serie
+    // configurada) interesa que llegue su propio mensaje y no el genérico.
+    await this.reserveDocumentNumber(invoice, userId);
 
     try {
       invoice.status = InvoiceStatus.PENDING_CFDI;
@@ -1400,6 +1472,16 @@ export class InvoiceService {
    * Crea una factura directamente desde una venta (withdrawal) cerrada.
    * Copia los productos de la venta al invoice automáticamente.
    */
+  /** Factura ya generada a partir de una venta, si existe. */
+  async findByWithdrawalId(withdrawalId: string): Promise<Invoice | null> {
+    return this.invoiceRepository.findOne({
+      where: {
+        withdrawal: { id: withdrawalId },
+        organization_id: this.organizationId,
+      },
+    });
+  }
+
   async createFromWithdrawal(
     withdrawalId: string,
     userId?: string,

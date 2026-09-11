@@ -1,6 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Invoice } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
@@ -35,6 +37,7 @@ import { CfdiQueue } from '../queues/cfdi.queue';
 import { InMemoryCfdiQueue } from '../queues/in-memory-cfdi.queue';
 import { CfdiProcessor } from '../processors/cfdi.processor';
 import { UserAttributionModule } from './user-attribution.module';
+import { DocumentSeriesModule } from './document-series.module';
 
 @Module({
   imports: [
@@ -56,6 +59,7 @@ import { UserAttributionModule } from './user-attribution.module';
     NotificationModule,
     WebhookModule,
     UserAttributionModule,
+    DocumentSeriesModule,
     BullModule.registerQueueAsync({
       name: 'generate-cfdi',
       imports: [ConfigModule],
@@ -69,6 +73,10 @@ import { UserAttributionModule } from './user-attribution.module';
       }),
       inject: [ConfigService],
     }),
+    BullBoardModule.forRoot({
+      route: '/queues',
+      adapter: ExpressAdapter,
+    })
   ],
   controllers: [InvoiceController, InvoicePaymentController],
   providers: [
