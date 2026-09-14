@@ -3,10 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CertificationPack } from '../models/certification-pack.entity';
 import { CertificationPackType } from '../constants/certification-packs.constant';
-import { ICertificationPackService } from '../interfaces/certification-pack.interface';
+import {
+  ICertificationPackService,
+  PackCapabilities,
+  resolvePackCapabilities,
+} from '../interfaces/certification-pack.interface';
 import { FacturaAPIService } from './facturapi.service';
 import { FacturaGreenService } from './factura-green.service';
 import { TenantContext } from './tenant-context.service';
+import { FacturaApisunatService } from './factura-api-sunat.service';
 
 @Injectable()
 export class CertificationPackFactoryService {
@@ -18,6 +23,7 @@ export class CertificationPackFactoryService {
     private readonly certificationPackRepository: Repository<CertificationPack>,
     private readonly facturaAPIService: FacturaAPIService,
     private readonly facturaGreenService: FacturaGreenService,
+    private readonly facturaSunatService: FacturaApisunatService,
     private readonly tenantContext: TenantContext,
   ) {
     this.initializePackServices();
@@ -32,6 +38,10 @@ export class CertificationPackFactoryService {
     this.packServices.set(
       CertificationPackType.FACTURA_GREEN,
       this.facturaGreenService,
+    );
+    this.packServices.set(
+      CertificationPackType.FACTURA_SUNAT,
+      this.facturaSunatService,
     );
   }
 
@@ -114,6 +124,15 @@ export class CertificationPackFactoryService {
     this.tenantContext.setPacConfig(config);
 
     return service;
+  }
+
+  /**
+   * Capacidades efectivas de un tipo de pack. No consulta la base de datos ni
+   * altera el contexto del tenant: sirve para exponerlas en la API sin los
+   * efectos de `getPackService`.
+   */
+  getCapabilities(packType: CertificationPackType | string): PackCapabilities {
+    return resolvePackCapabilities(this.packServices.get(packType));
   }
 
   registerPackService(

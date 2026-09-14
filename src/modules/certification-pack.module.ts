@@ -13,14 +13,24 @@ import { ConfigModule } from '@nestjs/config';
 import { OrganizationModule } from './organization.module';
 import { LanguageModule } from './language.module';
 import { RedisServiceModule } from './redis-service.module';
+import { DocumentSeriesModule } from './document-series.module';
+import { FacturaApisunatService } from '../services/factura-api-sunat.service';
+import { httpRequest, productRepository, sunatApiService } from '../constants/custom-providers';
+import { Organization } from '../models/organization.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CertificationPack, CertificationPackEmitter, Product]),
+    TypeOrmModule.forFeature([
+      CertificationPack,
+      CertificationPackEmitter,
+      Product,
+      Organization,
+    ]),
     ConfigModule,
     OrganizationModule,
     LanguageModule,
     RedisServiceModule,
+    DocumentSeriesModule,
   ],
   controllers: [CertificationPackController],
   providers: [
@@ -28,7 +38,11 @@ import { RedisServiceModule } from './redis-service.module';
     CertificationPackFactoryService,
     FacturaAPIService,
     FacturaGreenService,
+    FacturaApisunatService,
     SatCatalogService,
+    httpRequest,
+    productRepository,
+    sunatApiService
   ],
   exports: [
     CertificationPackService,

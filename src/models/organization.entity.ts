@@ -37,6 +37,11 @@ export class Organization {
   @Column({ length: 20, nullable: true })
   referrer_code: string;
 
+  /**
+   * País de la organización en ISO 3166-1 alpha-2. Determina qué packs de
+   * certificación se ofrecen y con qué catálogos arranca (ver COUNTRIES).
+   * Una organización pertenece a un solo país.
+   */
   @Column({ length: 10, nullable: true })
   country: string;
 

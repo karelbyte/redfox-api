@@ -5,10 +5,13 @@ import { Withdrawal, WithdrawalType } from '../models/withdrawal.entity';
 import { WithdrawalDetail } from '../models/withdrawal-detail.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import {
+  packSupports,
   ReceiptData,
   ReceiptItemData,
   ReceiptResponse,
 } from '../interfaces/certification-pack.interface';
+import { InvoiceStatus } from '../models/invoice.entity';
+import { InvoiceService } from './invoice.service';
 
 @Injectable()
 export class PosPackSyncService {
@@ -20,7 +23,117 @@ export class PosPackSyncService {
     @InjectRepository(WithdrawalDetail)
     private readonly withdrawalDetailRepository: Repository<WithdrawalDetail>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly invoiceService: InvoiceService,
   ) {}
+
+  /**
+   * Cierra fiscalmente una venta POS con el mecanismo que use el PAC activo.
+   *
+   * Los PAC mexicanos emiten un recibo, que el cliente puede autofacturar y
+   * que al cierre del periodo se agrupa en una factura global. SUNAT no tiene
+   * esa figura: toda venta debe emitir boleta o factura en el acto, así que
+   * la venta se convierte en factura y se manda a emitir.
+   *
+   * Nunca lanza: cerrar la venta no puede fallar por el comprobante.
+   */
+  async emitForWithdrawal(
+    withdrawalId: string,
+    userId?: string,
+  ): Promise<{
+    packSyncSuccess: boolean;
+    packErrorMessage?: string;
+    receipt?: ReceiptResponse;
+    invoiceId?: string;
+  }> {
+    let supportsReceipts = true;
+
+    try {
+      const packService = await this.certificationPackFactory.getPackService();
+      supportsReceipts = packSupports(packService, 'receipts');
+    } catch (error: unknown) {
+      const message = this.errorMessage(error);
+      this.logger.warn(
+        `[PosPackSync] No hay pack de certificación activo: ${message}`,
+      );
+      return {
+        packSyncSuccess: false,
+        packErrorMessage: message,
+      };
+    }
+
+    if (supportsReceipts) {
+      const result = await this.createReceiptForWithdrawal(withdrawalId);
+      return {
+        packSyncSuccess: result.packSyncSuccess,
+        packErrorMessage: result.packErrorMessage,
+        receipt: result.receipt,
+      };
+    }
+
+    return this.emitInvoiceForWithdrawal(withdrawalId, userId);
+  }
+
+  /**
+   * Convierte la venta en factura y la manda a emitir. Idempotente: si la
+   * venta ya tiene factura no crea otra, y si esa factura ya fue emitida no
+   * la vuelve a mandar.
+   */
+  private async emitInvoiceForWithdrawal(
+    withdrawalId: string,
+    userId?: string,
+  ): Promise<{
+    packSyncSuccess: boolean;
+    packErrorMessage?: string;
+    invoiceId?: string;
+  }> {
+    try {
+      const existing =
+        await this.invoiceService.findByWithdrawalId(withdrawalId);
+
+      const invoice =
+        existing ??
+        (await this.invoiceService.createFromWithdrawal(withdrawalId, userId));
+
+      if (!invoice) {
+        return {
+          packSyncSuccess: false,
+          packErrorMessage: 'Withdrawal not found',
+        };
+      }
+
+      const emitted =
+        invoice.status !== InvoiceStatus.DRAFT &&
+        invoice.status !== InvoiceStatus.FAILED_CFDI;
+
+      if (emitted) {
+        this.logger.log(
+          `[PosPackSync] La venta ${withdrawalId} ya tiene la factura ${invoice.id} en estado ${invoice.status}`,
+        );
+        return { packSyncSuccess: true, invoiceId: invoice.id };
+      }
+
+      await this.invoiceService.generateCFDI(invoice.id, userId);
+
+      this.logger.log(
+        `[PosPackSync] Venta ${withdrawalId} enviada a emitir como factura ${invoice.id}`,
+      );
+
+      return { packSyncSuccess: true, invoiceId: invoice.id };
+    } catch (error: unknown) {
+      const message = this.errorMessage(error);
+      this.logger.warn(
+        `[PosPackSync] No se pudo emitir el comprobante de la venta ${withdrawalId}: ${message}`,
+      );
+      return {
+        packSyncSuccess: false,
+        packErrorMessage: message,
+      };
+    }
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
 
   private buildItems(details: WithdrawalDetail[]): ReceiptItemData[] {
     return details.map((detail) => {

@@ -61,11 +61,15 @@ export class CfdiProcessor {
           where: { id: invoiceId },
           relations: [
             'client',
+            // SUNAT declara la dirección del adquirente en el comprobante
+            'client.addresses',
             'client.taxData',
             'details',
             'details.product',
             'details.product.tax',
             'details.product.taxes',
+            // Necesaria para traducir la unidad de medida al catálogo del PAC
+            'details.product.measurement_unit',
           ],
         });
 
@@ -105,6 +109,7 @@ export class CfdiProcessor {
             pdf_url: cfdiResult.pdf_url,
             xml_url: cfdiResult.xml_url,
             payload_send: cfdiResult.payload_send,
+            raw: cfdiResult.raw,
             emitterId,
           });
 

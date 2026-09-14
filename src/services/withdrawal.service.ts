@@ -52,6 +52,9 @@ import { TranslationService } from './translation.service';
 import { PosPackSyncService } from './pos-pack-sync.service';
 import { AccountReceivableService } from './account-receivable.service';
 import { TenantContext } from './tenant-context.service';
+import { OrganizationService } from './organization.service';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatMoney, resolveIntlLocale } from '../utils/format.utils';
 import { NotificationService } from './notification.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
@@ -80,12 +83,26 @@ export class WithdrawalService {
     private readonly posPackSyncService: PosPackSyncService,
     private readonly accountReceivableService: AccountReceivableService,
     private readonly tenantContext: TenantContext,
+    private readonly organizationService: OrganizationService,
     private readonly notificationService: NotificationService,
     private readonly webhookService: WebhookService,
     private readonly userAttributionService: UserAttributionService,
   ) {}
 
   private readonly logger = new Logger(WithdrawalService.name);
+
+  /** Moneda y locale con los que presentar importes a esta organización. */
+  private async getMoneyFormat(): Promise<[string, string]> {
+    const organization = await this.organizationService.findOne(
+      this.organizationId,
+    );
+    const profile = getCountryProfile(organization?.country);
+
+    return [
+      profile.currency,
+      resolveIntlLocale(this.tenantContext.getLocale(), profile.code),
+    ];
+  }
 
   private get organizationId(): string {
     return this.tenantContext.getOrganizationId() as string;
@@ -974,17 +991,20 @@ export class WithdrawalService {
     }
 
     if (closedWithdrawal.type === WithdrawalType.POS) {
-      await this.posPackSyncService.createReceiptForWithdrawal(
+      // Recibo o comprobante numerado, según lo que admita el PAC activo.
+      await this.posPackSyncService.emitForWithdrawal(
         closedWithdrawal.id,
+        userId,
       );
     }
 
     try {
       if (userId) {
-        const amount = new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency: 'MXN',
-        }).format(Number(closedWithdrawal.amount));
+        // El importe se muestra en la moneda del país de la organización
+        const amount = formatMoney(
+          Number(closedWithdrawal.amount),
+          ...(await this.getMoneyFormat()),
+        );
         await this.notificationService.createSaleNotification(
           `✅ Venta cerrada: ${closedWithdrawal.code}`,
           `La venta ${closedWithdrawal.code} por ${amount} fue procesada exitosamente. ${withdrawnProducts} producto(s) descontados del inventario.`,

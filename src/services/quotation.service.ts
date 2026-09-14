@@ -27,6 +27,9 @@ import { WarehouseMapper } from './mappers/warehouse.mapper';
 import { ProductMapper } from './mappers/product.mapper';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { OrganizationService } from './organization.service';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatMoney, resolveIntlLocale } from '../utils/format.utils';
 import { SurrogateService } from './surrogate.service';
 import { QuotationBotPdfService, QuotationBotPdfDocument } from './quotation-bot-pdf.service';
 import { EmailService } from './email.service';
@@ -57,6 +60,7 @@ export class QuotationService {
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly organizationService: OrganizationService,
     private readonly surrogateService: SurrogateService,
     private readonly quotationBotPdfService: QuotationBotPdfService,
     private readonly emailService: EmailService,
@@ -870,6 +874,7 @@ export class QuotationService {
         company,
         sendEmailDto.message,
         locale,
+        await this.getMoneyFormat(locale),
       );
 
       // Encolar el correo en lugar de enviarlo de forma síncrona
@@ -910,11 +915,27 @@ export class QuotationService {
     );
   }
 
+  /** Moneda y locale con los que presentar importes a esta organización. */
+  private async getMoneyFormat(
+    locale?: string,
+  ): Promise<{ currency: string; intlLocale: string }> {
+    const organization = await this.organizationService.findOne(
+      this.organizationId,
+    );
+    const profile = getCountryProfile(organization?.country);
+
+    return {
+      currency: profile.currency,
+      intlLocale: resolveIntlLocale(locale, profile.code),
+    };
+  }
+
   private generateQuotationHtml(
     quotation: Quotation,
     company: CompanySettings | null,
     customMessage: string | undefined,
     locale: string,
+    moneyFormat: { currency: string; intlLocale: string },
   ): string {
     const isEs = locale.startsWith('es');
     const labels = {
@@ -934,10 +955,7 @@ export class QuotationService {
     };
 
     const money = (val: number) =>
-      new Intl.NumberFormat(isEs ? 'es-MX' : 'en-US', {
-        style: 'currency',
-        currency: 'MXN',
-      }).format(val);
+      formatMoney(val, moneyFormat.currency, moneyFormat.intlLocale);
 
     return `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">

@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { Inventory } from '../models/inventory.entity';
 import { Product } from '../models/product.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
-import { ProductData } from '../interfaces/certification-pack.interface';
+import {
+  packSupports,
+  ProductData,
+} from '../interfaces/certification-pack.interface';
 
 @Injectable()
 export class InventoryPackSyncService {
@@ -99,6 +102,15 @@ export class InventoryPackSyncService {
           packSyncSuccess: false,
           packErrorMessage: 'Inventory product not loaded',
         };
+      }
+
+      // Los packs sin catálogo de productos (SUNAT) no necesitan
+      // sincronización: los datos del producto viajan dentro del comprobante.
+      if (!packSupports(packService, 'productCatalog')) {
+        this.logger.debug(
+          '[InventoryPackSync] Pack does not keep a product catalog, skipping sync',
+        );
+        return { inventory, packSyncSuccess: true };
       }
 
       const price = Number(inventory.price ?? 0);

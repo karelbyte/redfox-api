@@ -7,6 +7,8 @@ import * as QRCode from 'qrcode';
 import { Quotation } from '../models/quotation.entity';
 import { QuotationDetail } from '../models/quotation-detail.entity';
 import { CompanySettings } from '../models/company-settings.entity';
+import { Organization } from '../models/organization.entity';
+import { getCountryProfile } from '../constants/countries.constant';
 
 export interface QuotationBotPdfDocument {
   buffer: Buffer;
@@ -195,6 +197,8 @@ export class QuotationBotPdfService {
     private readonly quotationDetailRepository: Repository<QuotationDetail>,
     @InjectRepository(CompanySettings)
     private readonly companySettingsRepository: Repository<CompanySettings>,
+    @InjectRepository(Organization)
+    private readonly organizationRepository: Repository<Organization>,
     private readonly configService: ConfigService,
   ) { }
 
@@ -205,6 +209,11 @@ export class QuotationBotPdfService {
   ): Promise<QuotationBotPdfDocument> {
     const resolvedLocale = this.resolveLocale(locale);
     const copy = COPY[resolvedLocale];
+    // La moneda del PDF es la del país de la organización
+    const organization = await this.organizationRepository.findOne({
+      where: { id: organizationId },
+    });
+    const currency = getCountryProfile(organization?.country).currency;
 
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: organizationId },
@@ -280,7 +289,7 @@ export class QuotationBotPdfService {
       const money = (value: number) =>
         new Intl.NumberFormat(this.getIntlLocale(resolvedLocale), {
           style: 'currency',
-          currency: 'MXN',
+          currency,
         }).format(Number(value || 0));
 
       const formatDate = (value?: Date | string | null) => {

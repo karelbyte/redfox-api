@@ -7,11 +7,17 @@ import { TenantContext } from '../services/tenant-context.service';
 import { OverdueAccountsSchedulerService } from '../services/overdue-accounts-scheduler.service';
 import { AccountReceivable } from '../models/account-receivable.entity';
 import { User } from '../models/user.entity';
+import { Organization } from '../models/organization.entity';
 import { LanguageModule } from './language.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notification, AccountReceivable, User]),
+    TypeOrmModule.forFeature([
+      Notification,
+      AccountReceivable,
+      User,
+      Organization,
+    ]),
     LanguageModule,
   ],
   controllers: [NotificationController],

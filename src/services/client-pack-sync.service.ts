@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from '../models/client.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
-import { CustomerData } from '../interfaces/certification-pack.interface';
+import {
+  CustomerData,
+  packSupports,
+} from '../interfaces/certification-pack.interface';
 import { UpdateClientDto } from '../dtos/client/update-client.dto';
 
 @Injectable()
@@ -15,6 +18,21 @@ export class ClientPackSyncService {
     private readonly clientRepository: Repository<Client>,
     private readonly certificationPackFactory: CertificationPackFactoryService,
   ) {}
+
+  /**
+   * Los packs sin catálogo de clientes (SUNAT) no requieren sincronización:
+   * los datos del cliente viajan dentro del propio comprobante.
+   */
+  private skipCustomerSync(
+    client: Client,
+    method: string,
+  ): { client: Client; packSyncSuccess: boolean } {
+    this.logger.debug(
+      `[${method}] Pack does not keep a customer catalog, skipping sync`,
+    );
+
+    return { client, packSyncSuccess: true };
+  }
 
   private extractCustomerData(client: Client): CustomerData {
     const mainTax =
@@ -66,6 +84,11 @@ export class ClientPackSyncService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
+
+      if (!packSupports(packService, 'customerCatalog')) {
+        return this.skipCustomerSync(client, 'syncOnCreate');
+      }
+
       const customerData = this.extractCustomerData(client);
 
       this.logger.log(
@@ -113,6 +136,10 @@ export class ClientPackSyncService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
+
+      if (!packSupports(packService, 'customerCatalog')) {
+        return this.skipCustomerSync(client, 'syncOnUpdate');
+      }
 
       if (!client.pack_client_id) {
         const customerData = this.extractCustomerData(client);
@@ -186,6 +213,11 @@ export class ClientPackSyncService {
 
     try {
       const packService = await this.certificationPackFactory.getPackService();
+
+      if (!packSupports(packService, 'customerCatalog')) {
+        return this.skipCustomerSync(client, 'syncManually');
+      }
+
       const customerData = this.extractCustomerData(client);
 
       if (client.pack_client_id) {
