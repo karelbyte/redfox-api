@@ -21,7 +21,6 @@ export class AssignPermissionsToRoleDto {
   permissionIds: string[];
 }
 
-// This is just for validation, the actual type is string[]
 export class UpdateRolePermissionsDto {
   @IsArray()
   @IsString({ each: true })

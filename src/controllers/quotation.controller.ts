@@ -94,6 +94,8 @@ export class QuotationController {
       close_sale?: boolean;
       create_invoice?: boolean;
       stamp_invoice?: boolean;
+      card_type?: string;
+      emitter_id?: string;
     },
     @UserId() userId: string,
   ): Promise<ConvertToSaleResponseDto> {
@@ -102,6 +104,7 @@ export class QuotationController {
       body.items,
       userId,
       body.payment_method,
+      body.card_type,
     );
 
     if (body.close_sale) {
@@ -120,6 +123,10 @@ export class QuotationController {
         const invoice = await this.invoiceService.createFromWithdrawal(
           result.saleId,
           userId,
+          {
+            card_type: body.card_type,
+            emitter_id: body.emitter_id,
+          },
         );
         invoiceId = invoice?.id ?? null;
       } catch (error) {
@@ -131,7 +138,9 @@ export class QuotationController {
 
     if (body.stamp_invoice && invoiceId) {
       try {
-        await this.invoiceService.generateCFDI(invoiceId, userId);
+        await this.invoiceService.generateCFDI(invoiceId, userId, {
+          emitter_id: body.emitter_id,
+        });
       } catch (error) {
         this.logger.warn(
           `[ConvertToSale] Could not stamp invoice ${invoiceId}: ${error?.message}`,

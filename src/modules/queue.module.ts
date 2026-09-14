@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailQueue } from '../queues/email.queue';
 import { InMemoryEmailQueue } from '../queues/in-memory-email.queue';
 import { EmailModule } from './email.module';
+import { NotificationModule } from './notification.module';
 
 @Global()
 @Module({})
@@ -12,7 +13,7 @@ export class QueueModule {
   static async forRootAsync(): Promise<DynamicModule> {
     const cacheType = process.env.CACHE_TYPE || 'memory';
 
-    const imports: any[] = [ConfigModule, EmailModule];
+    const imports: any[] = [ConfigModule, EmailModule, NotificationModule];
     const providers: any[] = [InMemoryEmailQueue, EmailQueue];
     const exports: any[] = [EmailQueue];
 
@@ -46,12 +47,16 @@ export class QueueModule {
         );
 
         const { EmailService } = await import('../services/email.service');
+        const { NotificationService } = await import(
+          '../services/notification.service'
+        );
 
         providers.push(
           {
             provide: EmailProcessor,
-            useFactory: (emailService: any) => new EmailProcessor(emailService),
-            inject: [EmailService],
+            useFactory: (emailService: any, notificationService: any) =>
+              new EmailProcessor(emailService, notificationService),
+            inject: [EmailService, NotificationService],
           },
           {
             provide: 'BULL_EMAIL_QUEUE',

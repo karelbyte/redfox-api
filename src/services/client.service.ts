@@ -80,13 +80,11 @@ export class ClientService {
     });
     const savedClient = await this.clientRepository.save(client);
 
-    // Incrementar el contador si el código coincide con el sugerido
     await this.surrogateService.useCodeIfMatches(
       'client',
       createClientDto.code,
     );
 
-    // NO sincronizar al pack en la creación — se sincroniza cuando tenga address y tax data
     return {
       client: this.clientMapper.mapToResponseDto(savedClient),
       pack_sync_success: false,
@@ -147,7 +145,6 @@ export class ClientService {
       );
     }
 
-    // Paginación
     const currentPage = page || 1;
     const currentLimit = limit || 8;
     const skip = (currentPage - 1) * currentLimit;
@@ -209,7 +206,6 @@ export class ClientService {
       throw new NotFoundException(message);
     }
 
-    // Actualizar campos básicos
     const {
       delete_addresses,
       delete_tax_data,
@@ -220,7 +216,6 @@ export class ClientService {
     } = updateClientDto;
     Object.assign(client, baseData);
 
-    // Manejar crédito
     if (credit) {
       if (!client.credit) {
         client.credit = this.clientCreditRepository.create({
@@ -232,7 +227,6 @@ export class ClientService {
       }
     }
 
-    // Manejar eliminaciones
     if (delete_addresses && delete_addresses.length > 0) {
       await this.clientAddressRepository.delete(delete_addresses);
     }
@@ -240,20 +234,19 @@ export class ClientService {
       await this.clientTaxDataRepository.delete(delete_tax_data);
     }
 
-    // Manejar actualización de taxData - asegurar que client_id se preserve
     if (taxData && taxData.length > 0) {
       for (const taxDataItem of taxData) {
         if (taxDataItem.id) {
-          // Actualizar existente
+   
           await this.clientTaxDataRepository.update(
             { id: taxDataItem.id },
             {
               ...taxDataItem,
-              client_id: id, // Asegurar que client_id se preserve
+              client_id: id,
             },
           );
         } else {
-          // Crear nuevo
+      
           const newTaxData = this.clientTaxDataRepository.create({
             ...taxDataItem,
             client_id: id,
@@ -261,26 +254,24 @@ export class ClientService {
           await this.clientTaxDataRepository.save(newTaxData);
         }
       }
-      // Recargar para obtener los datos actualizados
+  
       client.taxData = await this.clientTaxDataRepository.find({
         where: { client_id: id },
       });
     }
 
-    // Manejar actualización de addresses - asegurar que client_id se preserve
     if (addresses && addresses.length > 0) {
       for (const addressItem of addresses) {
         if (addressItem.id) {
-          // Actualizar existente
+
           await this.clientAddressRepository.update(
             { id: addressItem.id },
             {
               ...addressItem,
-              client_id: id, // Asegurar que client_id se preserve
+              client_id: id,
             },
           );
         } else {
-          // Crear nuevo
           const newAddress = this.clientAddressRepository.create({
             ...addressItem,
             client_id: id,
@@ -288,16 +279,14 @@ export class ClientService {
           await this.clientAddressRepository.save(newAddress);
         }
       }
-      // Recargar para obtener los datos actualizados
+      
       client.addresses = await this.clientAddressRepository.find({
         where: { client_id: id },
       });
     }
 
-    // Guardar cliente sin cascade para evitar que TypeORM intente actualizar relaciones
     const savedClient = await this.clientRepository.save(client);
 
-    // Recargar el cliente con todas las relaciones para la sincronización
     const clientWithRelations = await this.clientRepository.findOne({
       where: { id: savedClient.id, organization_id: this.organizationId },
       relations: ['addresses', 'taxData', 'credit'],
@@ -307,7 +296,6 @@ export class ClientService {
     const hasAddress = (clientWithRelations!.addresses || []).length > 0;
     const hasTaxData = (clientWithRelations!.taxData || []).length > 0;
 
-    // Solo sincronizar al pack si tiene address Y tax data
     if (hasAddress && hasTaxData) {
       const syncResult = await this.clientPackSyncService.syncOnUpdate(
         clientWithRelations!,
@@ -347,7 +335,6 @@ export class ClientService {
       throw new NotFoundException(message);
     }
 
-    // Verificar historial ANTES de tocar el pack
     const invoiceCount = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .where('invoice.client_id = :id', { id })
@@ -363,7 +350,6 @@ export class ClientService {
       .where('quotation.client_id = :id', { id })
       .getCount();
 
-    // Bloquear si hay CUALQUIER historial (Facturas, Retiros/Ventas o Cotizaciones)
     if (invoiceCount > 0 || withdrawalCount > 0 || quotationCount > 0) {
       const message = await this.translationService.translate(
         'client.cannot_delete_in_use',
@@ -373,7 +359,6 @@ export class ClientService {
       throw new BadRequestException(message);
     }
 
-    // Solo eliminar del pack si pasó la validación de historial
     if (client.pack_client_id) {
       try {
         const packService: any =
@@ -405,12 +390,10 @@ export class ClientService {
       }
     }
 
-    // Guardar datos del cliente antes de eliminarlo para el log de auditoría
     const clientDataForAudit = { ...client };
 
     await this.clientRepository.softRemove(client);
 
-    // Log manual de auditoría para soft delete
     try {
       await this.auditLogService.log(
         userId || 'SYSTEM',
@@ -435,8 +418,7 @@ export class ClientService {
     const results: BulkDeleteResultDto[] = [];
 
     for (const id of ids) {
-      // Intentar obtener el cliente para tener su nombre/código incluso si falla el borrado
-      const client = await this.clientRepository.findOne({
+        const client = await this.clientRepository.findOne({
         where: { id, organization_id: this.organizationId },
         withDeleted: false,
       });
@@ -495,10 +477,7 @@ export class ClientService {
     }
   }
 
-  /**
-   * Sincroniza manualmente un cliente existente con el pack activo.
-   * Útil cuando el cliente fue creado antes de que el pack estuviera activo.
-   */
+
   async syncWithPack(
     id: string,
     userId?: string,

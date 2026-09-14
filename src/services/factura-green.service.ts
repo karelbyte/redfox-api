@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Invoice } from '../models/invoice.entity';
+import { Product } from '../models/product.entity';
 import {
   ICertificationPackService,
   CFDIResponse,
@@ -30,6 +33,8 @@ export class FacturaGreenService implements ICertificationPackService {
     private readonly tenantContext: TenantContext,
     private readonly satCatalogService: SatCatalogService,
     private readonly translationService: TranslationService,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
 
   private isValidUUID(uuid: string | null | undefined): boolean {
@@ -81,7 +86,6 @@ export class FacturaGreenService implements ICertificationPackService {
 
   private getBaseUrl(): string {
     const config = this.getConfig();
-    // Limpieza estricta de espacios para evitar dobles 'https://'
     const tenantId = (config.tenantId || 'www').trim();
     if (tenantId.startsWith('http://') || tenantId.startsWith('https://')) {
       return tenantId;
@@ -106,53 +110,55 @@ export class FacturaGreenService implements ICertificationPackService {
         throw new BadRequestException(msg);
       }
 
-      // Validar que todos los productos estén sincronizados antes de construir los items
       for (const detail of invoice.details) {
         const productPackId = (detail.product as any)?.product_pack_id;
         if (!productPackId) {
-          const msg = await this.translationService.translate(
-            'pack.product_not_synced',
-            this.tenantContext.getUserId() ?? undefined,
-            {
-              name: detail.product?.name || detail.product_id,
-            },
-          );
-          throw new BadRequestException(msg);
+          this.logger.log(`[FacturaGreen] Product "${detail.product?.name}" has no product_pack_id — attempting auto-sync`);
+          try {
+            const syncResult = await this.createProduct(this.buildProductDataFromDetail(detail));
+            if (syncResult?.id) {
+              (detail.product as any).product_pack_id = syncResult.id;
+              await this.productRepository.update(detail.product_id, { product_pack_id: syncResult.id });
+              this.logger.log(`[FacturaGreen] Auto-sync success for "${detail.product?.name}" → ${syncResult.id}`);
+            } else {
+              throw new Error('No ID returned from createProduct');
+            }
+          } catch (syncError: any) {
+            this.logger.error(`[FacturaGreen] Auto-sync failed for "${detail.product?.name}": ${syncError?.message}`);
+            const msg = await this.translationService.translate(
+              'pack.product_not_synced',
+              this.tenantContext.getUserId() ?? undefined,
+              { name: detail.product?.name || detail.product_id },
+            );
+            throw new BadRequestException(msg);
+          }
         }
       }
 
-      // Construir items con soporte para casos especiales
       const items = invoice.details.map((detail) => {
         const productPackId = (detail.product as any)?.product_pack_id;
 
         const item: any = {
           uuid: productPackId,
           qty: detail.quantity,
-          // Siempre enviar el precio para cubrir productos con price.type = 'dynamic' en Factura Green.
-          // Para productos 'fixed', Factura Green acepta el precio como override sin problema.
           price: {
             amount:
               options?.itemPrices?.[detail.product_id] ?? Number(detail.price),
           },
         };
 
-        // CASO 2: Descuentos (porcentaje o monto fijo)
-        // Los descuentos se pasan a través de las opciones por producto
         if (
           options?.itemDiscounts &&
           options.itemDiscounts[detail.product_id]
         ) {
           const discount = options.itemDiscounts[detail.product_id];
-          // Si el descuento es menor a 1, asumimos que es porcentaje (0.10 = 10%)
           if (discount < 1) {
             item.discount = `${(discount * 100).toFixed(2)}%`;
           } else {
-            // Si es mayor o igual a 1, es monto fijo
             item.discount = discount;
           }
         }
 
-        // CASO 3: Cambiar descripción del producto
         if (
           options?.itemDescriptions &&
           options.itemDescriptions[detail.product_id]
@@ -160,7 +166,6 @@ export class FacturaGreenService implements ICertificationPackService {
           item.desc = options.itemDescriptions[detail.product_id];
         }
 
-        // CASO 4: Productos IEDU (colegiaturas)
         if (options?.ieduData && options.ieduData[detail.product_id]) {
           item.extra = {
             student_name: options.ieduData[detail.product_id].student_name,
@@ -171,27 +176,24 @@ export class FacturaGreenService implements ICertificationPackService {
         return item;
       });
 
-      // Mapear payment_method a forma de pago SAT (cómo se paga)
       const paymentFormMap: Record<string, string> = {
-        cash: '01', // Efectivo
-        transfer: '03', // Transferencia electrónica
-        check: '02', // Cheque nominativo
-        credit: '99', // Por definir (obligatorio en PPD)
+        cash: '01',
+        transfer: '03',
+        check: '02',
+        credit: '99',
       };
 
-      // Derivar método de pago SAT (cuándo se paga): PPD para crédito, PUE para el resto
       const isCredit = (invoice.payment_method as string) === 'credit';
       const satPaymentMethod = isCredit ? 'PPD' : 'PUE';
       
-      // Determinar forma de pago SAT
       let satPaymentForm: string;
       if (isCredit) {
         satPaymentForm = '99';
       } else if (invoice.payment_method === 'card') {
         if (invoice.card_type === 'debit') {
-          satPaymentForm = '28'; // Tarjeta de débito
+          satPaymentForm = '28';
         } else {
-          satPaymentForm = '04'; // Tarjeta de crédito (default para card)
+          satPaymentForm = '04';
         }
       } else {
         satPaymentForm = paymentFormMap[invoice.payment_method as string] || '01';
@@ -218,7 +220,6 @@ export class FacturaGreenService implements ICertificationPackService {
         },
       };
 
-      // CASO 5: Cambiar dirección del emisor (sucursales)
       if (options?.businessAddress) {
         payload.cfdi.business = {
           address: {
@@ -228,12 +229,10 @@ export class FacturaGreenService implements ICertificationPackService {
         };
       }
 
-      // CASO 6: Condiciones de pago personalizadas
       if (options?.paymentConditions) {
         payload.cfdi.paymentConditions = options.paymentConditions;
       }
 
-      // CASO 7: Complemento de donatarias
       if (options?.donatarias) {
         payload.cfdi.accessories = {
           '#donat11': {
@@ -244,7 +243,6 @@ export class FacturaGreenService implements ICertificationPackService {
         };
       }
 
-      // CASO 8: Facturas globales (Público en General)
       if (options?.global) {
         payload.cfdi.global = {
           period: {
@@ -259,25 +257,20 @@ export class FacturaGreenService implements ICertificationPackService {
         };
       }
 
-      // CASO 9: Configuraciones especiales
       const config: any = {};
 
-      // Modificar fecha de emisión (hasta 72 horas atrás)
       if (options?.emmitDateOffset) {
         config['override.emmitDateOffset'] = options.emmitDateOffset;
       }
 
-      // Override de condiciones de pago
       if (options?.paymentConditions) {
         config['override.paymentConditions'] = true;
       }
 
-      // Configuración para facturas globales
       if (options?.global && options.global.enforceGlobal === false) {
         config['enforce.cfdiGlobal'] = false;
       }
 
-      // Agregar config si tiene valores
       if (Object.keys(config).length > 0) {
         payload['@config'] = config;
       }
@@ -316,10 +309,6 @@ export class FacturaGreenService implements ICertificationPackService {
       const folioTax = data.data.cfdi?.folio_tax || data.data.folio_tax;
       const dataUuid = data.data.uuid;
 
-      // Estrategia de fallback para UUID:
-      // 1. Usar folio_tax si es válido
-      // 2. Usar data.data.uuid si folio_tax no es válido pero data.data.uuid sí lo es
-      // 3. Usar null si ninguno es válido (pero el CFDI se generó correctamente)
       let uuid = null;
       if (this.isValidUUID(folioTax)) {
         uuid = folioTax;
@@ -632,6 +621,26 @@ export class FacturaGreenService implements ICertificationPackService {
 
   async searchProductKeys(term: string): Promise<ProductKeySuggestion[]> {
     return this.satCatalogService.searchProductKeys(term);
+  }
+
+  private buildProductDataFromDetail(detail: any): ProductData {
+    const product = detail.product;
+    const taxes = (product.taxes || (product.tax ? [product.tax] : [])).map((tax: any) => ({
+      type: tax.name?.includes('IVA') ? 'IVA' : tax.name?.includes('IEPS') ? 'IEPS' : 'IVA',
+      rate: Number(tax.value || 0) / 100,
+    }));
+
+    return {
+      description: product.name,
+      product_key: product.code || '01010101',
+      unit_key: product.measurement_unit?.code || 'H87',
+      unit_name: product.measurement_unit?.description || 'Pieza',
+      price: Number(detail.price || product.base_price || 0),
+      tax_included: false,
+      taxes,
+      sku: product.sku || product.id,
+      type: 'dynamic',
+    };
   }
 
   private getStaticMeasurementUnits(term: string): MeasurementUnitSuggestion[] {
@@ -1029,7 +1038,6 @@ export class FacturaGreenService implements ICertificationPackService {
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
       console.error('Factura Green List Customers Error:', error);
-      //  Forzamos la excepción global para que envíe el Email de Error alertando al Admin
       throw new BadRequestException(
         error.message ||
           (await this.translationService.translate(
@@ -1097,18 +1105,19 @@ export class FacturaGreenService implements ICertificationPackService {
       const baseUrl = this.getBaseUrl();
       const headers = await this.getHeaders();
 
-      // Construir objeto de impuestos en formato Factura Green
       const taxes: any = {
         iva_ta: false,
         iva_ra: false,
-        isr_ra: false,
+        iva_tr: null,
         ieps_ta: false,
         ieps_ra: false,
+        ieps_tr: null,
+        isr_ra: false,
+        isr_rr: null,
       };
 
-      // Mapear impuestos de nuestro formato al formato de Factura Green
       for (const tax of productData.taxes || []) {
-        const rate = (tax.rate * 100).toFixed(2); // Convertir a porcentaje string
+        const rate = (tax.rate * 100).toFixed(2);
 
         if (tax.type === 'IVA' && !tax.type.includes('RET')) {
           taxes.iva_ta = true;
@@ -1138,10 +1147,10 @@ export class FacturaGreenService implements ICertificationPackService {
         product: {
           id: productData.sku || `PROD-${Date.now()}`,
           sku: productData.sku || `PROD-${Date.now()}`,
-          type: productData.type || 'S', // S = Servicio, P = Producto
+          type: productData.type || 'S',
           desc: productData.description,
           sat_class: {
-            k: productData.product_key.toString(), // Enviar como string
+            k: productData.product_key.toString(),
           },
           sat_unit: {
             k: productData.unit_key || 'E48',
@@ -1337,7 +1346,6 @@ export class FacturaGreenService implements ICertificationPackService {
         throw new BadRequestException(message);
       }
 
-      // Mapear los productos de Factura Green al formato ProductResponse
       const products = data.data?.products || [];
 
       return products.map((product: any) => ({
@@ -1370,19 +1378,17 @@ export class FacturaGreenService implements ICertificationPackService {
 
     const taxes: any[] = [];
 
-    // IVA Trasladado (cobrado al cliente)
     if (taxesObj.iva_ta && taxesObj.iva_tr && taxesObj.iva_tr.v) {
       const rate = parseFloat(taxesObj.iva_tr.v);
       if (!isNaN(rate) && rate > 0) {
         taxes.push({
           type: 'IVA',
-          rate: rate / 100, // Convertir de porcentaje a decimal (16 -> 0.16)
+          rate: rate / 100,
           factor: 'Tasa',
         });
       }
     }
 
-    // IVA Retenido
     if (taxesObj.iva_ra && taxesObj.iva_rr) {
       const rate = parseFloat(taxesObj.iva_rr);
       if (!isNaN(rate) && rate > 0) {
@@ -1394,7 +1400,6 @@ export class FacturaGreenService implements ICertificationPackService {
       }
     }
 
-    // ISR Retenido
     if (taxesObj.isr_ra && taxesObj.isr_rr) {
       const rate = parseFloat(taxesObj.isr_rr);
       if (!isNaN(rate) && rate > 0) {
@@ -1406,7 +1411,6 @@ export class FacturaGreenService implements ICertificationPackService {
       }
     }
 
-    // IEPS Trasladado
     if (taxesObj.ieps_ta && taxesObj.ieps_tr) {
       const rate = parseFloat(taxesObj.ieps_tr);
       if (!isNaN(rate) && rate > 0) {
@@ -1418,7 +1422,6 @@ export class FacturaGreenService implements ICertificationPackService {
       }
     }
 
-    // IEPS Retenido
     if (taxesObj.ieps_ra && taxesObj.ieps_rr) {
       const rate = parseFloat(taxesObj.ieps_rr);
       if (!isNaN(rate) && rate > 0) {
@@ -1438,13 +1441,12 @@ export class FacturaGreenService implements ICertificationPackService {
       const baseUrl = this.getBaseUrl();
       const headers = await this.getHeaders();
 
-      // Mapeo de periodicidad frontend → clave SAT c_Periodicidad
       const periodicityMap: Record<string, string> = {
-        day: '01', // Diario
-        week: '02', // Semanal
-        fortnight: '03', // Quincenal
-        month: '04', // Mensual
-        two_months: '05', // Bimestral
+        day: '01',
+        week: '02',
+        fortnight: '03',
+        month: '04',
+        two_months: '05',
       };
 
       const periodicitySAT = periodicityMap[data.periodicity];
@@ -1454,13 +1456,10 @@ export class FacturaGreenService implements ICertificationPackService {
         );
       }
 
-      // Determinar el período (mes) y año desde la fecha "from"
-      // Para periodicidad mensual: period = mes (01-12), year = año
       const fromDate = data.from ? new Date(data.from) : new Date();
-      const month = String(fromDate.getMonth() + 1).padStart(2, '0'); // 01-12
+      const month = String(fromDate.getMonth() + 1).padStart(2, '0');
       const year = String(fromDate.getFullYear());
 
-      // Buscar el cliente XAXX010101000 (Público en General) en el PAC
       let publicCustomerUuid: string | null = null;
       try {
         const customers = (await this.listCustomers?.()) ?? [];
@@ -1473,7 +1472,6 @@ export class FacturaGreenService implements ICertificationPackService {
           publicCustomerUuid = publicCustomer.id;
         }
       } catch {
-        // Si falla la búsqueda, continuamos — el PAC puede tener el cliente por defecto
       }
 
       if (!publicCustomerUuid) {
@@ -1483,8 +1481,6 @@ export class FacturaGreenService implements ICertificationPackService {
         );
       }
 
-      // Calcular el total de las ventas del período (viene en data.receipts como monto total)
-      // Si no viene monto, usamos 0 — el caller debe pasar el total
       const totalAmount = (data as any).totalAmount ?? 0;
 
       if (totalAmount <= 0) {
@@ -1493,9 +1489,6 @@ export class FacturaGreenService implements ICertificationPackService {
         );
       }
 
-      // Producto genérico "VENTA" — Factura Green aplica las reglas SAT automáticamente
-      // (clave 01010101, descripción VENTA) cuando enforce.cfdiGlobal = true (default)
-      // Necesitamos un producto registrado en el PAC — buscamos uno con clave 01010101
       let ventaProductUuid: string | null = null;
       try {
         const products = (await this.listProducts?.()) ?? [];
@@ -1506,7 +1499,6 @@ export class FacturaGreenService implements ICertificationPackService {
           ventaProductUuid = ventaProduct.id;
         }
       } catch {
-        // Continuar
       }
 
       if (!ventaProductUuid) {
@@ -1522,7 +1514,7 @@ export class FacturaGreenService implements ICertificationPackService {
             uuid: publicCustomerUuid,
           },
           payment: {
-            form: { k: '01' }, // Efectivo — forma de pago de mostrador
+            form: { k: '01' },
             method: { k: 'PUE' },
           },
           global: {
@@ -1577,10 +1569,6 @@ export class FacturaGreenService implements ICertificationPackService {
       const folioTax = result.data.cfdi?.folio_tax || result.data.folio_tax;
       const dataUuid = result.data.uuid;
 
-      // Estrategia de fallback para UUID:
-      // 1. Usar folio_tax si es válido
-      // 2. Usar result.data.uuid si folio_tax no es válido pero result.data.uuid sí lo es
-      // 3. Usar null si ninguno es válido (pero el CFDI se generó correctamente)
       let uuid = null;
       if (this.isValidUUID(folioTax)) {
         uuid = folioTax;
@@ -1622,7 +1610,6 @@ export class FacturaGreenService implements ICertificationPackService {
       const payload = {
         cfdi: {
           uuid: data.cfdi_uuid,
-          // delete
           customer: {
             ...(process.env.NODE_ENV === 'development' && {
               email: 'karelpuerto78@gmail.com',
@@ -1641,7 +1628,7 @@ export class FacturaGreenService implements ICertificationPackService {
             k: data.payment_form,
           },
           method: {
-            k: 'PUE', // El REP siempre es PUE — ya se pagó
+            k: 'PUE',
           },
         },
       };

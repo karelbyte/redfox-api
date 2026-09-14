@@ -12,22 +12,20 @@ import { Warehouse } from './warehouse.entity';
 import { Organization } from './organization.entity';
 
 export enum OperationType {
-  // Entradas
-  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING', // Warehouse opening
-  RECEPTION = 'RECEPTION', // Product reception
-  PURCHASE = 'PURCHASE', // Compra directa
-  TRANSFER_IN = 'TRANSFER_IN', // Transferencia entrante
-  ADJUSTMENT_IN = 'ADJUSTMENT_IN', // Ajuste positivo
-  RETURN_IN = 'RETURN_IN', // Devolución de cliente
+  WAREHOUSE_OPENING = 'WAREHOUSE_OPENING',
+  RECEPTION = 'RECEPTION',
+  PURCHASE = 'PURCHASE',
+  TRANSFER_IN = 'TRANSFER_IN',
+  ADJUSTMENT_IN = 'ADJUSTMENT_IN',
+  RETURN_IN = 'RETURN_IN',
 
-  // Salidas
-  SALE = 'SALE', // Venta
-  WITHDRAWAL = 'WITHDRAWAL', // Product withdrawal
-  TRANSFER_OUT = 'TRANSFER_OUT', // Transferencia saliente
-  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT', // Ajuste negativo
-  DETERIORATION = 'DETERIORATION', // Deterioro/merma
-  RETURN_OUT = 'RETURN_OUT', // Devolución a proveedor
-  DAMAGE = 'DAMAGE', // Daño/pérdida
+  SALE = 'SALE',
+  WITHDRAWAL = 'WITHDRAWAL',
+  TRANSFER_OUT = 'TRANSFER_OUT',
+  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
+  DETERIORATION = 'DETERIORATION',
+  RETURN_OUT = 'RETURN_OUT',
+  DAMAGE = 'DAMAGE',
 }
 
 @Entity('product_history')
@@ -82,7 +80,6 @@ export class ProductHistory {
   @CreateDateColumn()
   created_at: Date;
 
-  // Helper method para determinar si es entrada o salida
   isInbound(): boolean {
     return [
       OperationType.WAREHOUSE_OPENING,

@@ -57,7 +57,6 @@ export class Surrogate {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Método para generar el siguiente código
   generateNext(): string {
     const paddedNumber = this.next_number
       .toString()
@@ -71,12 +70,10 @@ export class Surrogate {
     return `${this.prefix}${this.suffix}${paddedNumber}`;
   }
 
-  // Método para incrementar el contador
   increment(): void {
     this.next_number += 1;
   }
 
-  // Método para resetear el contador al cambio de año (si aplica)
   resetForNewYear(): void {
     if (this.include_year) {
       this.next_number = 1;

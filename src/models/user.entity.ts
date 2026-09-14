@@ -7,11 +7,15 @@ import {
   DeleteDateColumn,
   ManyToMany,
   JoinTable,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 import { Organization } from './organization.entity';
-import { ManyToOne, JoinColumn } from 'typeorm';
+import { Employee } from './employee.entity';
+import { LeaveRequest } from './leave-request.entity';
 
 @Entity('users')
 export class User {
@@ -51,6 +55,7 @@ export class User {
   @Column({ default: true })
   status: boolean;
 
+  
   @Column({ default: false })
   onboarding_completed: boolean;
 

@@ -6,6 +6,12 @@ export class AddCountryToOrganizations1789084800002
   name = 'AddCountryToOrganizations1789084800002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // En instalaciones nuevas la columna ya la crea la migración de la tabla,
+    // así que esta solo actúa sobre bases anteriores a ese cambio.
+    if (await queryRunner.hasColumn('organizations', 'country')) {
+      return;
+    }
+
     // Todas las organizaciones existentes facturan en México: los únicos packs
     // implementados hasta ahora (Facturapi y Factura Green) son mexicanos.
     await queryRunner.addColumn(
@@ -23,6 +29,8 @@ export class AddCountryToOrganizations1789084800002
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumn('organizations', 'country');
+    if (await queryRunner.hasColumn('organizations', 'country')) {
+      await queryRunner.dropColumn('organizations', 'country');
+    }
   }
 }

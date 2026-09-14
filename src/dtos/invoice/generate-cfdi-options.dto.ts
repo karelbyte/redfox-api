@@ -16,7 +16,7 @@ export class IEDUStudentDataDto {
   student_name: string;
 
   @IsString()
-  student_popid: string; // CURP del estudiante
+  student_popid: string;
 }
 
 /**
@@ -39,7 +39,7 @@ export class DonatariasDataDto {
   auth_number: string;
 
   @IsString()
-  auth_date: string; // Formato: dd/mm/yyyy
+  auth_date: string;
 
   @IsOptional()
   @IsString()
@@ -51,13 +51,13 @@ export class DonatariasDataDto {
  */
 export class GlobalInvoiceDataDto {
   @IsString()
-  period: string; // '01' a '12'
+  period: string;
 
   @IsString()
-  periodicity: string; // '01' = Diario, '02' = Semanal, etc.
+  periodicity: string;
 
   @IsString()
-  year: string; // '2024', '2025', etc.
+  year: string;
 
   @IsOptional()
   @IsBoolean()

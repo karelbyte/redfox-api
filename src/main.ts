@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { useContainer } from 'class-validator';
 import * as compression from 'compression';
 
 async function bootstrap() {
@@ -33,7 +34,13 @@ async function bootstrap() {
       `   MYSQL_DB_NAME: ${process.env.MYSQL_DB_NAME || 'not defined'}`,
     );
 
-    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      rawBody: true,
+    });
+    
+    // Permitir que class-validator use el contenedor de NestJS para inyectar dependencias
+    useContainer(app.select(AppModule), { fallbackOnErrors: true });
+
     // const host = process.env.HOST || '0.0.0.0'; // Change to 0.0.0.0 for Railway
     const port = process.env.PORT || 3000;
 

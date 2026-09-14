@@ -8,6 +8,7 @@ interface TenantStore {
   userId?: string | null;
   ipAddress?: string | null;
   locale?: string | null;
+  country?: string | null;
 }
 
 @Injectable()
@@ -82,6 +83,17 @@ export class TenantContext {
 
   getLocale(): string | null {
     return TenantContext.storage.getStore()?.locale || null;
+  }
+
+  setCountry(country: string) {
+    const store = TenantContext.storage.getStore();
+    if (store) {
+      store.country = country;
+    }
+  }
+
+  getCountry(): string | null {
+    return TenantContext.storage.getStore()?.country || null;
   }
 
   clear() {

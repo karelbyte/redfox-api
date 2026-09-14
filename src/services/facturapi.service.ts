@@ -29,6 +29,25 @@ export class FacturaAPIService implements ICertificationPackService {
     private readonly translationService: TranslationService,
   ) {}
 
+  private getEmitterId(): string | null {
+    const pacConfig = this.tenantContext.getPacConfig();
+    return pacConfig?.emitter_id || null;
+  }
+
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    const apiKey = await this.getApiKey();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+    };
+
+    const emitterId = this.getEmitterId();
+    if (emitterId) {
+      headers['Fapi-Issuer'] = emitterId;
+    }
+
+    return headers;
+  }
+
   private async getClient(): Promise<Facturapi> {
     const pacConfig = this.tenantContext.getPacConfig();
     const apiKey =
@@ -124,7 +143,6 @@ export class FacturaAPIService implements ICertificationPackService {
     try {
       const client = (await this.getClient()) as any;
 
-      // Intentar recuperar usando pack_invoice_id si existe, si no por UUID
       const lookupId = data.pack_invoice_id || data.cfdi_uuid;
 
       if (!lookupId) {
@@ -146,14 +164,12 @@ export class FacturaAPIService implements ICertificationPackService {
         throw new BadRequestException(msg);
       }
 
-      // --- Lógica de Impuestos Proporcionales para CFDI 4.0 ---
       const invoiceTotal = Number(
         originalInvoice.total || originalInvoice.total_amount || 0,
       );
       const paymentAmount = Number(data.amount);
       const ratio = invoiceTotal > 0 ? paymentAmount / invoiceTotal : 1;
 
-      // Agrupar impuestos de la factura original para calcular la parte proporcional del pago
       const taxesMap = new Map<string, any>();
       (originalInvoice.items || []).forEach((item: any) => {
         const itemQuantity = Number(item.quantity || 0);
@@ -182,10 +198,9 @@ export class FacturaAPIService implements ICertificationPackService {
         ...t,
         base: Math.round(t.base * 100) / 100,
       }));
-      // --------------------------------------------------------
 
       const paymentPayload = {
-        type: 'P', // Tipo Pago (REP)
+        type: 'P',
         customer: originalInvoice.customer.id || originalInvoice.customer,
         complements: [
           {
@@ -259,16 +274,12 @@ export class FacturaAPIService implements ICertificationPackService {
       const client = await this.getClient();
       const pdfBuffer = await client.invoices.downloadPdf(packInvoiceId);
 
-      // (rest of the logic remains the same, assuming it uses pdfBuffer)
-
-      // Manejar diferentes tipos de respuesta
       if (pdfBuffer instanceof Buffer) {
         return pdfBuffer;
       } else if (pdfBuffer instanceof Blob) {
         const arrayBuffer = await pdfBuffer.arrayBuffer();
         return Buffer.from(arrayBuffer);
       } else if (pdfBuffer && typeof pdfBuffer.pipe === 'function') {
-        // Es un Readable stream de Node.js
         return new Promise((resolve, reject) => {
           const chunks: Buffer[] = [];
 
@@ -308,7 +319,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
         return Buffer.from(result);
       } else {
-        // Fallback: convertir a string y luego a Buffer
         return Buffer.from(pdfBuffer as any);
       }
     } catch (error) {
@@ -322,13 +332,11 @@ export class FacturaAPIService implements ICertificationPackService {
       const client = await this.getClient();
       const xmlContent = await client.invoices.downloadXml(packInvoiceId);
 
-      // Manejar diferentes tipos de respuesta
       if (typeof xmlContent === 'string') {
         return xmlContent;
       } else if (xmlContent instanceof Blob) {
         return await xmlContent.text();
       } else if (xmlContent && typeof xmlContent.pipe === 'function') {
-        // Es un Readable stream de Node.js
         return new Promise((resolve, reject) => {
           const chunks: Buffer[] = [];
 
@@ -368,7 +376,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
         return Buffer.from(result).toString('utf-8');
       } else {
-        // Fallback: convertir a string
         return String(xmlContent);
       }
     } catch (error) {
@@ -396,7 +403,6 @@ export class FacturaAPIService implements ICertificationPackService {
   }
 
   private buildCustomerData(client: any): any {
-    // Obtener el tax_document del taxData (es un array, usar el primero o el marcado como main)
     const taxData =
       client.taxData && client.taxData.length > 0 ? client.taxData[0] : null;
 
@@ -460,8 +466,6 @@ export class FacturaAPIService implements ICertificationPackService {
   }
 
   private convertPercentageToDecimal(percentage: number): number {
-    // Convierte porcentaje (16) a decimal (0.16)
-    // Validar que sea un número válido
     if (typeof percentage !== 'number' || isNaN(percentage)) {
       return 0;
     }
@@ -475,17 +479,14 @@ export class FacturaAPIService implements ICertificationPackService {
       return new Date().toISOString().split('T')[0];
     }
 
-    // Si es un string en formato 'YYYY-MM-DD', devolverlo tal como está
     if (typeof date === 'string') {
       return date;
     }
 
-    // Si es un objeto Date, convertir a formato 'YYYY-MM-DD'
     if (date instanceof Date) {
       return date.toISOString().split('T')[0];
     }
 
-    // Fallback: usar fecha actual
     return new Date().toISOString().split('T')[0];
   }
 
@@ -499,9 +500,9 @@ export class FacturaAPIService implements ICertificationPackService {
     
     if (paymentMethod === 'card') {
       if (cardType === 'debit') {
-        return '28'; // Tarjeta de débito
+        return '28';
       }
-      return '04'; // Tarjeta de crédito (default para card)
+      return '04';
     }
     
     return mapping[paymentMethod] || '01';
@@ -509,13 +510,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async validateTaxId(taxId: string): Promise<boolean> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         `https://api.facturapi.io/v1/customers/tax-id/${taxId}`,
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -533,13 +532,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getTaxRegimes(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/tax-regimes',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -556,13 +553,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getProductKeys(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/products',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -579,13 +574,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getPaymentForms(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/payment-forms',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -602,13 +595,11 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async getUses(): Promise<any[]> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
         'https://api.facturapi.io/v1/catalogs/uses',
         {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -638,7 +629,6 @@ export class FacturaAPIService implements ICertificationPackService {
         tax_id: customerData.tax_id,
       };
 
-      // ... (rest of logic) ...
       if (customerData.tax_system) payload.tax_system = customerData.tax_system;
       if (customerData.email) payload.email = customerData.email;
       if (customerData.phone) payload.phone = customerData.phone;
@@ -672,7 +662,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
       const client = await this.getClient();
       const customer = await client.customers.create(payload);
-      // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
       const response: CustomerResponse = {
         ...customerAny,
@@ -696,7 +685,6 @@ export class FacturaAPIService implements ICertificationPackService {
   ): Promise<CustomerResponse> {
     try {
       const payload: any = {};
-      // ... (rest of logic) ...
       if (customerData.legal_name) payload.legal_name = customerData.legal_name;
       if (customerData.tax_id) payload.tax_id = customerData.tax_id;
       if (customerData.tax_system) payload.tax_system = customerData.tax_system;
@@ -733,7 +721,6 @@ export class FacturaAPIService implements ICertificationPackService {
 
       const client = await this.getClient();
       const customer = await client.customers.update(customerId, payload);
-      // Convertir el objeto a CustomerResponse, asegurando que created_at sea string
       const customerAny = customer as any;
       const response: CustomerResponse = {
         ...customerAny,
@@ -756,15 +743,14 @@ export class FacturaAPIService implements ICertificationPackService {
    * Implementación paginada para no depender del tamaño de la cuenta.
    */
   async listCustomers(): Promise<CustomerResponse[]> {
-    const client = this.getClient();
-    const apiKey = this.getApiKey();
+    const client = await this.getClient();
+    const apiKey = await this.getApiKey();
 
     const all: CustomerResponse[] = [];
     const limit = 100;
     let page = 1;
 
     while (true) {
-      // Preferir SDK si existe, si no usar HTTP directo
       let data: any;
       try {
         const sdk = (client as any)?.customers;
@@ -802,7 +788,6 @@ export class FacturaAPIService implements ICertificationPackService {
         } as CustomerResponse);
       }
 
-      // Heurísticas: si viene `has_more` o `total_pages`, respetarlo; si no, cortar cuando < limit
       const hasMore =
         typeof data?.has_more === 'boolean'
           ? data.has_more
@@ -821,8 +806,8 @@ export class FacturaAPIService implements ICertificationPackService {
    * Elimina customer en Facturapi.
    */
   async deleteCustomer(customerId: string): Promise<void> {
-    const client = this.getClient();
-    const apiKey = this.getApiKey();
+    const client = await this.getClient();
+    const headers = await this.getAuthHeaders();
 
     try {
       const sdk = (client as any)?.customers;
@@ -839,7 +824,7 @@ export class FacturaAPIService implements ICertificationPackService {
         `https://api.facturapi.io/v1/customers/${customerId}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${apiKey}` },
+          headers,
         },
       );
 
@@ -867,7 +852,7 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async createProduct(productData: ProductData): Promise<ProductResponse> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const payload: Record<string, unknown> = {
         description: productData.description,
         product_key: productData.product_key,
@@ -884,8 +869,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const res = await fetch(this.getProductsBaseUrl(), {
         method: 'POST',
         headers: {
+          ...headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -919,14 +904,12 @@ export class FacturaAPIService implements ICertificationPackService {
 
   async findProductBySku(sku: string): Promise<ProductResponse | null> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const res = await fetch(
         `${this.getProductsBaseUrl()}?sku=${encodeURIComponent(sku)}`,
         {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers,
         },
       );
 
@@ -965,7 +948,7 @@ export class FacturaAPIService implements ICertificationPackService {
     productData: Partial<ProductData>,
   ): Promise<ProductResponse> {
     try {
-      const apiKey = this.getApiKey();
+      const headers = await this.getAuthHeaders();
       const payload: Record<string, unknown> = {};
       if (productData.description !== undefined)
         payload.description = productData.description;
@@ -986,8 +969,8 @@ export class FacturaAPIService implements ICertificationPackService {
       const res = await fetch(`${this.getProductsBaseUrl()}/${productId}`, {
         method: 'PUT',
         headers: {
+          ...headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -1077,7 +1060,7 @@ export class FacturaAPIService implements ICertificationPackService {
    * Paginación basada en total_pages de la respuesta.
    */
   async listProducts(): Promise<ProductResponse[]> {
-    const apiKey = this.getApiKey();
+    const headers = await this.getAuthHeaders();
     const all: ProductResponse[] = [];
     const limit = 100;
     let page = 1;
@@ -1087,7 +1070,7 @@ export class FacturaAPIService implements ICertificationPackService {
       try {
         const res = await fetch(
           `${this.getProductsBaseUrl()}?page=${page}&limit=${limit}`,
-          { headers: { Authorization: `Bearer ${apiKey}` } },
+          { headers },
         );
         data = await res.json();
         if (!res.ok) {

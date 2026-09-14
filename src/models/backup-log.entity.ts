@@ -29,7 +29,7 @@ export class BackupLog {
   fileSize: string;
 
   @Column({ type: 'boolean', default: true })
-  status: boolean; // true = success, false = failure
+  status: boolean;
 
   @Column({ name: 'error_message', type: 'text', nullable: true })
   errorMessage: string;

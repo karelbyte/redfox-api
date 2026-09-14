@@ -149,17 +149,6 @@ export class CreateWithdrawalsTable1716400000101 implements MigrationInterface {
       }),
     );
 
-    // Foreign key: cash_transaction_id -> cash_transactions(id) - Comentado temporalmente
-    // await queryRunner.createForeignKey(
-    //   'withdrawals',
-    //   new TableForeignKey({
-    //     columnNames: ['cash_transaction_id'],
-    //     referencedColumnNames: ['id'],
-    //     referencedTableName: 'cash_transactions',
-    //     onDelete: 'SET NULL',
-    //     onUpdate: 'CASCADE',
-    //   }),
-    // );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

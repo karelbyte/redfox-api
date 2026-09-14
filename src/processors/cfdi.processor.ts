@@ -1,17 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../models/invoice.entity';
 import { CertificationPackFactoryService } from '../services/certification-pack-factory.service';
-import { packSupports } from '../interfaces/certification-pack.interface';
-import { ProductPackSyncService } from '../services/product-pack-sync.service';
 import { NotificationService } from '../services/notification.service';
 import { TenantContext } from '../services/tenant-context.service';
 import { CfdiJob } from '../queues/cfdi.queue';
-import { In } from 'typeorm';
-import { InvoiceDetail } from '../models/invoice-detail.entity';
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
+import { InvoiceService } from '../services/invoice.service';
 
 @Injectable()
 @Processor('generate-cfdi')
@@ -21,37 +18,17 @@ export class CfdiProcessor {
   constructor(
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
-    @InjectRepository(InvoiceDetail)
-    private readonly invoiceDetailRepository: Repository<InvoiceDetail>,
+    @Inject(forwardRef(() => InvoiceService))
+    private readonly invoiceService: InvoiceService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
-    private readonly productPackSyncService: ProductPackSyncService,
     private readonly notificationService: NotificationService,
     private readonly tenantContext: TenantContext,
   ) {}
 
   private isValidUUID(uuid: string | null | undefined): boolean {
     if (!uuid || typeof uuid !== 'string') return false;
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid.trim());
-  }
-
-  /**
-   * Los packs devuelven en `status` el estado propio del proveedor
-   * ('valid', etc.), que se sigue traduciendo a SENT. Solo se respeta el
-   * valor cuando el pack devuelve uno de nuestros estados: SUNAT puede
-   * responder PENDIENTE, y marcar esa factura como emitida sería incorrecto.
-   */
-  private resolveInvoiceStatus(packStatus?: string): InvoiceStatus {
-    const supported: string[] = [
-      InvoiceStatus.SENT,
-      InvoiceStatus.PENDING_CFDI,
-      InvoiceStatus.FAILED_CFDI,
-    ];
-
-    return supported.includes(packStatus as InvoiceStatus)
-      ? (packStatus as InvoiceStatus)
-      : InvoiceStatus.SENT;
   }
 
   /**
@@ -78,46 +55,29 @@ export class CfdiProcessor {
         ipAddress: null,
       },
       async () => {
-        this.logger.log(
-          `[CfdiProcessor] Processing CFDI for invoice: ${invoiceId}`,
-        );
+        this.logger.log(`[CfdiProcessor] Processing CFDI for invoice: ${invoiceId}`);
 
-        // Recargar la factura con todas sus relaciones necesarias
-        // const invoice = await this.invoiceRepository.findOne({
-        //   where: { id: invoiceId },
-        //   relations: [
-        //     'client',
-        //     'client.addresses',
-        //     'client.taxData',
-        //     'details',
-        //     'details.product',
-        //     'details.product.tax',
-        //     'details.product.taxes',
-        //   ],
-        // });
-
-        const invoice = await this.invoiceRepository
-          .createQueryBuilder('invoice')
-          // Replicamos las relaciones que ya tenías
-          .leftJoinAndSelect('invoice.client', 'client')
-          .leftJoinAndSelect('client.addresses', 'addresses')
-          .leftJoinAndSelect('client.taxData', 'taxData')
-          .leftJoinAndSelect('invoice.details', 'details')
-          .leftJoinAndSelect('details.product', 'product')
-          .leftJoinAndSelect('product.tax', 'tax')
-          .leftJoinAndSelect('product.taxes', 'taxes')
-          // Necesaria para traducir la unidad de medida al catálogo del PAC.
-          .leftJoinAndSelect('product.measurement_unit', 'measurementUnit')
-          // Filtramos por el ID de la factura
-          .where('invoice.id = :invoiceId', { invoiceId })
-          .getOne();
+        const invoice = await this.invoiceRepository.findOne({
+          where: { id: invoiceId },
+          relations: [
+            'client',
+            // SUNAT declara la dirección del adquirente en el comprobante
+            'client.addresses',
+            'client.taxData',
+            'details',
+            'details.product',
+            'details.product.tax',
+            'details.product.taxes',
+            // Necesaria para traducir la unidad de medida al catálogo del PAC
+            'details.product.measurement_unit',
+          ],
+        });
 
         if (!invoice) {
           this.logger.error(`[CfdiProcessor] Invoice ${invoiceId} not found`);
           return;
         }
 
-        // Verificar que la organización coincida (seguridad adicional)
         if (invoice.organization_id !== organizationId) {
           this.logger.error(
             `[CfdiProcessor] Organization mismatch: job=${organizationId}, invoice=${invoice.organization_id}`,
@@ -129,7 +89,6 @@ export class CfdiProcessor {
           `[CfdiProcessor] Tenant context set for organization: ${organizationId}`,
         );
 
-        // Verificar que sigue en estado PENDING_CFDI
         if (invoice.status !== InvoiceStatus.PENDING_CFDI) {
           this.logger.warn(
             `[CfdiProcessor] Invoice ${invoiceId} is no longer in PENDING_CFDI status (current: ${invoice.status}). Skipping.`,
@@ -138,69 +97,27 @@ export class CfdiProcessor {
         }
 
         try {
-          const packService =
-            await this.certificationPackFactory.getPackService();
+          const packService = await this.certificationPackFactory.getPackService();
 
-          // Asegurar que todos los productos estén sincronizados con el PAC.
-          // Los packs sin catálogo de productos (SUNAT) no lo necesitan: los
-          // datos del producto viajan dentro del propio comprobante.
-          if (packSupports(packService, 'productCatalog')) {
-            for (const detail of invoice.details) {
-              if (detail.product && !detail.product.product_pack_id) {
-                this.logger.log(
-                  `[CfdiProcessor] Syncing product "${detail.product.name}" with PAC...`,
-                );
-                const result = await this.productPackSyncService.syncProduct(
-                  detail.product,
-                );
-                if (result.packSyncSuccess) {
-                  detail.product.product_pack_id =
-                    result.product.product_pack_id;
-                } else {
-                  throw new Error(
-                    `No se pudo sincronizar el producto "${detail.product.name}": ${result.packErrorMessage}`,
-                  );
-                }
-              }
-            }
-          }
+          const cfdiResult = await packService.generateCFDI(invoice, options, emitterId);
 
-          // Llamar al PAC para timbrar
-          const cfdiResult = await packService.generateCFDI(
-            invoice,
-            options,
-            emitterId,
-          );
-
-          // Actualizar la factura con el resultado del timbrado
-          invoice.cfdi_uuid = this.isValidUUID(cfdiResult.uuid)
-            ? cfdiResult.uuid
-            : null;
-          invoice.pack_invoice_id = cfdiResult.id;
-          invoice.pack_invoice_response = {
+          await this.invoiceService.updateStatusAfterCertification(invoiceId, {
+            success: true,
             uuid: cfdiResult.uuid,
+            id: cfdiResult.id,
             status: cfdiResult.status,
             pdf_url: cfdiResult.pdf_url,
             xml_url: cfdiResult.xml_url,
-            uuid_available: this.isValidUUID(cfdiResult.uuid),
-            ...(cfdiResult.raw ?? {}),
-          };
-          if (cfdiResult.payload_send) {
-            invoice.payload_send = cfdiResult.payload_send;
-          }
-          invoice.emitter_id = emitterId || null;
-          invoice.status = this.resolveInvoiceStatus(cfdiResult.status);
+            payload_send: cfdiResult.payload_send,
+            raw: cfdiResult.raw,
+            emitterId,
+          });
 
-          await this.invoiceRepository.save(invoice);
-
-          const uuidMessage = cfdiResult.uuid
-            ? cfdiResult.uuid
-            : 'UUID no disponible (revisar con PAC)';
+          const uuidMessage = cfdiResult.uuid ? cfdiResult.uuid : 'UUID no disponible (revisar con PAC)';
           this.logger.log(
             `[CfdiProcessor] ✅ CFDI generated successfully for invoice ${invoiceId}. UUID: ${uuidMessage}`,
           );
 
-          // Notificar al usuario
           try {
             if (userId) {
               const notificationMessage = cfdiResult.uuid
@@ -222,15 +139,11 @@ export class CfdiProcessor {
             `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
           );
 
-          // Marcar la factura como FAILED_CFDI para que pueda ser reintentada
-          invoice.status = InvoiceStatus.FAILED_CFDI;
-          invoice.pack_invoice_response = {
-            error: error?.message || 'Unknown error',
-            failed_at: new Date().toISOString(),
-          };
-          await this.invoiceRepository.save(invoice);
+          await this.invoiceService.updateStatusAfterCertification(invoiceId, {
+            success: false,
+            error: error?.message,
+          });
 
-          // Notificar al usuario del error
           try {
             if (userId) {
               await this.notificationService.createInvoiceNotification(
@@ -247,4 +160,4 @@ export class CfdiProcessor {
       },
     );
   }
-}
+}   

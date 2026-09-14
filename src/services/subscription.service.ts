@@ -61,43 +61,66 @@ export class SubscriptionService {
     organizationId: string,
     organizationEmail?: string,
   ) {
+    console.log(`[SubscriptionService] createTrialSubscription START — org: ${organizationId}`);
+
     const organization = await this.organizationRepository.findOne({
       where: { id: organizationId },
     });
 
     if (!organization) {
+      console.error(`[SubscriptionService] Organization not found: ${organizationId}`);
       throw new BadRequestException(t('org_not_found'));
     }
 
+    console.log(`[SubscriptionService] Organization found: ${organization.name} | referrer_code: ${organization.referrer_code || 'none'}`);
+
     let plan: Plan | null = null;
 
-    // Si la organización tiene referrer_code, buscar plan con ese código
     if (organization.referrer_code) {
       plan = await this.planRepository.findOne({
-        where: { 
+        where: {
           is_active: true,
-          referrer_code: organization.referrer_code 
+          referrer_code: organization.referrer_code,
         },
         order: { created_at: 'ASC' },
       });
+      console.log(`[SubscriptionService] Plan by referrer_code (${organization.referrer_code}): ${plan ? plan.name : 'not found'}`);
     }
 
-    // Si no se encontró plan con referrer_code, usar el plan default
     if (!plan) {
       plan = await this.planRepository.findOne({
-        where: { is_active: true },
+        where: { is_active: true, is_default: true },
         order: { created_at: 'ASC' },
       });
+      console.log(`[SubscriptionService] Plan by is_default: ${plan ? plan.name : 'not found'}`);
     }
 
     if (!plan) {
+      plan = await this.planRepository.findOne({
+        where: { is_active: true, is_public: true },
+        order: { created_at: 'ASC' },
+      });
+      console.log(`[SubscriptionService] Plan by is_public: ${plan ? plan.name : 'not found'}`);
+    }
+
+    if (!plan) {
+      console.error(`[SubscriptionService] No active plan found for org: ${organizationId}`);
       throw new BadRequestException(t('no_active_plan'));
     }
 
-    const stripeCustomer = await this.stripeService.createCustomer(
-      organizationEmail || `org-${organizationId}@redfox.com`,
-      organization.name,
-    );
+    console.log(`[SubscriptionService] Using plan: ${plan.name} (${plan.id})`);
+
+    let stripeCustomerId: string | null = null;
+    try {
+      const stripeCustomer = await this.stripeService.createCustomer(
+        organizationEmail || `org-${organizationId}@redfox.com`,
+        organization.name,
+      );
+      stripeCustomerId = stripeCustomer.id;
+      console.log(`[SubscriptionService] Stripe customer created: ${stripeCustomerId}`);
+    } catch (stripeError) {
+      console.error(`[SubscriptionService] Stripe createCustomer failed — proceeding without Stripe customer:`, stripeError?.message || stripeError);
+    }
 
     const trialStartDate = new Date();
     const trialEndDate = new Date();
@@ -109,16 +132,17 @@ export class SubscriptionService {
       status: 'trial',
       trial_start_date: trialStartDate,
       trial_end_date: trialEndDate,
-      stripe_customer_id: stripeCustomer.id,
+      ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
     });
 
-    const savedSubscription =
-      await this.subscriptionRepository.save(subscription);
+    const savedSubscription = await this.subscriptionRepository.save(subscription);
+    console.log(`[SubscriptionService] Subscription created: ${savedSubscription.id} | trial ends: ${trialEndDate.toISOString()} | stripe_customer_id: ${stripeCustomerId || 'pending'}`);
 
     await this.organizationRepository.update(organizationId, {
       plan_id: plan.id,
       subscription_id: savedSubscription.id,
     });
+    console.log(`[SubscriptionService] Organization updated with plan_id and subscription_id`);
 
     return savedSubscription;
   }
@@ -279,6 +303,10 @@ export class SubscriptionService {
       throw new BadRequestException(t('sub_not_found'));
     }
 
+    if (subscription.status === 'active') {
+      return subscription;
+    }
+
     const now = new Date();
     const endDate = new Date(now);
     const billingPeriod = subscription.plan?.billing_period || 'monthly';
@@ -361,6 +389,149 @@ export class SubscriptionService {
     }
 
     return subscription;
+  }
+
+  async processManualPayment(subscriptionId: string, amount?: number, notes?: string) {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId },
+      relations: ['plan', 'organization'],
+    });
+
+    if (!subscription) {
+      throw new BadRequestException(t('sub_not_found'));
+    }
+
+    const now = new Date();
+    // Si la suscripción ya está activa y no ha vencido, extendemos desde la fecha de vencimiento actual
+    // Si está vencida o en trial, extendemos desde hoy
+    let startDate = new Date();
+    if (subscription.status === 'active' && subscription.current_period_end > now) {
+      startDate = new Date(subscription.current_period_end);
+    }
+
+    const endDate = new Date(startDate);
+    const billingPeriod = subscription.plan?.billing_period || 'monthly';
+    
+    if (billingPeriod === 'yearly' || billingPeriod === 'annual') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else if (billingPeriod === 'lifetime') {
+      endDate.setFullYear(endDate.getFullYear() + 100);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
+    // Actualizar suscripción
+    subscription.status = 'active';
+    if (!subscription.subscription_start_date) {
+      subscription.subscription_start_date = now;
+    }
+    subscription.subscription_end_date = endDate;
+    subscription.current_period_start = startDate;
+    subscription.current_period_end = endDate;
+    // Limpiar campos de Stripe si se paga manual para evitar conflictos, o mantenerlos si se desea trazabilidad
+    subscription.stripe_payment_intent_id = `MANUAL-${now.getTime()}`;
+
+    await this.subscriptionRepository.save(subscription);
+
+    // Asegurar que la organización tenga el plan correcto
+    await this.organizationRepository.update(subscription.organization_id, {
+      plan_id: subscription.plan_id,
+    });
+
+    // Registrar el pago manual
+    try {
+      const payment = this.subscriptionPaymentRepository.create({
+        subscription_id: subscriptionId,
+        stripe_payment_intent_id: subscription.stripe_payment_intent_id,
+        amount: amount ?? (subscription.plan?.price ?? 0),
+        currency: subscription.plan?.currency ?? 'MXN',
+        status: 'succeeded',
+        payment_method: 'cash', // Marcamos como efectivo
+        paid_at: now,
+        notes: notes || 'Pago manual registrado por administrador',
+      } as any); // Usamos any por si 'notes' o 'cash' no están en la entidad estrictamente pero se permiten en DB
+      await this.subscriptionPaymentRepository.save(payment);
+    } catch (e) {
+      console.warn('Error registrando pago manual:', e);
+    }
+
+    // Enviar confirmación por email
+    try {
+      const user = await this.userRepository.findOne({
+        where: { organization_id: subscription.organization_id },
+        order: { created_at: 'ASC' },
+      });
+
+      if (user) {
+        await this.subscriptionEmailService.sendPaymentConfirmation({
+          to: user.email,
+          userName: user.name,
+          organizationName: subscription.organization?.name || 'Empresa',
+          planName: subscription.plan?.name ?? 'Plan Nitro',
+          billingPeriod: subscription.plan?.billing_period ?? 'monthly',
+          amount: amount ?? Number(subscription.plan?.price ?? 0),
+          currency: subscription.plan?.currency ?? 'MXN',
+          periodStart: startDate,
+          periodEnd: endDate,
+          paymentIntentId: subscription.stripe_payment_intent_id,
+        });
+      }
+    } catch (e) {
+      console.warn('Error enviando email de confirmación manual:', e);
+    }
+
+    return subscription;
+  }
+
+  async handleStripeEvent(event: any) {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        const subscriptionByPI = await this.subscriptionRepository.findOne({
+          where: { stripe_payment_intent_id: paymentIntent.id },
+        });
+        if (subscriptionByPI) {
+          await this.confirmSubscriptionPayment(subscriptionByPI.id);
+        }
+        break;
+      case 'invoice.paid':
+        const invoice = event.data.object;
+        if (invoice.subscription) {
+          const subscriptionByStripeId = await this.subscriptionRepository.findOne({
+            where: { stripe_subscription_id: invoice.subscription },
+          });
+          if (subscriptionByStripeId) {
+            await this.confirmSubscriptionPayment(subscriptionByStripeId.id);
+          }
+        }
+        break;
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object;
+        if (failedInvoice.subscription) {
+          const subscriptionToFail = await this.subscriptionRepository.findOne({
+            where: { stripe_subscription_id: failedInvoice.subscription },
+          });
+          if (subscriptionToFail) {
+            await this.subscriptionRepository.update(subscriptionToFail.id, {
+              status: 'past_due',
+            });
+            // Aquí se podría enviar un email de aviso de fallo de pago
+          }
+        }
+        break;
+      case 'customer.subscription.deleted':
+        const stripeSub = event.data.object;
+        const subToDelete = await this.subscriptionRepository.findOne({
+          where: { stripe_subscription_id: stripeSub.id },
+        });
+        if (subToDelete) {
+          await this.subscriptionRepository.update(subToDelete.id, {
+            status: 'canceled',
+            canceled_at: new Date(),
+          });
+        }
+        break;
+    }
   }
 
   async createPlan(createPlanDto: CreatePlanDto) {

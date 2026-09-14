@@ -3,10 +3,12 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Invoice, InvoiceStatus } from '../models/invoice.entity';
+import { Invoice, InvoiceStatus, CardType } from '../models/invoice.entity';
 import { InvoiceDetail } from '../models/invoice-detail.entity';
 import {
   InvoicePayment,
@@ -75,6 +77,7 @@ export class InvoiceService {
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
+    @Inject(forwardRef(() => CfdiQueue))
     private readonly cfdiQueue: CfdiQueue,
     private readonly webhookService: WebhookService,
     private readonly userAttributionService: UserAttributionService,
@@ -1107,6 +1110,80 @@ export class InvoiceService {
     }
   }
 
+  /**
+   * Actualiza el estatus de la factura tras un intento de timbrado en background.
+   * Este método es llamado exclusivamente por CfdiProcessor.
+   */
+  /**
+   * Los packs devuelven en `status` el estado propio del proveedor ('valid',
+   * etc.), que se sigue traduciendo a SENT. Solo se respeta el valor cuando el
+   * pack devuelve uno de nuestros estados: SUNAT puede responder PENDIENTE, y
+   * marcar esa factura como emitida sería incorrecto.
+   */
+  private resolveInvoiceStatus(packStatus?: string | null): InvoiceStatus {
+    const supported: string[] = [
+      InvoiceStatus.SENT,
+      InvoiceStatus.PENDING_CFDI,
+      InvoiceStatus.FAILED_CFDI,
+    ];
+
+    return supported.includes(packStatus as InvoiceStatus)
+      ? (packStatus as InvoiceStatus)
+      : InvoiceStatus.SENT;
+  }
+
+  async updateStatusAfterCertification(
+    invoiceId: string,
+    result: {
+      success: boolean;
+      uuid?: string | null;
+      id?: string | null;
+      status?: string | null;
+      pdf_url?: string | null;
+      xml_url?: string | null;
+      payload_send?: any;
+      /** Datos propios del PAC (hash y CDR de SUNAT) que se conservan tal cual. */
+      raw?: Record<string, unknown>;
+      error?: string;
+      emitterId?: string | null;
+    },
+  ): Promise<void> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+    });
+
+    if (!invoice) {
+      this.logger.error(`[InvoiceService] Invoice ${invoiceId} not found for status update`);
+      return;
+    }
+
+    if (result.success) {
+      invoice.cfdi_uuid = this.isValidUUID(result.uuid) ? (result.uuid as string) : null;
+      invoice.pack_invoice_id = result.id || null;
+      invoice.pack_invoice_response = {
+        uuid: result.uuid,
+        status: result.status,
+        pdf_url: result.pdf_url,
+        xml_url: result.xml_url,
+        uuid_available: this.isValidUUID(result.uuid),
+        ...(result.raw ?? {}),
+      };
+      if (result.payload_send) {
+        invoice.payload_send = result.payload_send;
+      }
+      invoice.emitter_id = result.emitterId || null;
+      invoice.status = this.resolveInvoiceStatus(result.status);
+    } else {
+      invoice.status = InvoiceStatus.FAILED_CFDI;
+      invoice.pack_invoice_response = {
+        error: result.error || 'Unknown error',
+        failed_at: new Date().toISOString(),
+      };
+    }
+
+    await this.invoiceRepository.save(invoice);
+  }
+
   async createDetail(
     invoiceId: string,
     createDetailDto: CreateDetailDto,
@@ -1485,6 +1562,10 @@ export class InvoiceService {
   async createFromWithdrawal(
     withdrawalId: string,
     userId?: string,
+    extraData?: {
+      card_type?: string;
+      emitter_id?: string;
+    },
   ): Promise<InvoiceResponseDto | null> {
     const withdrawal = await this.withdrawalRepository.findOne({
       where: { id: withdrawalId, organization_id: this.organizationId },
@@ -1506,6 +1587,7 @@ export class InvoiceService {
       client_id: withdrawal.client.id,
       withdrawal_id: withdrawalId,
       payment_method: (withdrawal.paymentMethod as any) || 'cash',
+      card_type: extraData?.card_type as CardType,
       details: (withdrawal.details || []).map((d) => ({
         product_id: d.product.id,
         quantity: Number(d.quantity),
@@ -1514,6 +1596,20 @@ export class InvoiceService {
       })),
     };
 
-    return this.create(dto, userId);
+    const invoice = await this.create(dto, userId);
+
+    if (invoice) {
+      await this.withdrawalRepository.update(withdrawalId, {
+        invoiceId: invoice.id,
+      });
+    }
+
+    if (extraData?.emitter_id && invoice) {
+      await this.invoiceRepository.update(invoice.id, {
+        emitter_id: extraData.emitter_id,
+      });
+    }
+
+    return invoice;
   }
 }

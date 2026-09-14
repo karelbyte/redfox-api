@@ -141,7 +141,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     if (event.metadata.name === 'AuditLog') return;
 
     await this.auditLogService.log(
-      event.entity?.created_by || 'SYSTEM', // Usamos campos comunes si existen
+      event.entity?.created_by || 'SYSTEM',
       event.metadata.name,
       event.entity?.id || 'N/A',
       AuditAction.CREATE,
@@ -161,8 +161,8 @@ export class AuditSubscriber implements EntitySubscriberInterface {
       event.metadata.name,
       event.entity?.id || 'N/A',
       AuditAction.UPDATE,
-      this.buildSnapshot(event.databaseEntity, updatedKeys), // Valores anteriores
-      this.buildSnapshot(event.entity, updatedKeys), // Valores nuevos
+      this.buildSnapshot(event.databaseEntity, updatedKeys),
+      this.buildSnapshot(event.entity, updatedKeys),
       `Updated ${event.metadata.name}`,
     );
   }
@@ -171,7 +171,7 @@ export class AuditSubscriber implements EntitySubscriberInterface {
     if (event.metadata.name === 'AuditLog') return;
 
     await this.auditLogService.log(
-      'SYSTEM', // En el remove a veces no tenemos el usuario en la entidad, pero AuditLogService usará el TenantContext si lo hay
+      'SYSTEM',
       event.metadata.name,
       event.entityId || 'N/A',
       AuditAction.DELETE,

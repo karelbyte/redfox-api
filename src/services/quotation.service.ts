@@ -733,6 +733,7 @@ export class QuotationService {
     items: { detail_id: string; warehouse_id?: string }[],
     userId?: string,
     paymentMethod?: string,
+    cardType?: string,
   ): Promise<ConvertToSaleResponseDto> {
     const quotation = await this.quotationRepository.findOne({
       where: { id: quotationId, organization_id: this.organizationId },
@@ -777,6 +778,7 @@ export class QuotationService {
       amount: quotation.total,
       status: WithdrawalStatus.OPEN,
       paymentMethod: (paymentMethod as any) || 'cash',
+      cardType: (cardType as any) || null,
       organization_id: this.organizationId,
     });
 
@@ -881,6 +883,7 @@ export class QuotationService {
         subject: `Cotización ${quotation.code} - ${company?.name || 'Nitro'}`,
         html: htmlContent,
         organizationId: this.organizationId,
+        userId: userId,
         attachments: [
           {
             filename: document.fileName,
@@ -892,7 +895,7 @@ export class QuotationService {
 
       return {
         sent: true,
-        message: 'Email queued for delivery successfully',
+        message: 'email_processing_queued',
       };
     } catch (error) {
       throw new BadRequestException(

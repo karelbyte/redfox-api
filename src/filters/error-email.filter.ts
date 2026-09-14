@@ -42,13 +42,11 @@ export class ErrorEmailFilter implements ExceptionFilter {
     const stack =
       exception instanceof Error ? exception.stack : String(exception);
 
-    // Registrar el error en consola para monitoreo rápido
     this.logger.error(
       `❌ [${status}] ${normalizedMessage} en ${request?.method} ${request?.url}`,
       stack,
     );
 
-    // Responder al cliente normalmente
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
@@ -60,7 +58,6 @@ export class ErrorEmailFilter implements ExceptionFilter {
       response.status(status).json(errorResponse);
     }
 
-    // Solo enviar email para errores de servidor (5xx)
     if (status >= 500) {
       await this.sendErrorEmail(request, status, normalizedMessage, stack);
     }
@@ -81,7 +78,6 @@ export class ErrorEmailFilter implements ExceptionFilter {
         userEmail: user?.email || undefined,
       };
     } catch (error) {
-      // Si hay error al acceder al contexto, simplemente retornar vacío
       return {};
     }
   }
@@ -131,7 +127,6 @@ export class ErrorEmailFilter implements ExceptionFilter {
       return;
     }
 
-    // Rate limiting con Redis: evitar spam por el mismo error
     const errorKey = `rate:error:${request?.method}:${request?.url}:${message}`;
     const count = await this.redisService.increment(
       errorKey,

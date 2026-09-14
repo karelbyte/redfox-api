@@ -75,7 +75,6 @@ export interface CustomerResponse {
   [key: string]: any;
 }
 
-/** Datos para crear/actualizar producto en el pack (Facturapi). Ver https://docs.facturapi.io/api/#tag/product */
 export interface ProductData {
   description: string;
   product_key: string | number;
@@ -86,7 +85,7 @@ export interface ProductData {
   taxes?: Array<{ type: string; rate: number }>;
   unit_name?: string;
   sku?: string;
-  type?: string; // S = Servicio, P = Producto
+  type?: string;
 }
 
 export interface ProductResponse {

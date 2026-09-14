@@ -90,9 +90,6 @@ export class ClientPackImportService {
     };
   }
 
-  /**
-   * Importa todos los clientes desde el pack activo hacia nuestra DB (proceso inverso).
-   */
   async importAllFromPack(
     userId?: string,
   ): Promise<ImportClientsFromPackResponseDto> {
@@ -153,20 +150,18 @@ export class ClientPackImportService {
         const data = this.mapPackCustomerToClientData(customer);
 
         if (existing) {
-          // Actualizar campos escalares del cliente
           existing.name = data.name;
           existing.email = data.email ?? existing.email;
           existing.phone = data.phone ?? existing.phone;
           existing.pack_client_response = data.pack_client_response;
 
-          // Actualizar dirección principal si existe, o agregar si no hay
           if (data.addresses?.length > 0) {
             const newAddr = data.addresses[0];
             const mainAddr = existing.addresses?.find((a) => a.is_main);
             if (mainAddr) {
               Object.assign(mainAddr, { ...newAddr, client_id: existing.id });
             } else {
-              // No hay dirección principal — agregar con client_id ya asignado
+          
               existing.addresses = [
                 ...(existing.addresses || []),
                 { ...newAddr, client_id: existing.id },
@@ -174,7 +169,7 @@ export class ClientPackImportService {
             }
           }
 
-          // Actualizar tax data principal si existe
+        
           if (data.taxData?.length > 0) {
             const newTax = data.taxData[0];
             const mainTax = existing.taxData?.find((t: any) => t.is_main);
@@ -193,7 +188,6 @@ export class ClientPackImportService {
           continue;
         }
 
-        // Crear nuevo cliente con código generado por surrogate
         const codeResponse = await this.surrogateService.useNextCode('client');
         const client = this.clientRepository.create({
           code: codeResponse.next_code,

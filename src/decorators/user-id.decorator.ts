@@ -4,7 +4,6 @@ export const UserId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest();
 
-    // Obtener el ID del usuario desde el JWT decodificado
     const userId = request.user?.id || request.user?.sub || request.userId;
 
     if (!userId) {

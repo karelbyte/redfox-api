@@ -52,9 +52,8 @@ const mockProviderImportService = {
   }),
 };
 
-const mockNotificationRepo = {
-  create: jest.fn().mockReturnValue({}),
-  save: jest.fn().mockResolvedValue({}),
+const mockNotificationService = {
+  create: jest.fn().mockResolvedValue({}),
 };
 
 const mockInMemoryQueue = {
@@ -68,7 +67,7 @@ function makeProcessor(): ImportProcessor {
     mockProductImportService,
     mockProviderImportService,
     mockImportLogService,
-    mockNotificationRepo,
+    mockNotificationService,
   );
 }
 
@@ -128,7 +127,7 @@ describe('ImportProcessor', () => {
 
     it('crea una notificación de éxito', async () => {
       await processor.process(job);
-      expect(mockNotificationRepo.save).toHaveBeenCalled();
+      expect(mockNotificationService.create).toHaveBeenCalled();
     });
   });
 
@@ -211,7 +210,7 @@ describe('ImportProcessor', () => {
       );
       const job = { ...baseJob, type: 'client' as const, rows: [] };
       await processor.process(job);
-      expect(mockNotificationRepo.save).toHaveBeenCalled();
+      expect(mockNotificationService.create).toHaveBeenCalled();
     });
   });
 });

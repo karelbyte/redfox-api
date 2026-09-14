@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CertificationPack } from '../models/certification-pack.entity';
 import { CertificationPackEmitter } from '../models/certification-pack-emitter.entity';
+import { Product } from '../models/product.entity';
 import { CertificationPackService } from '../services/certification-pack.service';
 import { CertificationPackFactoryService } from '../services/certification-pack-factory.service';
 import { CertificationPackController } from '../controllers/certification-pack.controller';
@@ -15,7 +16,6 @@ import { RedisServiceModule } from './redis-service.module';
 import { DocumentSeriesModule } from './document-series.module';
 import { FacturaApisunatService } from '../services/factura-api-sunat.service';
 import { httpRequest, productRepository, sunatApiService } from '../constants/custom-providers';
-import { Product } from '../models/product.entity';
 import { Organization } from '../models/organization.entity';
 
 @Module({

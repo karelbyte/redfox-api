@@ -17,6 +17,7 @@ interface JwtPayload {
   email: string;
   role: string;
   organizationId: string;
+  country?: string | null;
   iat: number;
   exp: number;
 }
@@ -46,7 +47,6 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    // Verificar si el token está en la blacklist (logout)
     const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
     if (isBlacklisted) {
       throw new CustomUnauthorizedException(

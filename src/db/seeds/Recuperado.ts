@@ -1,0 +1,1456 @@
+import { DataSource } from 'typeorm';
+import { Permission } from '../../models/permission.entity';
+
+export class PermissionsSeed {
+  public static async run(dataSource: DataSource): Promise<void> {
+    const permissionRepository = dataSource.getRepository(Permission);
+
+    const permissions = [
+      // User Permissions
+      {
+        code: 'user_module_view',
+        module: 'users',
+        description:
+          'Allows viewing the users module | Permite ver el módulo de usuarios',
+      },
+      {
+        code: 'user_create',
+        module: 'users',
+        description: 'Allows creating users | Permite crear usuarios',
+      },
+      {
+        code: 'user_read',
+        module: 'users',
+        description: 'Allows reading users | Permite leer usuarios',
+      },
+      {
+        code: 'user_update',
+        module: 'users',
+        description: 'Allows updating users | Permite actualizar usuarios',
+      },
+      {
+        code: 'user_delete',
+        module: 'users',
+        description: 'Allows deleting users | Permite eliminar usuarios',
+      },
+
+      // Role Permissions
+      {
+        code: 'role_module_view',
+        module: 'roles',
+        description:
+          'Allows viewing the roles module | Permite ver el módulo de roles',
+      },
+      {
+        code: 'role_create',
+        module: 'roles',
+        description: 'Allows creating roles | Permite crear roles',
+      },
+      {
+        code: 'role_read',
+        module: 'roles',
+        description: 'Allows reading roles | Permite leer roles',
+      },
+      {
+        code: 'role_update',
+        module: 'roles',
+        description: 'Allows updating roles | Permite actualizar roles',
+      },
+      {
+        code: 'role_delete',
+        module: 'roles',
+        description: 'Allows deleting roles | Permite eliminar roles',
+      },
+
+      // Permission Permissions
+      {
+        code: 'permission_module_view',
+        module: 'permissions',
+        description:
+          'Allows viewing the permissions module | Permite ver el módulo de permisos',
+      },
+      {
+        code: 'permission_create',
+        module: 'permissions',
+        description: 'Allows creating permissions | Permite crear permisos',
+      },
+      {
+        code: 'permission_read',
+        module: 'permissions',
+        description: 'Allows reading permissions | Permite leer permisos',
+      },
+      {
+        code: 'permission_update',
+        module: 'permissions',
+        description:
+          'Allows updating permissions | Permite actualizar permisos',
+      },
+      {
+        code: 'permission_delete',
+        module: 'permissions',
+        description: 'Allows deleting permissions | Permite eliminar permisos',
+      },
+
+      // Language Permissions
+      {
+        code: 'language_module_view',
+        module: 'languages',
+        description:
+          'Allows viewing the languages module | Permite ver el módulo de idiomas',
+      },
+      {
+        code: 'language_create',
+        module: 'languages',
+        description: 'Allows creating languages | Permite crear idiomas',
+      },
+      {
+        code: 'language_read',
+        module: 'languages',
+        description: 'Allows reading languages | Permite leer idiomas',
+      },
+      {
+        code: 'language_update',
+        module: 'languages',
+        description: 'Allows updating languages | Permite actualizar idiomas',
+      },
+      {
+        code: 'language_delete',
+        module: 'languages',
+        description: 'Allows deleting languages | Permite eliminar idiomas',
+      },
+
+      // Client Permissions
+      {
+        code: 'client_module_view',
+        module: 'clients',
+        description:
+          'Allows viewing the clients module | Permite ver el módulo de clientes',
+      },
+      {
+        code: 'client_create',
+        module: 'clients',
+        description: 'Allows creating clients | Permite crear clientes',
+      },
+      {
+        code: 'client_read',
+        module: 'clients',
+        description: 'Allows reading clients | Permite leer clientes',
+      },
+      {
+        code: 'client_update',
+        module: 'clients',
+        description: 'Allows updating clients | Permite actualizar clientes',
+      },
+      {
+        code: 'client_delete',
+        module: 'clients',
+        description: 'Allows deleting clients | Permite eliminar clientes',
+      },
+      {
+        code: 'client_import_from_pack',
+        module: 'clients',
+        description: 'Allows importing clients from pack | Permite importar clientes del pack',
+      },
+      {
+        code: 'client_import_csv',
+        module: 'clients',
+        description: 'Allows importing clients from CSV | Permite importar clientes desde CSV',
+      },
+
+      // Provider Permissions
+      {
+        code: 'provider_module_view',
+        module: 'providers',
+        description:
+          'Allows viewing the providers module | Permite ver el módulo de proveedores',
+      },
+      {
+        code: 'provider_create',
+        module: 'providers',
+        description: 'Allows creating providers | Permite crear proveedores',
+      },
+      {
+        code: 'provider_read',
+        module: 'providers',
+        description: 'Allows reading providers | Permite leer proveedores',
+      },
+      {
+        code: 'provider_update',
+        module: 'providers',
+        description:
+          'Allows updating providers | Permite actualizar proveedores',
+      },
+      {
+        code: 'provider_delete',
+        module: 'providers',
+        description: 'Allows deleting providers | Permite eliminar proveedores',
+      },
+
+      // Measurement Unit Permissions
+      {
+        code: 'measurement_unit_module_view',
+        module: 'measurement_units',
+        description:
+          'Allows viewing the measurement units module | Permite ver el módulo de unidades de medida',
+      },
+      {
+        code: 'measurement_unit_create',
+        module: 'measurement_units',
+        description:
+          'Allows creating measurement units | Permite crear unidades de medida',
+      },
+      {
+        code: 'measurement_unit_read',
+        module: 'measurement_units',
+        description:
+          'Allows reading measurement units | Permite leer unidades de medida',
+      },
+      {
+        code: 'measurement_unit_update',
+        module: 'measurement_units',
+        description:
+          'Allows updating measurement units | Permite actualizar unidades de medida',
+      },
+      {
+        code: 'measurement_unit_delete',
+        module: 'measurement_units',
+        description:
+          'Allows deleting measurement units | Permite eliminar unidades de medida',
+      },
+
+      // Brand Permissions
+      {
+        code: 'brand_module_view',
+        module: 'brands',
+        description:
+          'Allows viewing the brands module | Permite ver el módulo de marcas',
+      },
+      {
+        code: 'brand_create',
+        module: 'brands',
+        description: 'Allows creating brands | Permite crear marcas',
+      },
+      {
+        code: 'brand_read',
+        module: 'brands',
+        description: 'Allows reading brands | Permite leer marcas',
+      },
+      {
+        code: 'brand_update',
+        module: 'brands',
+        description: 'Allows updating brands | Permite actualizar marcas',
+      },
+      {
+        code: 'brand_delete',
+        module: 'brands',
+        description: 'Allows deleting brands | Permite eliminar marcas',
+      },
+
+      // Category Permissions
+      {
+        code: 'category_module_view',
+        module: 'categories',
+        description:
+          'Allows viewing the categories module | Permite ver el módulo de categorías',
+      },
+      {
+        code: 'category_create',
+        module: 'categories',
+        description: 'Allows creating categories | Permite crear categorías',
+      },
+      {
+        code: 'category_read',
+        module: 'categories',
+        description: 'Allows reading categories | Permite leer categorías',
+      },
+      {
+        code: 'category_update',
+        module: 'categories',
+        description:
+          'Allows updating categories | Permite actualizar categorías',
+      },
+      {
+        code: 'category_delete',
+        module: 'categories',
+        description: 'Allows deleting categories | Permite eliminar categorías',
+      },
+
+      // Tax Permissions
+      {
+        code: 'tax_module_view',
+        module: 'taxes',
+        description:
+          'Allows viewing the taxes module | Permite ver el módulo de impuestos',
+      },
+      {
+        code: 'tax_create',
+        module: 'taxes',
+        description: 'Allows creating taxes | Permite crear impuestos',
+      },
+      {
+        code: 'tax_read',
+        module: 'taxes',
+        description: 'Allows reading taxes | Permite leer impuestos',
+      },
+      {
+        code: 'tax_update',
+        module: 'taxes',
+        description: 'Allows updating taxes | Permite actualizar impuestos',
+      },
+      {
+        code: 'tax_delete',
+        module: 'taxes',
+        description: 'Allows deleting taxes | Permite eliminar impuestos',
+      },
+
+      // Currency Permissions
+      {
+        code: 'currency_module_view',
+        module: 'currencies',
+        description:
+          'Allows viewing the currencies module | Permite ver el módulo de monedas',
+      },
+      {
+        code: 'currency_create',
+        module: 'currencies',
+        description: 'Allows creating currencies | Permite crear monedas',
+      },
+      {
+        code: 'currency_read',
+        module: 'currencies',
+        description: 'Allows reading currencies | Permite leer monedas',
+      },
+      {
+        code: 'currency_update',
+        module: 'currencies',
+        description: 'Allows updating currencies | Permite actualizar monedas',
+      },
+      {
+        code: 'currency_delete',
+        module: 'currencies',
+        description: 'Allows deleting currencies | Permite eliminar monedas',
+      },
+
+      // Product Permissions
+      {
+        code: 'product_module_view',
+        module: 'products',
+        description:
+          'Allows viewing the products module | Permite ver el módulo de productos',
+      },
+      {
+        code: 'product_create',
+        module: 'products',
+        description: 'Allows creating products | Permite crear productos',
+      },
+      {
+        code: 'product_read',
+        module: 'products',
+        description: 'Allows reading products | Permite leer productos',
+      },
+      {
+        code: 'product_update',
+        module: 'products',
+        description: 'Allows updating products | Permite actualizar productos',
+      },
+      {
+        code: 'product_delete',
+        module: 'products',
+        description: 'Allows deleting products | Permite eliminar productos',
+      },
+      {
+        code: 'product_import_from_pack',
+        module: 'products',
+        description: 'Allows importing products from pack | Permite importar productos del pack',
+      },
+      {
+        code: 'product_import_csv',
+        module: 'products',
+        description: 'Allows importing products from CSV | Permite importar productos desde CSV',
+      },
+
+      // Inventory Permissions
+      {
+        code: 'inventory_module_view',
+        module: 'inventory',
+        description:
+          'Allows viewing the inventory module | Permite ver el módulo de inventario',
+      },
+      {
+        code: 'inventory_create',
+        module: 'inventory',
+        description:
+          'Allows creating inventory records | Permite crear registros de inventario',
+      },
+      {
+        code: 'inventory_read',
+        module: 'inventory',
+        description:
+          'Allows reading inventory records | Permite leer registros de inventario',
+      },
+      {
+        code: 'inventory_update',
+        module: 'inventory',
+        description:
+          'Allows updating inventory records | Permite actualizar registros de inventario',
+      },
+      {
+        code: 'inventory_delete',
+        module: 'inventory',
+        description:
+          'Allows deleting inventory records | Permite eliminar registros de inventario',
+      },
+
+      // Warehouse Permissions
+      {
+        code: 'warehouse_module_view',
+        module: 'warehouses',
+        description:
+          'Allows viewing the warehouses module | Permite ver el módulo de almacenes',
+      },
+      {
+        code: 'warehouse_create',
+        module: 'warehouses',
+        description: 'Allows creating warehouses | Permite crear almacenes',
+      },
+      {
+        code: 'warehouse_close',
+        module: 'warehouses',
+        description: 'Allows close warehouses | Permite cerrar almacenes',
+      },
+      {
+        code: 'warehouse_read',
+        module: 'warehouses',
+        description: 'Allows reading warehouses | Permite leer almacenes',
+      },
+      {
+        code: 'warehouse_update',
+        module: 'warehouses',
+        description:
+          'Allows updating warehouses | Permite actualizar almacenes',
+      },
+      {
+        code: 'warehouse_delete',
+        module: 'warehouses',
+        description: 'Allows deleting warehouses | Permite eliminar almacenes',
+      },
+
+      // Warehouse Opening Permissions
+      {
+        code: 'warehouse_opening_module_view',
+        module: 'warehouse_openings',
+        description:
+          'Allows viewing the warehouse openings module | Permite ver el módulo de aperturas de almacén',
+      },
+      {
+        code: 'warehouse_opening_create',
+        module: 'warehouse_openings',
+        description:
+          'Allows creating warehouse openings | Permite crear aperturas de almacén',
+      },
+      {
+        code: 'warehouse_opening_read',
+        module: 'warehouse_openings',
+        description:
+          'Allows reading warehouse openings | Permite leer aperturas de almacén',
+      },
+      {
+        code: 'warehouse_opening_update',
+        module: 'warehouse_openings',
+        description:
+          'Allows updating warehouse openings | Permite actualizar aperturas de almacén',
+      },
+      {
+        code: 'warehouse_opening_delete',
+        module: 'warehouse_openings',
+        description:
+          'Allows deleting warehouse openings | Permite eliminar aperturas de almacén',
+      },
+
+      // Reception Permissions
+      {
+        code: 'reception_module_view',
+        module: 'receptions',
+        description:
+          'Allows viewing the receptions module | Permite ver el módulo de recepciones',
+      },
+      {
+        code: 'reception_create',
+        module: 'receptions',
+        description: 'Allows creating receptions | Permite crear recepciones',
+      },
+      {
+        code: 'reception_read',
+        module: 'receptions',
+        description: 'Allows reading receptions | Permite leer recepciones',
+      },
+      {
+        code: 'reception_update',
+        module: 'receptions',
+        description:
+          'Allows updating receptions | Permite actualizar recepciones',
+      },
+      {
+        code: 'reception_delete',
+        module: 'receptions',
+        description:
+          'Allows deleting receptions | Permite eliminar recepciones',
+      },
+
+      // Reception Detail Permissions
+      {
+        code: 'reception_detail_module_view',
+        module: 'reception_details',
+        description:
+          'Allows viewing the reception details module | Permite ver el módulo de detalles de recepción',
+      },
+      {
+        code: 'reception_detail_create',
+        module: 'reception_details',
+        description:
+          'Allows creating reception details | Permite crear detalles de recepción',
+      },
+      {
+        code: 'reception_detail_read',
+        module: 'reception_details',
+        description:
+          'Allows reading reception details | Permite leer detalles de recepción',
+      },
+      {
+        code: 'reception_detail_update',
+        module: 'reception_details',
+        description:
+          'Allows updating reception details | Permite actualizar detalles de recepción',
+      },
+      {
+        code: 'reception_detail_delete',
+        module: 'reception_details',
+        description:
+          'Allows deleting reception details | Permite eliminar detalles de recepción',
+      },
+
+      // Withdrawal Permissions
+      {
+        code: 'withdrawal_module_view',
+        module: 'withdrawals',
+        description:
+          'Allows viewing the withdrawals module | Permite ver el módulo de retiros',
+      },
+      {
+        code: 'withdrawal_create',
+        module: 'withdrawals',
+        description: 'Allows creating withdrawals | Permite crear retiros',
+      },
+      {
+        code: 'withdrawal_read',
+        module: 'withdrawals',
+        description: 'Allows reading withdrawals | Permite leer retiros',
+      },
+      {
+        code: 'withdrawal_update',
+        module: 'withdrawals',
+        description: 'Allows updating withdrawals | Permite actualizar retiros',
+      },
+      {
+        code: 'withdrawal_delete',
+        module: 'withdrawals',
+        description: 'Allows deleting withdrawals | Permite eliminar retiros',
+      },
+
+      // Withdrawal Detail Permissions
+      {
+        code: 'withdrawal_detail_module_view',
+        module: 'withdrawal_details',
+        description:
+          'Allows viewing the withdrawal details module | Permite ver el módulo de detalles de retiro',
+      },
+      {
+        code: 'withdrawal_detail_create',
+        module: 'withdrawal_details',
+        description:
+          'Allows creating withdrawal details | Permite crear detalles de retiro',
+      },
+      {
+        code: 'withdrawal_detail_read',
+        module: 'withdrawal_details',
+        description:
+          'Allows reading withdrawal details | Permite leer detalles de retiro',
+      },
+      {
+        code: 'withdrawal_detail_update',
+        module: 'withdrawal_details',
+        description:
+          'Allows updating withdrawal details | Permite actualizar detalles de retiro',
+      },
+      {
+        code: 'withdrawal_detail_delete',
+        module: 'withdrawal_details',
+        description:
+          'Allows deleting withdrawal details | Permite eliminar detalles de retiro',
+      },
+
+      // Product History Permissions
+      {
+        code: 'product_history_module_view',
+        module: 'product_history',
+        description:
+          'Allows viewing the product history module | Permite ver el módulo de historial de productos',
+      },
+
+      // Warehouse Adjustment Permissions
+      {
+        code: 'warehouse_adjustment_module_view',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows viewing the warehouse adjustments module | Permite ver el módulo de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_create',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows creating warehouse adjustments | Permite crear ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_read',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows reading warehouse adjustments | Permite leer ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_update',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows updating warehouse adjustments | Permite actualizar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_delete',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows deleting warehouse adjustments | Permite eliminar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_process',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows processing warehouse adjustments | Permite procesar ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_create',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows creating warehouse adjustment details | Permite crear detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_read',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows reading warehouse adjustment details | Permite leer detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_update',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows updating warehouse adjustment details | Permite actualizar detalles de ajustes entre almacenes',
+      },
+      {
+        code: 'warehouse_adjustment_detail_delete',
+        module: 'warehouse_adjustments',
+        description:
+          'Allows deleting warehouse adjustment details | Permite eliminar detalles de ajustes entre almacenes',
+      },
+
+      // Return Permissions
+      {
+        code: 'return_module_view',
+        module: 'returns',
+        description:
+          'Allows viewing the returns module | Permite ver el módulo de devoluciones',
+      },
+      {
+        code: 'return_create',
+        module: 'returns',
+        description: 'Allows creating returns | Permite crear devoluciones',
+      },
+      {
+        code: 'return_read',
+        module: 'returns',
+        description: 'Allows reading returns | Permite leer devoluciones',
+      },
+      {
+        code: 'return_update',
+        module: 'returns',
+        description:
+          'Allows updating returns | Permite actualizar devoluciones',
+      },
+      {
+        code: 'return_delete',
+        module: 'returns',
+        description: 'Allows deleting returns | Permite eliminar devoluciones',
+      },
+      {
+        code: 'return_process',
+        module: 'returns',
+        description:
+          'Allows processing returns | Permite procesar devoluciones',
+      },
+      {
+        code: 'return_detail_create',
+        module: 'returns',
+        description:
+          'Allows creating return details | Permite crear detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_read',
+        module: 'returns',
+        description:
+          'Allows reading return details | Permite leer detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_update',
+        module: 'returns',
+        description:
+          'Allows updating return details | Permite actualizar detalles de devoluciones',
+      },
+      {
+        code: 'return_detail_delete',
+        module: 'returns',
+        description:
+          'Allows deleting return details | Permite eliminar detalles de devoluciones',
+      },
+      {
+        code: 'product_history_create',
+        module: 'product_history',
+        description:
+          'Allows creating product history records | Permite crear registros de historial de productos',
+      },
+      {
+        code: 'product_history_read',
+        module: 'product_history',
+        description:
+          'Allows reading product history records | Permite leer registros de historial de productos',
+      },
+      {
+        code: 'product_history_update',
+        module: 'product_history',
+        description:
+          'Allows updating product history records | Permite actualizar registros de historial de productos',
+      },
+      {
+        code: 'product_history_delete',
+        module: 'product_history',
+        description:
+          'Allows deleting product history records | Permite eliminar registros de historial de productos',
+      },
+
+      // Role Permission Assignment Permissions
+      {
+        code: 'role_permission_module_view',
+        module: 'role_permissions',
+        description:
+          'Allows viewing the role permission assignment module | Permite ver el módulo de asignación de permisos a roles',
+      },
+      {
+        code: 'role_permission_create',
+        module: 'role_permissions',
+        description:
+          'Allows creating role permission assignments | Permite crear asignaciones de permisos a roles',
+      },
+      {
+        code: 'role_permission_read',
+        module: 'role_permissions',
+        description:
+          'Allows reading role permission assignments | Permite leer asignaciones de permisos a roles',
+      },
+      {
+        code: 'role_permission_update',
+        module: 'role_permissions',
+        description:
+          'Allows updating role permission assignments | Permite actualizar asignaciones de permisos a roles',
+      },
+      {
+        code: 'role_permission_delete',
+        module: 'role_permissions',
+        description:
+          'Allows deleting role permission assignments | Permite eliminar asignaciones de permisos a roles',
+      },
+
+      // Purchase Order Permissions
+      {
+        code: 'purchase_order_module_view',
+        module: 'purchase_orders',
+        description:
+          'Allows viewing the purchase orders module | Permite ver el módulo de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_create',
+        module: 'purchase_orders',
+        description:
+          'Allows creating purchase orders | Permite crear órdenes de compra',
+      },
+      {
+        code: 'purchase_order_read',
+        module: 'purchase_orders',
+        description:
+          'Allows reading purchase orders | Permite leer órdenes de compra',
+      },
+      {
+        code: 'purchase_order_update',
+        module: 'purchase_orders',
+        description:
+          'Allows updating purchase orders | Permite actualizar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_delete',
+        module: 'purchase_orders',
+        description:
+          'Allows deleting purchase orders | Permite eliminar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_approve',
+        module: 'purchase_orders',
+        description:
+          'Allows approving purchase orders | Permite aprobar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_reject',
+        module: 'purchase_orders',
+        description:
+          'Allows rejecting purchase orders | Permite rechazar órdenes de compra',
+      },
+      {
+        code: 'purchase_order_cancel',
+        module: 'purchase_orders',
+        description:
+          'Allows cancelling purchase orders | Permite cancelar órdenes de compra',
+      },
+
+      // Purchase Order Detail Permissions
+      {
+        code: 'purchase_order_detail_module_view',
+        module: 'purchase_order_details',
+        description:
+          'Allows viewing the purchase order details module | Permite ver el módulo de detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_create',
+        module: 'purchase_order_details',
+        description:
+          'Allows creating purchase order details | Permite crear detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_read',
+        module: 'purchase_order_details',
+        description:
+          'Allows reading purchase order details | Permite leer detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_update',
+        module: 'purchase_order_details',
+        description:
+          'Allows updating purchase order details | Permite actualizar detalles de órdenes de compra',
+      },
+      {
+        code: 'purchase_order_detail_delete',
+        module: 'purchase_order_details',
+        description:
+          'Allows deleting purchase order details | Permite eliminar detalles de órdenes de compra',
+      },
+
+      // Invoice Permissions
+      {
+        code: 'invoice_module_view',
+        module: 'invoices',
+        description:
+          'Allows viewing the invoices module | Permite ver el módulo de facturas',
+      },
+      {
+        code: 'invoice_create',
+        module: 'invoices',
+        description: 'Allows creating invoices | Permite crear facturas',
+      },
+      {
+        code: 'invoice_read',
+        module: 'invoices',
+        description: 'Allows reading invoices | Permite leer facturas',
+      },
+      {
+        code: 'invoice_update',
+        module: 'invoices',
+        description: 'Allows updating invoices | Permite actualizar facturas',
+      },
+      {
+        code: 'invoice_delete',
+        module: 'invoices',
+        description: 'Allows deleting invoices | Permite eliminar facturas',
+      },
+      {
+        code: 'invoice_generate_cfdi',
+        module: 'invoices',
+        description:
+          'Allows generating CFDI for invoices | Permite generar CFDI para facturas',
+      },
+      {
+        code: 'invoice_cancel_cfdi',
+        module: 'invoices',
+        description:
+          'Allows cancelling CFDI for invoices | Permite cancelar CFDI para facturas',
+      },
+      {
+        code: 'invoice_download_pdf',
+        module: 'invoices',
+        description:
+          'Allows downloading PDF of invoices | Permite descargar PDF de facturas',
+      },
+      {
+        code: 'invoice_download_xml',
+        module: 'invoices',
+        description:
+          'Allows downloading XML of invoices | Permite descargar XML de facturas',
+      },
+      {
+        code: 'invoice_convert_withdrawal',
+        module: 'invoices',
+        description:
+          'Allows converting withdrawals to invoices | Permite convertir retiros en facturas',
+      },
+
+      // Invoice Detail Permissions
+      {
+        code: 'invoice_detail_module_view',
+        module: 'invoice_details',
+        description:
+          'Allows viewing the invoice details module | Permite ver el módulo de detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_create',
+        module: 'invoice_details',
+        description:
+          'Allows creating invoice details | Permite crear detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_read',
+        module: 'invoice_details',
+        description:
+          'Allows reading invoice details | Permite leer detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_update',
+        module: 'invoice_details',
+        description:
+          'Allows updating invoice details | Permite actualizar detalles de facturas',
+      },
+      {
+        code: 'invoice_detail_delete',
+        module: 'invoice_details',
+        description:
+          'Allows deleting invoice details | Permite eliminar detalles de facturas',
+      },
+      // Backup Permissions
+      {
+        code: 'backup_module_view',
+        module: 'backups',
+        description:
+          'Allows viewing the backups module | Permite ver el módulo de respaldos',
+      },
+      {
+        code: 'backup_config_read',
+        module: 'backups',
+        description:
+          'Allows reading backup configuration | Permite leer la configuración de respaldos',
+      },
+      {
+        code: 'backup_config_update',
+        module: 'backups',
+        description:
+          'Allows updating backup configuration | Permite actualizar la configuración de respaldos',
+      },
+      {
+        code: 'backup_run',
+        module: 'backups',
+        description:
+          'Allows running manual backups | Permite realizar respaldos manuales',
+      },
+      {
+        code: 'backup_log_read',
+        module: 'backups',
+        description:
+          'Allows reading backup logs | Permite leer los registros de respaldos',
+      },
+      {
+        code: 'backup_download',
+        module: 'backups',
+        description:
+          'Allows downloading backup files | Permite descargar los archivos de respaldo',
+      },
+
+      // Analytics Permissions
+      {
+        code: 'analytics_module_view',
+        module: 'analytics',
+        description:
+          'Allows viewing the analytics module | Permite ver el módulo de analíticas',
+      },
+      {
+        code: 'analytics_read',
+        module: 'analytics',
+        description:
+          'Allows reading analytics data | Permite leer datos de analíticas',
+      },
+
+      // Quotation Permissions
+      {
+        code: 'quotation_module_view',
+        module: 'quotations',
+        description:
+          'Allows viewing the quotations module | Permite ver el módulo de cotizaciones',
+      },
+      {
+        code: 'quotation_create',
+        module: 'quotations',
+        description: 'Allows creating quotations | Permite crear cotizaciones',
+      },
+      {
+        code: 'quotation_read',
+        module: 'quotations',
+        description: 'Allows reading quotations | Permite leer cotizaciones',
+      },
+      {
+        code: 'quotation_update',
+        module: 'quotations',
+        description:
+          'Allows updating quotations | Permite actualizar cotizaciones',
+      },
+      {
+        code: 'quotation_delete',
+        module: 'quotations',
+        description:
+          'Allows deleting quotations | Permite eliminar cotizaciones',
+      },
+      {
+        code: 'quotation_convert_to_sale',
+        module: 'quotations',
+        description:
+          'Allows converting quotations to sales | Permite convertir cotizaciones a ventas',
+      },
+
+      // Cash Register Permissions
+      {
+        code: 'cash_registers_module_view',
+        module: 'cash_registers',
+        description:
+          'Allows viewing the cash registers module | Permite ver el módulo de cajas registradoras',
+      },
+      {
+        code: 'cash_registers_create',
+        module: 'cash_registers',
+        description: 'Allows creating cash registers | Permite crear cajas registradoras',
+      },
+      {
+        code: 'cash_registers_read',
+        module: 'cash_registers',
+        description: 'Allows reading cash registers | Permite leer cajas registradoras',
+      },
+      {
+        code: 'cash_registers_update',
+        module: 'cash_registers',
+        description: 'Allows updating cash registers | Permite actualizar cajas registradoras',
+      },
+      {
+        code: 'cash_registers_delete',
+        module: 'cash_registers',
+        description: 'Allows deleting cash registers | Permite eliminar cajas registradoras',
+      },
+
+      // Notification Permissions
+      {
+        code: 'notification_module_view',
+        module: 'notifications',
+        description:
+          'Allows viewing the notifications module | Permite ver el módulo de notificaciones',
+      },
+      {
+        code: 'notification_create',
+        module: 'notifications',
+        description:
+          'Allows creating notifications | Permite crear notificaciones',
+      },
+      {
+        code: 'notification_read',
+        module: 'notifications',
+        description:
+          'Allows reading notifications | Permite leer notificaciones',
+      },
+      {
+        code: 'notification_update',
+        module: 'notifications',
+        description:
+          'Allows updating notifications | Permite actualizar notificaciones',
+      },
+      {
+        code: 'notification_delete',
+        module: 'notifications',
+        description:
+          'Allows deleting notifications | Permite eliminar notificaciones',
+      },
+      {
+        code: 'notification_mark_read',
+        module: 'notifications',
+        description:
+          'Allows marking notifications as read | Permite marcar notificaciones como leídas',
+      },
+
+      // Expense Permissions
+      {
+        code: 'expense_module_view',
+        module: 'expenses',
+        description:
+          'Allows viewing the expenses module | Permite ver el módulo de gastos',
+      },
+      {
+        code: 'expense_create',
+        module: 'expenses',
+        description: 'Allows creating expenses | Permite crear gastos',
+      },
+      {
+        code: 'expense_read',
+        module: 'expenses',
+        description: 'Allows reading expenses | Permite leer gastos',
+      },
+      {
+        code: 'expense_update',
+        module: 'expenses',
+        description: 'Allows updating expenses | Permite actualizar gastos',
+      },
+      {
+        code: 'expense_delete',
+        module: 'expenses',
+        description: 'Allows deleting expenses | Permite eliminar gastos',
+      },
+
+      // Account Receivable Permissions
+      {
+        code: 'account_receivable_module_view',
+        module: 'accounts_receivable',
+        description:
+          'Allows viewing the accounts receivable module | Permite ver el módulo de cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_create',
+        module: 'accounts_receivable',
+        description:
+          'Allows creating accounts receivable | Permite crear cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_read',
+        module: 'accounts_receivable',
+        description:
+          'Allows reading accounts receivable | Permite leer cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_update',
+        module: 'accounts_receivable',
+        description:
+          'Allows updating accounts receivable | Permite actualizar cuentas por cobrar',
+      },
+      {
+        code: 'account_receivable_delete',
+        module: 'accounts_receivable',
+        description:
+          'Allows deleting accounts receivable | Permite eliminar cuentas por cobrar',
+      },
+
+      // Account Payable Permissions
+      {
+        code: 'account_payable_module_view',
+        module: 'accounts_payable',
+        description:
+          'Allows viewing the accounts payable module | Permite ver el módulo de cuentas por pagar',
+      },
+      {
+        code: 'account_payable_create',
+        module: 'accounts_payable',
+        description:
+          'Allows creating accounts payable | Permite crear cuentas por pagar',
+      },
+      {
+        code: 'account_payable_read',
+        module: 'accounts_payable',
+        description:
+          'Allows reading accounts payable | Permite leer cuentas por pagar',
+      },
+      {
+        code: 'account_payable_update',
+        module: 'accounts_payable',
+        description:
+          'Allows updating accounts payable | Permite actualizar cuentas por pagar',
+      },
+      {
+        code: 'account_payable_delete',
+        module: 'accounts_payable',
+        description:
+          'Allows deleting accounts payable | Permite eliminar cuentas por pagar',
+      },
+
+      // Cash Flow Permissions
+      {
+        code: 'cash_flow_module_view',
+        module: 'cash_flow',
+        description:
+          'Allows viewing the cash flow module | Permite ver el módulo de flujo de caja',
+      },
+      {
+        code: 'cash_flow_read',
+        module: 'cash_flow',
+        description:
+          'Allows reading cash flow data | Permite leer datos de flujo de caja',
+      },
+
+      // Audit Log Permissions
+      {
+        code: 'audit_log_module_view',
+        module: 'audit_logs',
+        description:
+          'Allows viewing the audit logs module | Permite ver el módulo de logs de auditoría',
+      },
+      {
+        code: 'audit_log_read',
+        module: 'audit_logs',
+        description:
+          'Allows reading audit logs | Permite leer logs de auditoría',
+      },
+      {
+        code: 'audit_log_export',
+        module: 'audit_logs',
+        description:
+          'Allows exporting audit logs | Permite exportar logs de auditoría',
+      },
+
+      // Company Settings Permissions
+      {
+        code: 'company_settings_module_view',
+        module: 'company_settings',
+        description:
+          'Allows viewing the company settings module | Permite ver el módulo de configuración de empresa',
+      },
+      {
+        code: 'company_settings_read',
+        module: 'company_settings',
+        description:
+          'Allows reading company settings | Permite leer configuración de empresa',
+      },
+      {
+        code: 'company_settings_update',
+        module: 'company_settings',
+        description:
+          'Allows updating company settings | Permite actualizar configuración de empresa',
+      },
+      {
+        code: 'bot_module_view',
+        module: 'bot',
+        description:
+          'Allows viewing the bot module | Permite ver el módulo del bot',
+      },
+      {
+        code: 'bot_read',
+        module: 'bot',
+        description:
+          'Allows reading bot settings | Permite leer la configuración del bot',
+      },
+      {
+        code: 'bot_update',
+        module: 'bot',
+        description:
+          'Allows updating bot settings | Permite actualizar la configuración del bot',
+      },
+      {
+        code: 'bot_connect',
+        module: 'bot',
+        description:
+          'Allows connecting the bot provider | Permite conectar el proveedor del bot',
+      },
+      {
+        code: 'bot_disconnect',
+        module: 'bot',
+        description:
+          'Allows disconnecting the bot provider | Permite desconectar el proveedor del bot',
+      },
+
+      // Email Configuration Permissions
+      {
+        code: 'email_config_module_view',
+        module: 'email_config',
+        description:
+          'Allows viewing the email configuration module | Permite ver el módulo de configuración de correo',
+      },
+      {
+        code: 'email_config_read',
+        module: 'email_config',
+        description:
+          'Allows reading email configuration | Permite leer configuración de correo',
+      },
+      {
+        code: 'email_config_update',
+        module: 'email_config',
+        description:
+          'Allows updating email configuration | Permite actualizar configuración de correo',
+      },
+      {
+        code: 'email_config_test',
+        module: 'email_config',
+        description:
+          'Allows testing email configuration | Permite probar configuración de correo',
+      },
+
+      // Payment Gateway Permissions
+      {
+        code: 'payment_gateway_module_view',
+        module: 'payment_gateway',
+        description:
+          'Allows viewing the payment gateway module | Permite ver el módulo de pasarela de pago',
+      },
+      {
+        code: 'payment_gateway_read',
+        module: 'payment_gateway',
+        description:
+          'Allows reading payment gateway configuration | Permite leer configuración de pasarela de pago',
+      },
+      {
+        code: 'payment_gateway_update',
+        module: 'payment_gateway',
+        description:
+          'Allows updating payment gateway configuration | Permite actualizar configuración de pasarela de pago',
+      },
+
+      // Certification Pack Permissions (SAT/CFDI)
+      {
+        code: 'certification_pack_module_view',
+        module: 'certification_packs',
+        description:
+          'Allows viewing the certification packs module | Permite ver el módulo de paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_read',
+        module: 'certification_packs',
+        description:
+          'Allows reading certification packs | Permite leer paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_create',
+        module: 'certification_packs',
+        description:
+          'Allows creating certification packs | Permite crear paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_update',
+        module: 'certification_packs',
+        description:
+          'Allows updating certification packs | Permite actualizar paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_delete',
+        module: 'certification_packs',
+        description:
+          'Allows deleting certification packs | Permite eliminar paquetes de certificación',
+      },
+      {
+        code: 'certification_pack_activate',
+        module: 'certification_packs',
+        description:
+          'Allows activating certification packs | Permite activar paquetes de certificación',
+      },
+
+      // Shipment Permissions
+      {
+        code: 'shipment_module_view',
+        module: 'shipments',
+        description:
+          'Allows viewing the shipments module | Permite ver el módulo de logística y envíos',
+      },
+      {
+        code: 'shipment_create',
+        module: 'shipments',
+        description:
+          'Allows creating shipments | Permite crear envíos',
+      },
+      {
+        code: 'shipment_read',
+        module: 'shipments',
+        description:
+          'Allows reading shipments | Permite leer envíos',
+      },
+      {
+        code: 'shipment_update',
+        module: 'shipments',
+        description:
+          'Allows updating shipments | Permite actualizar envíos',
+      },
+      {
+        code: 'shipment_delete',
+        module: 'shipments',
+        description:
+          'Allows deleting shipments | Permite eliminar envíos',
+      },
+
+      // Webhook Permissions
+      {
+        code: 'webhooks_module_view',
+        module: 'webhooks',
+        description:
+          'Allows viewing the webhooks module | Permite ver el módulo de webhooks',
+      },
+      {
+        code: 'webhook_create',
+        module: 'webhooks',
+        description: 'Allows creating webhooks | Permite crear webhooks',
+      },
+      {
+        code: 'webhook_read',
+        module: 'webhooks',
+        description: 'Allows reading webhooks | Permite leer webhooks',
+      },
+      {
+        code: 'webhook_update',
+        module: 'webhooks',
+        description: 'Allows updating webhooks | Permite actualizar webhooks',
+      },
+      {
+        code: 'webhook_delete',
+        module: 'webhooks',
+        description: 'Allows deleting webhooks | Permite eliminar webhooks',
+      },
+      {
+        code: 'webhook_test',
+        module: 'webhooks',
+        description:
+          'Allows testing webhooks | Permite probar webhooks',
+      },
+      {
+        code: 'webhook_view_logs',
+        module: 'webhooks',
+        description:
+          'Allows viewing webhook logs | Permite ver logs de webhooks',
+      },
+    ];
+
+    console.log('🔐 Creating system permissions ...');
+
+    for (const permission of permissions) {
+      const existingPermission = await permissionRepository.findOne({
+        where: { code: permission.code },
+      });
+
+      if (!existingPermission) {
+        await permissionRepository.save(permission);
+        console.log(
+          `✅ Permission created: ${permission.code} (${permission.module})`,
+        );
+      } else {
+        console.log(
+          `⏭️  Permission already exists: ${permission.code} (${permission.module})`,
+        );
+      }
+    }
+
+    console.log(`✅ ${permissions.length} system permissions were created`);
+  }
+}

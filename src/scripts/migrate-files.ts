@@ -40,7 +40,6 @@ async function migrateFiles() {
     company: { migrated: 0, failed: 0, skipped: 0 },
   };
 
-  // Migrar productos
   console.log('📦 Migrando imágenes de productos...');
   const products = await productRepository.find({
     where: { images: Not(IsNull()) },
@@ -54,7 +53,6 @@ async function migrateFiles() {
       const newImages: string[] = [];
 
       for (const imageUrl of images) {
-        // Extraer el nombre del archivo de la URL legacy
         const match = imageUrl.match(/\/api\/uploads\/products\/(.+)$/);
         if (!match) {
           console.warn(`⚠️  URL no reconocida: ${imageUrl}`);
@@ -74,14 +72,11 @@ async function migrateFiles() {
           continue;
         }
 
-        // Leer el archivo
         const fileBuffer = fs.readFileSync(oldPath);
         const mimeType = getMimeType(filename);
 
-        // Generar nueva key con estructura organizada
         const newKey = `${product.organization_id}/products/${product.id}/${Date.now()}-${filename}`;
 
-        // Subir al storage
         const { url } = await storageService.upload(
           fileBuffer,
           newKey,
@@ -92,7 +87,6 @@ async function migrateFiles() {
         console.log(`✅ Migrado: ${filename} -> ${newKey}`);
       }
 
-      // Actualizar el producto con las nuevas URLs
       if (newImages.length > 0) {
         product.images = JSON.stringify(newImages);
         await productRepository.save(product);
@@ -106,7 +100,6 @@ async function migrateFiles() {
     }
   }
 
-  // Migrar categorías
   console.log('📂 Migrando imágenes de categorías...');
   const categories = await categoryRepository.find({
     where: { image: Not(IsNull()) },
@@ -116,7 +109,6 @@ async function migrateFiles() {
     try {
       if (!category.image) continue;
 
-      // Extraer el nombre del archivo de la URL legacy
       const match = category.image.match(/\/api\/uploads\/categories\/(.+)$/);
       if (!match) {
         console.warn(`⚠️  URL no reconocida: ${category.image}`);
@@ -136,17 +128,13 @@ async function migrateFiles() {
         continue;
       }
 
-      // Leer el archivo
       const fileBuffer = fs.readFileSync(oldPath);
       const mimeType = getMimeType(filename);
 
-      // Generar nueva key con estructura organizada
       const newKey = `${category.organization_id}/categories/${category.id}/${Date.now()}-${filename}`;
 
-      // Subir al storage
       const { url } = await storageService.upload(fileBuffer, newKey, mimeType);
 
-      // Actualizar la categoría con la nueva URL
       category.image = url;
       await categoryRepository.save(category);
 
@@ -158,7 +146,6 @@ async function migrateFiles() {
     }
   }
 
-  // Migrar logos de empresa
   console.log('🏢 Migrando logos de empresa...');
   const companySettings = await companySettingsRepository.find({
     where: { logoUrl: Not(IsNull()) },
@@ -168,7 +155,6 @@ async function migrateFiles() {
     try {
       if (!settings.logoUrl) continue;
 
-      // Las URLs de company ya tienen la estructura correcta, solo verificar
       const match = settings.logoUrl.match(
         /\/api\/uploads\/company\/([^\/]+)\/(.+)$/,
       );
@@ -179,28 +165,22 @@ async function migrateFiles() {
 
       const [, orgId, filename] = match;
 
-      // Verificar si necesita migración a nueva estructura
       if (orgId === settings.organization_id) {
-        // Ya tiene la estructura correcta, pero mover a nueva ubicación
         const oldKey = `company/${orgId}/${filename}`;
         const newKey = `${orgId}/company/${filename}`;
 
         try {
-          // Obtener el archivo del storage actual
           const { buffer, contentType } = await storageService.getFile(oldKey);
 
-          // Subirlo con la nueva key
           const { url } = await storageService.upload(
             buffer,
             newKey,
             contentType,
           );
 
-          // Actualizar la URL
           settings.logoUrl = url;
           await companySettingsRepository.save(settings);
 
-          // Eliminar el archivo anterior
           await storageService.delete(oldKey);
 
           console.log(`✅ Migrado: ${oldKey} -> ${newKey}`);
@@ -221,7 +201,6 @@ async function migrateFiles() {
     }
   }
 
-  // Mostrar estadísticas
   console.log('\n📊 Estadísticas de migración:');
   console.log('Productos:', stats.products);
   console.log('Categorías:', stats.categories);
@@ -244,7 +223,6 @@ function getMimeType(filename: string): string {
   return mimeMap[ext] || 'application/octet-stream';
 }
 
-// Ejecutar si es llamado directamente
 if (require.main === module) {
   migrateFiles().catch(console.error);
 }

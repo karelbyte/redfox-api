@@ -35,13 +35,12 @@ export const getDatabaseConfig = (
     logging: false,
     migrations: [__dirname + '/../db/migrations/*{.ts,.js}'],
     migrationsRun: true,
-    // Pool de conexiones optimizado para concurrencia
     extra: {
-      max: 30, // máximo de conexiones simultáneas
-      min: 5, // mínimo siempre activas (warm pool)
-      idleTimeoutMillis: 30000, // cerrar conexiones inactivas tras 30s
-      connectionTimeoutMillis: 5000, // timeout al obtener conexión del pool
-      acquireTimeoutMillis: 10000, // timeout máximo esperando conexión
+      max: 30,
+      min: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      acquireTimeoutMillis: 10000,
     },
     ssl:
       process.env.NODE_ENV === 'production'

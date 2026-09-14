@@ -11,5 +11,5 @@ export class SurrogateResponseDto {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
-  next_code?: string; // El próximo código que se generaría
+  next_code?: string;
 }

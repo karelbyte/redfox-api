@@ -85,19 +85,16 @@ export class Product {
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
-  // Relación legacy con un solo impuesto (mantener por compatibilidad)
   @ManyToOne(() => Tax, { nullable: true })
   @JoinColumn({ name: 'tax_id' })
   tax: Tax;
 
-  // Nueva relación muchos a muchos con impuestos
   @OneToMany(() => ProductTax, (productTax) => productTax.product, {
     cascade: true,
     eager: true,
   })
   productTaxes: ProductTax[];
 
-  // Relación directa a los impuestos (virtual, calculada desde productTaxes)
   @ManyToMany(() => Tax, { cascade: true })
   @JoinTable({
     name: 'product_taxes',

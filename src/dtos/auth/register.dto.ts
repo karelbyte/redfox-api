@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsIn,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { SUPPORTED_COUNTRIES } from '../../constants/countries.constant';
 
 export class RegisterDto {
@@ -42,6 +43,9 @@ export class RegisterDto {
    */
   @IsOptional()
   @IsString()
+  @Transform(({ value }): unknown =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
   @IsIn(SUPPORTED_COUNTRIES)
   country?: string;
 

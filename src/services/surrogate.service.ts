@@ -152,6 +152,12 @@ export class SurrogateService {
         include_year: true,
         description: 'Códigos para ajustes de inventario',
       },
+      employee: {
+        prefix: 'EMP',
+        padding: 5,
+        include_year: false,
+        description: 'Códigos para empleados',
+      },
     };
 
     const config = defaults[code];

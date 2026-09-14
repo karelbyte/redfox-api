@@ -61,6 +61,7 @@ import { ShipmentModule } from './modules/shipment.module';
 import { WebhookModule } from './modules/webhook.module';
 import { DocumentSeriesModule } from './modules/document-series.module';
 import { CountryModule } from './modules/country.module';
+import { HrModule } from './modules/hr.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -72,6 +73,7 @@ import { TenantMiddleware } from './middlewares/tenant.middleware';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 import { UnverifiedAccountCleanupService } from './services/unverified-account-cleanup.service';
+import { IsValidRFCConstraint } from './validators/rfc.validator';
 
 @Module({
   imports: [
@@ -145,6 +147,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     WebhookModule,
     DocumentSeriesModule,
     CountryModule,
+    HrModule,
   ],
   controllers: [HomeController],
   providers: [
@@ -162,6 +165,7 @@ import { UnverifiedAccountCleanupService } from './services/unverified-account-c
     },
     AuditSubscriber,
     UnverifiedAccountCleanupService,
+    IsValidRFCConstraint,
   ],
 })
 export class AppModule implements NestModule {

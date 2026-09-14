@@ -37,7 +37,6 @@ export class PublicPlansController {
 
   @Get('plans')
   async getPublicPlans() {
-    // Solo planes públicos para landing page
     const plans = await this.subscriptionService.getAllPlans(undefined);
     return plans.map((p) => ({
       id: p.id,

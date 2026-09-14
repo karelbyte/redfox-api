@@ -26,12 +26,10 @@ export function isValidRFC(rfc: string): boolean {
 
   const cleanedRFC = cleanRFC(rfc);
 
-  // RFC genérico válido
   if (cleanedRFC === 'XAXX010101000') {
     return true;
   }
 
-  // Patrones para persona física (13 caracteres) y moral (12 caracteres)
   const personaFisicaRegex = /^[A-ZÑ&]{4}[0-9]{6}[A-Z0-9]{3}$/;
   const personaMoralRegex = /^[A-ZÑ&]{3}[0-9]{6}[A-Z0-9]{3}$/;
 
@@ -42,7 +40,6 @@ export function isValidRFC(rfc: string): boolean {
     return false;
   }
 
-  // Validar fecha dentro del RFC
   const year = parseInt(
     cleanedRFC.substring(cleanedRFC.length - 9, cleanedRFC.length - 7),
   );
@@ -53,10 +50,8 @@ export function isValidRFC(rfc: string): boolean {
     cleanedRFC.substring(cleanedRFC.length - 5, cleanedRFC.length - 3),
   );
 
-  // Ajustar año
   const fullYear = year <= 29 ? 2000 + year : 1900 + year;
 
-  // Validar fecha
   if (month < 1 || month > 12 || day < 1 || day > 31) {
     return false;
   }
@@ -66,7 +61,6 @@ export function isValidRFC(rfc: string): boolean {
     return false;
   }
 
-  // Validar febrero en años no bisiestos
   if (month === 2 && day === 29) {
     const isLeapYear =
       (fullYear % 4 === 0 && fullYear % 100 !== 0) || fullYear % 400 === 0;
@@ -90,12 +84,10 @@ export function formatRFC(rfc: string): string {
     return '';
   }
 
-  // Para persona física (13 caracteres): ABCD123456XYZ -> ABCD-123456-XYZ
   if (cleanedRFC.length === 13) {
     return `${cleanedRFC.substring(0, 4)}-${cleanedRFC.substring(4, 10)}-${cleanedRFC.substring(10)}`;
   }
 
-  // Para persona moral (12 caracteres): ABC123456XYZ -> ABC-123456-XYZ
   if (cleanedRFC.length === 12) {
     return `${cleanedRFC.substring(0, 3)}-${cleanedRFC.substring(3, 9)}-${cleanedRFC.substring(9)}`;
   }

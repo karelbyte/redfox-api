@@ -166,7 +166,6 @@ export class ProductService {
         });
       }
 
-      // Manejar múltiples impuestos si se proporcionan
       if (createProductDto.tax_ids && createProductDto.tax_ids.length > 0) {
         product.taxes = createProductDto.tax_ids.map(
           (taxId) => ({ id: taxId }) as any,
@@ -178,7 +177,6 @@ export class ProductService {
         organization_id: this.organizationId,
       });
 
-      // Incrementar el contador si el código coincide con el sugerido
       await this.surrogateService.useCodeIfMatches(
         'product',
         createProductDto.code,
@@ -197,8 +195,7 @@ export class ProductService {
         ],
       });
 
-      // Sincronizar con el pack de certificación (si está configurado)
-      if (productWithRelations) {
+            if (productWithRelations) {
         await this.productPackSyncService.syncProduct(productWithRelations);
       }
 
@@ -236,7 +233,6 @@ export class ProductService {
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     const { page, limit, term, type, is_active } = paginationDto || {};
 
-    // Construir las condiciones de búsqueda
     const baseConditions = {
       relations: [
         'brand',
@@ -249,7 +245,6 @@ export class ProductService {
       ],
     };
 
-    // Construir condiciones de búsqueda OR (para el término)
     const searchConditions: SearchCondition[] = [];
 
     if (term) {
@@ -263,7 +258,6 @@ export class ProductService {
       );
     }
 
-    // Construir condiciones de filtro AND
     const filterConditions: FilterCondition = {};
 
     if (is_active !== undefined) {
@@ -280,32 +274,27 @@ export class ProductService {
 
     filterConditions.organization_id = this.organizationId;
 
-    // Combinar condiciones
     const whereConditions: WhereConditions = { ...baseConditions };
 
     if (
       searchConditions.length > 0 &&
       Object.keys(filterConditions).length > 0
     ) {
-      // Si hay tanto búsqueda como filtros, usar OR para búsqueda y AND para filtros
       whereConditions.where = searchConditions.map((searchCondition) => ({
         ...searchCondition,
         ...filterConditions,
       }));
     } else if (searchConditions.length > 0) {
-      // Solo búsqueda OR
       whereConditions.where = searchConditions;
     } else if (Object.keys(filterConditions).length > 0) {
-      // Solo filtros AND
       whereConditions.where = filterConditions;
     }
 
-    // Si no se proporciona paginación, devolver toda la data
     if (!page && !limit) {
       const products = await this.productRepository.find(whereConditions);
 
       const data = products.map((product) =>
-        this.productMapper.mapToResponseDto(product),
+        this.productMapper.mapToResponseDto(product)
       );
 
       return {
@@ -319,7 +308,6 @@ export class ProductService {
       };
     }
 
-    // Si se proporciona paginación, aplicar la lógica de paginación
     const currentPage = page || 1;
     const currentLimit = limit || 8;
     const skip = (currentPage - 1) * currentLimit;
@@ -484,21 +472,17 @@ export class ProductService {
             : undefined,
       });
 
-      // Manejar actualización de múltiples impuestos
       if (updateProductDto.tax_ids !== undefined) {
         updatedProduct.taxes = updateProductDto.tax_ids.map(
           (taxId) => ({ id: taxId }) as any,
         );
       }
 
-      // Manejar actualización de precios
       if (updateProductDto.prices !== undefined) {
-        // Obtener los IDs de los precios que vienen en el DTO
         const incomingPriceIds = updateProductDto.prices
           .filter((p) => p.id)
           .map((p) => p.id);
 
-        // Eliminar precios que ya no están en la lista
         if (product.prices && product.prices.length > 0) {
           updatedProduct.prices = product.prices.filter((existingPrice) =>
             incomingPriceIds.includes(existingPrice.id),
@@ -507,10 +491,8 @@ export class ProductService {
           updatedProduct.prices = [];
         }
 
-        // Actualizar o crear precios
         for (const priceDto of updateProductDto.prices) {
           if (priceDto.id) {
-            // Actualizar precio existente
             const existingPrice = updatedProduct.prices.find(
               (p) => p.id === priceDto.id,
             );
@@ -519,7 +501,6 @@ export class ProductService {
               existingPrice.price = priceDto.price;
             }
           } else {
-            // Crear nuevo precio
             const newPrice = new ProductPrice();
             newPrice.name = priceDto.name;
             newPrice.price = priceDto.price;
@@ -544,8 +525,7 @@ export class ProductService {
         ],
       });
 
-      // Sincronizar con el pack de certificación (si está configurado)
-      if (productWithRelations) {
+            if (productWithRelations) {
         await this.productPackSyncService.syncProduct(productWithRelations);
       }
 
@@ -553,7 +533,6 @@ export class ProductService {
         productWithRelations ?? savedProduct,
       );
     } catch (error: unknown) {
-      // Handle duplicate slug/SKU error in update
       const dbError = error as { code?: string; message?: string };
       if (
         dbError?.code === 'ER_DUP_ENTRY' &&
@@ -582,13 +561,11 @@ export class ProductService {
   async remove(id: string, userId?: string): Promise<void> {
     const product = await this.findOneEntity(id, userId);
 
-    // Verificar si el producto está siendo usado en inventory
     const inventoryCount = await this.inventoryRepository.count({
       where: { product_id: id, organization_id: this.organizationId },
       withDeleted: false,
     });
 
-    // Verificar si el producto está siendo usado en warehouse openings
     const warehouseOpeningCount = await this.warehouseOpeningRepository.count({
       where: { productId: id, organization_id: this.organizationId },
       withDeleted: false,
@@ -615,7 +592,6 @@ export class ProductService {
   ): Promise<{ deleted: number; skipped: string[] }> {
     if (!ids.length) return { deleted: 0, skipped: [] };
 
-    // Verificar que todos los productos pertenecen a la organización
     const products = await this.productRepository.find({
       where: { id: In(ids), organization_id: this.organizationId },
       select: ['id', 'name'],
@@ -625,7 +601,6 @@ export class ProductService {
 
     const validIds = products.map((p) => p.id);
 
-    // Verificar dependencias usando el entity manager (sin inyectar todos los repos)
     const manager = this.productRepository.manager;
 
     const dependencyTables = [
@@ -650,7 +625,6 @@ export class ProductService {
       { table: 'inventory', column: 'product_id', label: 'inventario' },
     ];
 
-    // Obtener todos los IDs con dependencias en una sola query por tabla
     const blockedIds = new Set<string>();
 
     for (const dep of dependencyTables) {
@@ -665,7 +639,6 @@ export class ProductService {
     const skippedIds = validIds.filter((id) => blockedIds.has(id));
 
     if (deletableIds.length > 0) {
-      // Soft delete uno por uno para respetar el organizationId y el soft delete de TypeORM
       await this.productRepository.softDelete({
         id: In(deletableIds),
         organization_id: this.organizationId,
@@ -745,7 +718,6 @@ export class ProductService {
       product.total_stock = newStock;
       await repo.save(product, { reload: false });
 
-      // Verificar stock mínimo para notificaciones
       if (
         product.min_stock > 0 &&
         newStock <= product.min_stock &&
@@ -848,13 +820,11 @@ export class ProductService {
   ): Promise<ProductResponseDto> {
     const product = await this.findOneEntity(id, userId);
 
-    // Eliminar imágenes anteriores si existen
     if (product.images) {
       const oldImages = JSON.parse(product.images) as string[];
       await this.unifiedUploadService.deleteFilesByUrls(oldImages);
     }
 
-    // Actualizar con las nuevas imágenes
     product.images = JSON.stringify(imageUrls);
     const savedProduct = await this.productRepository.save(product);
 

@@ -141,7 +141,6 @@ export class ClientPackSyncService {
         return this.skipCustomerSync(client, 'syncOnUpdate');
       }
 
-      // Si el cliente aún no existe en el pack, crearlo
       if (!client.pack_client_id) {
         const customerData = this.extractCustomerData(client);
 
@@ -167,7 +166,6 @@ export class ClientPackSyncService {
         return { client: savedClient, packSyncSuccess: true };
       }
 
-      // Si ya existe, actualizar
       const customerData = this.extractCustomerData(client);
 
       this.logger.log(

@@ -1,6 +1,5 @@
 import { IsString, IsDate, IsUUID, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-//import { CreateReceptionDetailDto } from '../reception-detail/create-reception-detail.dto';
 
 export class CreateReceptionDto {
   @IsString()
@@ -22,9 +21,4 @@ export class CreateReceptionDto {
   @IsNumber()
   @Min(0)
   amount: number;
-
-  /*@IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateReceptionDetailDto)
-  details: CreateReceptionDetailDto[];*/
 }

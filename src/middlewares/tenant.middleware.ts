@@ -7,7 +7,6 @@ export class TenantMiddleware implements NestMiddleware {
   constructor(private readonly tenantContext: TenantContext) {}
 
   use(req: Request, res: Response, next: NextFunction) {
-    // Initialize the store for this request
     this.tenantContext.run(
       { organizationId: null, tenantSlug: null, userId: null, ipAddress: null },
       () => {
