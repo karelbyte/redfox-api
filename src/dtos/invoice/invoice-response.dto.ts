@@ -32,6 +32,9 @@ export class InvoiceResponseDto {
   @Expose()
   status: InvoiceStatus;
 
+
+  /** Moneda en la que está expresada la factura (ISO 4217). */
+  currency_code?: string | null;
   @Expose()
   cfdi_uuid?: string | null;
 

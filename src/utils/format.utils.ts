@@ -45,3 +45,35 @@ export function formatLongDate(value: Date | string, locale: string): string {
     day: 'numeric',
   });
 }
+
+/**
+ * Fecha en formato YYYY-MM-DD tal como la vive el país indicado.
+ *
+ * `toISOString()` no sirve aquí: convierte a UTC, y una venta hecha a las
+ * 19:45 en Lima (UTC−5) sale fechada al día siguiente. SUNAT rechaza un
+ * comprobante con fecha futura, así que el desfase no es cosmético.
+ *
+ * Tampoco sirve la hora local del proceso: en producción el servidor corre
+ * en UTC y reproduciría el mismo error. La zona tiene que venir del país de
+ * la organización que emite.
+ */
+export function formatDateInTimeZone(
+  date: Date | string,
+  timeZone: string,
+): string {
+  // Una fecha que ya viene sin hora no tiene nada que convertir: moverla de
+  // zona solo podría correrla un día.
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    return date.trim();
+  }
+
+  const value = date instanceof Date ? date : new Date(date);
+
+  // 'en-CA' produce YYYY-MM-DD, que es justo el formato que se necesita.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value);
+}

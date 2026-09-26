@@ -27,6 +27,20 @@ export const SUNAT_DOCUMENT_NAME: Record<DocumentType, string> = {
   [DocumentType.NOTA_DEBITO]: 'nota_de_debito',
 };
 
+/**
+ * Relleno para una boleta sin documento de identidad, que SUNAT admite por
+ * debajo de 700 PEN. Ocho ceros y no un guion porque el proveedor exige ese
+ * largo mínimo; comprobado contra el sandbox, con el guion devuelve 422.
+ */
+export const NUMERO_SIN_DOCUMENTO = '00000000';
+
+/**
+ * Relleno de dirección. El proveedor la exige incluso en una boleta a
+ * consumidor final, donde nadie pide el domicilio: un guion cumple el
+ * requisito sin inventar datos del cliente.
+ */
+export const DIRECCION_NO_DECLARADA = '-';
+
 const RUC_LENGTH = 11;
 const DNI_LENGTH = 8;
 
@@ -35,7 +49,11 @@ export interface ResolvedCustomerDocument {
   identityDocument: SunatIdentityDocument;
   /** Comprobante que corresponde emitir: con RUC, factura; si no, boleta. */
   documentType: DocumentType;
-  /** Número normalizado. SUNAT espera '-' cuando no hay documento. */
+  /**
+   * Número normalizado. Cuando no hay documento se envían ocho ceros: el
+   * proveedor exige un mínimo de ocho caracteres y rechaza el guion con
+   * "El campo cliente numero de documento debe tener al menos 8 caracteres".
+   */
   number: string;
 }
 
@@ -60,7 +78,7 @@ export function resolveCustomerDocument(
     return {
       identityDocument: SunatIdentityDocument.SIN_DOCUMENTO,
       documentType: DocumentType.BOLETA,
-      number: '-',
+      number: NUMERO_SIN_DOCUMENTO,
     };
   }
 

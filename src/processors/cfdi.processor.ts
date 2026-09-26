@@ -139,6 +139,17 @@ export class CfdiProcessor {
             `[CfdiProcessor] ❌ Failed to generate CFDI for invoice ${invoiceId}: ${error?.message}`,
           );
 
+          // Algunos proveedores resumen sus errores ("y 1 error más") y dejan
+          // el resto fuera del mensaje. La petición y la respuesta completas
+          // viajan en la excepción, así que se registran: sin ellas hay que
+          // reproducir el caso a mano para saber qué campo falló.
+          const detalle = error?.getResponse?.()?.raw ?? error?.response?.raw;
+          if (detalle) {
+            this.logger.error(
+              `[CfdiProcessor] detalle del rechazo: ${JSON.stringify(detalle)}`,
+            );
+          }
+
           await this.invoiceService.updateStatusAfterCertification(invoiceId, {
             success: false,
             error: error?.message,
