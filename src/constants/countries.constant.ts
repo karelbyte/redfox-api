@@ -37,6 +37,18 @@ export interface CountryProfile {
   name: string;
   /** Moneda local en ISO 4217. */
   currency: string;
+  /**
+   * Zona horaria IANA con la que se fecha un comprobante fiscal.
+   *
+   * No se puede usar la del servidor: en Railway corre en UTC, y una venta
+   * hecha a las 19:45 en Lima quedaría fechada al día siguiente. SUNAT
+   * rechaza un comprobante con fecha futura.
+   *
+   * Los países con varios husos se representan por el de su capital, que es
+   * el que usa la mayoría de los contribuyentes. Si algún día hace falta
+   * distinguir, el dato corresponde a la organización y no al país.
+   */
+  timeZone: string;
   /** Packs de certificación que tienen sentido en el país. */
   packs: CertificationPackType[];
   currencies: Array<{ code: string; name: string }>;
@@ -53,6 +65,7 @@ export const COUNTRIES: Record<string, CountryProfile> = {
     code: 'MX',
     name: 'México',
     currency: 'MXN',
+    timeZone: 'America/Mexico_City',
     packs: [
       CertificationPackType.FACTURAAPI,
       CertificationPackType.FACTURA_GREEN,
@@ -90,6 +103,7 @@ export const COUNTRIES: Record<string, CountryProfile> = {
     code: 'PE',
     name: 'Perú',
     currency: 'PEN',
+    timeZone: 'America/Lima',
     packs: [CertificationPackType.FACTURA_SUNAT],
     currencies: [
       { code: 'PEN', name: 'Sol Peruano' },

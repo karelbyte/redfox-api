@@ -36,6 +36,8 @@
     "seed:demo": "ts-node -r tsconfig-paths/register -r dotenv/config src/db/seeds/demo-data.seed.ts",
     "seed-js": "node dist/src/db/seeds/seed.js",
     "seed:permissions": "ts-node -r tsconfig-paths/register src/db/seeds/permissions-only.seed.ts",
+    "catalog:sunat:extract": "node scripts/extract-sunat-catalog.mjs",
+    "catalog:sunat:seed": "ts-node -r tsconfig-paths/register -r dotenv/config src/db/seeds/sunat-catalog-only.seed.ts",
     "db:setup": "npm run migration:run && npm run seed"
   },
   "dependencies": {

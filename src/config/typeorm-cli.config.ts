@@ -26,7 +26,9 @@ const dataSource = new DataSource({
   migrations: [join(__dirname, '..', 'db', 'migrations', '*.{ts,js}')],
   migrationsTableName: 'migrations',
   synchronize: false,
-  logging: true,
+  // Las siembras masivas la apagan: registrar cada lote de mil filas tapa
+  // el resultado con miles de líneas de SQL.
+  logging: process.env.TYPEORM_LOGGING !== 'false',
   ssl:
     provider === 'postgres' && process.env.NODE_ENV === 'production'
       ? {

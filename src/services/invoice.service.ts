@@ -49,6 +49,12 @@ import { CfdiQueue } from '../queues/cfdi.queue';
 import { UserAttributionService } from './user-attribution.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
+import { Organization } from '../models/organization.entity';
+import {
+  getCountryProfile,
+  DEFAULT_COUNTRY,
+} from '../constants/countries.constant';
+import { formatDateInTimeZone } from '../utils/format.utils';
 
 @Injectable()
 export class InvoiceService {
@@ -150,6 +156,9 @@ export class InvoiceService {
       tax_amount: Math.round(tax_amount * 100) / 100,
       total_amount: Math.round(total_amount * 100) / 100,
       status: invoice.status,
+      // Sin esto el front no sabe en qué moneda está la factura y termina
+      // adivinando; las pantallas caían en un 'MXN' escrito a mano.
+      currency_code: invoice.currency_code ?? null,
       cfdi_uuid: invoice.cfdi_uuid,
       pack_invoice_id: invoice.pack_invoice_id ?? null,
       pack_invoice_response: invoice.pack_invoice_response ?? null,
@@ -248,7 +257,12 @@ export class InvoiceService {
       tax_amount: amounts.tax_amount,
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
-      currency_code: rest.currency_code?.toUpperCase() || null,
+      // Sin moneda guardada, quien lea la factura después tiene que adivinarla,
+      // y las pantallas acababan cayendo en un 'MXN' escrito a mano. La moneda
+      // del país de la organización es el valor correcto cuando nadie indica otra.
+      currency_code:
+        rest.currency_code?.toUpperCase() ||
+        (await this.countryProfile()).currency,
       payment_method: rest.payment_method,
       card_type: rest.card_type || null,
       payment_conditions: rest.payment_conditions,
@@ -1574,16 +1588,15 @@ export class InvoiceService {
         'details',
         'details.product',
         'details.product.tax',
+        'details.product.taxes',
       ],
     });
 
     if (!withdrawal) return null;
 
-    const today = new Date().toISOString().split('T')[0];
-
     const dto: CreateInvoiceDto = {
       code: `FAC-${withdrawal.code}`,
-      date: today,
+      date: await this.todayForOrganization(),
       client_id: withdrawal.client.id,
       withdrawal_id: withdrawalId,
       payment_method: (withdrawal.paymentMethod as any) || 'cash',
@@ -1592,7 +1605,7 @@ export class InvoiceService {
         product_id: d.product.id,
         quantity: Number(d.quantity),
         price: Number(d.price),
-        tax_rate: d.product.tax ? Number(d.product.tax.value) : 0,
+        tax_rate: this.resolveProductTaxRate(d.product),
       })),
     };
 
@@ -1611,5 +1624,57 @@ export class InvoiceService {
     }
 
     return invoice;
+  }
+
+  /**
+   * Tasa de impuesto que corresponde a un producto.
+   *
+   * Se lee de `taxes`, la relación muchos-a-muchos que usa el resto del
+   * sistema. Antes se leía `tax`, una relación antigua de un solo impuesto
+   * cuya columna `tax_id` ya nadie llena: al estar vacía, toda venta de
+   * mostrador guardaba 0% aunque el producto tuviera IGV asignado. La
+   * factura quedaba sin impuesto y SUNAT la rechazaba porque el total no
+   * cuadraba con la suma de las líneas.
+   */
+  private resolveProductTaxRate(product: Product): number {
+    const percentageTaxes = (product?.taxes ?? []).filter(
+      (tax) => tax.type === 'PERCENTAGE',
+    );
+
+    if (percentageTaxes.length) {
+      return percentageTaxes.reduce((acc, tax) => acc + Number(tax.value), 0);
+    }
+
+    // La relación antigua se sigue respetando por si algún producto vive
+    // todavía con ella.
+    return product?.tax ? Number(product.tax.value) : 0;
+  }
+
+  /**
+   * Fecha de hoy en la zona horaria del país de la organización.
+   *
+   * `toISOString()` convierte a UTC: una venta a las 19:43 en Lima quedaba
+   * fechada al día siguiente, y el comprobante se emitía con fecha futura.
+   * La organización se busca por el gestor de entidades y no por un
+   * repositorio inyectado para no alterar el orden del constructor.
+   */
+  private async todayForOrganization(): Promise<string> {
+    const profile = await this.countryProfile();
+
+    return formatDateInTimeZone(new Date(), profile.timeZone);
+  }
+
+  /**
+   * Perfil del país de la organización, del que salen su moneda y su zona
+   * horaria. La organización se busca por el gestor de entidades y no por un
+   * repositorio inyectado para no alterar el orden del constructor, del que
+   * dependen las pruebas existentes.
+   */
+  private async countryProfile() {
+    const organization = await this.invoiceRepository.manager
+      .getRepository(Organization)
+      .findOne({ where: { id: this.organizationId } });
+
+    return getCountryProfile(organization?.country || DEFAULT_COUNTRY);
   }
 }

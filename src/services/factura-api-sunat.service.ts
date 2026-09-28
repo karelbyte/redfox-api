@@ -35,6 +35,11 @@ import { SunatEstado } from '../interfaces/sunat-response.interface';
 import { DocumentType } from '../models/document-series.entity';
 import {
   resolveCustomerDocument,
+  DIRECCION_NO_DECLARADA,
+} from '../constants/sunat-catalogs.constant';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatDateInTimeZone } from '../utils/format.utils';
+import {
   resolveIgvAffectation,
   resolveMeasurementUnit,
   SunatIdentityDocument,
@@ -194,11 +199,17 @@ export class FacturaApisunatService implements ICertificationPackService {
     const taxRate = Number(detail.tax_rate) || 0;
 
     // De los impuestos del producto se toma el que coincide con la tasa de la
-    // línea; es el que describe cómo está afectado ese importe.
-    const tax =
-      (detail.product?.taxes ?? []).find(
-        (item) => Number(item.value) === taxRate,
-      ) ?? detail.product?.taxes?.[0];
+    // línea: es el que describe cómo está afectado ese importe.
+    //
+    // Si ninguno coincide no se recurre al primero de la lista. Esa era la
+    // fuga: una línea con 0% acababa declarada como gravada al 18% porque el
+    // producto tenía IGV asignado, y SUNAT rechazaba el comprobante porque el
+    // total no cuadraba con la suma de las líneas. Lo que la línea cobró es
+    // el hecho; los impuestos del producto solo sirven para distinguir qué
+    // clase de cero es, no para contradecir la tasa.
+    const tax = (detail.product?.taxes ?? []).find(
+      (item) => Number(item.value) === taxRate,
+    );
 
     const affectation = resolveIgvAffectation(taxRate, tax?.code);
 
@@ -297,14 +308,18 @@ export class FacturaApisunatService implements ICertificationPackService {
       documentNumber: resolved.number,
       identityDocument: resolved.identityDocument,
       documentType: resolved.documentType,
-      address: [
-        streetLine,
-        address?.neighborhood?.trim(),
-        address?.city?.trim(),
-        address?.state?.trim(),
-      ]
-        .filter(Boolean)
-        .join(', '),
+      // El proveedor exige dirección incluso en una boleta a consumidor
+      // final, donde normalmente no se pide. Un guion satisface el requisito
+      // sin inventar un domicilio que nadie declaró.
+      address:
+        [
+          streetLine,
+          address?.neighborhood?.trim(),
+          address?.city?.trim(),
+          address?.state?.trim(),
+        ]
+          .filter(Boolean)
+          .join(', ') || DIRECCION_NO_DECLARADA,
     };
   }
 
@@ -343,12 +358,16 @@ export class FacturaApisunatService implements ICertificationPackService {
    * 'YYYY-MM-DD' o como Date. Se normaliza sin pasar por la zona horaria
    * local para no desplazar el día.
    */
+  /**
+   * Fecha del comprobante en la zona horaria peruana.
+   *
+   * Este pack emite solo ante SUNAT, así que el país está determinado; la
+   * zona se toma del registro para no repetir el dato. Antes se formateaba
+   * con `toISOString()`, que convierte a UTC: una venta a las 19:45 en Lima
+   * salía fechada al día siguiente y SUNAT la rechazaba por fecha futura.
+   */
   private formatIssueDate(date: Date | string): string {
-    if (typeof date === 'string') {
-      return date.slice(0, 10);
-    }
-
-    return new Date(date).toISOString().slice(0, 10);
+    return formatDateInTimeZone(date, getCountryProfile('PE').timeZone);
   }
 
   private mapEstadoToInvoiceStatus(estado?: SunatEstado): InvoiceStatus {

@@ -5,6 +5,7 @@ import { PosPackSyncService } from '../../src/services/pos-pack-sync.service';
 import { Withdrawal, WithdrawalType } from '../../src/models/withdrawal.entity';
 import { WithdrawalDetail } from '../../src/models/withdrawal-detail.entity';
 import { CertificationPackFactoryService } from '../../src/services/certification-pack-factory.service';
+import { InvoiceService } from '../../src/services/invoice.service';
 
 describe('PosPackSyncService', () => {
   let service: PosPackSyncService;
@@ -12,6 +13,7 @@ describe('PosPackSyncService', () => {
   let withdrawalDetailRepository: jest.Mocked<Repository<WithdrawalDetail>>;
   let certificationPackFactory: jest.Mocked<CertificationPackFactoryService>;
   let packService: jest.Mocked<any>;
+  let invoiceService: jest.Mocked<any>;
 
   const mockWithdrawal = {
     id: 'withdrawal-1',
@@ -42,6 +44,13 @@ describe('PosPackSyncService', () => {
       getPackService: jest.fn().mockResolvedValue(packService),
     } as any;
 
+    // En los PAC sin recibos, cerrar la venta emite una factura
+    invoiceService = {
+      findByWithdrawalId: jest.fn(),
+      createFromWithdrawal: jest.fn(),
+      generateCFDI: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PosPackSyncService,
@@ -56,6 +65,10 @@ describe('PosPackSyncService', () => {
         {
           provide: CertificationPackFactoryService,
           useValue: certificationPackFactory,
+        },
+        {
+          provide: InvoiceService,
+          useValue: invoiceService,
         },
       ],
     }).compile();

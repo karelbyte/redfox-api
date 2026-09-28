@@ -88,10 +88,22 @@ describe('CertificationPackFactoryService', () => {
     } as any;
 
     // Create service instance
+    // El pack de SUNAT se añadió después: aquí basta un doble, porque estas
+    // pruebas cubren la selección de pack, no su implementación.
+    const facturaSunatService = {
+      capabilities: {
+        productCatalog: false,
+        customerCatalog: false,
+        documentSeries: true,
+        receipts: false,
+      },
+    } as any;
+
     service = new CertificationPackFactoryService(
       certificationPackRepository,
       facturaAPIService,
       facturaGreenService,
+      facturaSunatService,
       tenantContext,
     );
 
