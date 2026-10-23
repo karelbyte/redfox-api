@@ -50,6 +50,7 @@ import { OrganizationModule } from './modules/organization.module';
 import { AuditLogModule } from './modules/audit-log.module';
 import { SubscriptionModule } from './modules/subscription.module';
 import { UploadsModule } from './modules/uploads.module';
+import { SipModule } from './modules/sip.module';
 import { AdminModule } from './modules/admin.module';
 import { InventoryAlertsModule } from './modules/inventory-alerts.module';
 import { ReferralModule } from './modules/referral.module';
@@ -134,6 +135,7 @@ import { IsValidRFCConstraint } from './validators/rfc.validator';
     OrganizationModule,
     SubscriptionModule,
     UploadsModule,
+    SipModule,
     AdminModule,
     InventoryAlertsModule,
     SupportModule,

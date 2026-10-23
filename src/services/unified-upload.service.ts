@@ -14,7 +14,7 @@ export interface UploadOptions {
   maxFiles?: number;
 }
 
-export type UploadCategory = 'products' | 'categories' | 'brands' | 'company';
+export type UploadCategory = 'products' | 'categories' | 'brands' | 'company' | 'marsh';
 
 @Injectable()
 export class UnifiedUploadService {
