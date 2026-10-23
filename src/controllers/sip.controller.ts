@@ -12,12 +12,12 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { AuthGuard } from '../guards/auth.guard';
-import { SuperAdminGuard } from '../guards/super-admin.guard';
+import { AdminGuard } from '../guards/admin.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { UnifiedUploadService } from '../services/unified-upload.service';
 
 @Controller('sip')
-@UseGuards(AuthGuard, SuperAdminGuard)
+@UseGuards(AuthGuard, AdminGuard)
 @UseInterceptors(TenantInterceptor)
 export class SipController {
   constructor(
