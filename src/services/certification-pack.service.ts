@@ -13,9 +13,28 @@ import {
   UpdateCertificationPackDto,
   CertificationPackEmitterDto,
 } from '../dtos/certification-pack/create-certification-pack.dto';
+import {
+  PackCapabilities,
+  resolvePackCapabilities,
+} from '../interfaces/certification-pack.interface';
+import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import { DocumentType } from '../models/document-series.entity';
+import { Organization } from '../models/organization.entity';
+import {
+  CountryProfile,
+  getCountryProfile,
+} from '../constants/countries.constant';
+import { DocumentSeriesService } from './document-series.service';
 import { TenantContext } from './tenant-context.service';
 import { TranslationService } from './translation.service';
 import { UserContextService } from './user-context.service';
+
+/** Acuerdo comercial: los referidos de Factura Green solo usan ese pack. */
+const FACTURA_GREEN_REFERRER_CODE = 'FACTURAGREEN';
+
+export type CertificationPackWithCapabilities = CertificationPack & {
+  capabilities: PackCapabilities;
+};
 
 @Injectable()
 export class CertificationPackService {
@@ -27,7 +46,104 @@ export class CertificationPackService {
     private readonly tenantContext: TenantContext,
     private readonly translationService: TranslationService,
     private readonly userContextService: UserContextService,
+    private readonly documentSeriesService: DocumentSeriesService,
+    private readonly certificationPackFactory: CertificationPackFactoryService,
+    @InjectRepository(Organization)
+    private readonly organizationRepository: Repository<Organization>,
   ) {}
+
+  private async getOrganization(): Promise<Organization | null> {
+    return this.organizationRepository.findOne({
+      where: { id: await this.getOrganizationId() },
+    });
+  }
+
+  /**
+   * Packs que puede usar la organización.
+   *
+   * Se cruzan dos reglas: el país decide qué facturación electrónica tiene
+   * sentido, y un código de referido puede restringir la oferta a un único
+   * proveedor por acuerdo comercial.
+   */
+  async findAvailableTypes(): Promise<{
+    country: CountryProfile;
+    types: CertificationPackType[];
+  }> {
+    const organization = await this.getOrganization();
+    const country = getCountryProfile(organization?.country);
+    const referrerCode = (organization?.referrer_code || '')
+      .trim()
+      .toUpperCase();
+
+    const restricted =
+      referrerCode === FACTURA_GREEN_REFERRER_CODE
+        ? country.packs.filter(
+            (type) => type === CertificationPackType.FACTURA_GREEN,
+          )
+        : country.packs;
+
+    // Un acuerdo comercial no puede dejar a la organización sin ninguna
+    // opción: si el pack del referido no opera en su país, se ignora.
+    return {
+      country,
+      types: restricted.length > 0 ? restricted : country.packs,
+    };
+  }
+
+  /**
+   * Añade al pack las capacidades de su implementación, para que el cliente
+   * de la API sepa qué operaciones ofrece (series, recibos, catálogos) sin
+   * tener que reconocer el tipo de pack ni replicar sus reglas.
+   */
+  private withCapabilities(
+    pack: CertificationPack,
+  ): CertificationPackWithCapabilities {
+    return {
+      ...pack,
+      capabilities: this.certificationPackFactory.getCapabilities(pack.type),
+    };
+  }
+
+  /**
+   * Da de alta las series declaradas en la configuración del pack:
+   *
+   *   config.series = { factura: 'F001', boleta: 'B001' }
+   *
+   * Es idempotente, así que se puede invocar en cada alta o actualización.
+   * Se ejecuta antes de guardar el pack: si una serie choca con otra ya
+   * registrada para otro tipo de comprobante, no se guarda nada.
+   */
+  private async ensureDocumentSeries(
+    type: CertificationPackType | undefined,
+    config?: Record<string, any> | null,
+  ): Promise<void> {
+    if (type !== CertificationPackType.FACTURA_SUNAT || !config?.series) {
+      return;
+    }
+
+    const series = config.series as Record<string, string | undefined>;
+    const byDocumentType: Array<[string, DocumentType]> = [
+      ['factura', DocumentType.FACTURA],
+      ['boleta', DocumentType.BOLETA],
+      ['nota_credito', DocumentType.NOTA_CREDITO],
+      ['nota_debito', DocumentType.NOTA_DEBITO],
+    ];
+
+    for (const [key, documentType] of byDocumentType) {
+      const code = series[key];
+
+      if (!code) {
+        continue;
+      }
+
+      await this.documentSeriesService.ensureSeries({
+        documentType,
+        series: code,
+        emitterId: (config.ruc as string) ?? null,
+        isDefault: true,
+      });
+    }
+  }
 
   private async getOrganizationId(): Promise<string> {
     const orgId = this.tenantContext.getOrganizationId();
@@ -44,6 +160,19 @@ export class CertificationPackService {
   async create(
     createDto: CreateCertificationPackDto,
   ): Promise<CertificationPack> {
+    const { country, types } = await this.findAvailableTypes();
+
+    if (!types.includes(createDto.type)) {
+      const message = await this.translationService.translate(
+        'pack.type_not_available_in_country',
+        this.tenantContext.getUserId() || undefined,
+        { type: createDto.type, country: country.name },
+      );
+      throw new BadRequestException(message);
+    }
+
+    await this.ensureDocumentSeries(createDto.type, createDto.config);
+
     if (createDto.is_default) {
       await this.unsetDefaultPacks();
     }
@@ -83,6 +212,8 @@ export class CertificationPackService {
         emitterIdentifier = savedPack.config?.business_uuid || '';
       } else if (savedPack.type === CertificationPackType.FACTURAAPI) {
         emitterIdentifier = savedPack.config?.api_key || '';
+      } else if (savedPack.type === CertificationPackType.FACTURA_SUNAT) {
+        emitterIdentifier = (savedPack.config?.ruc as string) || '';
       }
 
       if (emitterIdentifier) {
@@ -100,12 +231,14 @@ export class CertificationPackService {
     return savedPack;
   }
 
-  async findAll(): Promise<CertificationPack[]> {
-    return await this.certificationPackRepository.find({
+  async findAll(): Promise<CertificationPackWithCapabilities[]> {
+    const packs = await this.certificationPackRepository.find({
       where: { organization_id: await this.getOrganizationId() },
       order: { created_at: 'DESC' },
       relations: ['emitters'],
     });
+
+    return packs.map((pack) => this.withCapabilities(pack));
   }
 
   async findOne(id: string): Promise<CertificationPack> {
@@ -126,7 +259,7 @@ export class CertificationPackService {
     return pack;
   }
 
-  async findActive(): Promise<CertificationPack | null> {
+  async findActive(): Promise<CertificationPackWithCapabilities | null> {
     const organizationId = await this.getOrganizationId();
     const defaultPack = await this.certificationPackRepository.findOne({
       where: {
@@ -137,13 +270,38 @@ export class CertificationPackService {
     });
 
     if (defaultPack) {
-      return defaultPack;
+      return this.withCapabilities(defaultPack);
     }
 
-    return await this.certificationPackRepository.findOne({
+    const activePack = await this.certificationPackRepository.findOne({
       where: { is_active: true, organization_id: organizationId },
       order: { created_at: 'ASC' },
     });
+
+    return activePack ? this.withCapabilities(activePack) : null;
+  }
+
+  /**
+   * Capacidades del pack activo. Sin pack configurado devuelve las que aplica
+   * un pack que no declara nada, que es el comportamiento histórico.
+   */
+  async findActiveCapabilities(): Promise<{
+    type: CertificationPackType | null;
+    capabilities: PackCapabilities;
+  }> {
+    const active = await this.findActive();
+
+    return {
+      type: active?.type ?? null,
+      capabilities: active?.capabilities ?? resolvePackCapabilities(null),
+    };
+  }
+
+  /** Igual que findOne, con las capacidades del pack incluidas. */
+  async findOneWithCapabilities(
+    id: string,
+  ): Promise<CertificationPackWithCapabilities> {
+    return this.withCapabilities(await this.findOne(id));
   }
 
   async findAvailableEmitters(): Promise<CertificationPackEmitter[]> {
@@ -173,6 +331,8 @@ export class CertificationPackService {
     updateDto: UpdateCertificationPackDto,
   ): Promise<CertificationPack> {
     const pack = await this.findOne(id);
+
+    await this.ensureDocumentSeries(pack.type, updateDto.config ?? pack.config);
 
     if (updateDto.is_default && !pack.is_default) {
       await this.unsetDefaultPacks();

@@ -47,11 +47,27 @@ export class Plan {
   @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   stripe_price_id: string;
 
+  /**
+   * Nombre estable con el que este plan encuentra su precio en Stripe. Se
+   * prefiere al identificador porque lo elegimos nosotros: si el precio se
+   * borra y se vuelve a crear, el identificador cambia y la clave no, así que
+   * la base no queda apuntando a algo que ya no existe.
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  stripe_lookup_key: string | null;
+
   @Column({ type: 'text', nullable: true })
   description: string;
 
   @Column({ type: 'text', nullable: true, transformer: featuresTransformer })
   features: string[];
+
+  /**
+   * País del plan en ISO 3166-1 alpha-2. Nulo significa que está disponible
+   * en cualquier país, que es el comportamiento histórico.
+   */
+  @Column({ type: 'varchar', length: 2, nullable: true })
+  country: string | null;
 
   @Column({ type: 'boolean', default: false })
   is_default: boolean;

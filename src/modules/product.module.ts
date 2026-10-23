@@ -28,6 +28,8 @@ import { Category } from '../models/category.entity';
 import { User } from '../models/user.entity';
 import { UploadsModule } from './uploads.module';
 import { NotificationModule } from './notification.module';
+import { SunatProductCode } from '../models/sunat-product-code.entity';
+import { SunatCatalogService } from '../services/sunat-catalog.service';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { NotificationModule } from './notification.module';
       User,
       Brand,
       Category,
+      SunatProductCode,
     ]),
     NotificationModule,
     MeasurementUnitModule,
@@ -59,6 +62,7 @@ import { NotificationModule } from './notification.module';
   controllers: [ProductController],
   providers: [
     ProductService,
+    SunatCatalogService,
     ProductMapper,
     CurrencyMapper,
     ProductPackImportService,
@@ -66,6 +70,7 @@ import { NotificationModule } from './notification.module';
   ],
   exports: [
     ProductService,
+    SunatCatalogService,
     ProductMapper,
     CurrencyMapper,
     ProductPackSyncService,

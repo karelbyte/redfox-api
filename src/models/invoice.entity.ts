@@ -41,6 +41,7 @@ export enum CardType {
 
 @Entity('invoices')
 @Index(['organization_id', 'code'], { unique: true })
+@Index(['organization_id', 'series', 'number'], { unique: true })
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -117,6 +118,29 @@ export class Invoice {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   emitter_id!: string | null;
+
+  /**
+   * Comprobante SUNAT asignado a la factura (tipo, serie y correlativo).
+   * Nulo para los packs que no numeran por serie, como el CFDI mexicano.
+   * El correlativo se reserva en `document_series` y se conserva aquí para
+   * que un reintento de emisión reutilice el mismo número en vez de dejar un
+   * hueco en la numeración.
+   */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  document_type!: string | null;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  series!: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  number!: number | null;
+
+  /**
+   * Moneda del comprobante en ISO 4217. Nulo deja que el pack aplique su
+   * moneda por defecto.
+   */
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  currency_code!: string | null;
 
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   created_by: string | null;

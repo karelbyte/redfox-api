@@ -8,14 +8,14 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StripeService } from '../services/stripe.service';
-import { SubscriptionService } from '../services/subscription.service';
+import { StripeEventRouter } from '../webhooks/stripe-event.router';
 import { Public } from '../decorators/public.decorator';
 
 @Controller('stripe-webhooks')
 export class StripeWebhookController {
   constructor(
     private stripeService: StripeService,
-    private subscriptionService: SubscriptionService,
+    private stripeEventRouter: StripeEventRouter,
   ) {}
 
   @Public()
@@ -38,7 +38,7 @@ export class StripeWebhookController {
         rawBody,
         signature,
       );
-      await this.subscriptionService.handleStripeEvent(event);
+      await this.stripeEventRouter.route(event);
       return { received: true };
     } catch (err) {
       console.error(`❌ Webhook Error: ${err.message}`);

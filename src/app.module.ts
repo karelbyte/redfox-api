@@ -60,6 +60,8 @@ import { RedisServiceModule } from './modules/redis-service.module';
 import { BotSettingsModule } from './modules/bot-settings.module';
 import { ShipmentModule } from './modules/shipment.module';
 import { WebhookModule } from './modules/webhook.module';
+import { DocumentSeriesModule } from './modules/document-series.module';
+import { CountryModule } from './modules/country.module';
 import { HrModule } from './modules/hr.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
@@ -145,6 +147,8 @@ import { IsValidRFCConstraint } from './validators/rfc.validator';
     BotSettingsModule,
     ShipmentModule,
     WebhookModule,
+    DocumentSeriesModule,
+    CountryModule,
     HrModule,
   ],
   controllers: [HomeController],

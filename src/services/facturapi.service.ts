@@ -19,6 +19,8 @@ import {
 import { TenantContext } from './tenant-context.service';
 import { SatCatalogService } from './sat-catalog.service';
 import { TranslationService } from './translation.service';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatDateInTimeZone } from '../utils/format.utils';
 
 @Injectable()
 export class FacturaAPIService implements ICertificationPackService {
@@ -472,22 +474,24 @@ export class FacturaAPIService implements ICertificationPackService {
     return percentage / 100;
   }
 
+  /**
+   * Fecha del comprobante en la zona horaria mexicana.
+   *
+   * Se formateaba con `toISOString()`, que convierte a UTC: una venta a las
+   * 19:00 en CDMX (UTC−6) salía fechada al día siguiente. El mismo desfase
+   * hizo que SUNAT rechazara comprobantes peruanos por fecha futura, así que
+   * aquí se corrige antes de que aparezca también con el SAT.
+   */
   private formatDateForFacturaAPI(
     date: Date | string | null | undefined,
   ): string {
+    const zona = getCountryProfile('MX').timeZone;
+
     if (!date) {
-      return new Date().toISOString().split('T')[0];
+      return formatDateInTimeZone(new Date(), zona);
     }
 
-    if (typeof date === 'string') {
-      return date;
-    }
-
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
-    }
-
-    return new Date().toISOString().split('T')[0];
+    return formatDateInTimeZone(date, zona);
   }
 
   private mapPaymentMethod(paymentMethod: string, cardType?: string | null): string {

@@ -31,6 +31,9 @@ import { ProductPackSyncService } from './product-pack-sync.service';
 import { NotificationService } from './notification.service';
 import { User } from '../models/user.entity';
 import { UnifiedUploadService } from './unified-upload.service';
+import { SunatCatalogService } from './sunat-catalog.service';
+import { Organization } from '../models/organization.entity';
+import { DEFAULT_COUNTRY } from '../constants/countries.constant';
 
 interface SearchCondition {
   name?: any;
@@ -76,6 +79,7 @@ export class ProductService {
     private readonly userRepository: Repository<User>,
     private readonly unifiedUploadService: UnifiedUploadService,
     private readonly satCatalogService: SatCatalogService,
+    private readonly sunatCatalogService: SunatCatalogService,
   ) {}
 
   private get organizationId(): string {
@@ -746,8 +750,35 @@ export class ProductService {
     }
   }
 
+  /**
+   * Busca el código fiscal del producto en el catálogo que corresponde al
+   * país de la organización.
+   *
+   * Antes iba siempre al catálogo mexicano, así que una organización peruana
+   * elegía códigos de la Clave de Producto y Servicio del SAT. Ambos
+   * catálogos derivan de UNSPSC y para bienes comunes los números coinciden,
+   * pero cada autoridad mantiene su propia versión y no tienen por qué ser
+   * iguales.
+   */
   async searchFromPack(term: string): Promise<ProductKeySuggestion[]> {
+    const pais = await this.organizationCountry();
+
+    if (pais === 'PE') {
+      return this.sunatCatalogService.searchProductCodes(term);
+    }
+
     return this.satCatalogService.searchProductKeys(term);
+  }
+
+  private async organizationCountry(): Promise<string> {
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) return DEFAULT_COUNTRY;
+
+    const organization = await this.productRepository.manager
+      .getRepository(Organization)
+      .findOne({ where: { id: organizationId } });
+
+    return (organization?.country || DEFAULT_COUNTRY).toUpperCase();
   }
 
   private getStaticProductKeys(term: string): ProductKeySuggestion[] {

@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Product } from '../models/product.entity';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
 import {
+  ICertificationPackService,
+  packSupports,
   ProductData,
   ProductResponse,
 } from '../interfaces/certification-pack.interface';
@@ -72,7 +74,7 @@ export class ProductPackSyncService {
   }> {
     try {
       // Intentar obtener el servicio del pack
-      let packService: any;
+      let packService: ICertificationPackService;
       try {
         packService = await this.certificationPackFactory.getPackService();
       } catch (error) {
@@ -93,6 +95,15 @@ export class ProductPackSyncService {
           packSyncSuccess: false,
           packErrorMessage: 'Pack does not support product operations',
         };
+      }
+
+      // Los packs sin catálogo de productos (SUNAT) no necesitan
+      // sincronización: los datos del producto viajan dentro del comprobante.
+      if (!packSupports(packService, 'productCatalog')) {
+        this.logger.debug(
+          'Pack does not keep a product catalog, skipping product sync',
+        );
+        return { product, packSyncSuccess: true };
       }
 
       const productData = this.buildProductData(product, price);

@@ -14,6 +14,8 @@ export interface CFDIResponse {
   xml_url?: string;
   message?: string;
   payload_send?: any;
+  /** Datos adicionales del PAC que se fusionan en `pack_invoice_response` (ej. hash y CDR de SUNAT). */
+  raw?: Record<string, unknown>;
 }
 
 export interface MeasurementUnitSuggestion {
@@ -192,7 +194,96 @@ export interface PaymentComplementResponse {
   xml_url?: string;
 }
 
+/**
+ * Capacidades opcionales de un pack de certificación.
+ *
+ * No todos los PAC funcionan igual: Facturapi y Factura Green mantienen un
+ * catálogo propio de productos y clientes que hay que sincronizar antes de
+ * poder timbrar, mientras que SUNAT recibe todos los datos dentro del propio
+ * comprobante y no tiene catálogos que sincronizar.
+ */
+export interface PackCapabilities {
+  /** El PAC mantiene un catálogo de productos que debe sincronizarse antes de emitir. */
+  productCatalog: boolean;
+  /** El PAC mantiene un catálogo de clientes que debe sincronizarse antes de emitir. */
+  customerCatalog: boolean;
+  /** El PAC numera los comprobantes por serie y correlativo (SUNAT). */
+  documentSeries: boolean;
+  /**
+   * El PAC admite recibos de venta (el ticket mexicano que el cliente puede
+   * autofacturar y que acaba agrupado en una factura global). En Perú no
+   * existe esa figura: cada venta emite boleta o factura en el acto.
+   */
+  receipts: boolean;
+  /** El PAC permite cancelar un comprobante ya emitido desde la API. */
+  cancellation: boolean;
+  /**
+   * El PAC sirve el PDF y el XML a través de la API. Cuando es `false` los
+   * documentos pueden llegar igualmente como URLs dentro de
+   * `pack_invoice_response`.
+   */
+  documentDownload: boolean;
+}
+
+/**
+ * Indica si un pack soporta una capacidad. Lo que un pack no declara se asume
+ * soportado, de modo que los packs que no declaran nada (Facturapi, Factura
+ * Green) conservan exactamente el comportamiento anterior.
+ */
+/**
+ * Indica si un pack requiere una capacidad. Al revés que {@link packSupports}:
+ * lo que no se declara se asume NO requerido, de forma que añadir una
+ * capacidad nueva nunca cambia el comportamiento de los packs existentes.
+ *
+ * Regla para elegir entre las dos: `packSupports` es para comportamientos que
+ * todos los packs ya tenían antes de existir este mecanismo; `packRequires`
+ * es para comportamientos nuevos que solo algunos packs necesitan.
+ */
+export function packRequires(
+  packService:
+    | Pick<ICertificationPackService, 'capabilities'>
+    | null
+    | undefined,
+  capability: keyof PackCapabilities,
+): boolean {
+  return packService?.capabilities?.[capability] === true;
+}
+
+export function packSupports(
+  packService:
+    | Pick<ICertificationPackService, 'capabilities'>
+    | null
+    | undefined,
+  capability: keyof PackCapabilities,
+): boolean {
+  return packService?.capabilities?.[capability] !== false;
+}
+
+/**
+ * Resuelve las capacidades efectivas de un pack a valores concretos, aplicando
+ * el criterio por defecto de cada una: las capacidades históricas se asumen
+ * soportadas y las nuevas se asumen no requeridas. Es la forma de exponerlas
+ * fuera del backend sin que nadie tenga que replicar esas reglas.
+ */
+export function resolvePackCapabilities(
+  packService:
+    | Pick<ICertificationPackService, 'capabilities'>
+    | null
+    | undefined,
+): PackCapabilities {
+  return {
+    productCatalog: packSupports(packService, 'productCatalog'),
+    customerCatalog: packSupports(packService, 'customerCatalog'),
+    receipts: packSupports(packService, 'receipts'),
+    cancellation: packSupports(packService, 'cancellation'),
+    documentDownload: packSupports(packService, 'documentDownload'),
+    documentSeries: packRequires(packService, 'documentSeries'),
+  };
+}
+
 export interface ICertificationPackService {
+  /** Capacidades declaradas por el pack. Ver {@link packSupports}. */
+  readonly capabilities?: Partial<PackCapabilities>;
   generateCFDI(invoice: Invoice, options?: any, emitterId?: string): Promise<CFDIResponse>;
   cancelCFDI(uuid: string, reason: string): Promise<void>;
   getCFDIStatus(uuid: string): Promise<any>;

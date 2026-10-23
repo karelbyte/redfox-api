@@ -56,12 +56,37 @@ describe('CertificationPackService', () => {
     } as any;
 
     // Create service instance
+    // Dependencias añadidas al introducir las series de comprobantes y el
+    // filtrado de packs por país. Estas pruebas cubren el CRUD del pack, así
+    // que basta con dobles.
+    const documentSeriesService = {
+      ensureSeries: jest.fn(),
+    } as any;
+
+    const certificationPackFactory = {
+      getCapabilities: jest.fn().mockReturnValue({
+        productCatalog: true,
+        customerCatalog: true,
+        receipts: true,
+        cancellation: true,
+        documentDownload: true,
+        documentSeries: false,
+      }),
+    } as any;
+
+    const organizationRepository = {
+      findOne: jest.fn().mockResolvedValue({ country: 'MX', referrer_code: null }),
+    } as any;
+
     service = new CertificationPackService(
       certificationPackRepository,
       certificationPackEmitterRepository,
       tenantContext,
       translationService,
       userContextService,
+      documentSeriesService,
+      certificationPackFactory,
+      organizationRepository,
     );
   });
 
@@ -191,7 +216,10 @@ describe('CertificationPackService', () => {
 
       const result = await service.findAll();
 
-      expect(result).toEqual(mockPacks);
+      // Cada pack llega con las capacidades de su implementación
+      expect(result).toEqual(
+        mockPacks.map((pack) => ({ ...pack, capabilities: expect.any(Object) })),
+      );
       expect(certificationPackRepository.find).toHaveBeenCalledWith({
         where: { organization_id: 'org-123' },
         order: { created_at: 'DESC' },
@@ -229,7 +257,7 @@ describe('CertificationPackService', () => {
 
       const result = await service.findActive();
 
-      expect(result).toEqual(mockPack);
+      expect(result).toEqual({ ...mockPack, capabilities: expect.any(Object) });
       expect(certificationPackRepository.findOne).toHaveBeenCalledWith({
         where: {
           is_default: true,
@@ -246,7 +274,11 @@ describe('CertificationPackService', () => {
 
       const result = await service.findActive();
 
-      expect(result).toEqual({ id: 'pack-1', is_active: true });
+      expect(result).toEqual({
+        id: 'pack-1',
+        is_active: true,
+        capabilities: expect.any(Object),
+      });
       expect(certificationPackRepository.findOne).toHaveBeenCalledTimes(2);
     });
 

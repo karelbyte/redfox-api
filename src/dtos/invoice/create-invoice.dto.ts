@@ -67,6 +67,12 @@ export class CreateInvoiceDto {
   @IsOptional()
   notes?: string;
 
+  /** Moneda del comprobante en ISO 4217 (PEN, USD...). */
+  @IsString()
+  @IsOptional()
+  @Length(3, 3)
+  currency_code?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceDetailDto)

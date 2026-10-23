@@ -25,6 +25,8 @@ import { TaxService } from './tax.service';
 import { MeasurementUnitService } from './measurement-unit.service';
 import { TenantContext } from './tenant-context.service';
 import { TaxType } from '../models/tax.entity';
+import { getCountryProfile } from '../constants/countries.constant';
+import { formatLongDate, resolveIntlLocale } from '../utils/format.utils';
 import { TranslationService } from './translation.service';
 import { Language } from '../models/language.entity';
 
@@ -105,7 +107,11 @@ export class AuthService {
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
         organization_referrer_code: user.organization?.referrer_code,
+        // País y moneda de la organización: el cliente los necesita desde el
+        // primer render para dar formato a los importes sin pedirlos aparte.
         organization_country: user.organization?.country || null,
+        organization_currency: getCountryProfile(user.organization?.country)
+          .currency,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -152,7 +158,11 @@ export class AuthService {
         organization_id: user.organization_id,
         organization_slug: user.organization?.slug,
         organization_referrer_code: user.organization?.referrer_code,
+        // País y moneda de la organización: el cliente los necesita desde el
+        // primer render para dar formato a los importes sin pedirlos aparte.
         organization_country: user.organization?.country || null,
+        organization_currency: getCountryProfile(user.organization?.country)
+          .currency,
         roles: user.roles.map((role) => ({
           id: role.id,
           code: role.code,
@@ -216,11 +226,15 @@ export class AuthService {
       throw new BadRequestException(message);
     }
 
+    // El país decide con qué impuestos, unidades y monedas arranca la
+    // organización, y qué packs de facturación se le ofrecerán.
+    const countryProfile = getCountryProfile(registerDto.country);
+
     const organization = await this.organizationService.create({
       name: registerDto.companyName,
       slug,
       status: false,
-      country: registerDto.country || 'mx',
+      country: countryProfile.code,
       ...(registerDto.referrer_code
         ? { referrer_code: registerDto.referrer_code.toUpperCase() }
         : {}),
@@ -250,38 +264,21 @@ export class AuthService {
       admin: true,
     } as any);
 
-    await this.taxService.create({
-      code: 'IVA',
-      name: 'IVA 16%',
-      value: 16,
-      type: TaxType.PERCENTAGE,
-      isActive: true,
-    });
+    for (const tax of countryProfile.taxes) {
+      try {
+        await this.taxService.create({
+          code: tax.code,
+          name: tax.name,
+          value: tax.value,
+          type: tax.type,
+          isActive: true,
+        } as any);
+      } catch (error) {
+        console.error(`Error creating default tax ${tax.name}:`, error);
+      }
+    }
 
-    await this.taxService.create({
-      code: 'IVA',
-      name: 'IVA 0%',
-      value: 0,
-      type: TaxType.PERCENTAGE,
-      isActive: true,
-    });
-
-    const defaultUnits = [
-      { code: 'E48', description: 'Unidad de servicio' },
-      { code: 'H87', description: 'Pieza' },
-      { code: 'ACT', description: 'Actividad' },
-      { code: 'HUR', description: 'Hora' },
-      { code: 'XPK', description: 'Paquete' },
-      { code: 'SET', description: 'Conjunto' },
-      { code: 'KGM', description: 'Kilogramo' },
-      { code: 'LTR', description: 'Litro' },
-      { code: 'MTR', description: 'Metro' },
-      { code: 'MTK', description: 'Metro cuadrado' },
-      { code: 'XBX', description: 'Caja' },
-      { code: 'E51', description: 'Trabajo' },
-    ];
-
-    for (const unit of defaultUnits) {
+    for (const unit of countryProfile.measurementUnits) {
       try {
         await this.measurementUnitService.create({
           code: unit.code,
@@ -527,6 +524,14 @@ export class AuthService {
       await this.userService.update(user.id, { status: true } as any);
 
       let subscription: any = null;
+      // El país de la organización define su moneda y el formato de fechas
+      const activationCountry = getCountryProfile(
+        user.organization_id
+          ? (await this.organizationService.findOne(user.organization_id))
+              ?.country
+          : null,
+      );
+
       if (user.organization_id) {
         await this.organizationService.update(user.organization_id, {
           status: true,
@@ -553,11 +558,7 @@ export class AuthService {
         }
 
         try {
-          const defaultCurrencies = [
-            { code: 'MXN', name: 'Peso Mexicano' },
-            { code: 'USD', name: 'Dólar Estadounidense' },
-          ];
-          for (const c of defaultCurrencies) {
+          for (const c of activationCountry.currencies) {
             const exists = await this.currencyRepository.findOne({
               where: { code: c.code, organization_id: user.organization_id },
             });
@@ -687,12 +688,12 @@ export class AuthService {
         userLanguage
       );
 
+      // La fecha se muestra en el idioma del usuario y el formato de su país
       const trialEndDate = subscription?.trial_end_date
-        ? new Date(subscription.trial_end_date).toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
+        ? formatLongDate(
+            subscription.trial_end_date,
+            resolveIntlLocale(userLanguage, activationCountry.code),
+          )
         : 'N/A';
 
       const html = `
@@ -1001,7 +1002,9 @@ export class AuthService {
       organization_id: user.organization_id,
       organization_slug: user.organization?.slug,
       organization_referrer_code: user.organization?.referrer_code,
-        organization_country: user.organization?.country || null,
+      organization_country: user.organization?.country || null,
+      organization_currency: getCountryProfile(user.organization?.country)
+        .currency,
       roles: user.roles.map((role) => ({
         id: role.id,
         code: role.code,

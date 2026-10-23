@@ -64,10 +64,10 @@ export class Subscription {
   auto_renew: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  canceled_at: Date;
+  canceled_at: Date | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  canceled_reason: string;
+  canceled_reason: string | null;
 
   @CreateDateColumn()
   created_at: Date;

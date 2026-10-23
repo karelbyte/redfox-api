@@ -18,6 +18,7 @@ import { WarehouseAdjustmentsSeed } from './warehouse-adjustments.seed';
 import { ReturnsSeed } from './returns.seed';
 import { PurchaseOrdersSeed } from './purchase-orders.seed';
 import { seedExpenseCategories } from './expense-categories.seed';
+import { seedSunatProductCodes } from './sunat-product-codes.seed';
 import { PlansSeed } from './plans.seed';
 
 export class RunSeeds {
@@ -44,6 +45,11 @@ export class RunSeeds {
 
       await seedExpenseCategories(dataSource);
       console.log('✅ Expense categories created');
+
+      // Catálogo 25 de SUNAT: 19.475 códigos de producto. Es idempotente y
+      // tarda menos de un segundo, así que no estorba en cada siembra.
+      const sunatCatalog = await seedSunatProductCodes(dataSource);
+      console.log(`✅ SUNAT product codes loaded (${sunatCatalog.total})`);
 
       await ClientsSeed.run(dataSource);
       console.log('✅ Clients created');

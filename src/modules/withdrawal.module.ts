@@ -20,6 +20,7 @@ import { ClientMapper } from '../services/mappers/client.mapper';
 import { CurrencyMapper } from '../services/mappers/currency.mapper';
 import { LanguageModule } from './language.module';
 import { CertificationPackModule } from './certification-pack.module';
+import { InvoiceModule } from './invoice.module';
 import { PosPackSyncService } from '../services/pos-pack-sync.service';
 import { AccountReceivableModule } from './account-receivable.module';
 import { OrganizationModule } from './organization.module';
@@ -41,6 +42,8 @@ import { UserAttributionModule } from './user-attribution.module';
     ProductModule,
     LanguageModule,
     CertificationPackModule,
+    // PosPackSyncService emite la factura de la venta en los PAC sin recibos.
+    InvoiceModule,
     AccountReceivableModule,
     OrganizationModule,
     NotificationModule,

@@ -280,6 +280,7 @@ export class SubscriptionService {
     const paymentIntent = await this.stripeService.createPaymentIntent(
       subscription.stripe_customer_id,
       selectedPlan.price,
+      selectedPlan.currency,
       paymentMethodId,
     );
 
@@ -483,55 +484,175 @@ export class SubscriptionService {
     return subscription;
   }
 
-  async handleStripeEvent(event: any) {
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        const paymentIntent = event.data.object;
-        const subscriptionByPI = await this.subscriptionRepository.findOne({
-          where: { stripe_payment_intent_id: paymentIntent.id },
-        });
-        if (subscriptionByPI) {
-          await this.confirmSubscriptionPayment(subscriptionByPI.id);
-        }
-        break;
-      case 'invoice.paid':
-        const invoice = event.data.object;
-        if (invoice.subscription) {
-          const subscriptionByStripeId = await this.subscriptionRepository.findOne({
-            where: { stripe_subscription_id: invoice.subscription },
-          });
-          if (subscriptionByStripeId) {
-            await this.confirmSubscriptionPayment(subscriptionByStripeId.id);
-          }
-        }
-        break;
-      case 'invoice.payment_failed':
-        const failedInvoice = event.data.object;
-        if (failedInvoice.subscription) {
-          const subscriptionToFail = await this.subscriptionRepository.findOne({
-            where: { stripe_subscription_id: failedInvoice.subscription },
-          });
-          if (subscriptionToFail) {
-            await this.subscriptionRepository.update(subscriptionToFail.id, {
-              status: 'past_due',
-            });
-            // Aquí se podría enviar un email de aviso de fallo de pago
-          }
-        }
-        break;
-      case 'customer.subscription.deleted':
-        const stripeSub = event.data.object;
-        const subToDelete = await this.subscriptionRepository.findOne({
-          where: { stripe_subscription_id: stripeSub.id },
-        });
-        if (subToDelete) {
-          await this.subscriptionRepository.update(subToDelete.id, {
-            status: 'canceled',
-            canceled_at: new Date(),
-          });
-        }
-        break;
+  /**
+   * Activa la suscripción tras una compra completada en Stripe. A partir de
+   * aquí la suscripción vive en Stripe: se guarda su identificador para que
+   * las renovaciones posteriores encuentren a quién corresponden.
+   */
+  async activateFromStripe(params: {
+    organizationId: string;
+    stripeSubscriptionId: string;
+    periodStart: Date;
+    periodEnd: Date;
+  }): Promise<void> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { organization_id: params.organizationId },
+      order: { created_at: 'DESC' },
+    });
+
+    if (!subscription) {
+      console.warn(
+        `[Stripe] Compra sin suscripción local: org ${params.organizationId}`,
+      );
+      return;
     }
+
+    await this.subscriptionRepository.update(subscription.id, {
+      stripe_subscription_id: params.stripeSubscriptionId,
+      status: 'active',
+      subscription_start_date: params.periodStart,
+      subscription_end_date: params.periodEnd,
+      current_period_start: params.periodStart,
+      current_period_end: params.periodEnd,
+      canceled_at: null,
+      canceled_reason: null,
+    });
+
+    await this.organizationRepository.update(subscription.organization_id, {
+      plan_id: subscription.plan_id,
+    });
+  }
+
+  /**
+   * Extiende el período tras una factura pagada. Es el cobro recurrente: la
+   * primera factura llega junto con la compra y las siguientes solas, cada
+   * mes o cada año, sin que nadie vuelva a la pantalla de pago.
+   */
+  async renewFromStripe(params: {
+    stripeSubscriptionId: string;
+    periodStart: Date;
+    periodEnd: Date;
+    amount: number;
+    currency: string;
+    invoiceId?: string;
+  }): Promise<void> {
+    const subscription = await this.findByStripeSubscription(
+      params.stripeSubscriptionId,
+    );
+    if (!subscription) return;
+
+    await this.subscriptionRepository.update(subscription.id, {
+      status: 'active',
+      subscription_end_date: params.periodEnd,
+      current_period_start: params.periodStart,
+      current_period_end: params.periodEnd,
+    });
+
+    await this.recordPayment(subscription, params);
+  }
+
+  /** La renovación no pudo cobrarse. Stripe reintentará por su cuenta. */
+  async markPastDue(stripeSubscriptionId: string): Promise<void> {
+    const subscription =
+      await this.findByStripeSubscription(stripeSubscriptionId);
+    if (!subscription) return;
+
+    await this.subscriptionRepository.update(subscription.id, {
+      status: 'past_due',
+    });
+  }
+
+  /** La suscripción terminó, sea por cancelación o por falta de pago. */
+  async cancelFromStripe(stripeSubscriptionId: string): Promise<void> {
+    const subscription =
+      await this.findByStripeSubscription(stripeSubscriptionId);
+    if (!subscription) return;
+
+    await this.subscriptionRepository.update(subscription.id, {
+      status: 'canceled',
+      canceled_at: new Date(),
+      auto_renew: false,
+    });
+  }
+
+  /**
+   * Refleja un cambio hecho desde el portal de Stripe, donde el cliente puede
+   * cancelar la renovación o cambiar de plan sin pasar por la aplicación.
+   */
+  async syncFromStripe(params: {
+    stripeSubscriptionId: string;
+    status: string;
+    cancelAtPeriodEnd: boolean;
+    periodEnd?: Date;
+  }): Promise<void> {
+    const subscription = await this.findByStripeSubscription(
+      params.stripeSubscriptionId,
+    );
+    if (!subscription) return;
+
+    await this.subscriptionRepository.update(subscription.id, {
+      status: this.mapStripeStatus(params.status),
+      auto_renew: !params.cancelAtPeriodEnd,
+      ...(params.periodEnd
+        ? {
+            current_period_end: params.periodEnd,
+            subscription_end_date: params.periodEnd,
+          }
+        : {}),
+    });
+  }
+
+  private async findByStripeSubscription(
+    stripeSubscriptionId: string,
+  ): Promise<Subscription | null> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { stripe_subscription_id: stripeSubscriptionId },
+    });
+
+    if (!subscription) {
+      console.warn(`[Stripe] Suscripción desconocida: ${stripeSubscriptionId}`);
+    }
+
+    return subscription;
+  }
+
+  /**
+   * Deja constancia del cobro. El identificador de factura es único en la
+   * tabla, así que una entrega repetida del mismo evento choca contra esa
+   * restricción en lugar de duplicar el registro.
+   */
+  private async recordPayment(
+    subscription: Subscription,
+    params: { amount: number; currency: string; invoiceId?: string },
+  ): Promise<void> {
+    try {
+      await this.subscriptionPaymentRepository.insert({
+        subscription_id: subscription.id,
+        stripe_invoice_id: params.invoiceId,
+        amount: params.amount,
+        currency: params.currency,
+        status: 'succeeded',
+        payment_method: 'card',
+        paid_at: new Date(),
+      });
+    } catch (error) {
+      console.warn('[Stripe] Pago ya registrado o no registrable:', error?.message);
+    }
+  }
+
+  /** Traduce el vocabulario de estados de Stripe al nuestro. */
+  private mapStripeStatus(stripeStatus: string): string {
+    const equivalencias: Record<string, string> = {
+      active: 'active',
+      trialing: 'trial',
+      past_due: 'past_due',
+      unpaid: 'past_due',
+      canceled: 'canceled',
+      incomplete: 'inactive',
+      incomplete_expired: 'expired',
+    };
+
+    return equivalencias[stripeStatus] || 'inactive';
   }
 
   async createPlan(createPlanDto: CreatePlanDto) {
@@ -545,20 +666,39 @@ export class SubscriptionService {
     return this.parsePlanFeatures(saved);
   }
 
-  async getAllPlans(organizationReferrerCode?: string) {
-    const where: any = { is_active: true };
+  /**
+   * Planes que puede contratar una organización.
+   *
+   * @param country País de la organización. Un plan sin país está disponible
+   *   en cualquiera, así que mientras no existan planes en moneda local se
+   *   siguen ofreciendo los actuales y nadie se queda sin opciones.
+   */
+  async getAllPlans(
+    organizationReferrerCode?: string,
+    country?: string | null,
+  ) {
+    const query = this.planRepository
+      .createQueryBuilder('plan')
+      .where('plan.is_active = :isActive', { isActive: true });
 
     if (organizationReferrerCode) {
-      where.referrer_code = organizationReferrerCode;
+      query.andWhere('plan.referrer_code = :referrerCode', {
+        referrerCode: organizationReferrerCode,
+      });
     } else {
-      where.is_public = true;
-      where.referrer_code = null as any;
+      query
+        .andWhere('plan.is_public = :isPublic', { isPublic: true })
+        .andWhere('plan.referrer_code IS NULL');
     }
 
-    const plans = await this.planRepository.find({
-      where,
-    });
-    
+    if (country) {
+      query.andWhere('(plan.country IS NULL OR plan.country = :country)', {
+        country,
+      });
+    }
+
+    const plans = await query.getMany();
+
     return plans.map((p) => this.parsePlanFeatures(p));
   }
 

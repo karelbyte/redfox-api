@@ -29,9 +29,9 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
              /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(cleanRFC);
     }
 
-    const country = this.tenantContext.getCountry() || 'mx';
+    const country = (this.tenantContext.getCountry() || 'MX').toUpperCase();
 
-    if (country === 'pe') {
+    if (country === 'PE') {
       return /^[0-9]{11}$/.test(cleanRFC);
     }
 
@@ -70,8 +70,8 @@ export class IsValidRFCConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(args: ValidationArguments): string {
-    const country = this.tenantContext?.getCountry() || 'mx';
-    if (country === 'pe') {
+    const country = (this.tenantContext?.getCountry() || 'MX').toUpperCase();
+    if (country === 'PE') {
       return 'El RUC debe tener 11 dígitos numéricos';
     }
     return 'RFC debe tener un formato válido (ej: XAXX010101000 o XAXX010101HDFXXX)';

@@ -36,6 +36,12 @@ import { ClientMapper } from './mappers/client.mapper';
 import { WithdrawalMapper } from './mappers/withdrawal.mapper';
 import { TranslationService } from './translation.service';
 import { CertificationPackFactoryService } from './certification-pack-factory.service';
+import {
+  ICertificationPackService,
+  packRequires,
+} from '../interfaces/certification-pack.interface';
+import { resolveCustomerDocument } from '../constants/sunat-catalogs.constant';
+import { DocumentSeriesService } from './document-series.service';
 import { ProductPackSyncService } from './product-pack-sync.service';
 import { TenantContext } from './tenant-context.service';
 import { NotificationService } from './notification.service';
@@ -43,6 +49,12 @@ import { CfdiQueue } from '../queues/cfdi.queue';
 import { UserAttributionService } from './user-attribution.service';
 import { WebhookService } from './webhook.service';
 import { WebhookEvent } from '../models/webhook.entity';
+import { Organization } from '../models/organization.entity';
+import {
+  getCountryProfile,
+  DEFAULT_COUNTRY,
+} from '../constants/countries.constant';
+import { formatDateInTimeZone } from '../utils/format.utils';
 
 @Injectable()
 export class InvoiceService {
@@ -67,6 +79,7 @@ export class InvoiceService {
     private readonly withdrawalMapper: WithdrawalMapper,
     private readonly translationService: TranslationService,
     private readonly certificationPackFactory: CertificationPackFactoryService,
+    private readonly documentSeriesService: DocumentSeriesService,
     private readonly productPackSyncService: ProductPackSyncService,
     private readonly tenantContext: TenantContext,
     private readonly notificationService: NotificationService,
@@ -143,6 +156,9 @@ export class InvoiceService {
       tax_amount: Math.round(tax_amount * 100) / 100,
       total_amount: Math.round(total_amount * 100) / 100,
       status: invoice.status,
+      // Sin esto el front no sabe en qué moneda está la factura y termina
+      // adivinando; las pantallas caían en un 'MXN' escrito a mano.
+      currency_code: invoice.currency_code ?? null,
       cfdi_uuid: invoice.cfdi_uuid,
       pack_invoice_id: invoice.pack_invoice_id ?? null,
       pack_invoice_response: invoice.pack_invoice_response ?? null,
@@ -241,6 +257,12 @@ export class InvoiceService {
       tax_amount: amounts.tax_amount,
       total_amount: amounts.total_amount,
       status: InvoiceStatus.DRAFT,
+      // Sin moneda guardada, quien lea la factura después tiene que adivinarla,
+      // y las pantallas acababan cayendo en un 'MXN' escrito a mano. La moneda
+      // del país de la organización es el valor correcto cuando nadie indica otra.
+      currency_code:
+        rest.currency_code?.toUpperCase() ||
+        (await this.countryProfile()).currency,
       payment_method: rest.payment_method,
       card_type: rest.card_type || null,
       payment_conditions: rest.payment_conditions,
@@ -843,6 +865,66 @@ export class InvoiceService {
     return this.mapToResponseDto(invoiceWithDetails!);
   }
 
+  /**
+   * Reserva serie y correlativo para los packs que numeran por serie (SUNAT).
+   *
+   * Se hace de forma síncrona, antes de encolar la emisión, porque el punto de
+   * venta necesita el número para imprimir aunque el envío a SUNAT viaje
+   * después. Si la factura ya tiene número —reintento tras un fallo— se
+   * reutiliza: pedir uno nuevo dejaría un hueco en la numeración.
+   */
+  private async reserveDocumentNumber(
+    invoice: Invoice,
+    userId?: string,
+  ): Promise<void> {
+    if (invoice.series && invoice.number) {
+      return;
+    }
+
+    let packService: ICertificationPackService;
+
+    try {
+      packService = await this.certificationPackFactory.getPackService();
+    } catch {
+      // Sin pack configurado no hay nada que reservar; el processor se
+      // encarga de reportar el error de emisión.
+      return;
+    }
+
+    if (!packRequires(packService, 'documentSeries')) {
+      return;
+    }
+
+    const taxData =
+      (invoice.client?.taxData ?? []).find((item) => item.is_main) ??
+      invoice.client?.taxData?.[0];
+    const resolved = resolveCustomerDocument(taxData?.tax_document);
+
+    if (!resolved) {
+      const message = await this.translationService.translate(
+        'pack.sunat_customer_document_invalid',
+        userId,
+        {
+          name: invoice.client?.name ?? '',
+          document: taxData?.tax_document ?? '',
+        },
+      );
+      throw new BadRequestException(message);
+    }
+
+    const reserved = await this.documentSeriesService.reserveNext(
+      resolved.documentType,
+    );
+
+    invoice.document_type = reserved.documentType;
+    invoice.series = reserved.series;
+    invoice.number = reserved.number;
+
+    this.logger.log(
+      `[Invoice] Comprobante ${reserved.formatted} reservado para la factura ${invoice.code}`,
+    );
+  }
+
   async generateCFDI(
     invoiceId: string,
     userId?: string,
@@ -879,6 +961,10 @@ export class InvoiceService {
       );
       throw new BadRequestException(message);
     }
+
+    // Fuera del try: si falla la reserva (por ejemplo, no hay serie
+    // configurada) interesa que llegue su propio mensaje y no el genérico.
+    await this.reserveDocumentNumber(invoice, userId);
 
     try {
       invoice.status = InvoiceStatus.PENDING_CFDI;
@@ -1042,6 +1128,24 @@ export class InvoiceService {
    * Actualiza el estatus de la factura tras un intento de timbrado en background.
    * Este método es llamado exclusivamente por CfdiProcessor.
    */
+  /**
+   * Los packs devuelven en `status` el estado propio del proveedor ('valid',
+   * etc.), que se sigue traduciendo a SENT. Solo se respeta el valor cuando el
+   * pack devuelve uno de nuestros estados: SUNAT puede responder PENDIENTE, y
+   * marcar esa factura como emitida sería incorrecto.
+   */
+  private resolveInvoiceStatus(packStatus?: string | null): InvoiceStatus {
+    const supported: string[] = [
+      InvoiceStatus.SENT,
+      InvoiceStatus.PENDING_CFDI,
+      InvoiceStatus.FAILED_CFDI,
+    ];
+
+    return supported.includes(packStatus as InvoiceStatus)
+      ? (packStatus as InvoiceStatus)
+      : InvoiceStatus.SENT;
+  }
+
   async updateStatusAfterCertification(
     invoiceId: string,
     result: {
@@ -1052,6 +1156,8 @@ export class InvoiceService {
       pdf_url?: string | null;
       xml_url?: string | null;
       payload_send?: any;
+      /** Datos propios del PAC (hash y CDR de SUNAT) que se conservan tal cual. */
+      raw?: Record<string, unknown>;
       error?: string;
       emitterId?: string | null;
     },
@@ -1074,12 +1180,13 @@ export class InvoiceService {
         pdf_url: result.pdf_url,
         xml_url: result.xml_url,
         uuid_available: this.isValidUUID(result.uuid),
+        ...(result.raw ?? {}),
       };
       if (result.payload_send) {
         invoice.payload_send = result.payload_send;
       }
       invoice.emitter_id = result.emitterId || null;
-      invoice.status = InvoiceStatus.SENT;
+      invoice.status = this.resolveInvoiceStatus(result.status);
     } else {
       invoice.status = InvoiceStatus.FAILED_CFDI;
       invoice.pack_invoice_response = {
@@ -1456,6 +1563,16 @@ export class InvoiceService {
    * Crea una factura directamente desde una venta (withdrawal) cerrada.
    * Copia los productos de la venta al invoice automáticamente.
    */
+  /** Factura ya generada a partir de una venta, si existe. */
+  async findByWithdrawalId(withdrawalId: string): Promise<Invoice | null> {
+    return this.invoiceRepository.findOne({
+      where: {
+        withdrawal: { id: withdrawalId },
+        organization_id: this.organizationId,
+      },
+    });
+  }
+
   async createFromWithdrawal(
     withdrawalId: string,
     userId?: string,
@@ -1471,16 +1588,15 @@ export class InvoiceService {
         'details',
         'details.product',
         'details.product.tax',
+        'details.product.taxes',
       ],
     });
 
     if (!withdrawal) return null;
 
-    const today = new Date().toISOString().split('T')[0];
-
     const dto: CreateInvoiceDto = {
       code: `FAC-${withdrawal.code}`,
-      date: today,
+      date: await this.todayForOrganization(),
       client_id: withdrawal.client.id,
       withdrawal_id: withdrawalId,
       payment_method: (withdrawal.paymentMethod as any) || 'cash',
@@ -1489,7 +1605,7 @@ export class InvoiceService {
         product_id: d.product.id,
         quantity: Number(d.quantity),
         price: Number(d.price),
-        tax_rate: d.product.tax ? Number(d.product.tax.value) : 0,
+        tax_rate: this.resolveProductTaxRate(d.product),
       })),
     };
 
@@ -1508,5 +1624,57 @@ export class InvoiceService {
     }
 
     return invoice;
+  }
+
+  /**
+   * Tasa de impuesto que corresponde a un producto.
+   *
+   * Se lee de `taxes`, la relación muchos-a-muchos que usa el resto del
+   * sistema. Antes se leía `tax`, una relación antigua de un solo impuesto
+   * cuya columna `tax_id` ya nadie llena: al estar vacía, toda venta de
+   * mostrador guardaba 0% aunque el producto tuviera IGV asignado. La
+   * factura quedaba sin impuesto y SUNAT la rechazaba porque el total no
+   * cuadraba con la suma de las líneas.
+   */
+  private resolveProductTaxRate(product: Product): number {
+    const percentageTaxes = (product?.taxes ?? []).filter(
+      (tax) => tax.type === 'PERCENTAGE',
+    );
+
+    if (percentageTaxes.length) {
+      return percentageTaxes.reduce((acc, tax) => acc + Number(tax.value), 0);
+    }
+
+    // La relación antigua se sigue respetando por si algún producto vive
+    // todavía con ella.
+    return product?.tax ? Number(product.tax.value) : 0;
+  }
+
+  /**
+   * Fecha de hoy en la zona horaria del país de la organización.
+   *
+   * `toISOString()` convierte a UTC: una venta a las 19:43 en Lima quedaba
+   * fechada al día siguiente, y el comprobante se emitía con fecha futura.
+   * La organización se busca por el gestor de entidades y no por un
+   * repositorio inyectado para no alterar el orden del constructor.
+   */
+  private async todayForOrganization(): Promise<string> {
+    const profile = await this.countryProfile();
+
+    return formatDateInTimeZone(new Date(), profile.timeZone);
+  }
+
+  /**
+   * Perfil del país de la organización, del que salen su moneda y su zona
+   * horaria. La organización se busca por el gestor de entidades y no por un
+   * repositorio inyectado para no alterar el orden del constructor, del que
+   * dependen las pruebas existentes.
+   */
+  private async countryProfile() {
+    const organization = await this.invoiceRepository.manager
+      .getRepository(Organization)
+      .findOne({ where: { id: this.organizationId } });
+
+    return getCountryProfile(organization?.country || DEFAULT_COUNTRY);
   }
 }

@@ -25,6 +25,13 @@ import { UpdatePurchaseOrderDetailDto } from '../dtos/purchase-order-detail/upda
 import { PurchaseOrderDetailQueryDto } from '../dtos/purchase-order-detail/purchase-order-detail-query.dto';
 import { TranslationService } from './translation.service';
 import { TenantContext } from './tenant-context.service';
+import { OrganizationService } from './organization.service';
+import { getCountryProfile } from '../constants/countries.constant';
+import {
+  formatLongDate,
+  formatMoney,
+  resolveIntlLocale,
+} from '../utils/format.utils';
 import { NotificationService } from './notification.service';
 import { ReceptionService } from './reception.service';
 import { EmailService } from './email.service';
@@ -49,6 +56,7 @@ export class PurchaseOrderService {
     private readonly productMapper: ProductMapper,
     private readonly translationService: TranslationService,
     private readonly tenantContext: TenantContext,
+    private readonly organizationService: OrganizationService,
     private readonly notificationService: NotificationService,
     private readonly receptionService: ReceptionService,
     private readonly emailService: EmailService,
@@ -746,14 +754,26 @@ export class PurchaseOrderService {
               relations: ['product'],
             });
 
+          // El proveedor recibe los importes en la moneda del país del emisor
+          const organization = await this.organizationService.findOne(
+            this.organizationId,
+          );
+          const profile = getCountryProfile(organization?.country);
+          const intlLocale = resolveIntlLocale(
+            this.tenantContext.getLocale(),
+            profile.code,
+          );
+          const money = (value: number) =>
+            formatMoney(value, profile.currency, intlLocale);
+
           const rows = detailsWithRelations
             .map(
               (d) =>
                 `<tr>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${d.product?.name || '—'}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${Number(d.quantity)}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${Number(d.price).toFixed(2)}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${(Number(d.quantity) * Number(d.price)).toFixed(2)}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(Number(d.price))}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(Number(d.quantity) * Number(d.price))}</td>
             </tr>`,
             )
             .join('');
@@ -790,12 +810,12 @@ export class PurchaseOrderService {
                     <tfoot>
                       <tr>
                         <td colspan="3" style="padding:12px;text-align:right;font-weight:700;color:#1e293b;">Total:</td>
-                        <td style="padding:12px;text-align:right;font-weight:700;color:#1e293b;">$${total.toFixed(2)}</td>
+                        <td style="padding:12px;text-align:right;font-weight:700;color:#1e293b;">${money(total)}</td>
                       </tr>
                     </tfoot>
                   </table>
 
-                  ${purchaseOrder.expected_delivery_date ? `<p style="margin:20px 0 0;font-size:13px;color:#6b7280;">📅 Fecha de entrega esperada: <strong>${new Date(purchaseOrder.expected_delivery_date).toLocaleDateString('es-MX')}</strong></p>` : ''}
+                  ${purchaseOrder.expected_delivery_date ? `<p style="margin:20px 0 0;font-size:13px;color:#6b7280;">📅 Fecha de entrega esperada: <strong>${formatLongDate(purchaseOrder.expected_delivery_date, intlLocale)}</strong></p>` : ''}
                   ${purchaseOrder.notes ? `<p style="margin:8px 0 0;font-size:13px;color:#6b7280;">📝 Notas: ${purchaseOrder.notes}</p>` : ''}
                 </div>
                 <div style="background:#f8fafc;padding:16px 32px;font-size:12px;color:#94a3b8;text-align:center;">
