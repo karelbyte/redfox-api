@@ -45,7 +45,12 @@ export class AddStripeLookupKeyToPlans1789084800006
       }
       await queryRunner.query(
         `UPDATE plans SET stripe_lookup_key = $1
-         WHERE currency = $2 AND billing_period = $3 AND stripe_lookup_key IS NULL`,
+         WHERE id = (
+           SELECT id FROM plans
+           WHERE currency = $2 AND billing_period = $3 AND stripe_lookup_key IS NULL
+           ORDER BY created_at ASC
+           LIMIT 1
+         )`,
         [key, currency, period],
       );
     }
