@@ -41,7 +41,7 @@ export class SipController {
     files: Express.Multer.File[],
   ) {
     if (!files || files.length === 0) {
-      throw new BadRequestException('No se recibi�o ning�n archivo');
+      throw new BadRequestException('No se recibio ningun archivo');
     }
 
     const file = files[0];
