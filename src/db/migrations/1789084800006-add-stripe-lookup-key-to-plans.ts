@@ -36,6 +36,13 @@ export class AddStripeLookupKeyToPlans1789084800006
     }
 
     for (const { currency, period, key } of LOOKUP_KEYS) {
+      const existing = await queryRunner.query(
+        `SELECT id FROM plans WHERE stripe_lookup_key = $1 LIMIT 1`,
+        [key],
+      );
+      if (existing.length > 0) {
+        continue;
+      }
       await queryRunner.query(
         `UPDATE plans SET stripe_lookup_key = $1
          WHERE currency = $2 AND billing_period = $3 AND stripe_lookup_key IS NULL`,
