@@ -16,19 +16,39 @@ export class S3StorageService implements IStorageService {
   private readonly bucket: string;
 
   constructor(private readonly configService: ConfigService) {
-    const endpoint = this.configService.get<string>('S3_ENDPOINT');
-    const region = this.configService.get<string>('S3_REGION') || 'auto';
+    const pick = (...names: string[]): string | undefined => {
+      for (const name of names) {
+        const value = this.configService.get<string>(name);
+        if (value && value.trim().length > 0) return value;
+      }
+      return undefined;
+    };
+
+    // Railway's "Connect Service to Bucket" injects AWS_* variables, while
+    // older setups use S3_*. Prefer AWS_* and fall back to S3_* so both work.
+    const endpoint = pick(
+      'AWS_ENDPOINT_URL',
+      'AWS_ENDPOINT_URL_S3',
+      'S3_ENDPOINT',
+    );
+    const region =
+      pick('AWS_REGION', 'AWS_DEFAULT_REGION', 'S3_REGION') || 'auto';
     const accessKeyId =
-      this.configService.get<string>('S3_ACCESS_KEY_ID') || '';
+      pick('AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID') || '';
     const secretAccessKey =
-      this.configService.get<string>('S3_SECRET_ACCESS_KEY') || '';
-    this.bucket = this.configService.get<string>('S3_BUCKET_NAME') || '';
+      pick('AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY') || '';
+    this.bucket =
+      pick('AWS_S3_BUCKET_NAME', 'AWS_BUCKET_NAME', 'S3_BUCKET_NAME') || '';
 
     this.client = new S3Client({
       region,
       endpoint,
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: false,
+      // Disable the SDK's optional flexible checksums; some S3-compatible
+      // providers (Tigris/Railway buckets) reject them.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
 
