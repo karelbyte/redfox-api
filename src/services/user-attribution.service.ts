@@ -195,10 +195,6 @@ export class UserAttributionService {
   }
 
   async getAuthorizedWarehouseIds(userId: string): Promise<string[] | null> {
-    const isAdmin = await this.isUserAdmin(userId);
-    if (isAdmin) {
-      return null;
-    }
     const attributions = await this.userAttributionRepository.find({
       where: {
         userId,
@@ -206,14 +202,18 @@ export class UserAttributionService {
       },
       select: ['resourceId'],
     });
-    return attributions.map((a) => a.resourceId);
+
+    // Las atribuciones explícitas siempre restringen, incluso para administradores.
+    if (attributions.length > 0) {
+      return attributions.map((a) => a.resourceId);
+    }
+
+    // Sin atribuciones: el admin ve toda la organización; el resto, nada.
+    const isAdmin = await this.isUserAdmin(userId);
+    return isAdmin ? null : [];
   }
 
   async getAuthorizedCashRegisterIds(userId: string): Promise<string[] | null> {
-    const isAdmin = await this.isUserAdmin(userId);
-    if (isAdmin) {
-      return null;
-    }
     const attributions = await this.userAttributionRepository.find({
       where: {
         userId,
@@ -221,7 +221,13 @@ export class UserAttributionService {
       },
       select: ['resourceId'],
     });
-    return attributions.map((a) => a.resourceId);
+
+    if (attributions.length > 0) {
+      return attributions.map((a) => a.resourceId);
+    }
+
+    const isAdmin = await this.isUserAdmin(userId);
+    return isAdmin ? null : [];
   }
 
   private mapToResponseDto(
