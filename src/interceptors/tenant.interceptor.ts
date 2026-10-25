@@ -5,12 +5,17 @@ import {
   CallHandler,
   ForbiddenException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { TenantContext } from '../services/tenant-context.service';
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  constructor(private tenantContext: TenantContext) {}
+  constructor(
+    private tenantContext: TenantContext,
+    private reflector: Reflector,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
@@ -18,16 +23,25 @@ export class TenantInterceptor implements NestInterceptor {
     const tenantSlug =
       request.params.tenant || request.headers['x-tenant-slug'];
 
-    // Todos los endpoints con contexto de tenant son estrictamente por organización.
-    // El proyecto de administración usa sus propios endpoints /admin.
-    if (!user?.organizationId) {
+    // Los endpoints públicos (login, registro, etc.) no requieren organización.
+    // Los SUPER_ADMIN del proyecto admin tampoco están atados a una organización.
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const roles: string[] = user?.roles ?? [];
+    const isSuperAdmin = roles.includes('SUPER_ADMIN');
+
+    if (!isPublic && !isSuperAdmin && !user?.organizationId) {
       throw new ForbiddenException(
         'La petición requiere una organización activa.',
       );
     }
 
-    this.tenantContext.setOrganizationId(user.organizationId);
-    request['organizationId'] = user.organizationId;
+    if (user?.organizationId) {
+      this.tenantContext.setOrganizationId(user.organizationId);
+      request['organizationId'] = user.organizationId;
+    }
 
     const userId = user?.id || user?.sub;
     if (userId && this.tenantContext) {
