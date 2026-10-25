@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { Inventory } from '../models/inventory.entity';
@@ -33,7 +37,13 @@ export class InventoryService {
   ) {}
 
   private get organizationId(): string {
-    return this.tenantContext.getOrganizationId() as string;
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) {
+      throw new ForbiddenException(
+        'No hay una organización activa en el contexto de la petición.',
+      );
+    }
+    return organizationId;
   }
 
   private async mapToResponseDto(
@@ -79,6 +89,13 @@ export class InventoryService {
     createInventoryDto: CreateInventoryDto,
     userId?: string,
   ): Promise<InventoryResponseDto> {
+    // El almacén y el producto deben pertenecer a la organización del token.
+    // findOne lanza NotFound si son de otra organización.
+    await Promise.all([
+      this.warehouseService.findOne(createInventoryDto.warehouseId, userId),
+      this.productService.findOne(createInventoryDto.productId, userId),
+    ]);
+
     const inventory = this.inventoryRepository.create({
       warehouse: { id: createInventoryDto.warehouseId },
       product: { id: createInventoryDto.productId },

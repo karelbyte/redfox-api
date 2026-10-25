@@ -3,7 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { TenantContext } from '../services/tenant-context.service';
@@ -18,10 +18,16 @@ export class TenantInterceptor implements NestInterceptor {
     const tenantSlug =
       request.params.tenant || request.headers['x-tenant-slug'];
 
-    if (user && user.organizationId && this.tenantContext) {
-      this.tenantContext.setOrganizationId(user.organizationId);
-      request['organizationId'] = user.organizationId;
+    // Todos los endpoints con contexto de tenant son estrictamente por organización.
+    // El proyecto de administración usa sus propios endpoints /admin.
+    if (!user?.organizationId) {
+      throw new ForbiddenException(
+        'La petición requiere una organización activa.',
+      );
     }
+
+    this.tenantContext.setOrganizationId(user.organizationId);
+    request['organizationId'] = user.organizationId;
 
     const userId = user?.id || user?.sub;
     if (userId && this.tenantContext) {

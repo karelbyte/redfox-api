@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -49,7 +50,13 @@ export class WarehouseService {
   ) {}
 
   private get organizationId(): string {
-    return this.tenantContext.getOrganizationId() as string;
+    const organizationId = this.tenantContext.getOrganizationId();
+    if (!organizationId) {
+      throw new ForbiddenException(
+        'No hay una organización activa en el contexto de la petición.',
+      );
+    }
+    return organizationId;
   }
 
   async create(
