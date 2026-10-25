@@ -119,6 +119,20 @@ export class WarehouseService {
       authorizedWarehouseIds = await this.userAttributionService.getAuthorizedWarehouseIds(userId);
     }
 
+    // Un usuario no administrador sin almacenes atribuidos no debe ver ninguno.
+    // Importante: no usar `where: []` porque TypeORM lo interpreta como "sin filtro".
+    if (userId && authorizedWarehouseIds !== null && authorizedWarehouseIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page: page || 1,
+          limit: limit || 10,
+          totalPages: 0,
+        },
+      };
+    }
+
     let whereConditions;
 
     if (isClosed !== undefined && term) {

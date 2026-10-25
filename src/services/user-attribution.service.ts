@@ -182,9 +182,16 @@ export class UserAttributionService {
   async isUserAdmin(userId: string): Promise<boolean> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['admin'],
+      relations: ['roles'],
     });
-    return user?.admin === true;
+
+    if (!user) return false;
+
+    if (user.admin === true) return true;
+
+    return (user.roles ?? []).some(
+      (role) => role.code === 'ADMIN' || role.code === 'SUPER_ADMIN',
+    );
   }
 
   async getAuthorizedWarehouseIds(userId: string): Promise<string[] | null> {
