@@ -18,6 +18,7 @@ import {
 import { Organization } from '../models/organization.entity';
 import { TenantContext } from '../services/tenant-context.service';
 import { AuthGuard } from '../guards/auth.guard';
+import { Public } from '../decorators/public.decorator';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 
 /**
@@ -32,6 +33,7 @@ export class CountryController {
     private readonly tenantContext: TenantContext,
   ) {}
 
+  @Public()
   @Get()
   findAll(): CountryProfile[] {
     return Object.values(COUNTRIES);
@@ -52,6 +54,7 @@ export class CountryController {
     return getCountryProfile(organization?.country);
   }
 
+  @Public()
   @Get(':code')
   findOne(@Param('code') code: string): CountryProfile {
     if (!isSupportedCountry(code)) {
