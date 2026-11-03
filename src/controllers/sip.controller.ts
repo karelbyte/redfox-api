@@ -1,7 +1,9 @@
 import {
   Controller,
+  Delete,
   Get,
   Inject,
+  Param,
   Post,
   UseGuards,
   UseInterceptors,
@@ -10,6 +12,7 @@ import {
   FileTypeValidator,
   MaxFileSizeValidator,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -73,6 +76,38 @@ export class SipController {
         (a, b) =>
           new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
       );
+  }
+
+  @Delete('files/:filename')
+  async deleteSip(@Param('filename') filename: string) {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('No se pudo determinar la organización');
+    }
+
+    if (
+      !filename ||
+      filename.includes('/') ||
+      filename.includes('\\') ||
+      filename.includes('..')
+    ) {
+      throw new BadRequestException('Nombre de archivo inválido');
+    }
+
+    const key = `${orgId}/marsh/${filename}`;
+    const files = await this.storageService.list(`${orgId}/marsh/`);
+
+    if (!files.some((file) => file.key === key)) {
+      throw new NotFoundException('Archivo no encontrado');
+    }
+
+    await this.storageService.delete(key);
+
+    return {
+      success: true,
+      message: 'SIP eliminado correctamente',
+      key,
+    };
   }
 
   @Post('upload')
