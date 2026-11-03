@@ -109,6 +109,18 @@ export class UploadsController {
   }
 
   @Public()
+  @Get(':orgId/marsh/:filename')
+  async serveMarshFile(
+    @Param('orgId') orgId: string,
+    @Param('filename') filename: string,
+    @Query('download') download: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const key = `${orgId}/marsh/${filename}`;
+    await this.serveFile(key, res, download === 'true', filename);
+  }
+
+  @Public()
   @Get(':orgId/documents/:docId/:filename')
   async serveDocumentFile(
     @Param('orgId') orgId: string,

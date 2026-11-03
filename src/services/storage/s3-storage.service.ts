@@ -5,9 +5,10 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
-import { IStorageService, UploadResult } from './storage.interface';
+import { IStorageService, StoredFile, UploadResult } from './storage.interface';
 
 @Injectable()
 export class S3StorageService implements IStorageService {
@@ -100,5 +101,35 @@ export class S3StorageService implements IStorageService {
       }
       throw err;
     }
+  }
+
+  async list(prefix: string): Promise<StoredFile[]> {
+    const files: StoredFile[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+
+      for (const item of response.Contents || []) {
+        if (!item.Key || item.Key.endsWith('/')) continue;
+        files.push({
+          key: item.Key,
+          size: item.Size || 0,
+          lastModified: item.LastModified || new Date(0),
+        });
+      }
+
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return files;
   }
 }

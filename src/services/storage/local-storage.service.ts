@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { join } from 'path';
 import * as fs from 'fs';
-import { IStorageService, UploadResult } from './storage.interface';
+import { IStorageService, StoredFile, UploadResult } from './storage.interface';
 
 const MIME_MAP: Record<string, string> = {
   png: 'image/png',
@@ -65,5 +65,27 @@ export class LocalStorageService implements IStorageService {
     const buffer = fs.readFileSync(fullPath);
     const contentType = getMimeType(fullPath);
     return { buffer, contentType };
+  }
+
+  async list(prefix: string): Promise<StoredFile[]> {
+    const normalizedPrefix = prefix.replace(/[\\/]+$/, '');
+    const dirPath = join(this.uploadsDir, normalizedPrefix);
+
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+
+    return fs
+      .readdirSync(dirPath, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => {
+        const fullPath = join(dirPath, entry.name);
+        const stat = fs.statSync(fullPath);
+        return {
+          key: `${normalizedPrefix}/${entry.name}`,
+          size: stat.size,
+          lastModified: stat.mtime,
+        };
+      });
   }
 }

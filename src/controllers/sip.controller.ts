@@ -1,5 +1,7 @@
 import {
   Controller,
+  Get,
+  Inject,
   Post,
   UseGuards,
   UseInterceptors,
@@ -15,6 +17,11 @@ import { AuthGuard } from '../guards/auth.guard';
 import { AdminGuard } from '../guards/admin.guard';
 import { TenantInterceptor } from '../interceptors/tenant.interceptor';
 import { UnifiedUploadService } from '../services/unified-upload.service';
+import { TenantContext } from '../services/tenant-context.service';
+import {
+  IStorageService,
+  STORAGE_SERVICE,
+} from '../services/storage/storage.interface';
 
 const ZIP_MIME_TYPES = [
   'application/zip',
@@ -33,7 +40,40 @@ const ZIP_MIME_REGEX =
 export class SipController {
   constructor(
     private readonly unifiedUploadService: UnifiedUploadService,
+    private readonly tenantContext: TenantContext,
+    @Inject(STORAGE_SERVICE)
+    private readonly storageService: IStorageService,
   ) {}
+
+  @Get('files')
+  async listSips() {
+    const orgId = this.tenantContext.getOrganizationId();
+    if (!orgId) {
+      throw new BadRequestException('No se pudo determinar la organización');
+    }
+
+    const prefix = `${orgId}/marsh/`;
+    const files = await this.storageService.list(prefix);
+
+    return files
+      .map((file) => {
+        const filename = file.key.slice(prefix.length);
+        return {
+          key: file.key,
+          filename,
+          // Quita el prefijo de timestamp (Date.now()) usado al almacenar
+          displayName: filename.replace(/^\d{10,}-/, ''),
+          size: file.size,
+          uploadedAt: file.lastModified,
+          url: `/api/uploads/${file.key}`,
+          downloadUrl: `/api/uploads/${file.key}?download=true`,
+        };
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+      );
+  }
 
   @Post('upload')
   @UseInterceptors(
