@@ -37,6 +37,8 @@ const ZIP_MIME_TYPES = [
 const ZIP_MIME_REGEX =
   /^(application\/(x-)?zip(-compressed)?|multipart\/x-zip|application\/octet-stream)$/;
 
+const MAX_SIP_SIZE = 300 * 1024 * 1024; // 300 MB
+
 @Controller('sip')
 @UseGuards(AuthGuard, AdminGuard)
 @UseInterceptors(TenantInterceptor)
@@ -112,13 +114,16 @@ export class SipController {
 
   @Post('upload')
   @UseInterceptors(
-    FilesInterceptor('file', 1, { storage: memoryStorage() }),
+    FilesInterceptor('file', 1, {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_SIP_SIZE },
+    }),
   )
   async uploadSip(
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 100 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_SIP_SIZE }),
           new FileTypeValidator({ fileType: ZIP_MIME_REGEX }),
         ],
         fileIsRequired: true,
@@ -149,7 +154,7 @@ export class SipController {
       'marsh',
       undefined,
       {
-        maxSize: 100 * 1024 * 1024,
+        maxSize: MAX_SIP_SIZE,
         allowedTypes: ZIP_MIME_TYPES,
         maxFiles: 1,
       },
